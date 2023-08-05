@@ -38,7 +38,7 @@ public class Module {
         if (executing) return;
 
         executing = true;
-        var scope = ctx.engine().scope().globalChild();
+        var scope = ctx.engine().global().globalChild();
         scope.define("module", true, this);
         scope.define("exports", new ExportsVariable());
 
