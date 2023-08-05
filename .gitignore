@@ -1,0 +1,6 @@
+.vscode
+.gradle
+out
+build
+bin
+/*.js

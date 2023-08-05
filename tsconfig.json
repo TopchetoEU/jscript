@@ -1,0 +1,16 @@
+{
+    "include": [ "lib/**/*.ts" ],
+    "compilerOptions": {
+        "outDir": "bin/me/topchetoeu/jscript/js",
+        "declarationDir": "bin/me/topchetoeu/jscript/dts",
+        "target": "ES5",
+        "lib": [],
+        "module": "CommonJS",
+        "declaration": true,
+        "stripInternal": true,
+        "downlevelIteration": true,
+        "esModuleInterop": true,
+        "forceConsistentCasingInFileNames": true,
+        "strict": true,
+    }
+}
