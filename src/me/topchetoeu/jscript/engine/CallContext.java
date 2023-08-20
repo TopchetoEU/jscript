@@ -21,14 +21,16 @@ public class CallContext {
         return this;
     }
     public <T> CallContext setData(DataKey<T> key, T val) {
-        data.put(key, val);
+        if (val == null) data.remove(key);
+        else data.put(key, val);
         return this;
     }
     @SuppressWarnings("unchecked")
     public <T> T addData(DataKey<T> key, T val) {
         if (data.containsKey(key)) return (T)data.get(key);
         else {
-            data.put(key, val);
+            if (val == null) data.remove(key);
+            else data.put(key, val);
             return val;
         }
     }

@@ -205,6 +205,10 @@ public class ObjectValue {
         else return null;
     }
     protected boolean setField(CallContext ctx, Object key, Object val) throws InterruptedException {
+        if (val instanceof FunctionValue && ((FunctionValue)val).name.equals("")) {
+            ((FunctionValue)val).name = Values.toString(ctx, key);
+        }
+
         values.put(key, val);
         return true;
     }

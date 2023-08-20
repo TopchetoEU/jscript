@@ -1,5 +1,6 @@
 .vscode
 .gradle
+.ignore
 out
 build
 bin

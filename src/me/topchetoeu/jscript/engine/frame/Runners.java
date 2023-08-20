@@ -532,6 +532,7 @@ public class Runners {
     }
 
     public static Object exec(DebugCommand state, Instruction instr, CodeFrame frame, CallContext ctx) throws InterruptedException {
+        // System.out.println(instr + "@" + instr.location);
         switch (instr.type) {
             case NOP: return execNop(instr, frame, ctx);
             case RETURN: return execReturn(instr, frame, ctx);

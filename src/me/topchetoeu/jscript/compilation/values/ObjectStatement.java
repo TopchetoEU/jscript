@@ -50,8 +50,8 @@ public class ObjectStatement extends Statement {
 
     public ObjectStatement(Location loc, Map<Object, Statement> map, Map<Object, FunctionStatement> getters, Map<Object, FunctionStatement> setters) {
         super(loc);
-        this.map = Map.copyOf(map);
-        this.getters = Map.copyOf(getters);
-        this.setters = Map.copyOf(setters);
+        this.map = map;
+        this.getters = getters;
+        this.setters = setters;
     }
 }

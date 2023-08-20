@@ -25,6 +25,12 @@ public class CodeFunction extends FunctionValue {
         }
         return null;
     }
+    public String readable() {
+        var loc = loc();
+        if (loc == null) return name;
+        else if (name.equals("")) return loc.toString();
+        else return name + "@" + loc;
+    }
 
     @Override
     public Object call(CallContext ctx, Object thisArg, Object... args) throws InterruptedException {
