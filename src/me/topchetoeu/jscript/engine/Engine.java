@@ -8,7 +8,6 @@ import me.topchetoeu.jscript.engine.CallContext.DataKey;
 import me.topchetoeu.jscript.engine.debug.DebugState;
 import me.topchetoeu.jscript.engine.modules.ModuleManager;
 import me.topchetoeu.jscript.engine.scope.GlobalScope;
-import me.topchetoeu.jscript.engine.values.CodeFunction;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
 import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.engine.values.ObjectValue.PlaceholderProto;
@@ -181,7 +180,7 @@ public class Engine {
         return msg.notifier;
     }
 
-    public CodeFunction compile(GlobalScope scope, String filename, String raw) throws InterruptedException {
+    public FunctionValue compile(GlobalScope scope, String filename, String raw) throws InterruptedException {
         return Parsing.compile(scope, filename, raw);
     }
 

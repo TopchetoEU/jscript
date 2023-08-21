@@ -71,15 +71,45 @@ public class NativeTypeRegister {
             }
         }
     }
+    private static void applyClasses(boolean member, ObjectValue target, Class<?> clazz) {
+        for (var cl : clazz.getDeclaredClasses()) {
+            if (!Modifier.isStatic(cl.getModifiers()) != member) continue;
+            var nat = cl.getAnnotation(Native.class);
 
+            if (nat != null) {
+                var name = nat.value();
+                if (name.equals("")) name = cl.getSimpleName();
+
+                var getter = new OverloadFunction("get " + name).add(Overload.getter(member ? clazz : null, (ctx, thisArg, args) -> {
+                    return ctx.engine().typeRegister().getConstr(cl);
+                }));
+
+                target.defineProperty(name, getter, null, true, false);
+            }
+        }
+    }
+
+    /**
+     * Generates a prototype for the given class.
+     * The returned object will have appropriate wrappers for all instance members.
+     * All accessors and methods will expect the this argument to be a native wrapper of the given class type.
+     * @param clazz The class for which a prototype should be generated
+     */
     public static ObjectValue makeProto(Class<?> clazz) {
         var res = new ObjectValue();
 
         applyMethods(true, res, clazz);
         applyFields(true, res, clazz);
+        applyClasses(true, res, clazz);
 
         return res;
     }
+    /**
+     * Generates a constructor for the given class.
+     * The returned function will have appropriate wrappers for all static members.
+     * When the function gets called, the underlying constructor will get called, unless the constructor is inaccessible.
+     * @param clazz The class for which a constructor should be generated
+     */
     public static FunctionValue makeConstructor(Class<?> clazz) {
         FunctionValue func = new OverloadFunction(clazz.getName());
 
@@ -94,16 +124,24 @@ public class NativeTypeRegister {
 
         applyMethods(false, func, clazz);
         applyFields(false, func, clazz);
+        applyClasses(false, func, clazz);
 
         func.special = true;
 
         return func;
     }
+    /**
+     * Generates a namespace for the given class.
+     * The returned function will have appropriate wrappers for all static members.
+     * This method behaves almost like {@link NativeTypeRegister#makeConstructor}, but will return an object instead.
+     * @param clazz The class for which a constructor should be generated
+     */
     public static ObjectValue makeNamespace(Class<?> clazz) {
         ObjectValue res = new ObjectValue();
 
         applyMethods(false, res, clazz);
         applyFields(false, res, clazz);
+        applyClasses(false, res, clazz);
 
         return res;
     }

@@ -15,7 +15,7 @@ public class Overload {
             IllegalArgumentException;
     }
 
-    public final Overload.OverloadRunner runner;
+    public final OverloadRunner runner;
     public final boolean variadic;
     public final Class<?> thisArg;
     public final Class<?>[] params;
@@ -52,8 +52,15 @@ public class Overload {
         );
     }
 
+    public static Overload getter(Class<?> thisArg, OverloadRunner runner) {
+        return new Overload(
+            (ctx, th, args) -> runner.run(ctx, th, args), false,
+            thisArg,
+            new Class[0]
+        );
+    }
 
-    public Overload(Overload.OverloadRunner runner, boolean variadic, Class<?> thisArg, Class<?> args[]) {
+    public Overload(OverloadRunner runner, boolean variadic, Class<?> thisArg, Class<?> args[]) {
         this.runner = runner;
         this.variadic = variadic;
         this.thisArg = thisArg;
