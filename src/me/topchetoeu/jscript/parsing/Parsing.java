@@ -68,7 +68,7 @@ public class Parsing {
         reserved.add("yield");
         // Although the standards allow it, these are keywords in newer ES, so we won't allow them
         reserved.add("const");
-        reserved.add("await");
+        // reserved.add("await");
         reserved.add("async");
         // These are allowed too, however our parser considers them keywords
         reserved.add("undefined");

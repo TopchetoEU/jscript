@@ -4,6 +4,7 @@ import java.util.HashMap;
 
 import me.topchetoeu.jscript.engine.CallContext;
 import me.topchetoeu.jscript.engine.values.ArrayValue;
+import me.topchetoeu.jscript.engine.values.CodeFunction;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
 import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.engine.values.Symbol;
@@ -233,6 +234,12 @@ public class Internals {
         var res = ctx.engine().modules().tryLoad(ctx, Values.toString(ctx, name));
         if (res == null) throw EngineException.ofError("The module '" + name + "' doesn\'t exist.");
         return res.exports();
+    }
+
+    @Native
+    public AsyncFunction makeAsync(FunctionValue func) {
+        if (func instanceof CodeFunction) return new AsyncFunction((CodeFunction)func);
+        else throw EngineException.ofType("Can't create an async function with a non-js function.");
     }
 
     @NativeGetter("err")

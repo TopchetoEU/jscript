@@ -56,7 +56,7 @@ public class ModuleManager {
             if (realName == null) return null;
             if (cache.containsKey(realName)) return cache.get(realName);
             var mod = files.getModule(cwd, name);
-            // cache.put(mod.name(), mod);
+            cache.put(mod.name(), mod);
             mod.execute(ctx);
             return mod;
         }
@@ -66,7 +66,7 @@ public class ModuleManager {
             if (realName == null) continue;
             if (cache.containsKey(realName)) return cache.get(realName);
             var mod = provider.getModule(cwd, name);
-            // cache.put(mod.name(), mod);
+            cache.put(mod.name(), mod);
             mod.execute(ctx);
             return mod;
         }

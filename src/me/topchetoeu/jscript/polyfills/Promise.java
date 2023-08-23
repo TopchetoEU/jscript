@@ -203,11 +203,11 @@ public class Promise {
     public void fulfill(CallContext ctx, Object val) {
         if (Values.isWrapper(val, Promise.class)) Values.wrapper(val, Promise.class).then(ctx,
             new NativeFunction(null, (e, th, args) -> {
-                this.fulfill(args[0]);
+                this.fulfill(e, args[0]);
                 return null;
             }),
             new NativeFunction(null, (e, th, args) -> {
-                this.reject(args[0]);
+                this.reject(e, args[0]);
                 return null;
             })
         );
@@ -231,11 +231,11 @@ public class Promise {
     public void reject(CallContext ctx, Object val) {
         if (Values.isWrapper(val, Promise.class)) Values.wrapper(val, Promise.class).then(ctx,
             new NativeFunction(null, (e, th, args) -> {
-                this.reject(args[0]);
+                this.reject(e, args[0]);
                 return null;
             }),
             new NativeFunction(null, (e, th, args) -> {
-                this.reject(args[0]);
+                this.reject(e, args[0]);
                 return null;
             })
         );

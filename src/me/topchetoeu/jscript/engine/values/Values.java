@@ -391,19 +391,21 @@ public class Values {
         }
 
         if (obj instanceof ArrayValue) {
-            var raw = array(obj).toArray();
-
+            
             if (clazz.isAssignableFrom(ArrayList.class)) {
+                var raw = array(obj).toArray();
                 var res = new ArrayList<>();
                 for (var i = 0; i < raw.length; i++) res.add(convert(ctx, raw[i], Object.class));
                 return (T)new ArrayList<>(res);
             }
             if (clazz.isAssignableFrom(HashSet.class)) {
+                var raw = array(obj).toArray();
                 var res = new HashSet<>();
                 for (var i = 0; i < raw.length; i++) res.add(convert(ctx, raw[i], Object.class));
                 return (T)new HashSet<>(res);
             }
             if (clazz.isArray()) {
+                var raw = array(obj).toArray();
                 Object res = Array.newInstance(clazz.arrayType(), raw.length);
                 for (var i = 0; i < raw.length; i++) Array.set(res, i, convert(ctx, raw[i], Object.class));
                 return (T)res;

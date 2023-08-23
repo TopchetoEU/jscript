@@ -1,7 +1,8 @@
 // TODO: load this in java
 var ts = require('./ts__');
+log("Loaded typescript!");
 
-var src = '', lib = libs.join(''), decls = [], version = 0;
+var src = '', lib = libs.join(''), decls = '', version = 0;
 var libSnapshot = ts.ScriptSnapshot.fromString(lib);
 
 var settings = {
@@ -9,7 +10,7 @@ var settings = {
     declarationDir: "/out",
     target: ts.ScriptTarget.ES5,
     lib: [ ],
-    module: ts.ModuleKind.CommonJS,
+    module: ts.ModuleKind.None,
     declaration: true,
     stripInternal: true,
     downlevelIteration: true,
@@ -20,41 +21,17 @@ var settings = {
 
 var reg = ts.createDocumentRegistry();
 var service = ts.createLanguageService({
-    getCanonicalFileName: function (fileName) { return fileName; },
-    useCaseSensitiveFileNames: function () { return true; },
-    getNewLine: function () { return "\n"; },
-    getEnvironmentVariable: function () { return ""; },
-
-    log: function() {
-        log.apply(undefined, arguments);
-    },
-    fileExists: function (fileName) {
-        return (
-            fileName === "/src.ts" ||
-            fileName === "/lib.d.ts" ||
-            fileName === "/glob.d.ts"
-        );
-    },
-    readFile: function (fileName) {
-        if (fileName === "/src.ts") return src;
-        if (fileName === "/lib.d.ts") return lib;
-        if (fileName === "/glob.d.ts") return decls.join('\n');
-        throw new Error("File '" + fileName + "' doesn't exist.");
-    },
-    writeFile: function (fileName, data) {
-        if (fileName.endsWith(".js")) res = data;
-        else if (fileName.endsWith(".d.ts")) decls.push(data);
-        else throw new Error("File '" + fileName + "' isn't writable.");
-    },
-    getCompilationSettings: function () {
-        return settings;
-    },
     getCurrentDirectory: function() { return "/"; },
     getDefaultLibFileName: function() { return "/lib_.d.ts"; },
     getScriptFileNames: function() { return [ "/src.ts", "/lib.d.ts", "/glob.d.ts" ]; },
+    getCompilationSettings: function () { return settings; },
+    fileExists: function(filename) { return filename === "/lib.d.ts" || filename === "/src.ts" || filename === "/glob.d.ts"; },
+
     getScriptSnapshot: function(filename) {
         if (filename === "/lib.d.ts") return libSnapshot;
-        else return ts.ScriptSnapshot.fromString(this.readFile(filename));
+        if (filename === "/src.ts") return ts.ScriptSnapshot.fromString(src);
+        if (filename === "/glob.d.ts") return ts.ScriptSnapshot.fromString(decls);
+        throw new Error("File '" + filename + "' doesn't exist.");
     },
     getScriptVersion: function (filename) {
         if (filename === "/lib.d.ts") return 0;
@@ -65,15 +42,10 @@ var service = ts.createLanguageService({
 service.getEmitOutput('/lib.d.ts');
 log('Loaded libraries!');
 
-
-function compile(code) {
-    src = code;
-    version++;
+function compile(filename, code) {
+    src = code, version++;
 
     var emit = service.getEmitOutput("/src.ts");
-
-    var res = emit.outputFiles[0].text;
-    var decl = emit.outputFiles[1].text;
 
     var diagnostics = []
         .concat(service.getCompilerOptionsDiagnostics())
@@ -83,7 +55,9 @@ function compile(code) {
             var message = ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n");
             if (diagnostic.file) {
                 var pos = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
-                return diagnostic.file.fileName.substring(1) + ":" + (pos.line + 1) + ":" + (pos.character + 1) + ": " + message;
+                var file = diagnostic.file.fileName.substring(1);
+                if (file === "src.ts") file = filename;
+                return file + ":" + (pos.line + 1) + ":" + (pos.character + 1) + ": " + message;
             }
             else return "Error: " + message;
         });
@@ -92,17 +66,21 @@ function compile(code) {
         throw new SyntaxError(diagnostics.join('\n'));
     }
 
-    decls.push(decl);
-
     return {
-        result: res,
-        diagnostics: diagnostics
+        result: emit.outputFiles[0].text,
+        declaration: emit.outputFiles[1].text
     };
 }
 
-log("Loaded typescript!");
-init(function (code) {
-    var res = compile(code);
-    return res.result;
-});
+init(function (filename, code) {
+    var res = compile(filename, code);
 
+    return [
+        res.result,
+        function(func, th, args) {
+            var val = func.apply(th, args);
+            decls += res.declaration;
+            return val;
+        }
+    ];
+});

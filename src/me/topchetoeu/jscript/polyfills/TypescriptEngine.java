@@ -6,16 +6,26 @@ import java.util.Map;
 
 import me.topchetoeu.jscript.engine.scope.GlobalScope;
 import me.topchetoeu.jscript.engine.values.ArrayValue;
-import me.topchetoeu.jscript.engine.values.CodeFunction;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
 import me.topchetoeu.jscript.engine.values.NativeFunction;
+import me.topchetoeu.jscript.engine.values.Values;
 
 public class TypescriptEngine extends PolyfillEngine {
     private FunctionValue ts;
 
     @Override
-    public CodeFunction compile(GlobalScope scope, String filename, String raw) throws InterruptedException {
-        if (ts != null) raw = (String)ts.call(context(), null, raw);
+    public FunctionValue compile(GlobalScope scope, String filename, String raw) throws InterruptedException {
+        if (ts != null) {
+            var res = Values.array(ts.call(context(), null, filename, raw));
+            var src = Values.toString(context(), res.get(0));
+            var func = Values.function(res.get(1));
+
+            var compiled = super.compile(scope, filename, src);
+
+            return new NativeFunction(null, (ctx, thisArg, args) -> {
+                return func.call(context(), null, compiled, thisArg, new ArrayValue(args));
+            });
+        }
         return super.compile(scope, filename, raw);
     }
 
@@ -42,7 +52,7 @@ public class TypescriptEngine extends PolyfillEngine {
 
         scope.define("libs", true, ArrayValue.of(decls));
         scope.define(true, new NativeFunction("init", (el, t, args) -> {
-            ts = (FunctionValue)args[0];
+            ts = Values.function(args[0]);
             return null;
         }));
 

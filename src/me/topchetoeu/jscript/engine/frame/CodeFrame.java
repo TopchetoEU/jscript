@@ -26,6 +26,7 @@ public class CodeFrame {
     public final Object thisArg;
     public final Object[] args;
     public final List<Object> stack = new ArrayList<>();
+    public final List<TryContext> tryCtxs = new ArrayList<>();
     public final CodeFunction function;
 
     public int codePtr = 0;
@@ -47,7 +48,7 @@ public class CodeFrame {
         stack.add(stack.size(), Values.normalize(val));
     }
 
-    private void cleanup(CallContext ctx) {
+    public void cleanup(CallContext ctx) {
         stack.clear();
         codePtr = 0;
         debugCmd = null;
@@ -61,7 +62,7 @@ public class CodeFrame {
         var debugState = ctx.getData(Engine.DEBUG_STATE_KEY);
 
         if (debugCmd == null) {
-            if (ctx.getData(STACK_N_KEY, 0) >= ctx.addData(MAX_STACK_KEY, 1000))
+            if (ctx.getData(STACK_N_KEY, 0) >= ctx.addData(MAX_STACK_KEY, 100000))
                 throw EngineException.ofRange("Stack overflow!");
             ctx.changeData(STACK_N_KEY);
 
@@ -72,7 +73,10 @@ public class CodeFrame {
         }
 
         if (Thread.currentThread().isInterrupted()) throw new InterruptedException();
+        if (codePtr < 0 || codePtr >= function.body.length) return null;
+
         var instr = function.body[codePtr];
+
         var loc = instr.location;
         if (loc != null) prevLoc = loc;
 
@@ -92,73 +96,80 @@ public class CodeFrame {
         }
 
         try {
-            var res = Runners.exec(debugCmd, instr, this, ctx);
-            if (res != Runners.NO_RETURN) cleanup(ctx);
-            return res;
+            return Runners.exec(debugCmd, instr, this, ctx);
         }
         catch (EngineException e) {
-            cleanup(ctx);
             throw e.add(function.name, prevLoc);
-        }
-        catch (RuntimeException e) {
-            cleanup(ctx);
-            throw e;
         }
     }
 
     public Object run(CallContext ctx) throws InterruptedException {
-        var debugState = ctx.getData(Engine.DEBUG_STATE_KEY);
-        DebugCommand command = ctx.getData(STOP_AT_START_KEY, false) ? DebugCommand.STEP_OVER : DebugCommand.NORMAL;
-
-        if (ctx.getData(STACK_N_KEY, 0) >= ctx.addData(MAX_STACK_KEY, 200)) throw EngineException.ofRange("Stack overflow!");
-        ctx.changeData(STACK_N_KEY);
-
-        if (debugState != null) debugState.pushFrame(this);
-
-        Location loc = null;
-
         try {
-            while (codePtr >= 0 && codePtr < function.body.length) {
-                var _loc = function.body[codePtr].location;
-                if (_loc != null) loc = _loc;
-
-                if (Thread.currentThread().isInterrupted()) throw new InterruptedException();
-                var instr = function.body[codePtr];
-
-                if (debugState != null && loc != null) {
-                    if (
-                        instr.type == Type.NOP && instr.match("debug") ||
-                        (
-                            (command == DebugCommand.STEP_INTO || command == DebugCommand.STEP_OVER) &&
-                            ctx.getData(STEPPING_TROUGH_KEY, false)
-                        ) ||
-                        debugState.breakpoints.contains(loc)
-                    ) {
-                        ctx.setData(STEPPING_TROUGH_KEY, true);
-
-                        debugState.breakpointNotifier.next(new BreakpointData(loc, ctx));
-                        command = debugState.commandNotifier.toAwaitable().await();
-                        if (command == DebugCommand.NORMAL) ctx.setData(STEPPING_TROUGH_KEY, false);
-                    }
-                }
-
-                try {
-                    var res = Runners.exec(command, instr, this, ctx);
-                    if (res != Runners.NO_RETURN) return res;
-                }
-                catch (EngineException e) {
-                    throw e.add(function.name, instr.location);
-                }
+            while (true) {
+                var res = next(ctx);
+                if (res != Runners.NO_RETURN) return res;
             }
-            return null;
         }
-        // catch (StackOverflowError e) {
-        //     e.printStackTrace();
-        //     throw EngineException.ofRange("Stack overflow!").add(function.name, loc);
-        // }
         finally {
-            ctx.changeData(STACK_N_KEY, -1);
+            cleanup(ctx);
         }
+
+
+        // var debugState = ctx.getData(Engine.DEBUG_STATE_KEY);
+        // DebugCommand command = ctx.getData(STOP_AT_START_KEY, false) ? DebugCommand.STEP_OVER : DebugCommand.NORMAL;
+
+        // if (ctx.getData(STACK_N_KEY, 0) >= ctx.addData(MAX_STACK_KEY, 200)) throw EngineException.ofRange("Stack overflow!");
+        // ctx.changeData(STACK_N_KEY);
+
+        // if (debugState != null) debugState.pushFrame(this);
+
+        // Location loc = null;
+
+
+        // Location loc = null;
+
+        // try {
+        //     while (codePtr >= 0 && codePtr < function.body.length) {
+        //         var _loc = function.body[codePtr].location;
+        //         if (_loc != null) loc = _loc;
+
+        //         if (Thread.currentThread().isInterrupted()) throw new InterruptedException();
+        //         var instr = function.body[codePtr];
+
+        //         if (debugState != null && loc != null) {
+        //             if (
+        //                 instr.type == Type.NOP && instr.match("debug") ||
+        //                 (
+        //                     (command == DebugCommand.STEP_INTO || command == DebugCommand.STEP_OVER) &&
+        //                     ctx.getData(STEPPING_TROUGH_KEY, false)
+        //                 ) ||
+        //                 debugState.breakpoints.contains(loc)
+        //             ) {
+        //                 ctx.setData(STEPPING_TROUGH_KEY, true);
+
+        //                 debugState.breakpointNotifier.next(new BreakpointData(loc, ctx));
+        //                 command = debugState.commandNotifier.toAwaitable().await();
+        //                 if (command == DebugCommand.NORMAL) ctx.setData(STEPPING_TROUGH_KEY, false);
+        //             }
+        //         }
+
+        //         try {
+        //             var res = Runners.exec(command, instr, this, ctx);
+        //             if (res != Runners.NO_RETURN) return res;
+        //         }
+        //         catch (EngineException e) {
+        //             throw e.add(function.name, instr.location);
+        //         }
+        //     }
+        //     return null;
+        // }
+        // // catch (StackOverflowError e) {
+        // //     e.printStackTrace();
+        // //     throw EngineException.ofRange("Stack overflow!").add(function.name, loc);
+        // // }
+        // finally {
+        //     ctx.changeData(STACK_N_KEY, -1);
+        // }
     }
 
     public CodeFrame(Object thisArg, Object[] args, CodeFunction func) {
