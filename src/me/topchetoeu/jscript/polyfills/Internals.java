@@ -242,11 +242,6 @@ public class Internals {
     }
 
     @Native
-    public AsyncFunction makeAsync(FunctionValue func) {
-        if (func instanceof CodeFunction) return new AsyncFunction((CodeFunction)func);
-        else throw EngineException.ofType("Can't create an async function with a non-js function.");
-    }
-    @Native
     public GeneratorFunction makeGenerator(FunctionValue func) {
         if (func instanceof CodeFunction) return new GeneratorFunction((CodeFunction)func);
         else throw EngineException.ofType("Can't create a generator with a non-js function.");
