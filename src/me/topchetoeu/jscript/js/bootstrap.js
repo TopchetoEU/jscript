@@ -2,7 +2,7 @@
 var ts = require('./ts__');
 log("Loaded typescript!");
 
-var src = '', lib = libs.join(''), decls = '', version = 0;
+var src = '', lib = libs.concat([ 'declare const exit: never;' ]).join(''), decls = '', version = 0;
 var libSnapshot = ts.ScriptSnapshot.fromString(lib);
 
 var settings = {

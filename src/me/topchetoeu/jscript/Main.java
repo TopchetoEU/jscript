@@ -54,7 +54,7 @@ public class Main {
 
     public static void main(String args[]) {
         var in = new BufferedReader(new InputStreamReader(System.in));
-        engine = new PolyfillEngine(new File("."));
+        engine = new TypescriptEngine(new File("."));
         var scope = engine.global().globalChild();
         var exited = new boolean[1];
 

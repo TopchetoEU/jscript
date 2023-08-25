@@ -10,7 +10,7 @@ public class JSONElement {
         MAP,
     }
 
-    public static JSONElement NULL = new JSONElement(Type.NULL, null);
+    public static final JSONElement NULL = new JSONElement(Type.NULL, null);
 
     public static JSONElement map(JSONMap val) {
         return new JSONElement(Type.MAP, val);
