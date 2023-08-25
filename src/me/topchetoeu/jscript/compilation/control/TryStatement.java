@@ -27,9 +27,10 @@ public class TryStatement extends Statement {
 
     @Override
     public void compile(List<Instruction> target, ScopeRecord scope) {
+        target.add(Instruction.nop());
+
         int start = target.size(), tryN, catchN = -1, finN = -1;
 
-        target.add(Instruction.nop());
         tryBody.compileNoPollution(target, scope);
         tryN = target.size() - start;
 
@@ -60,7 +61,7 @@ public class TryStatement extends Statement {
         //     }
         // }
 
-        target.set(start, Instruction.tryInstr(tryN, catchN, finN).locate(loc()));
+        target.set(start - 1, Instruction.tryInstr(tryN, catchN, finN).locate(loc()));
     }
 
     public TryStatement(Location loc, Statement tryBody, Statement catchBody, Statement finallyBody, String name) {

@@ -195,6 +195,7 @@ public class CodeFrame {
                 if (!jumpFlag) {
                     if (tmp.state == TryCtx.STATE_FINALLY_THREW) throw tmp.err;
                     else if (tmp.state == TryCtx.STATE_FINALLY_RETURNED) return tmp.retVal;
+                    else if (tmp.state == TryCtx.STATE_FINALLY_JUMPED) codePtr = tmp.jumpPtr;
                 }
                 else codePtr = tmp.jumpPtr;
                 remove = true;
