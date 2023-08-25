@@ -90,9 +90,36 @@ setProps(Function.prototype, {
     },
 });
 setProps(Function, {
-    async(func) {
+    async<ArgsT extends any[], RetT>(func: (_yield: <T>(val: T) => Awaited<T>) => (...args: ArgsT) => RetT) {
         if (typeof func !== 'function') throw new TypeError('Expected func to be function.');
-        return internals.makeAsync(func);
+
+        return function (this: any) {
+            const args = arguments;
+
+            return new Promise((res, rej) => {
+                const gen = Function.generator(func as any).apply(this, args as any);
+
+                (function next(type: 'none' | 'err' | 'ret', val?: any) {
+                    try {
+                        let result;
+
+                        switch (type) {
+                            case 'err': result = gen.throw(val); break;
+                            case 'ret': result = gen.next(val); break;
+                            case 'none': result = gen.next(); break;
+                        }
+                        if (result.done) res(result.value);
+                        else Promise.resolve(result.value).then(
+                            v => next('ret', v),
+                            v => next('err', v)
+                        )
+                    }
+                    catch (e) {
+                        rej(e);
+                    }
+                })('none');
+            });
+        };
     },
     generator(func) {
         if (typeof func !== 'function') throw new TypeError('Expected func to be function.');
