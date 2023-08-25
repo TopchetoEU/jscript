@@ -5,7 +5,7 @@ import java.util.List;
 import me.topchetoeu.jscript.Location;
 import me.topchetoeu.jscript.compilation.Instruction;
 import me.topchetoeu.jscript.compilation.Statement;
-import me.topchetoeu.jscript.compilation.Instruction.Type;
+import me.topchetoeu.jscript.engine.Operation;
 import me.topchetoeu.jscript.engine.scope.ScopeRecord;
 
 public class ForInStatement extends Statement {
@@ -37,17 +37,18 @@ public class ForInStatement extends Statement {
         target.add(Instruction.keys());
         
         int start = target.size();
-        target.add(Instruction.dup(1));
+        target.add(Instruction.dup());
         target.add(Instruction.loadMember("length"));
         target.add(Instruction.loadValue(0));
-        target.add(Instruction.operation(Type.LESS_EQUALS));
+        target.add(Instruction.operation(Operation.LESS_EQUALS));
         int mid = target.size();
         target.add(Instruction.nop());
 
-        target.add(Instruction.dup(2));
+        target.add(Instruction.dup());
+        target.add(Instruction.dup());
         target.add(Instruction.loadMember("length"));
         target.add(Instruction.loadValue(1));
-        target.add(Instruction.operation(Type.SUBTRACT));
+        target.add(Instruction.operation(Operation.SUBTRACT));
         target.add(Instruction.dup(1, 2));
         target.add(Instruction.loadValue("length"));
         target.add(Instruction.dup(1, 2));

@@ -28,6 +28,8 @@ public class AsyncFunction extends FunctionValue {
         public Object fulfill(CallContext ctx, Object thisArg, Object[] args) throws InterruptedException {
             if (args.length == 1) frame.push(args[0]);
 
+            frame.start(ctx);
+
             while (true) {
                 awaiting = false;
                 awaited = null;
@@ -36,12 +38,12 @@ public class AsyncFunction extends FunctionValue {
                     var res = frame.next(ctx);
                     if (res != Runners.NO_RETURN) {
                         promise.fulfill(ctx, res);
-                        return null;
+                        break;
                     }
                 }
                 catch (EngineException e) {
                     promise.reject(e);
-                    return null;
+                    break;
                 }
 
                 if (!awaiting) continue;
@@ -54,15 +56,18 @@ public class AsyncFunction extends FunctionValue {
                     var res = Values.getMember(ctx, awaited, "then");
                     if (res instanceof FunctionValue) {
                         Values.function(res).call(ctx, awaited, fulfillFunc, rejectFunc);
-                        return null;
+                        break;
                     }
                     else frame.push(awaited);
                 }
                 catch (EngineException e) {
                     promise.reject(e);
-                    return null;
+                    break;
                 }
             }
+
+            frame.end(ctx);
+            return null;
         }
 
         public Object await(CallContext ctx, Object thisArg, Object[] args) {

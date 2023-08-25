@@ -1,6 +1,7 @@
 package me.topchetoeu.jscript.compilation;
 
 import me.topchetoeu.jscript.Location;
+import me.topchetoeu.jscript.engine.Operation;
 import me.topchetoeu.jscript.exceptions.SyntaxException;
 
 public class Instruction {
@@ -33,55 +34,58 @@ public class Instruction {
         LOAD_REGEX,
 
         DUP,
+        MOVE,
 
         STORE_VAR,
         STORE_MEMBER,
         DISCARD,
-        
+
         MAKE_VAR,
         DEF_PROP,
         KEYS,
 
         TYPEOF,
-        INSTANCEOF(true),
-        IN(true),
+        OPERATION;
+        // TYPEOF,
+        // INSTANCEOF(true),
+        // IN(true),
 
-        MULTIPLY(true),
-        DIVIDE(true),
-        MODULO(true),
-        ADD(true),
-        SUBTRACT(true),
+        // MULTIPLY(true),
+        // DIVIDE(true),
+        // MODULO(true),
+        // ADD(true),
+        // SUBTRACT(true),
 
-        USHIFT_RIGHT(true),
-        SHIFT_RIGHT(true),
-        SHIFT_LEFT(true),
+        // USHIFT_RIGHT(true),
+        // SHIFT_RIGHT(true),
+        // SHIFT_LEFT(true),
 
-        GREATER(true),
-        LESS(true),
-        GREATER_EQUALS(true),
-        LESS_EQUALS(true),
-        LOOSE_EQUALS(true),
-        LOOSE_NOT_EQUALS(true),
-        EQUALS(true),
-        NOT_EQUALS(true),
+        // GREATER(true),
+        // LESS(true),
+        // GREATER_EQUALS(true),
+        // LESS_EQUALS(true),
+        // LOOSE_EQUALS(true),
+        // LOOSE_NOT_EQUALS(true),
+        // EQUALS(true),
+        // NOT_EQUALS(true),
 
-        AND(true),
-        OR(true),
-        XOR(true),
+        // AND(true),
+        // OR(true),
+        // XOR(true),
 
-        NEG(true),
-        POS(true),
-        NOT(true),
-        INVERSE(true);
+        // NEG(true),
+        // POS(true),
+        // NOT(true),
+        // INVERSE(true);
 
-        final boolean isOperation;
+        // final boolean isOperation;
 
-        private Type(boolean isOperation) {
-            this.isOperation = isOperation;
-        }
-        private Type() {
-            this(false);
-        }
+        // private Type(boolean isOperation) {
+        //     this.isOperation = isOperation;
+        // }
+        // private Type() {
+        //     this(false);
+        // }
     }
 
     public final Type type;
@@ -101,6 +105,11 @@ public class Instruction {
     @SuppressWarnings("unchecked")
     public <T> T get(int i) {
         if (i >= params.length || i < 0) return null;
+        return (T)params[i];
+    }
+    @SuppressWarnings("unchecked")
+    public <T> T get(int i, T defaultVal) {
+        if (i >= params.length || i < 0) return defaultVal;
         return (T)params[i];
     }
     public boolean match(Object ...args) {
@@ -226,11 +235,14 @@ public class Instruction {
     public static Instruction loadArr(int count) {
         return new Instruction(null, Type.LOAD_ARR, count);
     }
-    public static Instruction dup(int count) {
-        return new Instruction(null, Type.DUP, count, 0);
+    public static Instruction dup() {
+        return new Instruction(null, Type.DUP, 0, 1);
     }
     public static Instruction dup(int count, int offset) {
-        return new Instruction(null, Type.DUP, count, offset);
+        return new Instruction(null, Type.DUP, offset, count);
+    }
+    public static Instruction move(int count, int offset) {
+        return new Instruction(null, Type.MOVE, offset, count);
     }
 
     public static Instruction storeSelfFunc(int i) {
@@ -255,7 +267,7 @@ public class Instruction {
     public static Instruction typeof() {
         return new Instruction(null, Type.TYPEOF);
     }
-    public static Instruction typeof(String varName) {
+    public static Instruction typeof(Object varName) {
         return new Instruction(null, Type.TYPEOF, varName);
     }
 
@@ -267,9 +279,8 @@ public class Instruction {
         return new Instruction(null, Type.DEF_PROP);
     }
 
-    public static Instruction operation(Type op) {
-        if (!op.isOperation) throw new IllegalArgumentException("The instruction type %s is not an operation.".formatted(op));
-        return new Instruction(null, op);
+    public static Instruction operation(Operation op) {
+        return new Instruction(null, Type.OPERATION, op);
     }
 
     @Override

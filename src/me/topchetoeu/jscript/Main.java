@@ -14,6 +14,7 @@ import me.topchetoeu.jscript.events.Observer;
 import me.topchetoeu.jscript.exceptions.EngineException;
 import me.topchetoeu.jscript.exceptions.SyntaxException;
 import me.topchetoeu.jscript.polyfills.PolyfillEngine;
+import me.topchetoeu.jscript.polyfills.TypescriptEngine;
 
 public class Main {
     static Thread task;

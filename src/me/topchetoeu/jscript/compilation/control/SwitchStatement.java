@@ -7,6 +7,7 @@ import me.topchetoeu.jscript.Location;
 import me.topchetoeu.jscript.compilation.Instruction;
 import me.topchetoeu.jscript.compilation.Statement;
 import me.topchetoeu.jscript.compilation.Instruction.Type;
+import me.topchetoeu.jscript.engine.Operation;
 import me.topchetoeu.jscript.engine.scope.ScopeRecord;
 
 public class SwitchStatement extends Statement {
@@ -33,9 +34,9 @@ public class SwitchStatement extends Statement {
         value.compile(target, scope);
 
         for (var ccase : cases) {
-            target.add(Instruction.dup(1).locate(loc()));
+            target.add(Instruction.dup().locate(loc()));
             ccase.value.compileWithPollution(target, scope);
-            target.add(Instruction.operation(Type.EQUALS).locate(loc()));
+            target.add(Instruction.operation(Operation.EQUALS).locate(loc()));
             caseMap.put(target.size(), ccase.statementI);
             target.add(Instruction.nop());
         }
