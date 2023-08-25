@@ -14,7 +14,7 @@ interface FunctionConstructor extends Function {
     (...args: string[]): (...args: any[]) => any;
     new (...args: string[]): (...args: any[]) => any;
     prototype: Function;
-    async<ArgsT extends any[], RetT>(func: (await: <T>(val: T) => Awaited<T>, args: ArgsT) => RetT): Promise<RetT>;
+    async<ArgsT extends any[], RetT>(func: (await: <T>(val: T) => Awaited<T>) => (...args: ArgsT) => RetT): (...args: ArgsT) => Promise<RetT>;
 }
 
 interface CallableFunction extends Function {

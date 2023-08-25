@@ -297,6 +297,14 @@ setProps(Array.prototype, {
     
         return -1;
     },
+    lastIndexOf(el, start) {
+        start = start! | 0;
+        for (var i = this.length; i >= start; i--) {
+            if (i in this && this[i] == el) return i;
+        }
+
+        return -1;
+    },
     includes(el, start) {
         return this.indexOf(el, start) >= 0;
     },

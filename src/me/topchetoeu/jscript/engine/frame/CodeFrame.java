@@ -157,15 +157,32 @@ public class CodeFrame {
         }
     }
 
-    public Object next(CallContext ctx) throws InterruptedException {
+    public Object next(CallContext ctx, EngineException prevError) throws InterruptedException {
         TryCtx tryCtx = null;
+        var handled = prevError == null;
 
         while (!tryStack.isEmpty()) {
             var tmp = tryStack.get(tryStack.size() - 1);
             var remove = false;
 
             if (tmp.state == TryCtx.STATE_TRY) {
-                if (codePtr < tmp.tryStart || codePtr >= tmp.catchStart) {
+                if (prevError != null) {
+                    tmp.jumpPtr = tmp.end;
+
+                    if (tmp.hasCatch) {
+                        tmp.state = TryCtx.STATE_CATCH;
+                        scope.catchVars.add(new ValueVariable(false, prevError));
+                        codePtr = tmp.catchStart;
+                        handled = true;
+                    }
+                    else if (tmp.hasFinally) {
+                        tmp.state = TryCtx.STATE_FINALLY_THREW;
+                        tmp.err = prevError;
+                        codePtr = tmp.finallyStart;
+                        handled = true;
+                    }
+                }
+                else if (codePtr < tmp.tryStart || codePtr >= tmp.catchStart) {
                     if (jumpFlag) tmp.jumpPtr = codePtr;
                     else tmp.jumpPtr = tmp.end;
 
@@ -201,12 +218,15 @@ public class CodeFrame {
                 remove = true;
             }
 
+            if (!handled) throw prevError;
             if (remove) tryStack.remove(tryStack.size() - 1);
             else {
                 tryCtx = tmp;
                 break;
             }
         }
+
+        if (!handled) throw prevError;
 
         if (tryCtx == null) return nextNoTry(ctx);
         else if (tryCtx.state == TryCtx.STATE_TRY) {
@@ -259,11 +279,15 @@ public class CodeFrame {
         else return nextNoTry(ctx);
     }
 
+    public void handleReturn(Object value) {
+
+    }
+
     public Object run(CallContext ctx) throws InterruptedException {
         try {
             start(ctx);
             while (true) {
-                var res = next(ctx);
+                var res = next(ctx, null);
                 if (res != Runners.NO_RETURN) return res;
             }
         }

@@ -354,7 +354,8 @@ public class Values {
     }
 
     public static Object call(CallContext ctx, Object func, Object thisArg, Object ...args) throws InterruptedException {
-        if (!isFunction(func)) throw EngineException.ofType("Attempted to call a non-function value.");
+        if (!isFunction(func))
+            throw EngineException.ofType("Tried to call a non-function value.");
         return function(func).call(ctx, thisArg, args);
     }
 

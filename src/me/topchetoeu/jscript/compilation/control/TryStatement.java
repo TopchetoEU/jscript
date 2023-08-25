@@ -37,7 +37,7 @@ public class TryStatement extends Statement {
         if (catchBody != null) {
             int tmp = target.size();
             var local = scope instanceof GlobalScope ? scope.child() : (LocalScopeRecord)scope;
-            local.define(name);
+            local.define(name, true);
             catchBody.compileNoPollution(target, scope);
             local.undefine();
             catchN = target.size() - tmp;
