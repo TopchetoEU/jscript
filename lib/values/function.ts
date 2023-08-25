@@ -166,8 +166,16 @@ setProps(Function, {
     },
     generator(func) {
         if (typeof func !== 'function') throw new TypeError('Expected func to be function.');
-        return Object.assign(internals.makeGenerator(func), {
-            [Symbol.iterator]() { return this; }
-        });
+        const gen = internals.makeGenerator(func);
+        return (...args: any[]) => {
+            const it = gen(args);
+
+            return {
+                next: it.next,
+                return: it.return,
+                throw: it.throw,
+                [Symbol.iterator]() { return this; }
+            }
+        }
     }
 })
