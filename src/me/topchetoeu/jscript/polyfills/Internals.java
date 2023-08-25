@@ -24,6 +24,11 @@ public class Internals {
         return Values.toNumber(ctx, val);
     }
 
+    @Native
+    public boolean isArr(Object val) {
+        return val instanceof ArrayValue;
+    }
+
     @NativeGetter("symbolProto")
     public ObjectValue symbolProto(CallContext ctx) {
         return ctx.engine().symbolProto();
@@ -237,9 +242,9 @@ public class Internals {
     }
 
     @Native
-    public AsyncFunction makeAsync(FunctionValue func) {
-        if (func instanceof CodeFunction) return new AsyncFunction((CodeFunction)func);
-        else throw EngineException.ofType("Can't create an async function with a non-js function.");
+    public GeneratorFunction makeGenerator(FunctionValue func) {
+        if (func instanceof CodeFunction) return new GeneratorFunction((CodeFunction)func);
+        else throw EngineException.ofType("Can't create a generator with a non-js function.");
     }
 
     @NativeGetter("err")

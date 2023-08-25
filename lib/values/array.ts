@@ -365,5 +365,5 @@ setProps(Array.prototype, {
 });
 
 setProps(Array, {
-    isArray(val: any) { return (val instanceof Array); }
+    isArray(val: any) { return internals.isArr(val); }
 });

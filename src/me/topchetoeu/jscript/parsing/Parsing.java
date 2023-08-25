@@ -35,8 +35,6 @@ public class Parsing {
         reserved.add("void");
         reserved.add("null");
         reserved.add("this");
-        reserved.add("NaN");
-        reserved.add("Infinity");
         reserved.add("if");
         reserved.add("else");
         reserved.add("try");
@@ -58,7 +56,6 @@ public class Parsing {
         reserved.add("break");
         reserved.add("continue");
         reserved.add("debug");
-        reserved.add("let");
         reserved.add("implements");
         reserved.add("interface");
         reserved.add("package");
@@ -66,17 +63,18 @@ public class Parsing {
         reserved.add("protected");
         reserved.add("public");
         reserved.add("static");
-        reserved.add("yield");
-        // Although the standards allow it, these are keywords in newer ES, so we won't allow them
+        // Although ES5 allow these, we will comply to ES6 here
         reserved.add("const");
-        // reserved.add("await");
+        reserved.add("let");
         reserved.add("async");
+        reserved.add("super");
         // These are allowed too, however our parser considers them keywords
         reserved.add("undefined");
         reserved.add("arguments");
         reserved.add("globalThis");
         reserved.add("window");
         reserved.add("self");
+        // We allow yield and await, because they're part of the custom async and generator functions
     }
 
 
@@ -983,7 +981,14 @@ public class Parsing {
     }
     @SuppressWarnings("all")
     public static ParseRes<? extends Statement> parseSimple(String filename, List<Token> tokens, int i, boolean statement) {
-        var res = new ArrayList<>(List.of(
+        var res = new ArrayList<>();
+
+        if (!statement) {
+            res.add(parseObject(filename, tokens, i));
+            res.add(parseFunction(filename, tokens, i, false));
+        }
+
+        res.addAll(List.of(
             parseVariable(filename, tokens, i),
             parseLiteral(filename, tokens, i),
             parseString(filename, tokens, i),
@@ -998,11 +1003,6 @@ public class Parsing {
             parseVoid(filename, tokens, i),
             parseDelete(filename, tokens, i)
         ));
-
-        if (!statement) {
-            res.add(parseObject(filename, tokens, i));
-            res.add(parseFunction(filename, tokens, i, false));
-        }
 
         return ParseRes.any(res.toArray(ParseRes[]::new));
     }
@@ -1039,12 +1039,6 @@ public class Parsing {
         }
         if (id.result.equals("null")) {
             return ParseRes.res(new ConstantStatement(loc, Values.NULL), 1);
-        }
-        if (id.result.equals("NaN")) {
-            return ParseRes.res(new ConstantStatement(loc, Double.NaN), 1);
-        }
-        if (id.result.equals("Infinity")) {
-            return ParseRes.res(new ConstantStatement(loc, Double.POSITIVE_INFINITY), 1);
         }
         if (id.result.equals("this")) {
             return ParseRes.res(new VariableIndexStatement(loc, 0), 1);
@@ -1803,7 +1797,6 @@ public class Parsing {
             parseContinue(filename, tokens, i),
             parseBreak(filename, tokens, i),
             parseDebug(filename, tokens, i),
-            parseValueStatement(filename, tokens, i),
             parseIf(filename, tokens, i),
             parseWhile(filename, tokens, i),
             parseSwitch(filename, tokens, i),
@@ -1812,7 +1805,8 @@ public class Parsing {
             parseDoWhile(filename, tokens, i),
             parseCatch(filename, tokens, i),
             parseCompound(filename, tokens, i),
-            parseFunction(filename, tokens, i, true)
+            parseFunction(filename, tokens, i, true),
+            parseValueStatement(filename, tokens, i)
         );
     }
 
