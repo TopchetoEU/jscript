@@ -40,7 +40,8 @@ public class AsyncFunction extends FunctionValue {
                 awaited = null;
 
                 try {
-                    var res = frame.next(ctx, err == Runners.NO_RETURN ? null : new EngineException(err));
+                    var res = frame.next(ctx, val, err);
+                    err = Runners.NO_RETURN;
                     if (res != Runners.NO_RETURN) {
                         promise.fulfill(ctx, res);
                         break;

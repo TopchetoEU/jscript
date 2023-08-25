@@ -14,7 +14,15 @@ interface FunctionConstructor extends Function {
     (...args: string[]): (...args: any[]) => any;
     new (...args: string[]): (...args: any[]) => any;
     prototype: Function;
-    async<ArgsT extends any[], RetT>(func: (await: <T>(val: T) => Awaited<T>) => (...args: ArgsT) => RetT): (...args: ArgsT) => Promise<RetT>;
+    async<ArgsT extends any[], RetT>(
+        func: (await: <T>(val: T) => Awaited<T>) => (...args: ArgsT) => RetT
+    ): (...args: ArgsT) => Promise<RetT>;
+    asyncGenerator<ArgsT extends any[], RetT>(
+        func: (await: <T>(val: T) => Awaited<T>, _yield: <T>(val: T) => void) => (...args: ArgsT) => RetT
+    ): (...args: ArgsT) => AsyncGenerator<RetT>;
+    generator<ArgsT extends any[], T, RetT, TNext>(
+        func: (_yield: <T>(val: T) => TNext) => (...args: ArgsT) => RetT
+    ): (...args: ArgsT) => Generator<T, RetT, TNext>;
 }
 
 interface CallableFunction extends Function {
@@ -43,11 +51,15 @@ setProps(Function.prototype, {
     apply(thisArg, args) {
         if (typeof args !== 'object') throw 'Expected arguments to be an array-like object.';
         var len = args.length - 0;
-        var newArgs: any[] = [];
+        let newArgs: any[];
+        if (Array.isArray(args)) newArgs = args;
+        else {
+            newArgs = [];
 
-        while (len >= 0) {
-            len--;
-            newArgs[len] = args[len];
+            while (len >= 0) {
+                len--;
+                newArgs[len] = args[len];
+            }
         }
 
         return internals.apply(this, thisArg, newArgs);
@@ -81,5 +93,9 @@ setProps(Function, {
     async(func) {
         if (typeof func !== 'function') throw new TypeError('Expected func to be function.');
         return internals.makeAsync(func);
+    },
+    generator(func) {
+        if (typeof func !== 'function') throw new TypeError('Expected func to be function.');
+        return internals.makeGenerator(func);
     }
 })

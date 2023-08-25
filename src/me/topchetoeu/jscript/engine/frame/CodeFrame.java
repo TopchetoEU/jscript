@@ -157,32 +157,47 @@ public class CodeFrame {
         }
     }
 
-    public Object next(CallContext ctx, EngineException prevError) throws InterruptedException {
+    public Object next(CallContext ctx, Object prevReturn, Object prevError) throws InterruptedException {
         TryCtx tryCtx = null;
-        var handled = prevError == null;
+        if (prevError != Runners.NO_RETURN) prevReturn = Runners.NO_RETURN;
 
         while (!tryStack.isEmpty()) {
             var tmp = tryStack.get(tryStack.size() - 1);
             var remove = false;
 
-            if (tmp.state == TryCtx.STATE_TRY) {
-                if (prevError != null) {
+            if (prevError != Runners.NO_RETURN) {
+                remove = true;
+                if (tmp.state == TryCtx.STATE_TRY) {
                     tmp.jumpPtr = tmp.end;
 
                     if (tmp.hasCatch) {
                         tmp.state = TryCtx.STATE_CATCH;
                         scope.catchVars.add(new ValueVariable(false, prevError));
+                        prevError = Runners.NO_RETURN;
                         codePtr = tmp.catchStart;
-                        handled = true;
+                        remove = false;
                     }
                     else if (tmp.hasFinally) {
                         tmp.state = TryCtx.STATE_FINALLY_THREW;
-                        tmp.err = prevError;
+                        tmp.err = new EngineException(prevError);
+                        prevError = Runners.NO_RETURN;
                         codePtr = tmp.finallyStart;
-                        handled = true;
+                        remove = false;
                     }
                 }
-                else if (codePtr < tmp.tryStart || codePtr >= tmp.catchStart) {
+            }
+            else if (prevReturn != Runners.NO_RETURN) {
+                remove = true;
+                if (tmp.hasFinally && tmp.state <= TryCtx.STATE_CATCH) {
+                    tmp.state = TryCtx.STATE_FINALLY_RETURNED;
+                    tmp.retVal = prevReturn;
+                    prevReturn = Runners.NO_RETURN;
+                    codePtr = tmp.finallyStart;
+                    remove = false;
+                }
+            }
+            else if (tmp.state == TryCtx.STATE_TRY) {
+                if (codePtr < tmp.tryStart || codePtr >= tmp.catchStart) {
                     if (jumpFlag) tmp.jumpPtr = codePtr;
                     else tmp.jumpPtr = tmp.end;
 
@@ -218,7 +233,6 @@ public class CodeFrame {
                 remove = true;
             }
 
-            if (!handled) throw prevError;
             if (remove) tryStack.remove(tryStack.size() - 1);
             else {
                 tryCtx = tmp;
@@ -226,7 +240,8 @@ public class CodeFrame {
             }
         }
 
-        if (!handled) throw prevError;
+        if (prevError != Runners.NO_RETURN) throw new EngineException(prevError);
+        if (prevReturn != Runners.NO_RETURN) return prevReturn;
 
         if (tryCtx == null) return nextNoTry(ctx);
         else if (tryCtx.state == TryCtx.STATE_TRY) {
@@ -279,15 +294,11 @@ public class CodeFrame {
         else return nextNoTry(ctx);
     }
 
-    public void handleReturn(Object value) {
-
-    }
-
     public Object run(CallContext ctx) throws InterruptedException {
         try {
             start(ctx);
             while (true) {
-                var res = next(ctx, null);
+                var res = next(ctx, Runners.NO_RETURN, Runners.NO_RETURN);
                 if (res != Runners.NO_RETURN) return res;
             }
         }
