@@ -1,5 +1,5 @@
 // TODO: load this in java
-var ts = require('./ts__');
+var ts = require('./ts');
 log("Loaded typescript!");
 
 var src = '', lib = libs.concat([ 'declare const exit: never;' ]).join(''), decls = '', version = 0;
