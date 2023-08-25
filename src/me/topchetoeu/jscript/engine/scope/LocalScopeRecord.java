@@ -15,6 +15,9 @@ public class LocalScopeRecord implements ScopeRecord {
         return locals.toArray(String[]::new);
     }
 
+    @Override
+    public LocalScopeRecord parent() { return parent; }
+
     public LocalScopeRecord child() {
         return new LocalScopeRecord(this, global);
     }
@@ -43,7 +46,7 @@ public class LocalScopeRecord implements ScopeRecord {
 
     public Object getKey(String name) {
         var capI = captures.indexOf(name);
-        var locI = locals.indexOf(name);
+        var locI = locals.lastIndexOf(name);
         if (locI >= 0) return locI;
         if (capI >= 0) return ~capI;
         if (parent != null) {
@@ -62,10 +65,16 @@ public class LocalScopeRecord implements ScopeRecord {
             locals.contains(name) ||
             parent != null && parent.has(ctx, name);
     }
-    public Object define(String name) {
-        if (locals.contains(name)) return locals.indexOf(name);
+    public Object define(String name, boolean force) {
+        if (!force && locals.contains(name)) return locals.indexOf(name);
         locals.add(name);
         return locals.size() - 1;
+    }
+    public Object define(String name) {
+        return define(name, false);
+    }
+    public void undefine() {
+        locals.remove(locals.size() - 1);
     }
 
     public LocalScopeRecord(GlobalScope global) {

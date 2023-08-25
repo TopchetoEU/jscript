@@ -7,13 +7,14 @@ import me.topchetoeu.jscript.compilation.Instruction;
 import me.topchetoeu.jscript.compilation.Statement;
 import me.topchetoeu.jscript.compilation.control.ThrowStatement;
 import me.topchetoeu.jscript.engine.CallContext;
+import me.topchetoeu.jscript.engine.Operation;
 import me.topchetoeu.jscript.engine.scope.ScopeRecord;
 import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.exceptions.EngineException;
 
 public class OperationStatement extends Statement {
     public final Statement[] args;
-    public final Instruction.Type operation;
+    public final Operation operation;
 
     @Override
     public void compile(List<Instruction> target, ScopeRecord scope) {
@@ -96,7 +97,7 @@ public class OperationStatement extends Statement {
 
     }
 
-    public OperationStatement(Location loc, Instruction.Type operation, Statement... args) {
+    public OperationStatement(Location loc, Operation operation, Statement... args) {
         super(loc);
         this.operation = operation;
         this.args = args;

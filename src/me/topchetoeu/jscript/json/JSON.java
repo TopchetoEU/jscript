@@ -10,31 +10,17 @@ import me.topchetoeu.jscript.parsing.Token;
 
 public class JSON {
     public static ParseRes<String> parseIdentifier(List<Token> tokens, int i) {
-        try {
-            if (tokens.get(i).isIdentifier()) return ParseRes.res(tokens.get(i).identifier(), 1);
-            else return ParseRes.failed();
-        }
-        catch (IndexOutOfBoundsException e) {
-            return ParseRes.failed();
-        }
+        return Parsing.parseIdentifier(tokens, i);
     }
     public static ParseRes<String> parseString(String filename, List<Token> tokens, int i) {
-        try {
-            if (tokens.get(i).isString()) return ParseRes.res(tokens.get(i).string(), 1);
-            else return ParseRes.failed();
-        }
-        catch (IndexOutOfBoundsException e) {
-            return ParseRes.failed();
-        }
+        var res = Parsing.parseString(filename, tokens, i);
+        if (res.isSuccess()) return ParseRes.res((String)res.result.value, res.n);
+        else return res.transform();
     }
     public static ParseRes<Double> parseNumber(String filename, List<Token> tokens, int i) {
-        try {
-            if (tokens.get(i).isNumber()) return ParseRes.res(tokens.get(i).number(), 1);
-            else return ParseRes.failed();
-        }
-        catch (IndexOutOfBoundsException e) {
-            return ParseRes.failed();
-        }
+        var res = Parsing.parseNumber(filename, tokens, i);
+        if (res.isSuccess()) return ParseRes.res((Double)res.result.value, res.n);
+        else return res.transform();
     }
     public static ParseRes<Boolean> parseBool(String filename, List<Token> tokens, int i) {
         var id = parseIdentifier(tokens, i);

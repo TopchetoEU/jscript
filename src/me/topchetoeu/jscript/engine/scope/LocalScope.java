@@ -1,12 +1,16 @@
 package me.topchetoeu.jscript.engine.scope;
 
+import java.util.ArrayList;
+
 public class LocalScope {
     private String[] names;
     private LocalScope parent;
     public final ValueVariable[] captures;
     public final ValueVariable[] locals;
+    public final ArrayList<ValueVariable> catchVars = new ArrayList<>();
 
     public ValueVariable get(int i) {
+        if (i >= locals.length) return catchVars.get(i - locals.length);
         if (i >= 0) return locals[i];
         else return captures[~i];
     }

@@ -53,13 +53,11 @@ public class FunctionStatement extends Statement {
 
         target.add(Instruction.nop());
         subscope.define("this");
-
         var argsVar = subscope.define("arguments");
-        if (args.length > 0) {
-            target.add(Instruction.loadVar(argsVar).locate(loc()));
-            if (args.length != 1) target.add(Instruction.dup(args.length - 1).locate(loc()));
 
+        if (args.length > 0) {
             for (var i = 0; i < args.length; i++) {
+                target.add(Instruction.loadVar(argsVar).locate(loc()));
                 target.add(Instruction.loadMember(i).locate(loc()));
                 target.add(Instruction.storeVar(subscope.define(args[i])).locate(loc()));
             }
@@ -82,7 +80,7 @@ public class FunctionStatement extends Statement {
         if (name == null) name = this.name;
 
         if (name != null) {
-            target.add(Instruction.dup(1).locate(loc()));
+            target.add(Instruction.dup().locate(loc()));
             target.add(Instruction.loadValue("name").locate(loc()));
             target.add(Instruction.loadValue(name).locate(loc()));
             target.add(Instruction.storeMember().locate(loc()));

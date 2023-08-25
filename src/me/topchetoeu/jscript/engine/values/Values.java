@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 import me.topchetoeu.jscript.engine.CallContext;
+import me.topchetoeu.jscript.engine.Operation;
 import me.topchetoeu.jscript.engine.frame.ConvertHint;
 import me.topchetoeu.jscript.exceptions.EngineException;
 
@@ -218,6 +219,47 @@ public class Values {
         return false;
     }
 
+    public static Object operation(CallContext ctx, Operation op, Object... args) throws InterruptedException {
+        switch (op) {
+            case ADD: return add(ctx, args[0], args[1]);
+            case SUBTRACT: return subtract(ctx, args[0], args[1]);
+            case DIVIDE: return divide(ctx, args[0], args[1]);
+            case MULTIPLY: return multiply(ctx, args[0], args[1]);
+            case MODULO: return modulo(ctx, args[0], args[1]);
+
+            case AND: return and(ctx, args[0], args[1]);
+            case OR: return or(ctx, args[0], args[1]);
+            case XOR: return xor(ctx, args[0], args[1]);
+
+            case EQUALS: return strictEquals(args[0], args[1]);
+            case NOT_EQUALS: return !strictEquals(args[0], args[1]);
+            case LOOSE_EQUALS: return looseEqual(ctx, args[0], args[1]);
+            case LOOSE_NOT_EQUALS: return !looseEqual(ctx, args[0], args[1]);
+
+            case GREATER: return compare(ctx, args[0], args[1]) > 0;
+            case GREATER_EQUALS: return compare(ctx, args[0], args[1]) >= 0;
+            case LESS: return compare(ctx, args[0], args[1]) < 0;
+            case LESS_EQUALS: return compare(ctx, args[0], args[1]) <= 0;
+
+            case INVERSE: return bitwiseNot(ctx, args[0]);
+            case NOT: return not(args[0]);
+            case POS: return toNumber(ctx, args[0]);
+            case NEG: return negative(ctx, args[0]);
+
+            case SHIFT_LEFT: return shiftLeft(ctx, args[0], args[1]);
+            case SHIFT_RIGHT: return shiftRight(ctx, args[0], args[1]);
+            case USHIFT_RIGHT: return unsignedShiftRight(ctx, args[0], args[1]);
+
+            case IN: return hasMember(ctx, args[1], args[0], false);
+            case INSTANCEOF: {
+                var proto = getMember(ctx, args[1], "prototype");
+                return isInstanceOf(ctx, args[0], proto);
+            }
+
+            default: return null;
+        }
+    }
+
     public static Object getMember(CallContext ctx, Object obj, Object key) throws InterruptedException {
         obj = normalize(obj); key = normalize(key);
         if (obj == null) throw new IllegalArgumentException("Tried to access member of undefined.");
@@ -312,7 +354,8 @@ public class Values {
     }
 
     public static Object call(CallContext ctx, Object func, Object thisArg, Object ...args) throws InterruptedException {
-        if (!isFunction(func)) throw EngineException.ofType("Attempted to call a non-function value.");
+        if (!isFunction(func))
+            throw EngineException.ofType("Tried to call a non-function value.");
         return function(func).call(ctx, thisArg, args);
     }
 

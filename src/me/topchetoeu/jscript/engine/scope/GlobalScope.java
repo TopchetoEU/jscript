@@ -11,6 +11,10 @@ import me.topchetoeu.jscript.exceptions.EngineException;
 
 public class GlobalScope implements ScopeRecord {
     public final ObjectValue obj;
+    public final GlobalScope parent;
+
+    @Override
+    public GlobalScope parent() { return parent; }
 
     public boolean has(CallContext ctx, String name) throws InterruptedException {
         return obj.hasMember(ctx, name, false);
@@ -74,9 +78,11 @@ public class GlobalScope implements ScopeRecord {
     }
 
     public GlobalScope() {
+        this.parent = null;
         this.obj = new ObjectValue();
     }
     public GlobalScope(GlobalScope parent) {
+        this.parent = null;
         this.obj = new ObjectValue();
         this.obj.setPrototype(null, parent.obj);
     }

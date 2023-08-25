@@ -13,6 +13,7 @@ import me.topchetoeu.jscript.compilation.VariableDeclareStatement.Pair;
 import me.topchetoeu.jscript.compilation.control.*;
 import me.topchetoeu.jscript.compilation.control.SwitchStatement.SwitchCase;
 import me.topchetoeu.jscript.compilation.values.*;
+import me.topchetoeu.jscript.engine.Operation;
 import me.topchetoeu.jscript.engine.scope.GlobalScope;
 import me.topchetoeu.jscript.engine.scope.ValueVariable;
 import me.topchetoeu.jscript.engine.values.CodeFunction;
@@ -938,12 +939,12 @@ public class Parsing {
         if (!opState.isSuccess()) return ParseRes.failed();
         var op = opState.result;
 
-        Type operation = null;
+        Operation operation = null;
 
-        if (op == Operator.ADD) operation = Type.POS;
-        else if (op == Operator.SUBTRACT) operation = Type.NEG;
-        else if (op == Operator.INVERSE) operation = Type.INVERSE;
-        else if (op == Operator.NOT) operation = Type.NOT;
+        if (op == Operator.ADD) operation = Operation.POS;
+        else if (op == Operator.SUBTRACT) operation = Operation.NEG;
+        else if (op == Operator.INVERSE) operation = Operation.INVERSE;
+        else if (op == Operator.NOT) operation = Operation.NOT;
         else return ParseRes.failed();
 
         var res = parseValue(filename, tokens, n + i, 14);
@@ -1103,19 +1104,19 @@ public class Parsing {
         if (!res.isSuccess()) return ParseRes.error(loc, "Expected value after assignment operator '%s'.".formatted(op.value), res);
         n += res.n;
 
-        Type operation = null;
+        Operation operation = null;
 
-        if (op == Operator.ASSIGN_ADD) operation = Type.ADD;
-        if (op == Operator.ASSIGN_SUBTRACT) operation = Type.SUBTRACT;
-        if (op == Operator.ASSIGN_MULTIPLY) operation = Type.MULTIPLY;
-        if (op == Operator.ASSIGN_DIVIDE) operation = Type.DIVIDE;
-        if (op == Operator.ASSIGN_MODULO) operation = Type.MODULO;
-        if (op == Operator.ASSIGN_OR) operation = Type.OR;
-        if (op == Operator.ASSIGN_XOR) operation = Type.XOR;
-        if (op == Operator.ASSIGN_AND) operation = Type.AND;
-        if (op == Operator.ASSIGN_SHIFT_LEFT) operation = Type.SHIFT_LEFT;
-        if (op == Operator.ASSIGN_SHIFT_RIGHT) operation = Type.SHIFT_RIGHT;
-        if (op == Operator.ASSIGN_USHIFT_RIGHT) operation = Type.USHIFT_RIGHT;
+        if (op == Operator.ASSIGN_ADD) operation = Operation.ADD;
+        if (op == Operator.ASSIGN_SUBTRACT) operation = Operation.SUBTRACT;
+        if (op == Operator.ASSIGN_MULTIPLY) operation = Operation.MULTIPLY;
+        if (op == Operator.ASSIGN_DIVIDE) operation = Operation.DIVIDE;
+        if (op == Operator.ASSIGN_MODULO) operation = Operation.MODULO;
+        if (op == Operator.ASSIGN_OR) operation = Operation.OR;
+        if (op == Operator.ASSIGN_XOR) operation = Operation.XOR;
+        if (op == Operator.ASSIGN_AND) operation = Operation.AND;
+        if (op == Operator.ASSIGN_SHIFT_LEFT) operation = Operation.SHIFT_LEFT;
+        if (op == Operator.ASSIGN_SHIFT_RIGHT) operation = Operation.SHIFT_RIGHT;
+        if (op == Operator.ASSIGN_USHIFT_RIGHT) operation = Operation.USHIFT_RIGHT;
 
         return ParseRes.res(((AssignableStatement)prev).toAssign(res.result, operation), n);
     }
@@ -1180,7 +1181,7 @@ public class Parsing {
         if (!valRes.isSuccess()) return ParseRes.error(loc, "Expected a value after 'instanceof'.", valRes);
         n += valRes.n;
 
-        return ParseRes.res(new OperationStatement(loc, Type.INSTANCEOF, prev, valRes.result), n);
+        return ParseRes.res(new OperationStatement(loc, Operation.INSTANCEOF, prev, valRes.result), n);
     }
     public static ParseRes<OperationStatement> parseIn(String filename, List<Token> tokens, int i, Statement prev, int precedence) {
         var loc = getLoc(filename, tokens, i);
@@ -1193,7 +1194,7 @@ public class Parsing {
         if (!valRes.isSuccess()) return ParseRes.error(loc, "Expected a value after 'in'.", valRes);
         n += valRes.n;
 
-        return ParseRes.res(new OperationStatement(loc, Type.IN, prev, valRes.result), n);
+        return ParseRes.res(new OperationStatement(loc, Operation.IN, prev, valRes.result), n);
     }
     public static ParseRes<CommaStatement> parseComma(String filename, List<Token> tokens, int i, Statement prev, int precedence) {
         var loc = getLoc(filename, tokens, i);

@@ -3,10 +3,11 @@ package me.topchetoeu.jscript.compilation.values;
 import java.util.List;
 
 import me.topchetoeu.jscript.Location;
+import me.topchetoeu.jscript.compilation.AssignStatement;
 import me.topchetoeu.jscript.compilation.AssignableStatement;
 import me.topchetoeu.jscript.compilation.Instruction;
 import me.topchetoeu.jscript.compilation.Statement;
-import me.topchetoeu.jscript.compilation.Instruction.Type;
+import me.topchetoeu.jscript.engine.Operation;
 import me.topchetoeu.jscript.engine.scope.ScopeRecord;
 
 public class IndexStatement extends AssignableStatement {
@@ -19,13 +20,13 @@ public class IndexStatement extends AssignableStatement {
     public boolean pure() { return true; }
 
     @Override
-    public Statement toAssign(Statement val, Type operation) {
+    public AssignStatement toAssign(Statement val, Operation operation) {
         return new IndexAssignStatement(loc(), object, index, val, operation);
     }
     public void compile(List<Instruction> target, ScopeRecord scope, boolean dupObj) {
         int start = 0;
         object.compileWithPollution(target, scope);
-        if (dupObj) target.add(Instruction.dup(1).locate(loc()));
+        if (dupObj) target.add(Instruction.dup().locate(loc()));
         if (index instanceof ConstantStatement) {
             target.add(Instruction.loadMember(((ConstantStatement)index).value).locate(loc()));
             return;

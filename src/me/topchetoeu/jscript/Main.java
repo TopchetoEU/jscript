@@ -14,6 +14,7 @@ import me.topchetoeu.jscript.events.Observer;
 import me.topchetoeu.jscript.exceptions.EngineException;
 import me.topchetoeu.jscript.exceptions.SyntaxException;
 import me.topchetoeu.jscript.polyfills.PolyfillEngine;
+import me.topchetoeu.jscript.polyfills.TypescriptEngine;
 
 public class Main {
     static Thread task;
@@ -53,7 +54,7 @@ public class Main {
 
     public static void main(String args[]) {
         var in = new BufferedReader(new InputStreamReader(System.in));
-        engine = new PolyfillEngine(new File("."));
+        engine = new TypescriptEngine(new File("."));
         var scope = engine.global().globalChild();
         var exited = new boolean[1];
 

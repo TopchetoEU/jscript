@@ -6,8 +6,7 @@ import me.topchetoeu.jscript.Location;
 import me.topchetoeu.jscript.compilation.Instruction;
 import me.topchetoeu.jscript.compilation.Statement;
 import me.topchetoeu.jscript.engine.scope.ScopeRecord;
-import me.topchetoeu.jscript.engine.values.FunctionValue;
-import me.topchetoeu.jscript.engine.values.Symbol;
+import me.topchetoeu.jscript.engine.values.Values;
 
 public class TypeofStatement extends Statement {
     public final Statement value;
@@ -22,7 +21,7 @@ public class TypeofStatement extends Statement {
         if (value instanceof VariableStatement) {
             var i = scope.getKey(((VariableStatement)value).name);
             if (i instanceof String) {
-                target.add(Instruction.typeof((String)i));
+                target.add(Instruction.typeof((String)i).locate(loc()));
                 return;
             }
         }
@@ -35,15 +34,14 @@ public class TypeofStatement extends Statement {
         var val = value.optimize();
 
         if (val instanceof ConstantStatement) {
-            var cnst = (ConstantStatement)val;
-            if (cnst.value == null) return new ConstantStatement(loc(), "undefined");
-            if (cnst.value instanceof Number) return new ConstantStatement(loc(), "number");
-            if (cnst.value instanceof Boolean) return new ConstantStatement(loc(), "boolean");
-            if (cnst.value instanceof String) return new ConstantStatement(loc(), "string");
-            if (cnst.value instanceof Symbol) return new ConstantStatement(loc(), "symbol");
-            if (cnst.value instanceof FunctionValue) return new ConstantStatement(loc(), "function");
-            return new ConstantStatement(loc(), "object");
+            return new ConstantStatement(loc(), Values.type(((ConstantStatement)val).value));
         }
+        else if (
+            val instanceof ObjectStatement ||
+            val instanceof ArrayStatement ||
+            val instanceof GlobalThisStatement
+        ) return new ConstantStatement(loc(), "object");
+        else if(val instanceof FunctionStatement) return new ConstantStatement(loc(), "function");
 
         return new TypeofStatement(loc(), val);
     }

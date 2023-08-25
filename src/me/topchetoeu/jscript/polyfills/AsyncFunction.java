@@ -3,7 +3,6 @@ package me.topchetoeu.jscript.polyfills;
 import me.topchetoeu.jscript.engine.CallContext;
 import me.topchetoeu.jscript.engine.frame.CodeFrame;
 import me.topchetoeu.jscript.engine.frame.Runners;
-import me.topchetoeu.jscript.engine.values.ArrayValue;
 import me.topchetoeu.jscript.engine.values.CodeFunction;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
 import me.topchetoeu.jscript.engine.values.NativeFunction;
@@ -18,30 +17,38 @@ public class AsyncFunction extends FunctionValue {
         private Object awaited = null;
         public final Promise promise = new Promise();
         public CodeFrame frame;
-        private final NativeFunction fulfillFunc = new NativeFunction("", this::fulfill);
-        private final NativeFunction rejectFunc = new NativeFunction("", this::reject);
+        private final NativeFunction fulfillFunc = new NativeFunction("", (ctx, thisArg, args) -> {
+            if (args.length == 0) exec(ctx, null, Runners.NO_RETURN);
+            else exec(ctx, args[0], Runners.NO_RETURN);
 
-        private Object reject(CallContext ctx, Object thisArg, Object[] args) throws InterruptedException {
-            if (args.length > 0) promise.reject(ctx, args[0]);
             return null;
-        }
-        public Object fulfill(CallContext ctx, Object thisArg, Object[] args) throws InterruptedException {
-            if (args.length == 1) frame.push(args[0]);
+        });
+        private final NativeFunction rejectFunc = new NativeFunction("", (ctx, thisArg, args) -> {
+            if (args.length == 0) exec(ctx, Runners.NO_RETURN, null);
+            else exec(ctx, Runners.NO_RETURN, args[0]);
+
+            return null;
+        });
+
+        public Object exec(CallContext ctx, Object val, Object err) throws InterruptedException {
+            if (val != Runners.NO_RETURN) frame.push(val);
+
+            frame.start(ctx);
 
             while (true) {
                 awaiting = false;
                 awaited = null;
 
                 try {
-                    var res = frame.next(ctx);
+                    var res = frame.next(ctx, err == Runners.NO_RETURN ? null : new EngineException(err));
                     if (res != Runners.NO_RETURN) {
                         promise.fulfill(ctx, res);
-                        return null;
+                        break;
                     }
                 }
                 catch (EngineException e) {
-                    promise.reject(e);
-                    return null;
+                    promise.reject(e.value);
+                    break;
                 }
 
                 if (!awaiting) continue;
@@ -50,19 +57,24 @@ public class AsyncFunction extends FunctionValue {
 
                 if (awaited instanceof Promise) ((Promise)awaited).then(ctx, fulfillFunc, rejectFunc);
                 else if (Values.isPrimitive(awaited)) frame.push(awaited);
-                try {
-                    var res = Values.getMember(ctx, awaited, "then");
-                    if (res instanceof FunctionValue) {
-                        Values.function(res).call(ctx, awaited, fulfillFunc, rejectFunc);
-                        return null;
+                else {
+                    try {
+                        var res = Values.getMember(ctx, awaited, "then");
+                        if (res instanceof FunctionValue) {
+                            Values.function(res).call(ctx, awaited, fulfillFunc, rejectFunc);
+                            break;
+                        }
+                        else frame.push(awaited);
                     }
-                    else frame.push(awaited);
-                }
-                catch (EngineException e) {
-                    promise.reject(e);
-                    return null;
+                    catch (EngineException e) {
+                        promise.reject(e);
+                        break;
+                    }
                 }
             }
+
+            frame.end(ctx);
+            return null;
         }
 
         public Object await(CallContext ctx, Object thisArg, Object[] args) {
@@ -75,8 +87,10 @@ public class AsyncFunction extends FunctionValue {
     @Override
     public Object call(CallContext _ctx, Object thisArg, Object... args) throws InterruptedException {
         var handler = new CallHandler();
-        handler.frame = new CodeFrame(thisArg, new Object[] { new NativeFunction("await", handler::await), new ArrayValue(args) }, body);
-        handler.fulfill(_ctx, null, new Object[0]);
+        var func = body.call(_ctx, thisArg, new NativeFunction("await", handler::await));
+        if (!(func instanceof CodeFunction)) throw EngineException.ofType("Return value of argument must be a js function.");
+        handler.frame = new CodeFrame(thisArg, args, (CodeFunction)func);
+        handler.exec(_ctx, Runners.NO_RETURN, Runners.NO_RETURN);
         return handler.promise;
     }
 

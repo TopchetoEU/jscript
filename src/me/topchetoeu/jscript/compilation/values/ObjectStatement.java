@@ -20,9 +20,9 @@ public class ObjectStatement extends Statement {
     @Override
     public void compile(List<Instruction> target, ScopeRecord scope) {
         target.add(Instruction.loadObj().locate(loc()));
-        if (!map.isEmpty()) target.add(Instruction.dup(map.size()).locate(loc()));
 
         for (var el : map.entrySet()) {
+            target.add(Instruction.dup().locate(loc()));
             target.add(Instruction.loadValue(el.getKey()).locate(loc()));
             var val = el.getValue();
             if (val instanceof FunctionStatement) ((FunctionStatement)val).compile(target, scope, el.getKey().toString(), false);

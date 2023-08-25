@@ -5,6 +5,7 @@ import java.util.Collections;
 import me.topchetoeu.jscript.compilation.Instruction;
 import me.topchetoeu.jscript.engine.CallContext;
 import me.topchetoeu.jscript.engine.DebugCommand;
+import me.topchetoeu.jscript.engine.Operation;
 import me.topchetoeu.jscript.engine.scope.ValueVariable;
 import me.topchetoeu.jscript.engine.values.ArrayValue;
 import me.topchetoeu.jscript.engine.values.CodeFunction;
@@ -38,10 +39,7 @@ public class Runners {
     }
 
     public static Object execCall(DebugCommand state, Instruction instr, CodeFrame frame, CallContext ctx) throws InterruptedException {
-        int n = instr.get(0);
-
-        var callArgs = new Object[n];
-        for (var i = n - 1; i >= 0; i--) callArgs[i] = frame.pop();
+        var callArgs = frame.take(instr.get(0));
         var func = frame.pop();
         var thisArg = frame.pop();
 
@@ -51,10 +49,7 @@ public class Runners {
         return NO_RETURN;
     }
     public static Object execCallNew(DebugCommand state, Instruction instr, CodeFrame frame, CallContext ctx) throws InterruptedException {
-        int n = instr.get(0);
-
-        var callArgs = new Object[n];
-        for (var i = n - 1; i >= 0; i--) callArgs[i] = frame.pop();
+        var callArgs = frame.take(instr.get(0));
         var funcObj = frame.pop();
 
         if (Values.isFunction(funcObj) && Values.function(funcObj).special) {
@@ -129,75 +124,30 @@ public class Runners {
     }
 
     public static Object execTry(DebugCommand state, Instruction instr, CodeFrame frame, CallContext ctx) throws InterruptedException {
-        var finallyFunc = (boolean)instr.get(1) ? frame.pop() : null;
-        var catchFunc = (boolean)instr.get(0) ? frame.pop() : null;
-        var func = frame.pop();
-
-        if (
-            !Values.isFunction(func) ||
-            catchFunc != null && !Values.isFunction(catchFunc) ||
-            finallyFunc != null && !Values.isFunction(finallyFunc)
-        ) throw EngineException.ofType("TRY instruction can be applied only upon functions.");
-
-        Object res = new SignalValue("no_return");
-        EngineException exception = null;
-
-        Values.function(func).name = frame.function.name + "::try";
-        if (catchFunc != null) Values.function(catchFunc).name = frame.function.name + "::catch";
-        if (finallyFunc != null) Values.function(finallyFunc).name = frame.function.name + "::finally";
-
-        try {
-            ctx.setData(CodeFrame.STOP_AT_START_KEY, state != DebugCommand.NORMAL);
-            res = Values.call(ctx, func, frame.thisArg);
-        }
-        catch (EngineException e) {
-            exception = e.setCause(exception);
-        }
-
-        if (exception != null && catchFunc != null) {
-            var exc = exception;
-            exception = null;
-            try {
-                ctx.setData(CodeFrame.STOP_AT_START_KEY, state != DebugCommand.NORMAL);
-                var _res = Values.call(ctx, catchFunc, frame.thisArg, exc);
-                if (!SignalValue.isSignal(_res, "no_return")) res = _res;
-            }
-            catch (EngineException e) {
-                exception = e.setCause(exc);
-            }
-        }
-
-        if (finallyFunc != null) {
-            try {
-                ctx.setData(CodeFrame.STOP_AT_START_KEY, state != DebugCommand.NORMAL);
-                var _res = Values.call(ctx, finallyFunc, frame.thisArg);
-                if (!SignalValue.isSignal(_res, "no_return"))  {
-                    res = _res;
-                    exception = null;
-                }
-            }
-            catch (EngineException e) {
-                exception = e.setCause(exception);
-            }
-        }
-
-        if (exception != null) throw exception;
-        if (SignalValue.isSignal(res, "no_return")) {
-            frame.codePtr++;
-            return NO_RETURN;
-        }
-        else if (SignalValue.isSignal(res, "jmp_*")) {
-            frame.codePtr += Integer.parseInt(((SignalValue)res).data.substring(4));
-            return NO_RETURN;
-        }
-        else return res;
+        frame.addTry(instr.get(0), instr.get(1), instr.get(2));
+        frame.codePtr++;
+        return NO_RETURN;
     }
 
     public static Object execDup(Instruction instr, CodeFrame frame, CallContext ctx) {
-        var val = frame.peek(instr.get(1));
-        for (int i = 0; i < (int)instr.get(0); i++) {
-            frame.push(val);
+        int offset = instr.get(0), count = instr.get(1);
+
+        for (var i = 0; i < count; i++) {
+            frame.push(frame.peek(offset + count - 1));
         }
+
+        frame.codePtr++;
+        return NO_RETURN;
+    }
+    public static Object execMove(Instruction instr, CodeFrame frame, CallContext ctx) {
+        int offset = instr.get(0), count = instr.get(1);
+
+        var tmp = frame.take(offset);
+        var res = frame.take(count);
+
+        for (var i = 0; i < offset; i++) frame.push(tmp[i]);
+        for (var i = 0; i < count; i++) frame.push(res[i]);
+
         frame.codePtr++;
         return NO_RETURN;
     }
@@ -316,14 +266,23 @@ public class Runners {
     
     public static Object execJmp(Instruction instr, CodeFrame frame, CallContext ctx) {
         frame.codePtr += (int)instr.get(0);
+        frame.jumpFlag = true;
         return NO_RETURN;
     }
     public static Object execJmpIf(Instruction instr, CodeFrame frame, CallContext ctx) throws InterruptedException {
-        frame.codePtr += Values.toBoolean(frame.pop()) ? (int)instr.get(0) : 1;
+        if (Values.toBoolean(frame.pop())) {
+            frame.codePtr += (int)instr.get(0);
+            frame.jumpFlag = true;
+        }
+        else frame.codePtr ++;
         return NO_RETURN;
     }
     public static Object execJmpIfNot(Instruction instr, CodeFrame frame, CallContext ctx) throws InterruptedException {
-        frame.codePtr += Values.not(frame.pop()) ? (int)instr.get(0) : 1;
+        if (Values.not(frame.pop())) {
+            frame.codePtr += (int)instr.get(0);
+            frame.jumpFlag = true;
+        }
+        else frame.codePtr ++;
         return NO_RETURN;
     }
 
@@ -376,157 +335,13 @@ public class Runners {
         return NO_RETURN;
     }
 
-    public static Object execAdd(Instruction instr, CodeFrame frame, CallContext ctx) throws InterruptedException {
-        Object b = frame.pop(), a = frame.pop();
-        frame.push(Values.add(ctx, a, b));
-        frame.codePtr++;
-        return NO_RETURN;
-    }
-    public static Object execSubtract(Instruction instr, CodeFrame frame, CallContext ctx) throws InterruptedException {
-        Object b = frame.pop(), a = frame.pop();
-        frame.push(Values.subtract(ctx, a, b));
-        frame.codePtr++;
-        return NO_RETURN;
-    }
-    public static Object execMultiply(Instruction instr, CodeFrame frame, CallContext ctx) throws InterruptedException {
-        Object b = frame.pop(), a = frame.pop();
-        frame.push(Values.multiply(ctx, a, b));
-        frame.codePtr++;
-        return NO_RETURN;
-    }
-    public static Object execDivide(Instruction instr, CodeFrame frame, CallContext ctx) throws InterruptedException {
-        Object b = frame.pop(), a = frame.pop();
-        frame.push(Values.divide(ctx, a, b));
-        frame.codePtr++;
-        return NO_RETURN;
-    }
-    public static Object execModulo(Instruction instr, CodeFrame frame, CallContext ctx) throws InterruptedException {
-        Object b = frame.pop(), a = frame.pop();
-        frame.push(Values.modulo(ctx, a, b));
-        frame.codePtr++;
-        return NO_RETURN;
-    }
+    public static Object execOperation(Instruction instr, CodeFrame frame, CallContext ctx) throws InterruptedException {
+        Operation op = instr.get(0);
+        var args = new Object[op.operands];
 
-    public static Object execAnd(Instruction instr, CodeFrame frame, CallContext ctx) throws InterruptedException {
-        Object b = frame.pop(), a = frame.pop();
+        for (var i = op.operands - 1; i >= 0; i--) args[i] = frame.pop();
 
-        frame.push(Values.and(ctx, a, b));
-        frame.codePtr++;
-        return NO_RETURN;
-    }
-    public static Object execOr(Instruction instr, CodeFrame frame, CallContext ctx) throws InterruptedException {
-        Object b = frame.pop(), a = frame.pop();
-
-        frame.push(Values.or(ctx, a, b));
-        frame.codePtr++;
-        return NO_RETURN;
-    }
-    public static Object execXor(Instruction instr, CodeFrame frame, CallContext ctx) throws InterruptedException {
-        Object b = frame.pop(), a = frame.pop();
-
-        frame.push(Values.xor(ctx, a, b));
-        frame.codePtr++;
-        return NO_RETURN;
-    }
-
-    public static Object execLeftShift(Instruction instr, CodeFrame frame, CallContext ctx) throws InterruptedException {
-        Object b = frame.pop(), a = frame.pop();
-
-        frame.push(Values.shiftLeft(ctx, a, b));
-        frame.codePtr++;
-        return NO_RETURN;
-    }
-    public static Object execRightShift(Instruction instr, CodeFrame frame, CallContext ctx) throws InterruptedException {
-        Object b = frame.pop(), a = frame.pop();
-
-        frame.push(Values.shiftRight(ctx, a, b));
-        frame.codePtr++;
-        return NO_RETURN;
-    }
-    public static Object execUnsignedRightShift(Instruction instr, CodeFrame frame, CallContext ctx) throws InterruptedException {
-        Object b = frame.pop(), a = frame.pop();
-
-        frame.push(Values.unsignedShiftRight(ctx, a, b));
-        frame.codePtr++;
-        return NO_RETURN;
-    }
-
-    public static Object execNot(Instruction instr, CodeFrame frame, CallContext ctx) {
-        frame.push(Values.not(frame.pop()));
-        frame.codePtr++;
-        return NO_RETURN;
-    }
-    public static Object execNeg(Instruction instr, CodeFrame frame, CallContext ctx) throws InterruptedException {
-        frame.push(Values.negative(ctx, frame.pop()));
-        frame.codePtr++;
-        return NO_RETURN;
-    }
-    public static Object execPos(Instruction instr, CodeFrame frame, CallContext ctx) throws InterruptedException {
-        frame.push(Values.toNumber(ctx, frame.pop()));
-        frame.codePtr++;
-        return NO_RETURN;
-    }
-    public static Object execInverse(Instruction instr, CodeFrame frame, CallContext ctx) throws InterruptedException {
-        frame.push(Values.bitwiseNot(ctx, frame.pop()));
-        frame.codePtr++;
-        return NO_RETURN;
-    }
-
-    public static Object execGreaterThan(Instruction instr, CodeFrame frame, CallContext ctx) throws InterruptedException {
-        Object b = frame.pop(), a = frame.pop();
-
-        frame.push(Values.compare(ctx, a, b) > 0);
-        frame.codePtr++;
-        return NO_RETURN;
-    }
-    public static Object execLessThan(Instruction instr, CodeFrame frame, CallContext ctx) throws InterruptedException {
-        Object b = frame.pop(), a = frame.pop();
-
-        frame.push(Values.compare(ctx, a, b) < 0);
-        frame.codePtr++;
-        return NO_RETURN;
-    }
-    public static Object execGreaterThanEquals(Instruction instr, CodeFrame frame, CallContext ctx) throws InterruptedException {
-        Object b = frame.pop(), a = frame.pop();
-
-        frame.push(Values.compare(ctx, a, b) >= 0);
-        frame.codePtr++;
-        return NO_RETURN;
-    }
-    public static Object execLessThanEquals(Instruction instr, CodeFrame frame, CallContext ctx) throws InterruptedException {
-        Object b = frame.pop(), a = frame.pop();
-
-        frame.push(Values.compare(ctx, a, b) <= 0);
-        frame.codePtr++;
-        return NO_RETURN;
-    }
-
-    public static Object execLooseEquals(Instruction instr, CodeFrame frame, CallContext ctx) throws InterruptedException {
-        Object b = frame.pop(), a = frame.pop();
-
-        frame.push(Values.looseEqual(ctx, a, b));
-        frame.codePtr++;
-        return NO_RETURN;
-    }
-    public static Object execLooseNotEquals(Instruction instr, CodeFrame frame, CallContext ctx) throws InterruptedException {
-        Object b = frame.pop(), a = frame.pop();
-
-        frame.push(!Values.looseEqual(ctx, a, b));
-        frame.codePtr++;
-        return NO_RETURN;
-    }
-
-    public static Object execEquals(Instruction instr, CodeFrame frame, CallContext ctx) throws InterruptedException {
-        Object b = frame.pop(), a = frame.pop();
-
-        frame.push(Values.strictEquals(a, b));
-        frame.codePtr++;
-        return NO_RETURN;
-    }
-    public static Object execNotEquals(Instruction instr, CodeFrame frame, CallContext ctx) throws InterruptedException {
-        Object b = frame.pop(), a = frame.pop();
-
-        frame.push(!Values.strictEquals(a, b));
+        frame.push(Values.operation(ctx, op, args));
         frame.codePtr++;
         return NO_RETURN;
     }
@@ -544,6 +359,7 @@ public class Runners {
             case TRY: return execTry(state, instr, frame, ctx);
 
             case DUP: return execDup(instr, frame, ctx);
+            case MOVE: return execMove(instr, frame, ctx);
             case LOAD_VALUE: return execLoadValue(instr, frame, ctx);
             case LOAD_VAR: return execLoadVar(instr, frame, ctx);
             case LOAD_OBJ: return execLoadObj(instr, frame, ctx);
@@ -560,45 +376,16 @@ public class Runners {
             case STORE_SELF_FUNC: return execStoreSelfFunc(instr, frame, ctx);
             case MAKE_VAR: return execMakeVar(instr, frame, ctx);
 
-            case IN: return execIn(instr, frame, ctx);
             case KEYS: return execKeys(instr, frame, ctx);
             case DEF_PROP: return execDefProp(instr, frame, ctx);
             case TYPEOF: return execTypeof(instr, frame, ctx);
             case DELETE: return execDelete(instr, frame, ctx);
-            case INSTANCEOF: return execInstanceof(instr, frame, ctx);
 
             case JMP: return execJmp(instr, frame, ctx);
             case JMP_IF: return execJmpIf(instr, frame, ctx);
             case JMP_IFN: return execJmpIfNot(instr, frame, ctx);
 
-            case ADD: return execAdd(instr, frame, ctx);
-            case SUBTRACT: return execSubtract(instr, frame, ctx);
-            case MULTIPLY: return execMultiply(instr, frame, ctx);
-            case DIVIDE: return execDivide(instr, frame, ctx);
-            case MODULO: return execModulo(instr, frame, ctx);
-
-            case AND: return execAnd(instr, frame, ctx);
-            case OR: return execOr(instr, frame, ctx);
-            case XOR: return execXor(instr, frame, ctx);
-
-            case SHIFT_LEFT: return execLeftShift(instr, frame, ctx);
-            case SHIFT_RIGHT: return execRightShift(instr, frame, ctx);
-            case USHIFT_RIGHT: return execUnsignedRightShift(instr, frame, ctx);
-
-            case NOT: return execNot(instr, frame, ctx);
-            case NEG: return execNeg(instr, frame, ctx);
-            case POS: return execPos(instr, frame, ctx);
-            case INVERSE: return execInverse(instr, frame, ctx);
-
-            case GREATER: return execGreaterThan(instr, frame, ctx);
-            case GREATER_EQUALS: return execGreaterThanEquals(instr, frame, ctx);
-            case LESS: return execLessThan(instr, frame, ctx);
-            case LESS_EQUALS: return execLessThanEquals(instr, frame, ctx);
-
-            case LOOSE_EQUALS: return execLooseEquals(instr, frame, ctx);
-            case LOOSE_NOT_EQUALS: return execLooseNotEquals(instr, frame, ctx);
-            case EQUALS: return execEquals(instr, frame, ctx);
-            case NOT_EQUALS: return execNotEquals(instr, frame, ctx);
+            case OPERATION: return execOperation(instr, frame, ctx);
 
             default: throw EngineException.ofSyntax("Invalid instruction " + instr.type.name() + ".");
         }

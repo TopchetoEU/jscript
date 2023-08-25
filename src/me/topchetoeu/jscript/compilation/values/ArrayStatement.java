@@ -21,7 +21,7 @@ public class ArrayStatement extends Statement {
         var i = 0;
         for (var el : statements) {
             if (el != null) {
-                target.add(Instruction.dup(1).locate(loc()));
+                target.add(Instruction.dup().locate(loc()));
                 target.add(Instruction.loadValue(i).locate(loc()));
                 el.compileWithPollution(target, scope);
                 target.add(Instruction.storeMember().locate(loc()));
