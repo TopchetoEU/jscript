@@ -981,7 +981,14 @@ public class Parsing {
     }
     @SuppressWarnings("all")
     public static ParseRes<? extends Statement> parseSimple(String filename, List<Token> tokens, int i, boolean statement) {
-        var res = new ArrayList<>(List.of(
+        var res = new ArrayList<>();
+
+        if (!statement) {
+            res.add(parseObject(filename, tokens, i));
+            res.add(parseFunction(filename, tokens, i, false));
+        }
+
+        res.addAll(List.of(
             parseVariable(filename, tokens, i),
             parseLiteral(filename, tokens, i),
             parseString(filename, tokens, i),
@@ -996,11 +1003,6 @@ public class Parsing {
             parseVoid(filename, tokens, i),
             parseDelete(filename, tokens, i)
         ));
-
-        if (!statement) {
-            res.add(parseObject(filename, tokens, i));
-            res.add(parseFunction(filename, tokens, i, false));
-        }
 
         return ParseRes.any(res.toArray(ParseRes[]::new));
     }
@@ -1795,7 +1797,6 @@ public class Parsing {
             parseContinue(filename, tokens, i),
             parseBreak(filename, tokens, i),
             parseDebug(filename, tokens, i),
-            parseValueStatement(filename, tokens, i),
             parseIf(filename, tokens, i),
             parseWhile(filename, tokens, i),
             parseSwitch(filename, tokens, i),
@@ -1804,7 +1805,8 @@ public class Parsing {
             parseDoWhile(filename, tokens, i),
             parseCatch(filename, tokens, i),
             parseCompound(filename, tokens, i),
-            parseFunction(filename, tokens, i, true)
+            parseFunction(filename, tokens, i, true),
+            parseValueStatement(filename, tokens, i)
         );
     }
 

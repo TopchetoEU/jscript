@@ -20,7 +20,7 @@ interface FunctionConstructor extends Function {
     asyncGenerator<ArgsT extends any[], RetT>(
         func: (await: <T>(val: T) => Awaited<T>, _yield: <T>(val: T) => void) => (...args: ArgsT) => RetT
     ): (...args: ArgsT) => AsyncGenerator<RetT>;
-    generator<ArgsT extends any[], T, RetT, TNext>(
+    generator<ArgsT extends any[], T = unknown, RetT = unknown, TNext = unknown>(
         func: (_yield: <T>(val: T) => TNext) => (...args: ArgsT) => RetT
     ): (...args: ArgsT) => Generator<T, RetT, TNext>;
 }
@@ -90,7 +90,7 @@ setProps(Function.prototype, {
     },
 });
 setProps(Function, {
-    async<ArgsT extends any[], RetT>(func: (_yield: <T>(val: T) => Awaited<T>) => (...args: ArgsT) => RetT) {
+    async(func) {
         if (typeof func !== 'function') throw new TypeError('Expected func to be function.');
 
         return function (this: any) {
@@ -121,8 +121,53 @@ setProps(Function, {
             });
         };
     },
+    asyncGenerator(func) {
+        if (typeof func !== 'function') throw new TypeError('Expected func to be function.');
+
+
+        return function(this: any) {
+            const gen = Function.generator<any[], ['await' | 'yield', any]>((_yield) => func(
+                val => _yield(['await', val]) as any,
+                val => _yield(['yield', val])
+            )).apply(this, arguments as any);
+
+            const next = (resolve: Function, reject: Function, type: 'none' | 'val' | 'ret' | 'err', val?: any) => {
+                let res;
+
+                try {
+                    switch (type) {
+                        case 'val': res = gen.next(val); break;
+                        case 'ret': res = gen.return(val); break;
+                        case 'err': res = gen.throw(val); break;
+                        default: res = gen.next(); break;
+                    }
+                }
+                catch (e) { return reject(e); }
+
+                if (res.done) return { done: true, res: <any>res };
+                else if (res.value[0] === 'await') Promise.resolve(res.value[1]).then(
+                    v => next(resolve, reject, 'val', v),
+                    v => next(resolve, reject, 'err', v),
+                )
+                else resolve({ done: false, value: res.value[1] });
+            };
+
+            return {
+                next() {
+                    const args = arguments;
+                    if (arguments.length === 0) return new Promise((res, rej) => next(res, rej, 'none'));
+                    else return new Promise((res, rej) => next(res, rej, 'val', args[0]));
+                },
+                return: (value) => new Promise((res, rej) => next(res, rej, 'ret', value)),
+                throw: (value) => new Promise((res, rej) => next(res, rej, 'err', value)),
+                [Symbol.asyncIterator]() { return this; }
+            }
+        }
+    },
     generator(func) {
         if (typeof func !== 'function') throw new TypeError('Expected func to be function.');
-        return internals.makeGenerator(func);
+        return Object.assign(internals.makeGenerator(func), {
+            [Symbol.iterator]() { return this; }
+        });
     }
 })
