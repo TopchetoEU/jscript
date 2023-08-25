@@ -135,8 +135,8 @@ public class Instruction {
         this.params = params;
     }
 
-    public static Instruction tryInstr(boolean hasCatch, boolean hasFinally) {
-        return new Instruction(null, Type.TRY, hasCatch, hasFinally);
+    public static Instruction tryInstr(int n, int catchN, int finallyN) {
+        return new Instruction(null, Type.TRY, n, catchN, finallyN);
     }
     public static Instruction throwInstr() {
         return new Instruction(null, Type.THROW);

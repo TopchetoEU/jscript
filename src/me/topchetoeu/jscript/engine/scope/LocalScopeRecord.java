@@ -15,6 +15,9 @@ public class LocalScopeRecord implements ScopeRecord {
         return locals.toArray(String[]::new);
     }
 
+    @Override
+    public LocalScopeRecord parent() { return parent; }
+
     public LocalScopeRecord child() {
         return new LocalScopeRecord(this, global);
     }
@@ -66,6 +69,9 @@ public class LocalScopeRecord implements ScopeRecord {
         if (locals.contains(name)) return locals.indexOf(name);
         locals.add(name);
         return locals.size() - 1;
+    }
+    public void undefine() {
+        locals.remove(locals.size() - 1);
     }
 
     public LocalScopeRecord(GlobalScope global) {

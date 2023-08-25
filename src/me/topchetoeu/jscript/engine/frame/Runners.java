@@ -124,68 +124,9 @@ public class Runners {
     }
 
     public static Object execTry(DebugCommand state, Instruction instr, CodeFrame frame, CallContext ctx) throws InterruptedException {
-        var finallyFunc = (boolean)instr.get(1) ? frame.pop() : null;
-        var catchFunc = (boolean)instr.get(0) ? frame.pop() : null;
-        var func = frame.pop();
-
-        if (
-            !Values.isFunction(func) ||
-            catchFunc != null && !Values.isFunction(catchFunc) ||
-            finallyFunc != null && !Values.isFunction(finallyFunc)
-        ) throw EngineException.ofType("TRY instruction can be applied only upon functions.");
-
-        Object res = new SignalValue("no_return");
-        EngineException exception = null;
-
-        Values.function(func).name = frame.function.name + "::try";
-        if (catchFunc != null) Values.function(catchFunc).name = frame.function.name + "::catch";
-        if (finallyFunc != null) Values.function(finallyFunc).name = frame.function.name + "::finally";
-
-        try {
-            ctx.setData(CodeFrame.STOP_AT_START_KEY, state != DebugCommand.NORMAL);
-            res = Values.call(ctx, func, frame.thisArg);
-        }
-        catch (EngineException e) {
-            exception = e.setCause(exception);
-        }
-
-        if (exception != null && catchFunc != null) {
-            var exc = exception;
-            exception = null;
-            try {
-                ctx.setData(CodeFrame.STOP_AT_START_KEY, state != DebugCommand.NORMAL);
-                var _res = Values.call(ctx, catchFunc, frame.thisArg, exc.value);
-                if (!SignalValue.isSignal(_res, "no_return")) res = _res;
-            }
-            catch (EngineException e) {
-                exception = e.setCause(exc);
-            }
-        }
-
-        if (finallyFunc != null) {
-            try {
-                ctx.setData(CodeFrame.STOP_AT_START_KEY, state != DebugCommand.NORMAL);
-                var _res = Values.call(ctx, finallyFunc, frame.thisArg);
-                if (!SignalValue.isSignal(_res, "no_return"))  {
-                    res = _res;
-                    exception = null;
-                }
-            }
-            catch (EngineException e) {
-                exception = e.setCause(exception);
-            }
-        }
-
-        if (exception != null) throw exception;
-        if (SignalValue.isSignal(res, "no_return")) {
-            frame.codePtr++;
-            return NO_RETURN;
-        }
-        else if (SignalValue.isSignal(res, "jmp_*")) {
-            frame.codePtr += Integer.parseInt(((SignalValue)res).data.substring(4));
-            return NO_RETURN;
-        }
-        else return res;
+        frame.addTry(instr.get(0), instr.get(1), instr.get(2));
+        frame.codePtr++;
+        return NO_RETURN;
     }
 
     public static Object execDup(Instruction instr, CodeFrame frame, CallContext ctx) {
@@ -325,14 +266,23 @@ public class Runners {
     
     public static Object execJmp(Instruction instr, CodeFrame frame, CallContext ctx) {
         frame.codePtr += (int)instr.get(0);
+        frame.jumpFlag = true;
         return NO_RETURN;
     }
     public static Object execJmpIf(Instruction instr, CodeFrame frame, CallContext ctx) throws InterruptedException {
-        frame.codePtr += Values.toBoolean(frame.pop()) ? (int)instr.get(0) : 1;
+        if (Values.toBoolean(frame.pop())) {
+            frame.codePtr += (int)instr.get(0);
+            frame.jumpFlag = true;
+        }
+        else frame.codePtr ++;
         return NO_RETURN;
     }
     public static Object execJmpIfNot(Instruction instr, CodeFrame frame, CallContext ctx) throws InterruptedException {
-        frame.codePtr += Values.not(frame.pop()) ? (int)instr.get(0) : 1;
+        if (Values.not(frame.pop())) {
+            frame.codePtr += (int)instr.get(0);
+            frame.jumpFlag = true;
+        }
+        else frame.codePtr ++;
         return NO_RETURN;
     }
 
