@@ -14,7 +14,17 @@ import me.topchetoeu.jscript.exceptions.EngineException;
 import me.topchetoeu.jscript.interop.Native;
 
 public class Promise {
-    private static record Handle(CallContext ctx, FunctionValue fulfilled, FunctionValue rejected) {}
+    private static class Handle {
+        public final CallContext ctx;
+        public final FunctionValue fulfilled;
+        public final FunctionValue rejected;
+
+        public Handle(CallContext ctx, FunctionValue fulfilled, FunctionValue rejected) {
+            this.ctx = ctx;
+            this.fulfilled = fulfilled;
+            this.rejected = rejected;
+        }
+    }
 
     @Native("resolve")
     public static Promise ofResolved(CallContext engine, Object val) {
@@ -194,7 +204,7 @@ public class Promise {
 
         this.state = STATE_FULFILLED;
         this.val = val;
-        for (var el : handles) el.ctx().engine().pushMsg(true, el.fulfilled, el.ctx().data(), null, val);
+        for (var el : handles) el.ctx.engine().pushMsg(true, el.fulfilled, el.ctx.data(), null, val);
         handles = null;
     }
     /**
@@ -222,7 +232,7 @@ public class Promise {
 
         this.state = STATE_REJECTED;
         this.val = val;
-        for (var el : handles) el.ctx().engine().pushMsg(true, el.rejected, el.ctx().data(), null, val);
+        for (var el : handles) el.ctx.engine().pushMsg(true, el.rejected, el.ctx.data(), null, val);
         handles = null;
     }
     /**

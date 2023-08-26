@@ -7,7 +7,15 @@ import me.topchetoeu.jscript.compilation.values.FunctionStatement;
 import me.topchetoeu.jscript.engine.scope.ScopeRecord;
 
 public class VariableDeclareStatement extends Statement {
-    public static record Pair(String name, Statement value) {}
+    public static class Pair {
+        public final String name;
+        public final Statement value;
+
+        public Pair(String name, Statement value) {
+            this.name = name;
+            this.value = value;
+        }
+    }
 
     public final List<Pair> values;
 
@@ -16,22 +24,22 @@ public class VariableDeclareStatement extends Statement {
     @Override
     public void declare(ScopeRecord varsScope) {
         for (var key : values) {
-            varsScope.define(key.name());
+            varsScope.define(key.name);
         }
     }
     @Override
     public void compile(List<Instruction> target, ScopeRecord scope) {
         for (var entry : values) {
-            if (entry.name() == null) continue;
-            var key = scope.getKey(entry.name());
+            if (entry.name == null) continue;
+            var key = scope.getKey(entry.name);
             if (key instanceof String) target.add(Instruction.makeVar((String)key).locate(loc()));
 
-            if (entry.value() instanceof FunctionStatement) {
-                ((FunctionStatement)entry.value()).compile(target, scope, entry.name(), false);
+            if (entry.value instanceof FunctionStatement) {
+                ((FunctionStatement)entry.value).compile(target, scope, entry.name, false);
                 target.add(Instruction.storeVar(key).locate(loc()));
             }
-            else if (entry.value() != null) {
-                entry.value().compileWithPollution(target, scope);
+            else if (entry.value != null) {
+                entry.value.compileWithPollution(target, scope);
                 target.add(Instruction.storeVar(key).locate(loc()));
             }
         }

@@ -27,7 +27,18 @@ public class Parsing {
         ParseRes<T> parse(String filename, List<Token> tokens, int i);
     }
 
-    private static record ObjProp(Object name, String access, FunctionStatement func) {}
+    private static class ObjProp {
+        public final Object name;
+        public final String access;
+        public final FunctionStatement func;
+
+        public ObjProp(Object name, String access, FunctionStatement func) {
+            this.name = name;
+            this.access = access;
+            this.func = func;
+        }
+    }
+
     private static final HashSet<String> reserved = new HashSet<String>();
     static {
         reserved.add("true");

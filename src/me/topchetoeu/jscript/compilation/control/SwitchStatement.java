@@ -11,7 +11,15 @@ import me.topchetoeu.jscript.engine.Operation;
 import me.topchetoeu.jscript.engine.scope.ScopeRecord;
 
 public class SwitchStatement extends Statement {
-    public static record SwitchCase(Statement value, int statementI) {}
+    public static class SwitchCase {
+        public final Statement value;
+        public final int statementI;
+
+        public SwitchCase(Statement value, int statementI) {
+            this.value = value;
+            this.statementI = statementI;
+        }
+    }
 
     @Override
     public boolean pollutesStack() { return false; }

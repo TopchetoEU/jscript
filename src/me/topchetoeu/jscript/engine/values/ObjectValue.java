@@ -26,7 +26,15 @@ public class ObjectValue {
         FROZEN,
     }
 
-    public static record Property(FunctionValue getter, FunctionValue setter) {}
+    public static class Property { 
+        public final FunctionValue getter;
+        public final FunctionValue setter;
+
+        public Property(FunctionValue getter, FunctionValue setter) {
+            this.getter = getter;
+            this.setter = setter;
+        }
+    }
 
     private static final Object OBJ_PROTO = new Object();
     private static final Object ARR_PROTO = new Object();

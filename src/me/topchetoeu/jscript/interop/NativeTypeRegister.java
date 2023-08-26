@@ -34,9 +34,9 @@ public class NativeTypeRegister {
                     var name = get.value();
                     var prop = target.properties.get(name);
                     OverloadFunction getter = null;
-                    var setter = prop == null ? null : prop.setter();
+                    var setter = prop == null ? null : prop.setter;
 
-                    if (prop != null && prop.getter() instanceof OverloadFunction) getter = (OverloadFunction)prop.getter();
+                    if (prop != null && prop.getter instanceof OverloadFunction) getter = (OverloadFunction)prop.getter;
                     else getter = new OverloadFunction("get " + name);
 
                     getter.overloads.add(Overload.fromMethod(method));
@@ -45,10 +45,10 @@ public class NativeTypeRegister {
                 if (set != null) {
                     var name = set.value();
                     var prop = target.properties.get(name);
-                    var getter = prop == null ? null : prop.getter();
+                    var getter = prop == null ? null : prop.getter;
                     OverloadFunction setter = null;
 
-                    if (prop != null && prop.setter() instanceof OverloadFunction) setter = (OverloadFunction)prop.setter();
+                    if (prop != null && prop.setter instanceof OverloadFunction) setter = (OverloadFunction)prop.setter;
                     else setter = new OverloadFunction("set " + name);
 
                     setter.overloads.add(Overload.fromMethod(method));

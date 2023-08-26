@@ -18,7 +18,18 @@ import me.topchetoeu.jscript.interop.NativeTypeRegister;
 import me.topchetoeu.jscript.parsing.Parsing;
 
 public class Engine {
-    private static record RawFunction(GlobalScope scope, String filename, String raw) { }
+    private static class RawFunction {
+        public final GlobalScope scope;
+        public final String filename;
+        public final String raw;
+
+        public RawFunction(GlobalScope scope, String filename, String raw) {
+            this.scope = scope;
+            this.filename = filename;
+            this.raw = raw;
+        }
+    }
+
     private static class Task {
         public final Object func;
         public final Object thisArg;

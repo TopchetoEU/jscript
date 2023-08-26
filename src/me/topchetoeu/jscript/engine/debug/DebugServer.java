@@ -64,7 +64,7 @@ public class DebugServer {
         }
     }
     private void onWsConnect(HttpRequest req, Socket socket) throws IOException {
-        var key = req.headers().get("sec-websocket-key");
+        var key = req.headers.get("sec-websocket-key");
 
         if (key == null) {
             Http.writeResponse(
@@ -112,7 +112,7 @@ public class DebugServer {
                 var socket = server.accept();
                 var req = Http.readRequest(socket.getInputStream());
 
-                switch (req.path()) {
+                switch (req.path) {
                     case "/json/version":
                         send(socket, "{\"Browser\":\"" + browserDisplayName + "\",\"Protocol-Version\":\"1.2\"}");
                         break;
@@ -133,7 +133,7 @@ public class DebugServer {
                         );
                         break;
                     default:
-                        if (req.path().equals("/devtools/page/" + targetName)) onWsConnect(req, socket);
+                        if (req.path.equals("/devtools/page/" + targetName)) onWsConnect(req, socket);
                         else {
                             Http.writeResponse(
                                 socket.getOutputStream(),
