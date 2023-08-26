@@ -3,7 +3,7 @@ name: "tagged-release"
 on:
   push:
     tags:
-      - "*"
+      - "v*"
 
 jobs:
   tagged-release:
@@ -31,5 +31,5 @@ jobs:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
           prerelease: false
           files: |
-            LICENSE
-            dst/*.jar
+            java-jscript/LICENSE
+            java-jscript/dst/*.jar
