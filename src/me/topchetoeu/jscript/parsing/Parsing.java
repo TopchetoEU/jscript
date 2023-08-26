@@ -374,7 +374,7 @@ public class Parsing {
                         currStage = CURR_STRING;
                         continue;
                     }
-                    else throw new SyntaxException(new Location(line, start, filename), "Unrecognized character %s.".formatted(c));
+                    else throw new SyntaxException(new Location(line, start, filename), String.format("Unrecognized character %s.", c));
             }
 
             // if we got here, we know that we have encountered the end of a token
@@ -542,7 +542,7 @@ public class Parsing {
                     else res.add(Token.number(el.line, el.start, Double.parseDouble(el.value))); break;
                 case OPERATOR:
                     Operator op = Operator.parse(el.value);
-                    if (op == null) throw new SyntaxException(loc, "Unrecognized operator '%s'.".formatted(el.value));
+                    if (op == null) throw new SyntaxException(loc, String.format("Unrecognized operator '%s'.", el.value));
                     res.add(Token.operator(el.line, el.start, op));
                     break;
                 case STRING:
@@ -959,7 +959,7 @@ public class Parsing {
         var res = parseValue(filename, tokens, n + i, 14);
 
         if (res.isSuccess()) return ParseRes.res(new OperationStatement(loc, operation, res.result), n + res.n);
-        else return ParseRes.error(loc, "Expected a value after the unary operator '%s'.".formatted(op.value), res);
+        else return ParseRes.error(loc, String.format("Expected a value after the unary operator '%s'.", op.value), res);
     }
     public static ParseRes<ChangeStatement> parsePrefixChange(String filename, List<Token> tokens, int i) {
         var loc = getLoc(filename, tokens, i);
@@ -1029,7 +1029,7 @@ public class Parsing {
             if (literal.result.equals("async")) return ParseRes.error(loc, "'async' is not supported.");
             if (literal.result.equals("const")) return ParseRes.error(loc, "'const' declarations are not supported.");
             if (literal.result.equals("let")) return ParseRes.error(loc, "'let' declarations are not supported.");
-            return ParseRes.error(loc, "Unexpected identifier '%s'.".formatted(literal.result));
+            return ParseRes.error(loc, String.format("Unexpected identifier '%s'.", literal.result));
         }
 
         return ParseRes.res(new VariableStatement(loc, literal.result), 1);
@@ -1106,7 +1106,7 @@ public class Parsing {
         if (!(prev instanceof AssignableStatement)) return ParseRes.error(loc, "Invalid expression on left hand side of assign operator.");
 
         var res = parseValue(filename, tokens, i + n, 2);
-        if (!res.isSuccess()) return ParseRes.error(loc, "Expected value after assignment operator '%s'.".formatted(op.value), res);
+        if (!res.isSuccess()) return ParseRes.error(loc, String.format("Expected value after assignment operator '%s'.", op.value), res);
         n += res.n;
 
         Operation operation = null;
@@ -1245,7 +1245,7 @@ public class Parsing {
         if (op.isAssign()) return parseAssign(filename, tokens, i + n - 1, prev, precedence);
 
         var res = parseValue(filename, tokens, i + n, op.precedence + (op.reverse ? 0 : 1));
-        if (!res.isSuccess()) return ParseRes.error(loc, "Expected a value after the '%s' operator.".formatted(op.value), res);
+        if (!res.isSuccess()) return ParseRes.error(loc, String.format("Expected a value after the '%s' operator.", op.value), res);
         n += res.n;
 
         if (op == Operator.LAZY_AND) {
@@ -1337,7 +1337,7 @@ public class Parsing {
             if (!nameRes.isSuccess()) return ParseRes.error(loc, "Expected a variable name.");
 
             if (!checkVarName(nameRes.result)) {
-                return ParseRes.error(loc, "Unexpected identifier '%s'.".formatted(nameRes.result));
+                return ParseRes.error(loc, String.format("Unexpected identifier '%s'.", nameRes.result));
             }
 
             Statement val = null;

@@ -73,7 +73,7 @@ public class PolyfillEngine extends Engine {
                 return Values.call(ctx, values[0], ctx);
             }
             finally {
-                System.out.println("Function took %s ms".formatted((System.nanoTime() - start) / 1000000.));
+                System.out.println(String.format("Function took %s ms", (System.nanoTime() - start) / 1000000.));
             }
         }));
         global().define(true, new NativeFunction("isNaN", (ctx, thisArg, args) -> {

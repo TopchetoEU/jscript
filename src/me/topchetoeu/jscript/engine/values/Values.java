@@ -426,7 +426,7 @@ public class Values {
         if (clazz == Void.class) return null;
         if (clazz == null || clazz == Object.class) return (T)obj;
 
-        var err = new IllegalArgumentException("Cannot convert '%s' to '%s'.".formatted(type(obj), clazz.getName()));
+        var err = new IllegalArgumentException(String.format("Cannot convert '%s' to '%s'.", type(obj), clazz.getName()));
 
         if (obj instanceof NativeWrapper) {
             var res = ((NativeWrapper)obj).wrapped;
