@@ -13,12 +13,12 @@ jobs:
     steps:
       - name: "Build & test"
         run: |
-          ls
-          mkdir -p dst/classes
-          rsync -av --exclude='*.java' src/ dst/classes
-          tsc --outDir dst/classes/me/topchetoeu/jscript/js --declarationDir dst/classes/me/topchetoeu/jscript/dts
-          find src -name "*.java" | xargs javac -d dst/classes
-          jar -c -f dst/jscript.jar -e me.topchetoeu.jscript.Main -C dst/classes .
+          ls &&
+          mkdir -p dst/classes &&
+          rsync -av --exclude='*.java' src/ dst/classes &&
+          tsc --outDir dst/classes/me/topchetoeu/jscript/js --declarationDir dst/classes/me/topchetoeu/jscript/dts &&
+          find src -name "*.java" | xargs javac -d dst/classes &&
+          jar -c -f dst/jscript.jar -e me.topchetoeu.jscript.Main -C dst/classes . &&
 
       - uses: "marvinpinto/action-automatic-releases@latest"
         with:
