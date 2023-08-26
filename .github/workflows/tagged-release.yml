@@ -13,6 +13,7 @@ jobs:
     steps:
       - name: "Build & test"
         run: |
+          ls
           mkdir -p dst/classes
           rsync -av --exclude='*.java' src/ dst/classes
           tsc --outDir dst/classes/me/topchetoeu/jscript/js --declarationDir dst/classes/me/topchetoeu/jscript/dts
