@@ -1,0 +1,28 @@
+name: "tagged-release"
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  tagged-release:
+    name: "Tagged Release"
+    runs-on: "ubuntu-latest"
+
+    steps:
+      - name: "Build & test"
+        run: |
+          mkdir -p dst/classes
+          rsync -av --exclude='*.java' src/ dst/classes
+          tsc --outDir dst/classes/me/topchetoeu/jscript/js --declarationDir dst/classes/me/topchetoeu/jscript/dts
+          find src -name "*.java" | xargs javac -d dst/classes
+          jar -c -f dst/jscript.jar -e me.topchetoeu.jscript.Main -C dst/classes .
+
+      - uses: "marvinpinto/action-automatic-releases@latest"
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          prerelease: false
+          files: |
+            LICENSE
+            dst/*.jar
