@@ -449,7 +449,7 @@ public class Values {
             }
             if (clazz.isArray()) {
                 var raw = array(obj).toArray();
-                Object res = Array.newInstance(clazz.arrayType(), raw.length);
+                Object res = Array.newInstance(clazz.getComponentType(), raw.length);
                 for (var i = 0; i < raw.length; i++) Array.set(res, i, convert(ctx, raw[i], Object.class));
                 return (T)res;
             }

@@ -31,7 +31,7 @@ public class OverloadFunction extends FunctionValue {
             }
 
             if (overload.variadic) {
-                var type = overload.params[overload.params.length - 1].componentType();
+                var type = overload.params[overload.params.length - 1].getComponentType();
                 var n = Math.max(args.length - end + start, 0);
                 Object varArg = Array.newInstance(type, n);
 

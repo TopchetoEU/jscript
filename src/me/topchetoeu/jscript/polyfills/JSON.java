@@ -1,6 +1,7 @@
 package me.topchetoeu.jscript.polyfills;
 
 import java.util.HashSet;
+import java.util.stream.Collectors;
 
 import me.topchetoeu.jscript.engine.CallContext;
 import me.topchetoeu.jscript.engine.values.ArrayValue;
@@ -18,7 +19,7 @@ public class JSON {
         if (val.isBoolean()) return val.bool();
         if (val.isString()) return val.string();
         if (val.isNumber()) return val.number();
-        if (val.isList()) return ArrayValue.of(val.list().stream().map(JSON::toJS).toList());
+        if (val.isList()) return ArrayValue.of(val.list().stream().map(JSON::toJS).collect(Collectors.toList()));
         if (val.isMap()) {
             var res = new ObjectValue();
             for (var el : val.map().entrySet()) {
