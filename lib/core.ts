@@ -74,8 +74,6 @@ interface MathObject {
 //@ts-ignore
 declare const arguments: IArguments;
 declare const Math: MathObject;
-const NaN = 0 / 0;
-const Infinity = 1 / 0;
 
 declare var setTimeout: <T extends any[]>(handle: (...args: [ ...T, ...any[] ]) => void, delay?: number, ...args: T) => number;
 declare var setInterval: <T extends any[]>(handle: (...args: [ ...T, ...any[] ]) => void, delay?: number, ...args: T) => number;

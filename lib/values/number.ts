@@ -12,8 +12,10 @@ interface NumberConstructor {
 }
 
 declare var Number: NumberConstructor;
-declare const parseInt: typeof Number.parseInt;
-declare const parseFloat: typeof Number.parseFloat;
+declare var parseInt: typeof Number.parseInt;
+declare var parseFloat: typeof Number.parseFloat;
+declare var NaN: number;
+declare var Infinity: number;
 
 gt.Number = function(this: Number | undefined, arg: any) {
     var val;
@@ -42,5 +44,7 @@ setProps(Number, {
     parseFloat(val) { return internals.parseFloat(val); },
 });
 
-(gt as any).parseInt = Number.parseInt;
-(gt as any).parseFloat = Number.parseFloat;
+Object.defineProperty(gt, 'parseInt', { value: Number.parseInt, writable: false });
+Object.defineProperty(gt, 'parseFloat', { value: Number.parseFloat, writable: false });
+Object.defineProperty(gt, 'NaN', { value: 0 / 0, writable: false });
+Object.defineProperty(gt, 'Infinity', { value: 1 / 0, writable: false });
