@@ -11,6 +11,11 @@ jobs:
     runs-on: "ubuntu-latest"
 
     steps:
+      - name: Clone repository
+        uses: GuillaumeFalourd/clone-github-repo-action@main
+        with:
+          owner: 'TopchetoEU'
+          repository: 'java-jscript'
       - name: "Build & test"
         run: |
           ls &&
