@@ -3,6 +3,7 @@ package me.topchetoeu.jscript.filesystem;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.stream.Collectors;
 
 public class PhysicalFilesystem implements Filesystem {
     public final Path root;
@@ -34,7 +35,7 @@ public class PhysicalFilesystem implements Filesystem {
         path = joinPaths(root, path);
 
         if (path.toFile().isDirectory()) {
-            return new MemoryFile(String.join("\n", Files.list(path).map(Path::toString).toList()).getBytes());
+            return new MemoryFile(String.join("\n", Files.list(path).map(Path::toString).collect(Collectors.toList())).getBytes());
         }
         else if (path.toFile().isFile()) {
             return new PhysicalFile(path, perms);

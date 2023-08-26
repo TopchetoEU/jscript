@@ -1,6 +1,7 @@
 package me.topchetoeu.jscript.polyfills;
 
 import java.util.LinkedHashMap;
+import java.util.stream.Collectors;
 
 import me.topchetoeu.jscript.engine.CallContext;
 import me.topchetoeu.jscript.engine.values.ArrayValue;
@@ -42,7 +43,7 @@ public class Map {
     @Native
     public void forEach(CallContext ctx, FunctionValue func, Object thisArg) throws InterruptedException {
 
-        for (var el : objs.entrySet().stream().toList()) {
+        for (var el : objs.entrySet().stream().collect(Collectors.toList())) {
             func.call(ctx, thisArg, el.getValue(), el.getKey(), this);
         }
     }
@@ -53,16 +54,16 @@ public class Map {
             .entrySet()
             .stream()
             .map(v -> new ArrayValue(v.getKey(), v.getValue()))
-            .toList()
+            .collect(Collectors.toList())
         );
     }
     @Native
     public Object keys(CallContext ctx) throws InterruptedException {
-        return Values.fromJavaIterable(ctx, objs.keySet().stream().toList());
+        return Values.fromJavaIterable(ctx, objs.keySet().stream().collect(Collectors.toList()));
     }
     @Native
     public Object values(CallContext ctx) throws InterruptedException {
-        return Values.fromJavaIterable(ctx, objs.values().stream().toList());
+        return Values.fromJavaIterable(ctx, objs.values().stream().collect(Collectors.toList()));
     }
 
     @NativeGetter("size")

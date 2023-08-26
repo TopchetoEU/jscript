@@ -1,6 +1,7 @@
 package me.topchetoeu.jscript.json;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import me.topchetoeu.jscript.exceptions.SyntaxException;
 import me.topchetoeu.jscript.parsing.Operator;
@@ -131,7 +132,7 @@ public class JSON {
         }
         if (el.isMap()) {
             var res = new StringBuilder().append("{");
-            var entries = el.map().entrySet().stream().toList();
+            var entries = el.map().entrySet().stream().collect(Collectors.toList());
 
             for (int i = 0; i < entries.size(); i++) {
                 if (i != 0) res.append(",");

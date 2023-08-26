@@ -1,6 +1,7 @@
 package me.topchetoeu.jscript.polyfills;
 
 import java.util.LinkedHashSet;
+import java.util.stream.Collectors;
 
 import me.topchetoeu.jscript.engine.CallContext;
 import me.topchetoeu.jscript.engine.values.ArrayValue;
@@ -37,14 +38,14 @@ public class Set {
     public void forEach(CallContext ctx, Object func, Object thisArg) throws InterruptedException {
         if (!(func instanceof FunctionValue)) throw EngineException.ofType("func must be a function.");
 
-        for (var el : objs.stream().toList()) {
+        for (var el : objs.stream().collect(Collectors.toList())) {
             ((FunctionValue)func).call(ctx, thisArg, el, el, this);
         }
     }
 
     @Native
     public ObjectValue entries() {
-        var it = objs.stream().toList().iterator();
+        var it = objs.stream().collect(Collectors.toList()).iterator();
 
         var next = new NativeFunction("next", (ctx, thisArg, args) -> {
             if (it.hasNext()) {
@@ -61,7 +62,7 @@ public class Set {
     }
     @Native
     public ObjectValue keys() {
-        var it = objs.stream().toList().iterator();
+        var it = objs.stream().collect(Collectors.toList()).iterator();
 
         var next = new NativeFunction("next", (ctx, thisArg, args) -> {
             if (it.hasNext()) {
@@ -78,7 +79,7 @@ public class Set {
     }
     @Native
     public ObjectValue values() {
-        var it = objs.stream().toList().iterator();
+        var it = objs.stream().collect(Collectors.toList()).iterator();
 
         var next = new NativeFunction("next", (ctx, thisArg, args) -> {
             if (it.hasNext()) {
