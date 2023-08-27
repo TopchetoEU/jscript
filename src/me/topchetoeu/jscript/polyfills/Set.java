@@ -6,7 +6,6 @@ import java.util.stream.Collectors;
 import me.topchetoeu.jscript.engine.CallContext;
 import me.topchetoeu.jscript.engine.values.ArrayValue;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
-import me.topchetoeu.jscript.engine.values.NativeFunction;
 import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.exceptions.EngineException;
@@ -44,55 +43,20 @@ public class Set {
     }
 
     @Native
-    public ObjectValue entries() {
-        var it = objs.stream().collect(Collectors.toList()).iterator();
-
-        var next = new NativeFunction("next", (ctx, thisArg, args) -> {
-            if (it.hasNext()) {
-                var val = it.next();
-                return new ObjectValue(java.util.Map.of(
-                    "value", new ArrayValue(val, val),
-                    "done", false
-                ));
-            }
-            else return new ObjectValue(java.util.Map.of("done", true));
-        });
-
-        return new ObjectValue(java.util.Map.of("next", next));
+    public ObjectValue entries(CallContext ctx) throws InterruptedException {
+        return Values.fromJavaIterable(ctx, objs
+            .stream()
+            .map(v -> new ArrayValue(ctx, v, v))
+            .collect(Collectors.toList())
+        );
     }
     @Native
-    public ObjectValue keys() {
-        var it = objs.stream().collect(Collectors.toList()).iterator();
-
-        var next = new NativeFunction("next", (ctx, thisArg, args) -> {
-            if (it.hasNext()) {
-                var val = it.next();
-                return new ObjectValue(java.util.Map.of(
-                    "value", val,
-                    "done", false
-                ));
-            }
-            else return new ObjectValue(java.util.Map.of("done", true));
-        });
-
-        return new ObjectValue(java.util.Map.of("next", next));
+    public ObjectValue keys(CallContext ctx) throws InterruptedException {
+        return Values.fromJavaIterable(ctx, objs);
     }
     @Native
-    public ObjectValue values() {
-        var it = objs.stream().collect(Collectors.toList()).iterator();
-
-        var next = new NativeFunction("next", (ctx, thisArg, args) -> {
-            if (it.hasNext()) {
-                var val = it.next();
-                return new ObjectValue(java.util.Map.of(
-                    "value", val,
-                    "done", false
-                ));
-            }
-            else return new ObjectValue(java.util.Map.of("done", true));
-        });
-
-        return new ObjectValue(java.util.Map.of("next", next));
+    public ObjectValue values(CallContext ctx) throws InterruptedException {
+        return Values.fromJavaIterable(ctx, objs);
     }
 
     @NativeGetter("size")

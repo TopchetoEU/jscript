@@ -47,7 +47,7 @@ public class OverloadFunction extends FunctionValue {
             Object _this = overload.thisArg == null ? null : Values.convert(ctx, thisArg, overload.thisArg);
 
             try {
-                return Values.normalize(overload.runner.run(ctx, _this, newArgs));
+                return Values.normalize(ctx, overload.runner.run(ctx, _this, newArgs));
             }
             catch (InstantiationException e) {
                 throw EngineException.ofError("The class may not be instantiated.");

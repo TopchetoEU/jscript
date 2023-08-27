@@ -41,7 +41,7 @@ public class EngineException extends RuntimeException {
 
     private static Object err(String msg, PlaceholderProto proto) {
         var res = new ObjectValue(proto);
-        res.defineProperty("message", msg);
+        res.defineProperty(null, "message", msg);
         return res;
     }
 

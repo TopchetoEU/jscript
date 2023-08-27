@@ -63,8 +63,8 @@ public abstract class FunctionValue extends ObjectValue {
         nonEnumerableSet.add("length");
 
         var proto = new ObjectValue();
-        proto.defineProperty("constructor", this, true, false, false);
-        this.defineProperty("prototype", proto, true, false, false);
+        proto.defineProperty(null, "constructor", this, true, false, false);
+        this.defineProperty(null, "prototype", proto, true, false, false);
     }
 }
 

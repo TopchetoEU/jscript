@@ -6,7 +6,6 @@ import me.topchetoeu.jscript.Location;
 import me.topchetoeu.jscript.compilation.Instruction;
 import me.topchetoeu.jscript.compilation.Statement;
 import me.topchetoeu.jscript.compilation.control.ThrowStatement;
-import me.topchetoeu.jscript.engine.CallContext;
 import me.topchetoeu.jscript.engine.Operation;
 import me.topchetoeu.jscript.engine.scope.ScopeRecord;
 import me.topchetoeu.jscript.engine.values.Values;
@@ -52,40 +51,7 @@ public class OperationStatement extends Statement {
             }
 
             try {
-                var ctx = new CallContext(null);
-    
-                switch (operation) {
-                    case ADD: return new ConstantStatement(loc(), Values.add(ctx, vals[0], vals[1]));
-                    case SUBTRACT: return new ConstantStatement(loc(), Values.subtract(ctx, vals[0], vals[1]));
-                    case DIVIDE: return new ConstantStatement(loc(), Values.divide(ctx, vals[0], vals[1]));
-                    case MULTIPLY: return new ConstantStatement(loc(), Values.multiply(ctx, vals[0], vals[1]));
-                    case MODULO: return new ConstantStatement(loc(), Values.modulo(ctx, vals[0], vals[1]));
-
-                    case AND: return new ConstantStatement(loc(), Values.and(ctx, vals[0], vals[1]));
-                    case OR: return new ConstantStatement(loc(), Values.or(ctx, vals[0], vals[1]));
-                    case XOR: return new ConstantStatement(loc(), Values.xor(ctx, vals[0], vals[1]));
-
-                    case EQUALS: return new ConstantStatement(loc(), Values.strictEquals(vals[0], vals[1]));
-                    case NOT_EQUALS: return new ConstantStatement(loc(), !Values.strictEquals(vals[0], vals[1]));
-                    case LOOSE_EQUALS: return new ConstantStatement(loc(), Values.looseEqual(ctx, vals[0], vals[1]));
-                    case LOOSE_NOT_EQUALS: return new ConstantStatement(loc(), !Values.looseEqual(ctx, vals[0], vals[1]));
-
-                    case GREATER: return new ConstantStatement(loc(), Values.compare(ctx, vals[0], vals[1]) < 0);
-                    case GREATER_EQUALS: return new ConstantStatement(loc(), Values.compare(ctx, vals[0], vals[1]) <= 0);
-                    case LESS: return new ConstantStatement(loc(), Values.compare(ctx, vals[0], vals[1]) > 0);
-                    case LESS_EQUALS: return new ConstantStatement(loc(), Values.compare(ctx, vals[0], vals[1]) >= 0);
-
-                    case INVERSE: return new ConstantStatement(loc(), Values.bitwiseNot(ctx, vals[0]));
-                    case NOT: return new ConstantStatement(loc(), Values.not(vals[0]));
-                    case POS: return new ConstantStatement(loc(), Values.toNumber(ctx, vals[0]));
-                    case NEG: return new ConstantStatement(loc(), Values.negative(ctx, vals[0]));
-
-                    case SHIFT_LEFT: return new ConstantStatement(loc(), Values.shiftLeft(ctx, vals[0], vals[1]));
-                    case SHIFT_RIGHT: return new ConstantStatement(loc(), Values.shiftRight(ctx, vals[0], vals[1]));
-                    case USHIFT_RIGHT: return new ConstantStatement(loc(), Values.unsignedShiftRight(ctx, vals[0], vals[1]));
-
-                    default: break;
-                }
+                return new ConstantStatement(loc(), Values.operation(null, operation, vals));
             }
             catch (EngineException e) {
                 return new ThrowStatement(loc(), new ConstantStatement(loc(), e.value));

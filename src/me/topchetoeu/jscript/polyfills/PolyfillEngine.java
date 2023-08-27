@@ -8,10 +8,6 @@ import java.io.InputStreamReader;
 
 import me.topchetoeu.jscript.engine.Engine;
 import me.topchetoeu.jscript.engine.modules.ModuleManager;
-import me.topchetoeu.jscript.engine.values.FunctionValue;
-import me.topchetoeu.jscript.engine.values.NativeFunction;
-import me.topchetoeu.jscript.engine.values.Values;
-import me.topchetoeu.jscript.parsing.Parsing;
 
 public class PolyfillEngine extends Engine {
     public static String streamToString(InputStream in) {
@@ -52,59 +48,58 @@ public class PolyfillEngine extends Engine {
 
         this.modules = new ModuleManager(root);
 
-        exposeNamespace("Math", Math.class);
-        exposeNamespace("JSON", JSON.class);
-        exposeClass("Promise", Promise.class);
-        exposeClass("RegExp", RegExp.class);
-        exposeClass("Date", Date.class);
-        exposeClass("Map", Map.class);
-        exposeClass("Set", Set.class);
+        // exposeNamespace("Math", Math.class);
+        // exposeNamespace("JSON", JSON.class);
+        // exposeClass("Promise", Promise.class);
+        // exposeClass("RegExp", RegExp.class);
+        // exposeClass("Date", Date.class);
+        // exposeClass("Map", Map.class);
+        // exposeClass("Set", Set.class);
 
-        global().define("Object", "Function", "String", "Number", "Boolean", "Symbol");
-        global().define("Array", "require");
-        global().define("Error", "SyntaxError", "TypeError", "RangeError");
-        global().define("setTimeout", "setInterval", "clearTimeout", "clearInterval");
-        // global().define("process", true, "trololo");
-        global().define("debugger");
+        // global().define("Object", "Function", "String", "Number", "Boolean", "Symbol");
+        // global().define("Array", "require");
+        // global().define("Error", "SyntaxError", "TypeError", "RangeError");
+        // global().define("setTimeout", "setInterval", "clearTimeout", "clearInterval");
+        // global().define("debugger");
 
-        global().define(true, new NativeFunction("measure", (ctx, thisArg, values) -> {
-            var start = System.nanoTime();
-            try {
-                return Values.call(ctx, values[0], ctx);
-            }
-            finally {
-                System.out.println(String.format("Function took %s ms", (System.nanoTime() - start) / 1000000.));
-            }
-        }));
-        global().define(true, new NativeFunction("isNaN", (ctx, thisArg, args) -> {
-            if (args.length == 0) return true;
-            else return Double.isNaN(Values.toNumber(ctx, args[0]));
-        }));
-        global().define(true, new NativeFunction("log", (el, t, args) -> {
-            for (var obj : args) Values.printValue(el, obj);
-            System.out.println();
-            return null;
-        }));
+        // global().define(true, new NativeFunction("measure", (ctx, thisArg, values) -> {
+        //     var start = System.nanoTime();
+        //     try {
+        //         return Values.call(ctx, values[0], ctx);
+        //     }
+        //     finally {
+        //         System.out.println(String.format("Function took %s ms", (System.nanoTime() - start) / 1000000.));
+        //     }
+        // }));
+        // global().define(true, new NativeFunction("isNaN", (ctx, thisArg, args) -> {
+        //     if (args.length == 0) return true;
+        //     else return Double.isNaN(Values.toNumber(ctx, args[0]));
+        // }));
+        // global().define(true, new NativeFunction("log", (el, t, args) -> {
+        //     for (var obj : args) Values.printValue(el, obj);
+        //     System.out.println();
+        //     return null;
+        // }));
 
-        var scope = global().globalChild();
-        scope.define("gt", true, global().obj);
-        scope.define("lgt", true, scope.obj);
-        scope.define("setProps", "setConstr");
-        scope.define("internals", true, new Internals());
-        scope.define(true, new NativeFunction("run", (ctx, thisArg, args) -> {
-            var filename = (String)args[0];
-            boolean pollute = args.length > 1 && args[1].equals(true);
-            FunctionValue func;
-            var src = resourceToString("js/" + filename);
-            if (src == null) throw new RuntimeException("The source '" + filename + "' doesn't exist.");
+        // var scope = global().globalChild();
+        // scope.define("gt", true, global().obj);
+        // scope.define("lgt", true, scope.obj);
+        // scope.define("setProps", "setConstr");
+        // scope.define("internals", true, new Internals());
+        // scope.define(true, new NativeFunction("run", (ctx, thisArg, args) -> {
+        //     var filename = (String)args[0];
+        //     boolean pollute = args.length > 1 && args[1].equals(true);
+        //     FunctionValue func;
+        //     var src = resourceToString("js/" + filename);
+        //     if (src == null) throw new RuntimeException("The source '" + filename + "' doesn't exist.");
 
-            if (pollute) func = Parsing.compile(global(), filename, src);
-            else func = Parsing.compile(scope.globalChild(), filename, src);
+        //     if (pollute) func = Parsing.compile(global(), filename, src);
+        //     else func = Parsing.compile(scope.globalChild(), filename, src);
 
-            func.call(ctx);
-            return null;
-        }));
+        //     func.call(ctx);
+        //     return null;
+        // }));
 
-        pushMsg(false, scope.globalChild(), java.util.Map.of(), "core.js", resourceToString("js/core.js"), null);
+        // pushMsg(false, scope.globalChild(), java.util.Map.of(), "core.js", resourceToString("js/core.js"), null);
     }
 }

@@ -18,7 +18,7 @@ public class ValueVariable implements Variable {
     @Override
     public void set(CallContext ctx, Object val) {
         if (readonly) return;
-        this.value = Values.normalize(val);
+        this.value = Values.normalize(ctx, val);
     }
     
     public ValueVariable(boolean readonly, Object val) {

@@ -19,11 +19,11 @@ public class JSON {
         if (val.isBoolean()) return val.bool();
         if (val.isString()) return val.string();
         if (val.isNumber()) return val.number();
-        if (val.isList()) return ArrayValue.of(val.list().stream().map(JSON::toJS).collect(Collectors.toList()));
+        if (val.isList()) return ArrayValue.of(null, val.list().stream().map(JSON::toJS).collect(Collectors.toList()));
         if (val.isMap()) {
             var res = new ObjectValue();
             for (var el : val.map().entrySet()) {
-                res.defineProperty(el.getKey(), toJS(el.getValue()));
+                res.defineProperty(null, el.getKey(), toJS(el.getValue()));
             }
             return res;
         }

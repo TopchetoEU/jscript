@@ -119,7 +119,7 @@ public class RegExp {
 
         for (var el : namedGroups) {
             try {
-                groups.defineProperty(el, matcher.group(el));
+                groups.defineProperty(null, el, matcher.group(el));
             }
             catch (IllegalArgumentException e) { }
         }
@@ -127,23 +127,23 @@ public class RegExp {
 
 
         for (int i = 0; i < matcher.groupCount() + 1; i++) {
-            obj.set(i, matcher.group(i));
+            obj.set(null, i, matcher.group(i));
         }
-        obj.defineProperty("groups", groups);
-        obj.defineProperty("index", matcher.start());
-        obj.defineProperty("input", str);
+        obj.defineProperty(null, "groups", groups);
+        obj.defineProperty(null, "index", matcher.start());
+        obj.defineProperty(null, "input", str);
 
         if (hasIndices) {
             var indices = new ArrayValue();
             for (int i = 0; i < matcher.groupCount() + 1; i++) {
-                indices.set(i, new ArrayValue(matcher.start(i), matcher.end(i)));
+                indices.set(null, i, new ArrayValue(null, matcher.start(i), matcher.end(i)));
             }
             var groupIndices = new ObjectValue();
             for (var el : namedGroups) {
-                groupIndices.defineProperty(el, new ArrayValue(matcher.start(el), matcher.end(el)));
+                groupIndices.defineProperty(null, el, new ArrayValue(null, matcher.start(el), matcher.end(el)));
             }
-            indices.defineProperty("groups", groupIndices);
-            obj.defineProperty("indices", indices);
+            indices.defineProperty(null, "groups", groupIndices);
+            obj.defineProperty(null, "indices", indices);
         }
 
         return obj;

@@ -1,7 +1,6 @@
 package me.topchetoeu.jscript;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
@@ -13,8 +12,6 @@ import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.events.Observer;
 import me.topchetoeu.jscript.exceptions.EngineException;
 import me.topchetoeu.jscript.exceptions.SyntaxException;
-import me.topchetoeu.jscript.polyfills.PolyfillEngine;
-import me.topchetoeu.jscript.polyfills.TypescriptEngine;
 
 public class Main {
     static Thread task;
@@ -54,7 +51,7 @@ public class Main {
 
     public static void main(String args[]) {
         var in = new BufferedReader(new InputStreamReader(System.in));
-        engine = new TypescriptEngine(new File("."));
+        engine = new Engine();
         var scope = engine.global().globalChild();
         var exited = new boolean[1];
 

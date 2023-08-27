@@ -142,13 +142,6 @@ public class Engine {
         }
     }
 
-    public void exposeClass(String name, Class<?> clazz) {
-        global.define(name, true, typeRegister.getConstr(clazz));
-    }
-    public void exposeNamespace(String name, Class<?> clazz) {
-        global.define(name, true, NativeTypeRegister.makeNamespace(clazz));
-    }
-
     public Thread start() {
         if (this.thread == null) {
             this.thread = new Thread(this::run, "JavaScript Runner #" + id);
@@ -175,6 +168,9 @@ public class Engine {
     }
     public ObjectValue getPrototype(Class<?> clazz) {
         return typeRegister.getProto(clazz);
+    }
+    public FunctionValue getConstructor(Class<?> clazz) {
+        return typeRegister.getConstr(clazz);
     }
     public CallContext context() { return new CallContext(this).mergeData(callCtxVals); }
 

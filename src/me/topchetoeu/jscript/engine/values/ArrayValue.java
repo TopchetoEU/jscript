@@ -29,14 +29,14 @@ public class ArrayValue extends ObjectValue {
         if (res == EMPTY) return null;
         else return res;
     }
-    public void set(int i, Object val) {
+    public void set(CallContext ctx, int i, Object val) {
         if (i < 0) return;
 
         while (values.size() <= i) {
             values.add(EMPTY);
         }
 
-        values.set(i, Values.normalize(val));
+        values.set(i, Values.normalize(ctx, val));
     }
     public boolean has(int i) {
         return i >= 0 && i < values.size() && values.get(i) != EMPTY;
@@ -102,7 +102,7 @@ public class ArrayValue extends ObjectValue {
         if (key instanceof Number) {
             var i = Values.number(key);
             if (i >= 0 && i - Math.floor(i) == 0) {
-                set((int)i, val);
+                set(ctx, (int)i, val);
                 return true;
             }
         }
@@ -149,12 +149,12 @@ public class ArrayValue extends ObjectValue {
         nonEnumerableSet.add("length");
         nonConfigurableSet.add("length");
     }
-    public ArrayValue(Object ...values) {
+    public ArrayValue(CallContext ctx, Object ...values) {
         this();
-        for (var i = 0; i < values.length; i++) this.values.add(values[i]);
+        for (var i = 0; i < values.length; i++) this.values.add(Values.normalize(ctx, values[i]));
     }
 
-    public static ArrayValue of(Collection<Object> values) {
-        return new ArrayValue(values.toArray(Object[]::new));
+    public static ArrayValue of(CallContext ctx, Collection<Object> values) {
+        return new ArrayValue(ctx, values.toArray(Object[]::new));
     }
 }

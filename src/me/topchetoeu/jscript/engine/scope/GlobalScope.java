@@ -38,24 +38,24 @@ public class GlobalScope implements ScopeRecord {
             Thread.currentThread().interrupt();
             return name;
         }
-        obj.defineProperty(name, null);
+        obj.defineProperty(null, name, null);
         return name;
     }
     public void define(String name, Variable val) {
-        obj.defineProperty(name,
+        obj.defineProperty(null, name,
             new NativeFunction("get " + name, (ctx, th, a) -> val.get(ctx)),
             new NativeFunction("set " + name, (ctx, th, args) -> { val.set(ctx, args.length > 0 ? args[0] : null); return null; }),
             true, true
         );
     }
-    public void define(String name, boolean readonly, Object val) {
-        obj.defineProperty(name, val, readonly, true, true);
+    public void define(CallContext ctx, String name, boolean readonly, Object val) {
+        obj.defineProperty(ctx, name, val, readonly, true, true);
     }
     public void define(String... names) {
         for (var n : names) define(n);
     }
     public void define(boolean readonly, FunctionValue val) {
-        define(val.name, readonly, val);
+        define(null, val.name, readonly, val);
     }
 
     public Object get(CallContext ctx, String name) throws InterruptedException {

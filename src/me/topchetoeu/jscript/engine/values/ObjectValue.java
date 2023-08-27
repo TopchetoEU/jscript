@@ -78,8 +78,8 @@ public class ObjectValue {
         state = State.FROZEN;
     }
 
-    public final boolean defineProperty(Object key, Object val, boolean writable, boolean configurable, boolean enumerable) {
-        key = Values.normalize(key); val = Values.normalize(val);
+    public final boolean defineProperty(CallContext ctx, Object key, Object val, boolean writable, boolean configurable, boolean enumerable) {
+        key = Values.normalize(ctx, key); val = Values.normalize(ctx, val);
         boolean reconfigured = 
             writable != memberWritable(key) ||
             configurable != memberConfigurable(key) ||
@@ -118,11 +118,11 @@ public class ObjectValue {
         values.put(key, val);
         return true;
     }
-    public final boolean defineProperty(Object key, Object val) {
-        return defineProperty(Values.normalize(key), Values.normalize(val), true, true, true);
+    public final boolean defineProperty(CallContext ctx, Object key, Object val) {
+        return defineProperty(ctx, key, val, true, true, true);
     }
-    public final boolean defineProperty(Object key, FunctionValue getter, FunctionValue setter, boolean configurable, boolean enumerable) {
-        key = Values.normalize(key);
+    public final boolean defineProperty(CallContext ctx, Object key, FunctionValue getter, FunctionValue setter, boolean configurable, boolean enumerable) {
+        key = Values.normalize(ctx, key);
         if (
             properties.containsKey(key) &&
             properties.get(key).getter == getter &&
@@ -162,7 +162,7 @@ public class ObjectValue {
         return (ObjectValue)prototype;
     }
     public final boolean setPrototype(CallContext ctx, Object val) {
-        val = Values.normalize(val);
+        val = Values.normalize(ctx, val);
 
         if (!extensible()) return false;
         if (val == null || val == Values.NULL) prototype = null;
@@ -228,7 +228,7 @@ public class ObjectValue {
     }
 
     public final Object getMember(CallContext ctx, Object key, Object thisArg) throws InterruptedException {
-        key = Values.normalize(key);
+        key = Values.normalize(ctx, key);
 
         if (key.equals("__proto__")) {
             var res = getPrototype(ctx);
@@ -239,7 +239,7 @@ public class ObjectValue {
 
         if (prop != null) {
             if (prop.getter == null) return null;
-            else return prop.getter.call(ctx, Values.normalize(thisArg));
+            else return prop.getter.call(ctx, Values.normalize(ctx, thisArg));
         }
         else return getField(ctx, key);
     }
@@ -248,12 +248,12 @@ public class ObjectValue {
     }
 
     public final boolean setMember(CallContext ctx, Object key, Object val, Object thisArg, boolean onlyProps) throws InterruptedException {
-        key = Values.normalize(key); val = Values.normalize(val);
+        key = Values.normalize(ctx, key); val = Values.normalize(ctx, val);
 
         var prop = getProperty(ctx, key);
         if (prop != null) {
             if (prop.setter == null) return false;
-            prop.setter.call(ctx, Values.normalize(thisArg), val);
+            prop.setter.call(ctx, Values.normalize(ctx, thisArg), val);
             return true;
         }
         else if (onlyProps) return false;
@@ -267,11 +267,11 @@ public class ObjectValue {
         else return setField(ctx, key, val);
     }
     public final boolean setMember(CallContext ctx, Object key, Object val, boolean onlyProps) throws InterruptedException {
-        return setMember(ctx, Values.normalize(key), Values.normalize(val), this, onlyProps);
+        return setMember(ctx, Values.normalize(ctx, key), Values.normalize(ctx, val), this, onlyProps);
     }
 
     public final boolean hasMember(CallContext ctx, Object key, boolean own) throws InterruptedException {
-        key = Values.normalize(key);
+        key = Values.normalize(ctx, key);
 
         if (key != null && key.equals("__proto__")) return true;
         if (hasField(ctx, key)) return true;
@@ -280,7 +280,7 @@ public class ObjectValue {
         return prototype != null && getPrototype(ctx).hasMember(ctx, key, own);
     }
     public final boolean deleteMember(CallContext ctx, Object key) throws InterruptedException {
-        key = Values.normalize(key);
+        key = Values.normalize(ctx, key);
 
         if (!memberConfigurable(key)) return false;
         properties.remove(key);
@@ -291,21 +291,21 @@ public class ObjectValue {
     }
 
     public final ObjectValue getMemberDescriptor(CallContext ctx, Object key) throws InterruptedException {
-        key = Values.normalize(key);
+        key = Values.normalize(ctx, key);
 
         var prop = properties.get(key);
         var res = new ObjectValue();
 
-        res.defineProperty("configurable", memberConfigurable(key));
-        res.defineProperty("enumerable", memberEnumerable(key));
+        res.defineProperty(ctx, "configurable", memberConfigurable(key));
+        res.defineProperty(ctx, "enumerable", memberEnumerable(key));
 
         if (prop != null) {
-            res.defineProperty("get", prop.getter);
-            res.defineProperty("set", prop.setter);
+            res.defineProperty(ctx, "get", prop.getter);
+            res.defineProperty(ctx, "set", prop.setter);
         }
         else if (hasField(ctx, key)) {
-            res.defineProperty("value", values.get(key));
-            res.defineProperty("writable", memberWritable(key));
+            res.defineProperty(ctx, "value", values.get(key));
+            res.defineProperty(ctx, "writable", memberWritable(key));
         }
         else return null;
         return res;
@@ -326,10 +326,10 @@ public class ObjectValue {
         return res;
     }
 
-    public ObjectValue(Map<?, ?> values) {
+    public ObjectValue(CallContext ctx, Map<?, ?> values) {
         this(PlaceholderProto.OBJECT);
         for (var el : values.entrySet()) {
-            defineProperty(el.getKey(), el.getValue());
+            defineProperty(ctx, el.getKey(), el.getValue());
         }
     }
     public ObjectValue(PlaceholderProto proto) {

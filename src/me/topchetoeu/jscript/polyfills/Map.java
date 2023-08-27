@@ -53,7 +53,7 @@ public class Map {
         return Values.fromJavaIterable(ctx, objs
             .entrySet()
             .stream()
-            .map(v -> new ArrayValue(v.getKey(), v.getValue()))
+            .map(v -> new ArrayValue(ctx, v.getKey(), v.getValue()))
             .collect(Collectors.toList())
         );
     }

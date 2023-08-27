@@ -25,7 +25,7 @@ public class NativeTypeRegister {
                 var val = target.values.get(name);
 
                 if (name.equals("")) name = method.getName();
-                if (!(val instanceof OverloadFunction)) target.defineProperty(name, val = new OverloadFunction(name));
+                if (!(val instanceof OverloadFunction)) target.defineProperty(null, name, val = new OverloadFunction(name));
 
                 ((OverloadFunction)val).overloads.add(Overload.fromMethod(method));
             }
@@ -40,7 +40,7 @@ public class NativeTypeRegister {
                     else getter = new OverloadFunction("get " + name);
 
                     getter.overloads.add(Overload.fromMethod(method));
-                    target.defineProperty(name, getter, setter, true, true);
+                    target.defineProperty(null, name, getter, setter, true, true);
                 }
                 if (set != null) {
                     var name = set.value();
@@ -52,7 +52,7 @@ public class NativeTypeRegister {
                     else setter = new OverloadFunction("set " + name);
 
                     setter.overloads.add(Overload.fromMethod(method));
-                    target.defineProperty(name, getter, setter, true, true);
+                    target.defineProperty(null, name, getter, setter, true, true);
                 }
             }
         }
@@ -67,7 +67,7 @@ public class NativeTypeRegister {
                 if (name.equals("")) name = field.getName();
                 var getter = new OverloadFunction("get " + name).add(Overload.getterFromField(field));
                 var setter = new OverloadFunction("set " + name).add(Overload.setterFromField(field));
-                target.defineProperty(name, getter, setter, true, false);
+                target.defineProperty(null, name, getter, setter, true, false);
             }
         }
     }
@@ -84,7 +84,7 @@ public class NativeTypeRegister {
                     return ctx.engine().typeRegister().getConstr(cl);
                 }));
 
-                target.defineProperty(name, getter, null, true, false);
+                target.defineProperty(null, name, getter, null, true, false);
             }
         }
     }

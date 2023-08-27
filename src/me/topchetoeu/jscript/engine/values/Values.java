@@ -88,7 +88,7 @@ public class Values {
     }
 
     public static Object toPrimitive(CallContext ctx, Object obj, ConvertHint hint) throws InterruptedException {
-        obj = normalize(obj);
+        obj = normalize(ctx, obj);
         if (isPrimitive(obj)) return obj;
 
         var first = hint == ConvertHint.VALUEOF ? "valueOf" : "toString";
@@ -231,8 +231,8 @@ public class Values {
             case OR: return or(ctx, args[0], args[1]);
             case XOR: return xor(ctx, args[0], args[1]);
 
-            case EQUALS: return strictEquals(args[0], args[1]);
-            case NOT_EQUALS: return !strictEquals(args[0], args[1]);
+            case EQUALS: return strictEquals(ctx, args[0], args[1]);
+            case NOT_EQUALS: return !strictEquals(ctx, args[0], args[1]);
             case LOOSE_EQUALS: return looseEqual(ctx, args[0], args[1]);
             case LOOSE_NOT_EQUALS: return !looseEqual(ctx, args[0], args[1]);
 
@@ -261,7 +261,7 @@ public class Values {
     }
 
     public static Object getMember(CallContext ctx, Object obj, Object key) throws InterruptedException {
-        obj = normalize(obj); key = normalize(key);
+        obj = normalize(ctx, obj); key = normalize(ctx, key);
         if (obj == null) throw new IllegalArgumentException("Tried to access member of undefined.");
         if (obj == NULL) throw new IllegalArgumentException("Tried to access member of null.");
         if (isObject(obj)) return object(obj).getMember(ctx, key);
@@ -281,7 +281,7 @@ public class Values {
         else return proto.getMember(ctx, key, obj);
     }
     public static boolean setMember(CallContext ctx, Object obj, Object key, Object val) throws InterruptedException {
-        obj = normalize(obj); key = normalize(key); val = normalize(val);
+        obj = normalize(ctx, obj); key = normalize(ctx, key); val = normalize(ctx, val);
         if (obj == null) throw EngineException.ofType("Tried to access member of undefined.");
         if (obj == NULL) throw EngineException.ofType("Tried to access member of null.");
         if (key.equals("__proto__")) return setPrototype(ctx, obj, val);
@@ -292,7 +292,7 @@ public class Values {
     }
     public static boolean hasMember(CallContext ctx, Object obj, Object key, boolean own) throws InterruptedException {
         if (obj == null || obj == NULL) return false;
-        obj = normalize(obj); key = normalize(key);
+        obj = normalize(ctx, obj); key = normalize(ctx, key);
 
         if (key.equals("__proto__")) return true;
         if (isObject(obj)) return object(obj).hasMember(ctx, key, own);
@@ -310,14 +310,14 @@ public class Values {
     }
     public static boolean deleteMember(CallContext ctx, Object obj, Object key) throws InterruptedException {
         if (obj == null || obj == NULL) return false;
-        obj = normalize(obj); key = normalize(key);
+        obj = normalize(ctx, obj); key = normalize(ctx, key);
 
         if (isObject(obj)) return object(obj).deleteMember(ctx, key);
         else return false;
     }
     public static ObjectValue getPrototype(CallContext ctx, Object obj) throws InterruptedException {
         if (obj == null || obj == NULL) return null;
-        obj = normalize(obj);
+        obj = normalize(ctx, obj);
         if (isObject(obj)) return object(obj).getPrototype(ctx);
         if (ctx == null) return null;
 
@@ -329,7 +329,7 @@ public class Values {
         return null;
     }
     public static boolean setPrototype(CallContext ctx, Object obj, Object proto) throws InterruptedException {
-        obj = normalize(obj); proto = normalize(proto);
+        obj = normalize(ctx, obj); proto = normalize(ctx, proto);
         return isObject(obj) && object(obj).setPrototype(ctx, proto);
     }
     public static List<Object> getMembers(CallContext ctx, Object obj, boolean own, boolean includeNonEnumerable) throws InterruptedException {  
@@ -359,8 +359,8 @@ public class Values {
         return function(func).call(ctx, thisArg, args);
     }
 
-    public static boolean strictEquals(Object a, Object b) {
-        a = normalize(a); b = normalize(b);
+    public static boolean strictEquals(CallContext ctx, Object a, Object b) {
+        a = normalize(ctx, a); b = normalize(ctx, b);
 
         if (a == null || b == null) return a == null && b == null;
         if (isNan(a) || isNan(b)) return false;
@@ -370,7 +370,7 @@ public class Values {
         return a == b || a.equals(b);
     }
     public static boolean looseEqual(CallContext ctx, Object a, Object b) throws InterruptedException {
-        a = normalize(a); b = normalize(b);
+        a = normalize(ctx, a); b = normalize(ctx, b);
 
         // In loose equality, null is equivalent to undefined
         if (a == NULL) a = null;
@@ -387,13 +387,13 @@ public class Values {
         // Compare symbols by reference
         if (a instanceof Symbol || b instanceof Symbol) return a == b;
         if (a instanceof Boolean || b instanceof Boolean) return toBoolean(a) == toBoolean(b);
-        if (a instanceof Number || b instanceof Number) return strictEquals(toNumber(ctx, a), toNumber(ctx, b));
+        if (a instanceof Number || b instanceof Number) return strictEquals(ctx, toNumber(ctx, a), toNumber(ctx, b));
 
         // Default to strings
         return toString(ctx, a).equals(toString(ctx, b));
     }
 
-    public static Object normalize(Object val) {
+    public static Object normalize(CallContext ctx, Object val) {
         if (val instanceof Number) return number(val);
         if (isPrimitive(val) || val instanceof ObjectValue) return val;
         if (val instanceof Character) return val + "";
@@ -402,7 +402,7 @@ public class Values {
             var res = new ObjectValue();
 
             for (var entry : ((Map<?, ?>)val).entrySet()) {
-                res.defineProperty(entry.getKey(), entry.getValue());
+                res.defineProperty(ctx, entry.getKey(), entry.getValue());
             }
 
             return res;
@@ -412,10 +412,15 @@ public class Values {
             var res = new ArrayValue();
 
             for (var entry : ((Iterable<?>)val)) {
-                res.set(res.size(), entry);
+                res.set(ctx, res.size(), entry);
             }
 
             return res;
+        }
+
+        if (val instanceof Class) {
+            if (ctx == null) return null;
+            else return ctx.engine.getConstructor((Class<?>)val);
         }
 
         return new NativeWrapper(val);
@@ -562,14 +567,14 @@ public class Values {
         var it = iterable.iterator();
 
         try {
-            var key = getMember(ctx, getMember(ctx, ctx.engine().symbolProto(), "constructor"), "iterable");
-            res.defineProperty(key, new NativeFunction("", (_ctx, thisArg, args) -> fromJavaIterable(ctx, iterable)));
+            var key = getMember(ctx, getMember(ctx, ctx.engine().symbolProto(), "constructor"), "iterator");
+            res.defineProperty(ctx, key, new NativeFunction("", (_ctx, thisArg, args) -> thisArg));
         }
         catch (IllegalArgumentException | NullPointerException e) { }
 
-        res.defineProperty("next", new NativeFunction("", (_ctx, _th, _args) -> {
-            if (!it.hasNext()) return new ObjectValue(Map.of("done", true));
-            else return new ObjectValue(Map.of("value", it.next()));
+        res.defineProperty(ctx, "next", new NativeFunction("", (_ctx, _th, _args) -> {
+            if (!it.hasNext()) return new ObjectValue(ctx, Map.of("done", true));
+            else return new ObjectValue(ctx, Map.of("value", it.next()));
         }));
 
         return res;

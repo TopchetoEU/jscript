@@ -38,12 +38,12 @@ public class Internals {
         return func.call(ctx, th, args.toArray());
     }
     @Native
-    public boolean defineProp(ObjectValue obj, Object key, FunctionValue getter, FunctionValue setter, boolean enumerable, boolean configurable) {
-        return obj.defineProperty(key, getter, setter, configurable, enumerable);
+    public boolean defineProp(CallContext ctx, ObjectValue obj, Object key, FunctionValue getter, FunctionValue setter, boolean enumerable, boolean configurable) {
+        return obj.defineProperty(ctx, key, getter, setter, configurable, enumerable);
     }
     @Native
-    public boolean defineField(ObjectValue obj, Object key, Object val, boolean writable, boolean enumerable, boolean configurable) {
-        return obj.defineProperty(key, val, writable, configurable, enumerable);
+    public boolean defineField(CallContext ctx, ObjectValue obj, Object key, Object val, boolean writable, boolean enumerable, boolean configurable) {
+        return obj.defineProperty(ctx, key, val, writable, configurable, enumerable);
     }
 
     @Native
@@ -209,7 +209,7 @@ public class Internals {
 
         for (var el : list) {
             if (el instanceof Symbol && onlyString) continue;
-            res.set(i++, el);
+            res.set(ctx, i++, el);
         }
 
         return res;
@@ -223,7 +223,7 @@ public class Internals {
             var list = Values.object(obj).keys(true);
 
             for (var el : list) {
-                if (el instanceof Symbol == symbols) res.set(i++, el);
+                if (el instanceof Symbol == symbols) res.set(ctx, i++, el);
             }
         }
 

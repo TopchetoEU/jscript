@@ -1,28 +1,9 @@
-declare class Set<T> {
-    public [Symbol.iterator](): IterableIterator<T>;
+define("set", () => {
+    var Set = env.global.Set = env.internals.Set;
+    Set.prototype[Symbol.iterator] = function() {
+        return this.values();
+    };
 
-    public entries(): IterableIterator<[T, T]>;
-    public keys(): IterableIterator<T>;
-    public values(): IterableIterator<T>;
-
-    public clear(): void;
-
-    public add(val: T): this;
-    public delete(val: T): boolean;
-    public has(key: T): boolean;
-
-    public get size(): number;
-
-    public forEach(func: (key: T, set: Set<T>) => void, thisArg?: any): void;
-
-    public constructor();
-}
-
-Set.prototype[Symbol.iterator] = function() {
-    return this.values();
-};
-
-(() => {
     var entries = Set.prototype.entries;
     var keys = Set.prototype.keys;
     var values = Set.prototype.values;
@@ -42,4 +23,4 @@ Set.prototype[Symbol.iterator] = function() {
         it[Symbol.iterator] = () => it;
         return it;
     };
-})();
+});

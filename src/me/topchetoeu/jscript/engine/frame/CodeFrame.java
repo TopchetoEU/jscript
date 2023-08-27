@@ -93,13 +93,13 @@ public class CodeFrame {
 
         return res;
     }
-    public void push(Object val) {
+    public void push(CallContext ctx, Object val) {
         if (stack.length <= stackPtr) {
             var newStack = new Object[stack.length * 2];
             System.arraycopy(stack, 0, newStack, 0, stack.length);
             stack = newStack;
         }
-        stack[stackPtr++] = Values.normalize(val);
+        stack[stackPtr++] = Values.normalize(ctx, val);
     }
 
     public void start(CallContext ctx) {
@@ -150,7 +150,7 @@ public class CodeFrame {
 
         try {
             this.jumpFlag = false;
-            return Runners.exec(debugCmd, instr, this, ctx);
+            return Runners.exec(ctx, debugCmd, instr, this);
         }
         catch (EngineException e) {
             throw e.add(function.name, prevLoc);
@@ -307,13 +307,13 @@ public class CodeFrame {
         }
     }
 
-    public CodeFrame(Object thisArg, Object[] args, CodeFunction func) {
+    public CodeFrame(CallContext ctx, Object thisArg, Object[] args, CodeFunction func) {
         this.args = args.clone();
         this.scope = new LocalScope(func.localsN, func.captures);
         this.scope.get(0).set(null, thisArg);
         var argsObj = new ArrayValue();
         for (var i = 0; i < args.length; i++) {
-            argsObj.set(i, args[i]);
+            argsObj.set(ctx, i, args[i]);
         }
         this.scope.get(1).value = argsObj;
 

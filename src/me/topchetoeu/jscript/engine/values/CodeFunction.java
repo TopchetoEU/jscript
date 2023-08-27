@@ -34,7 +34,7 @@ public class CodeFunction extends FunctionValue {
 
     @Override
     public Object call(CallContext ctx, Object thisArg, Object... args) throws InterruptedException {
-        return new CodeFrame(thisArg, args, this).run(ctx);
+        return new CodeFrame(ctx, thisArg, args, this).run(ctx);
     }
 
     public CodeFunction(String name, int localsN, int length, GlobalScope globals, ValueVariable[] captures, Instruction[] body) {

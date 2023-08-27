@@ -27,10 +27,10 @@ public class Promise {
     }
 
     @Native("resolve")
-    public static Promise ofResolved(CallContext engine, Object val) {
+    public static Promise ofResolved(CallContext ctx, Object val) {
         if (Values.isWrapper(val, Promise.class)) return Values.wrapper(val, Promise.class);
         var res = new Promise();
-        res.fulfill(engine, val);
+        res.fulfill(ctx, val);
         return res;
     }
     public static Promise ofResolved(Object val) {
@@ -41,9 +41,9 @@ public class Promise {
     }
 
     @Native("reject")
-    public static Promise ofRejected(CallContext engine, Object val) {
+    public static Promise ofRejected(CallContext ctx, Object val) {
         var res = new Promise();
-        res.reject(engine, val);
+        res.reject(ctx, val);
         return res;
     }
     public static Promise ofRejected(Object val) {
@@ -53,7 +53,7 @@ public class Promise {
     }
 
     @Native
-    public static Promise any(CallContext engine, Object _promises) {
+    public static Promise any(CallContext ctx, Object _promises) {
         if (!Values.isArray(_promises)) throw EngineException.ofType("Expected argument for any to be an array.");
         var promises = Values.array(_promises); 
         if (promises.size() == 0) return ofResolved(new ArrayValue());
@@ -66,17 +66,17 @@ public class Promise {
             var index = i;
             var val = promises.get(i);
             if (Values.isWrapper(val, Promise.class)) Values.wrapper(val, Promise.class).then(
-                engine, 
+                ctx, 
                 new NativeFunction(null, (e, th, args) -> { res.fulfill(e, args[0]); return null; }),
                 new NativeFunction(null, (e, th, args) -> {
-                    errors.set(index, args[0]);
+                    errors.set(ctx, index, args[0]);
                     n[0]--;
                     if (n[0] <= 0) res.reject(e, errors);
                     return null;
                 })
             );
             else {
-                res.fulfill(engine, val);
+                res.fulfill(ctx, val);
                 break;
             }
         }
@@ -84,7 +84,7 @@ public class Promise {
         return res;
     }
     @Native
-    public static Promise race(CallContext engine, Object _promises) {
+    public static Promise race(CallContext ctx, Object _promises) {
         if (!Values.isArray(_promises)) throw EngineException.ofType("Expected argument for any to be an array.");
         var promises = Values.array(_promises); 
         if (promises.size() == 0) return ofResolved(new ArrayValue());
@@ -93,7 +93,7 @@ public class Promise {
         for (var i = 0; i < promises.size(); i++) {
             var val = promises.get(i);
             if (Values.isWrapper(val, Promise.class)) Values.wrapper(val, Promise.class).then(
-                engine, 
+                ctx, 
                 new NativeFunction(null, (e, th, args) -> { res.fulfill(e, args[0]); return null; }),
                 new NativeFunction(null, (e, th, args) -> { res.reject(e, args[0]); return null; })
             );
@@ -106,7 +106,7 @@ public class Promise {
         return res;
     }
     @Native
-    public static Promise all(CallContext engine, Object _promises) {
+    public static Promise all(CallContext ctx, Object _promises) {
         if (!Values.isArray(_promises)) throw EngineException.ofType("Expected argument for any to be an array.");
         var promises = Values.array(_promises); 
         if (promises.size() == 0) return ofResolved(new ArrayValue());
@@ -119,9 +119,9 @@ public class Promise {
             var index = i;
             var val = promises.get(i);
             if (Values.isWrapper(val, Promise.class)) Values.wrapper(val, Promise.class).then(
-                engine, 
+                ctx, 
                 new NativeFunction(null, (e, th, args) -> {
-                    result.set(index, args[0]);
+                    result.set(ctx, index, args[0]);
                     n[0]--;
                     if (n[0] <= 0) res.fulfill(e, result);
                     return null;
@@ -129,17 +129,17 @@ public class Promise {
                 new NativeFunction(null, (e, th, args) -> { res.reject(e, args[0]); return null; })
             );
             else {
-                result.set(i, val);
+                result.set(ctx, i, val);
                 break;
             }
         }
 
-        if (n[0] <= 0) res.fulfill(engine, result);
+        if (n[0] <= 0) res.fulfill(ctx, result);
 
         return res;
     }
     @Native
-    public static Promise allSettled(CallContext engine, Object _promises) {
+    public static Promise allSettled(CallContext ctx, Object _promises) {
         if (!Values.isArray(_promises)) throw EngineException.ofType("Expected argument for any to be an array.");
         var promises = Values.array(_promises); 
         if (promises.size() == 0) return ofResolved(new ArrayValue());
@@ -152,9 +152,9 @@ public class Promise {
             var index = i;
             var val = promises.get(i);
             if (Values.isWrapper(val, Promise.class)) Values.wrapper(val, Promise.class).then(
-                engine,
+                ctx,
                 new NativeFunction(null, (e, th, args) -> {
-                    result.set(index, new ObjectValue(Map.of(
+                    result.set(ctx, index, new ObjectValue(ctx, Map.of(
                         "status", "fulfilled",
                         "value", args[0]
                     )));
@@ -163,7 +163,7 @@ public class Promise {
                     return null;
                 }),
                 new NativeFunction(null, (e, th, args) -> {
-                    result.set(index, new ObjectValue(Map.of(
+                    result.set(ctx, index, new ObjectValue(ctx, Map.of(
                         "status", "rejected",
                         "reason", args[0]
                     )));
@@ -173,7 +173,7 @@ public class Promise {
                 })
             );
             else {
-                result.set(i, new ObjectValue(Map.of(
+                result.set(ctx, i, new ObjectValue(ctx, Map.of(
                     "status", "fulfilled",
                     "value", val
                 )));
@@ -181,7 +181,7 @@ public class Promise {
             }
         }
 
-        if (n[0] <= 0) res.fulfill(engine, result);
+        if (n[0] <= 0) res.fulfill(ctx, result);
 
         return res;
     }

@@ -39,7 +39,7 @@ public class Module {
 
         executing = true;
         var scope = ctx.engine().global().globalChild();
-        scope.define("module", true, this);
+        scope.define(null, "module", true, this);
         scope.define("exports", new ExportsVariable());
 
         var parent = new File(filename).getParentFile();

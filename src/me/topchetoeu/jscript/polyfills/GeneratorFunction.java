@@ -22,13 +22,13 @@ public class GeneratorFunction extends FunctionValue {
             if (done) {
                 if (inducedError != Runners.NO_RETURN) throw new EngineException(inducedError);
                 var res = new ObjectValue();
-                res.defineProperty("done", true);
-                res.defineProperty("value", inducedReturn == Runners.NO_RETURN ? null : inducedReturn);
+                res.defineProperty(ctx, "done", true);
+                res.defineProperty(ctx, "value", inducedReturn == Runners.NO_RETURN ? null : inducedReturn);
                 return res;
             }
 
             Object res = null;
-            if (inducedValue != Runners.NO_RETURN) frame.push(inducedValue);
+            if (inducedValue != Runners.NO_RETURN) frame.push(ctx, inducedValue);
             frame.start(ctx);
             yielding = false;
             while (!yielding) {
@@ -51,8 +51,8 @@ public class GeneratorFunction extends FunctionValue {
             else res = frame.pop();
 
             var obj = new ObjectValue();
-            obj.defineProperty("done", done);
-            obj.defineProperty("value", res);
+            obj.defineProperty(ctx, "done", done);
+            obj.defineProperty(ctx, "value", res);
             return obj;
         }
 
@@ -84,11 +84,11 @@ public class GeneratorFunction extends FunctionValue {
     }
 
     @Override
-    public Object call(CallContext _ctx, Object thisArg, Object... args) throws InterruptedException {
+    public Object call(CallContext ctx, Object thisArg, Object... args) throws InterruptedException {
         var handler = new Generator();
-        var func = factory.call(_ctx, thisArg, new NativeFunction("yield", handler::yield));
+        var func = factory.call(ctx, thisArg, new NativeFunction("yield", handler::yield));
         if (!(func instanceof CodeFunction)) throw EngineException.ofType("Return value of argument must be a js function.");
-        handler.frame = new CodeFrame(thisArg, args, (CodeFunction)func);
+        handler.frame = new CodeFrame(ctx, thisArg, args, (CodeFunction)func);
         return handler;
     }
 
