@@ -50,6 +50,7 @@ public class Main {
     };
 
     public static void main(String args[]) {
+        System.out.println(String.format("Running %s v%s by %s", Metadata.NAME, Metadata.VERSION, Metadata.AUTHOR));
         var in = new BufferedReader(new InputStreamReader(System.in));
         engine = new Engine();
         var scope = engine.global().globalChild();

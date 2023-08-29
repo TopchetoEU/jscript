@@ -6,3 +6,4 @@ build
 bin
 dst
 /*.js
+!/build.js
