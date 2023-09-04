@@ -46,8 +46,8 @@ type IteratorReturnResult<TReturn> =
 type IteratorResult<T, TReturn = any> = IteratorYieldResult<T> | IteratorReturnResult<TReturn>;
 
 interface Thenable<T> {
-    then<NextT>(this: Promise<T>, onFulfilled: PromiseThenFunc<T, NextT>, onRejected?: PromiseRejectFunc): Promise<Awaited<NextT>>;
-    then(this: Promise<T>, onFulfilled: undefined, onRejected?: PromiseRejectFunc): Promise<T>;
+    then<NextT>(onFulfilled: PromiseThenFunc<T, NextT>, onRejected?: PromiseRejectFunc): Promise<Awaited<NextT>>;
+    then(onFulfilled: undefined, onRejected?: PromiseRejectFunc): Promise<T>;
 }
 
 interface RegExpResultIndices extends Array<[number, number]> {
@@ -100,7 +100,6 @@ interface IterableIterator<T> extends Iterator<T> {
 }
 
 interface AsyncIterator<T, TReturn = any, TNext = undefined> {
-    // NOTE: 'next' is defined using a tuple to ensure we report the correct assignability errors in all places.
     next(...args: [] | [TNext]): Promise<IteratorResult<T, TReturn>>;
     return?(value?: TReturn | Thenable<TReturn>): Promise<IteratorResult<T, TReturn>>;
     throw?(e?: any): Promise<IteratorResult<T, TReturn>>;
@@ -112,65 +111,29 @@ interface AsyncIterableIterator<T> extends AsyncIterator<T> {
     [Symbol.asyncIterator](): AsyncIterableIterator<T>;
 }
 
-interface Generator<T = unknown, TReturn = any, TNext = unknown> extends Iterator<T, TReturn, TNext> {
+interface Generator<T = unknown, TReturn = unknown, TNext = unknown> extends Iterator<T, TReturn, TNext> {
     [Symbol.iterator](): Generator<T, TReturn, TNext>;
-    return(value?: TReturn): IteratorResult<T, TReturn>;
-    throw(e?: any): IteratorResult<T, TReturn>;
+    return(value: TReturn): IteratorResult<T, TReturn>;
+    throw(e: any): IteratorResult<T, TReturn>;
 }
 interface GeneratorFunction {
-    /**
-     * Creates a new Generator object.
-     * @param args A list of arguments the function accepts.
-     */
     new (...args: any[]): Generator;
-    /**
-     * Creates a new Generator object.
-     * @param args A list of arguments the function accepts.
-     */
     (...args: any[]): Generator;
-    /**
-     * The length of the arguments.
-     */
     readonly length: number;
-    /**
-     * Returns the name of the function.
-     */
     readonly name: string;
-    /**
-     * A reference to the prototype.
-     */
     readonly prototype: Generator;
 }
 
-interface AsyncGenerator<T = unknown, TReturn = any, TNext = unknown> extends AsyncIterator<T, TReturn, TNext> {
-    // NOTE: 'next' is defined using a tuple to ensure we report the correct assignability errors in all places.
-    next(...args: [] | [TNext]): Promise<IteratorResult<T, TReturn>>;
+interface AsyncGenerator<T = unknown, TReturn = unknown, TNext = unknown> extends AsyncIterator<T, TReturn, TNext> {
     return(value: TReturn | Thenable<TReturn>): Promise<IteratorResult<T, TReturn>>;
     throw(e: any): Promise<IteratorResult<T, TReturn>>;
     [Symbol.asyncIterator](): AsyncGenerator<T, TReturn, TNext>;
 }
 interface AsyncGeneratorFunction {
-    /**
-     * Creates a new AsyncGenerator object.
-     * @param args A list of arguments the function accepts.
-     */
     new (...args: any[]): AsyncGenerator;
-    /**
-     * Creates a new AsyncGenerator object.
-     * @param args A list of arguments the function accepts.
-     */
     (...args: any[]): AsyncGenerator;
-    /**
-     * The length of the arguments.
-     */
     readonly length: number;
-    /**
-     * Returns the name of the function.
-     */
     readonly name: string;
-    /**
-     * A reference to the prototype.
-     */
     readonly prototype: AsyncGenerator;
 }
 
@@ -225,7 +188,6 @@ interface MathObject {
 interface Array<T> extends IterableIterator<T> {
     [i: number]: T;
 
-    constructor: ArrayConstructor;
     length: number;
 
     toString(): string;
@@ -283,7 +245,6 @@ interface ArrayConstructor {
 
 interface Boolean {
     valueOf(): boolean;
-    constructor: BooleanConstructor;
 }
 interface BooleanConstructor {
     (val: any): boolean;
@@ -292,10 +253,10 @@ interface BooleanConstructor {
 }
 
 interface Error {
-    constructor: ErrorConstructor;
     name: string;
     message: string;
     stack: string[];
+    toString(): string;
 }
 interface ErrorConstructor {
     (msg?: any): Error;
@@ -309,7 +270,6 @@ interface TypeErrorConstructor extends ErrorConstructor {
     prototype: Error;
 }
 interface TypeError extends Error {
-    constructor: TypeErrorConstructor;
     name: 'TypeError';
 }
 
@@ -319,7 +279,6 @@ interface RangeErrorConstructor extends ErrorConstructor {
     prototype: Error;
 }
 interface RangeError extends Error {
-    constructor: RangeErrorConstructor;
     name: 'RangeError';
 }
 
@@ -329,7 +288,6 @@ interface SyntaxErrorConstructor extends ErrorConstructor {
     prototype: Error;
 }
 interface SyntaxError extends Error {
-    constructor: SyntaxErrorConstructor;
     name: 'SyntaxError';
 }
 
@@ -341,7 +299,6 @@ interface Function {
     toString(): string;
 
     prototype: any;
-    constructor: FunctionConstructor;
     readonly length: number;
     name: string;
 }
@@ -375,7 +332,6 @@ interface FunctionConstructor extends Function {
 interface Number {
     toString(): string;
     valueOf(): number;
-    constructor: NumberConstructor;
 }
 interface NumberConstructor {
     (val: any): number;
@@ -477,8 +433,6 @@ interface String {
     includes(term: string, start?: number): boolean;
 
     length: number;
-
-    constructor: StringConstructor;
 }
 interface StringConstructor {
     (val: any): string;
@@ -491,7 +445,6 @@ interface StringConstructor {
 
 interface Symbol {
     valueOf(): symbol;
-    constructor: SymbolConstructor;
 }
 interface SymbolConstructor {
     (val?: any): symbol;
@@ -511,7 +464,6 @@ interface SymbolConstructor {
 }
 
 interface Promise<T> extends Thenable<T> {
-    constructor: PromiseConstructor;
     catch(func: PromiseRejectFunc): Promise<T>;
     finally(func: () => void): Promise<T>;
 }
@@ -522,7 +474,8 @@ interface PromiseConstructor {
     resolve<T>(val: T): Promise<Awaited<T>>;
     reject(val: any): Promise<never>;
 
-    any<T>(promises: (Promise<T>|T)[]): Promise<T>;
+    isAwaitable(val: unknown): val is Thenable<any>;
+    any<T>(promises: T[]): Promise<Awaited<T>>;
     race<T>(promises: (Promise<T>|T)[]): Promise<T>;
     all<T extends any[]>(promises: T): Promise<{ [Key in keyof T]: Awaited<T[Key]> }>;
     allSettled<T extends any[]>(...promises: T): Promise<[...{ [P in keyof T]: PromiseResult<Awaited<T[P]>>}]>;
@@ -544,7 +497,6 @@ declare var parseInt: typeof Number.parseInt;
 declare var parseFloat: typeof Number.parseFloat;
 
 declare function log(...vals: any[]): void;
-declare function assert(condition: () => unknown, message?: string): boolean;
 
 declare var Array: ArrayConstructor;
 declare var Boolean: BooleanConstructor;

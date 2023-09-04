@@ -11,7 +11,7 @@ import me.topchetoeu.jscript.exceptions.EngineException;
 import me.topchetoeu.jscript.interop.Native;
 
 public class GeneratorFunction extends FunctionValue {
-    public final CodeFunction factory;
+    public final FunctionValue factory;
 
     public static class Generator {
         private boolean yielding = true;
@@ -92,7 +92,7 @@ public class GeneratorFunction extends FunctionValue {
         return handler;
     }
 
-    public GeneratorFunction(CodeFunction factory) {
+    public GeneratorFunction(FunctionValue factory) {
         super(factory.name, factory.length);
         this.factory = factory;
     }

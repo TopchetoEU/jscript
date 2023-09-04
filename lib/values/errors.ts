@@ -8,36 +8,39 @@ define("values/errors", () => {
             stack: [] as string[],
         }, Error.prototype);
     } as ErrorConstructor;
-    
-    Error.prototype = env.internals.err ?? {};
-    Error.prototype.name = 'Error';
-    setConstr(Error.prototype, Error, env);
 
-    Error.prototype.toString = function() {
-        if (!(this instanceof Error)) return '';
-    
-        if (this.message === '') return this.name;
-        else return this.name + ': ' + this.message;
-    };
+    setConstr(Error.prototype, Error);
+    setProps(Error.prototype, {
+        name: 'Error',
+        toString: internals.setEnv(function(this: Error) {
+            if (!(this instanceof Error)) return '';
+        
+            if (this.message === '') return this.name;
+            else return this.name + ': ' + this.message;
+        }, env)
+    });
+    env.setProto('error', Error.prototype);
+    internals.markSpecial(Error);
 
-    function makeError<T extends ErrorConstructor>(name: string, proto: any): T {
-        var err = function (msg: string) {
+    function makeError<T1 extends ErrorConstructor>(name: string, proto: string): T1 {
+        function constr (msg: string) {
             var res = new Error(msg);
-            (res as any).__proto__ = err.prototype;
+            (res as any).__proto__ = constr.prototype;
             return res;
-        } as T;
+        }
 
-        err.prototype = proto;
-        err.prototype.name = name;
-        setConstr(err.prototype, err as ErrorConstructor, env);
-        (err.prototype as any).__proto__ = Error.prototype;
-        (err as any).__proto__ = Error;
-        env.internals.special(err);
+        (constr as any).__proto__ = Error;
+        (constr.prototype as any).__proto__ = env.proto('error');
+        setConstr(constr.prototype, constr as ErrorConstructor);
+        setProps(constr.prototype, { name: name });
 
-        return err;
+        internals.markSpecial(constr);
+        env.setProto(proto, constr.prototype);
+        
+        return constr as T1;
     }
-
-    env.global.RangeError = makeError('RangeError', env.internals.range ?? {});
-    env.global.TypeError = makeError('TypeError', env.internals.type ?? {});
-    env.global.SyntaxError = makeError('SyntaxError', env.internals.syntax ?? {});
+    
+    env.global.RangeError = makeError('RangeError', 'rangeErr');
+    env.global.TypeError = makeError('TypeError', 'typeErr');
+    env.global.SyntaxError = makeError('SyntaxError', 'syntaxErr');
 });

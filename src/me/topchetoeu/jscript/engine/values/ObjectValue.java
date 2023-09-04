@@ -147,13 +147,13 @@ public class ObjectValue {
 
     public ObjectValue getPrototype(CallContext ctx) throws InterruptedException {
         try {
-            if (prototype == OBJ_PROTO) return ctx.engine().objectProto();
-            if (prototype == ARR_PROTO) return ctx.engine().arrayProto();
-            if (prototype == FUNC_PROTO) return ctx.engine().functionProto();
-            if (prototype == ERR_PROTO) return ctx.engine().errorProto();
-            if (prototype == RANGE_ERR_PROTO) return ctx.engine().rangeErrorProto();
-            if (prototype == SYNTAX_ERR_PROTO) return ctx.engine().syntaxErrorProto();
-            if (prototype == TYPE_ERR_PROTO) return ctx.engine().typeErrorProto();
+            if (prototype == OBJ_PROTO) return ctx.environment.proto("object");
+            if (prototype == ARR_PROTO) return ctx.environment.proto("array");
+            if (prototype == FUNC_PROTO) return ctx.environment.proto("function");
+            if (prototype == ERR_PROTO) return ctx.environment.proto("error");
+            if (prototype == RANGE_ERR_PROTO) return ctx.environment.proto("rangeErr");
+            if (prototype == SYNTAX_ERR_PROTO) return ctx.environment.proto("syntaxErr");
+            if (prototype == TYPE_ERR_PROTO) return ctx.environment.proto("typeErr");
         }
         catch (NullPointerException e) {
             return null;
@@ -165,18 +165,21 @@ public class ObjectValue {
         val = Values.normalize(ctx, val);
 
         if (!extensible()) return false;
-        if (val == null || val == Values.NULL) prototype = null;
+        if (val == null || val == Values.NULL) {
+            prototype = null;
+            return true;
+        }
         else if (Values.isObject(val)) {
             var obj = Values.object(val);
 
-            if (ctx != null && ctx.engine() != null) {
-                if (obj == ctx.engine().objectProto()) prototype = OBJ_PROTO;
-                else if (obj == ctx.engine().arrayProto()) prototype = ARR_PROTO;
-                else if (obj == ctx.engine().functionProto()) prototype = FUNC_PROTO;
-                else if (obj == ctx.engine().errorProto()) prototype = ERR_PROTO;
-                else if (obj == ctx.engine().syntaxErrorProto()) prototype = SYNTAX_ERR_PROTO;
-                else if (obj == ctx.engine().typeErrorProto()) prototype = TYPE_ERR_PROTO;
-                else if (obj == ctx.engine().rangeErrorProto()) prototype = RANGE_ERR_PROTO;
+            if (ctx != null && ctx.environment != null) {
+                if (obj == ctx.environment.proto("object")) prototype = OBJ_PROTO;
+                else if (obj == ctx.environment.proto("array")) prototype = ARR_PROTO;
+                else if (obj == ctx.environment.proto("function")) prototype = FUNC_PROTO;
+                else if (obj == ctx.environment.proto("error")) prototype = ERR_PROTO;
+                else if (obj == ctx.environment.proto("syntaxErr")) prototype = SYNTAX_ERR_PROTO;
+                else if (obj == ctx.environment.proto("typeErr")) prototype = TYPE_ERR_PROTO;
+                else if (obj == ctx.environment.proto("rangeErr")) prototype = RANGE_ERR_PROTO;
                 else prototype = obj;
             }
             else prototype = obj;
@@ -277,7 +280,8 @@ public class ObjectValue {
         if (hasField(ctx, key)) return true;
         if (properties.containsKey(key)) return true;
         if (own) return false;
-        return prototype != null && getPrototype(ctx).hasMember(ctx, key, own);
+        var proto = getPrototype(ctx);
+        return proto != null && proto.hasMember(ctx, key, own);
     }
     public final boolean deleteMember(CallContext ctx, Object key) throws InterruptedException {
         key = Values.normalize(ctx, key);

@@ -6,8 +6,8 @@ import me.topchetoeu.jscript.Location;
 import me.topchetoeu.jscript.compilation.Instruction;
 import me.topchetoeu.jscript.compilation.Instruction.Type;
 import me.topchetoeu.jscript.engine.CallContext;
+import me.topchetoeu.jscript.engine.Environment;
 import me.topchetoeu.jscript.engine.frame.CodeFrame;
-import me.topchetoeu.jscript.engine.scope.GlobalScope;
 import me.topchetoeu.jscript.engine.scope.ValueVariable;
 
 public class CodeFunction extends FunctionValue {
@@ -17,7 +17,7 @@ public class CodeFunction extends FunctionValue {
     public final LinkedHashMap<Location, Integer> breakableLocToIndex = new LinkedHashMap<>();
     public final LinkedHashMap<Integer, Location> breakableIndexToLoc = new LinkedHashMap<>();
     public final ValueVariable[] captures;
-    public final GlobalScope globals;
+    public Environment environment;
 
     public Location loc() {
         for (var instr : body) {
@@ -34,13 +34,13 @@ public class CodeFunction extends FunctionValue {
 
     @Override
     public Object call(CallContext ctx, Object thisArg, Object... args) throws InterruptedException {
-        return new CodeFrame(ctx, thisArg, args, this).run(ctx);
+        return new CodeFrame(ctx, thisArg, args, this).run(new CallContext(ctx, environment));
     }
 
-    public CodeFunction(String name, int localsN, int length, GlobalScope globals, ValueVariable[] captures, Instruction[] body) {
+    public CodeFunction(String name, int localsN, int length, Environment environment, ValueVariable[] captures, Instruction[] body) {
         super(name, length);
         this.captures = captures;
-        this.globals = globals;
+        this.environment = environment;
         this.localsN = localsN;
         this.length = length;
         this.body = body;

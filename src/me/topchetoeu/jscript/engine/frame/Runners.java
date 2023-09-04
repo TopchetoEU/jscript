@@ -69,7 +69,7 @@ public class Runners {
 
     public static Object execMakeVar(CallContext ctx, Instruction instr, CodeFrame frame) throws InterruptedException {
         var name = (String)instr.get(0);
-        frame.function.globals.define(name);
+        frame.function.environment.global.define(name);
         frame.codePtr++;
         return NO_RETURN;
     }
@@ -164,7 +164,7 @@ public class Runners {
     public static Object execLoadVar(CallContext ctx, Instruction instr, CodeFrame frame) throws InterruptedException {
         var i = instr.get(0);
 
-        if (i instanceof String) frame.push(ctx, frame.function.globals.get(ctx, (String)i));
+        if (i instanceof String) frame.push(ctx, frame.function.environment.global.get(ctx, (String)i));
         else frame.push(ctx, frame.scope.get((int)i).get(ctx));
 
         frame.codePtr++;
@@ -176,7 +176,7 @@ public class Runners {
         return NO_RETURN;
     }
     public static Object execLoadGlob(CallContext ctx, Instruction instr, CodeFrame frame) {
-        frame.push(ctx, frame.function.globals.obj);
+        frame.push(ctx, frame.function.environment.global.obj);
         frame.codePtr++;
         return NO_RETURN;
     }
@@ -202,7 +202,7 @@ public class Runners {
         var body = new Instruction[end - start];
         System.arraycopy(frame.function.body, start, body, 0, end - start);
 
-        var func = new CodeFunction("", localsN, len, frame.function.globals, captures, body);
+        var func = new CodeFunction("", localsN, len, frame.function.environment, captures, body);
         frame.push(ctx, func);
 
         frame.codePtr += n;
@@ -227,7 +227,7 @@ public class Runners {
         return execLoadMember(ctx, state, instr, frame);
     }
     public static Object execLoadRegEx(CallContext ctx, Instruction instr, CodeFrame frame) throws InterruptedException {
-        frame.push(ctx, ctx.engine().makeRegex(instr.get(0), instr.get(1)));
+        frame.push(ctx, ctx.environment.regexConstructor.call(ctx, null, instr.get(0), instr.get(1)));
         frame.codePtr++;
         return NO_RETURN;
     }
@@ -252,7 +252,7 @@ public class Runners {
         var val = (boolean)instr.get(1) ? frame.peek() : frame.pop();
         var i = instr.get(0);
 
-        if (i instanceof String) frame.function.globals.set(ctx, (String)i, val);
+        if (i instanceof String) frame.function.environment.global.set(ctx, (String)i, val);
         else frame.scope.get((int)i).set(ctx, val);
 
         frame.codePtr++;
@@ -299,8 +299,8 @@ public class Runners {
         Object obj;
 
         if (name != null) {
-            if (frame.function.globals.has(ctx, name)) {
-                obj = frame.function.globals.get(ctx, name);
+            if (frame.function.environment.global.has(ctx, name)) {
+                obj = frame.function.environment.global.get(ctx, name);
             }
             else obj = null;
         }

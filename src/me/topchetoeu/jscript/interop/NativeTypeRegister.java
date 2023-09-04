@@ -3,12 +3,13 @@ package me.topchetoeu.jscript.interop;
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
 
+import me.topchetoeu.jscript.engine.WrappersProvider;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
 import me.topchetoeu.jscript.engine.values.NativeFunction;
 import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.exceptions.EngineException;
 
-public class NativeTypeRegister {
+public class NativeTypeRegister implements WrappersProvider {
     private final HashMap<Class<?>, FunctionValue> constructors = new HashMap<>();
     private final HashMap<Class<?>, ObjectValue> prototypes = new HashMap<>();
 
@@ -80,9 +81,7 @@ public class NativeTypeRegister {
                 var name = nat.value();
                 if (name.equals("")) name = cl.getSimpleName();
 
-                var getter = new OverloadFunction("get " + name).add(Overload.getter(member ? clazz : null, (ctx, thisArg, args) -> {
-                    return ctx.engine().typeRegister().getConstr(cl);
-                }));
+                var getter = new NativeFunction("get " + name, (ctx, thisArg, args) -> cl);
 
                 target.defineProperty(null, name, getter, null, true, false);
             }

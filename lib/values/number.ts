@@ -7,10 +7,10 @@ define("values/number", () => {
         else (this as any).value = val;
     } as NumberConstructor;
 
-    Number.prototype = (0 as any).__proto__ as Number;
-    setConstr(Number.prototype, Number, env);
+    env.setProto('number', Number.prototype);
+    setConstr(Number.prototype, Number);
 
-    setProps(Number.prototype, env, {
+    setProps(Number.prototype, {
         valueOf() {
             if (typeof this === 'number') return this;
             else return (this as any).value;
@@ -21,13 +21,13 @@ define("values/number", () => {
         }
     });
 
-    setProps(Number, env, {
-        parseInt(val) { return Math.trunc(Number.parseFloat(val)); },
-        parseFloat(val) { return env.internals.parseFloat(val); },
+    setProps(Number, {
+        parseInt(val) { return Math.trunc(val as any - 0); },
+        parseFloat(val) { return val as any - 0; },
     });
 
-    env.global.Object.defineProperty(env.global, 'parseInt', { value: Number.parseInt, writable: false });
-    env.global.Object.defineProperty(env.global, 'parseFloat', { value: Number.parseFloat, writable: false });
+    env.global.parseInt = Number.parseInt;
+    env.global.parseFloat = Number.parseFloat;
     env.global.Object.defineProperty(env.global, 'NaN', { value: 0 / 0, writable: false });
     env.global.Object.defineProperty(env.global, 'Infinity', { value: 1 / 0, writable: false });
 });

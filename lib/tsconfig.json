@@ -15,6 +15,7 @@
         "map.ts",
         "set.ts",
         "regex.ts",
+        "timeout.ts",
         "core.ts"
     ],
     "compilerOptions": {

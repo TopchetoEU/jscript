@@ -7,10 +7,10 @@ define("values/string", () => {
         else (this as any).value = val;
     } as StringConstructor;
 
-    String.prototype = ('' as any).__proto__ as String;
-    setConstr(String.prototype, String, env);
+    env.setProto('string', String.prototype);
+    setConstr(String.prototype, String);
 
-    setProps(String.prototype, env, {
+    setProps(String.prototype, {
         toString() {
             if (typeof this === 'string') return this;
             else return (this as any).value;
@@ -27,7 +27,14 @@ define("values/string", () => {
             }
             start = start ?? 0 | 0;
             end = (end ?? this.length) | 0;
-            return env.internals.substring(this, start, end);
+
+            const res = [];
+
+            for (let i = start; i < end; i++) {
+                if (i >= 0 && i < this.length) res[res.length] = this[i];
+            }
+
+            return internals.stringFromStrings(res);
         },
         substr(start, length) {
             start = start ?? 0 | 0;
@@ -36,14 +43,41 @@ define("values/string", () => {
             if (start < 0) start = 0;
 
             length = (length ?? this.length - start) | 0;
-            return this.substring(start, length + start);
+            const end = length + start;
+            const res = [];
+
+            for (let i = start; i < end; i++) {
+                if (i >= 0 && i < this.length) res[res.length] = this[i];
+            }
+
+            return internals.stringFromStrings(res);
         },
 
         toLowerCase() {
-            return env.internals.toLower(this + '');
+            // TODO: Implement localization
+            const res = [];
+
+            for (let i = 0; i < this.length; i++) {
+                const c = internals.char(this[i]);
+
+                if (c >= 65 && c <= 90) res[i] = c - 65 + 97;
+                else res[i] = c;
+            }
+
+            return internals.stringFromChars(res);
         },
         toUpperCase() {
-            return env.internals.toUpper(this + '');
+            // TODO: Implement localization
+            const res = [];
+
+            for (let i = 0; i < this.length; i++) {
+                const c = internals.char(this[i]);
+
+                if (c >= 97 && c <= 122) res[i] = c - 97 + 65;
+                else res[i] = c;
+            }
+
+            return internals.stringFromChars(res);
         },
 
         charAt(pos) {
@@ -57,9 +91,14 @@ define("values/string", () => {
             return this[pos];
         },
         charCodeAt(pos) {
-            var res = this.charAt(pos);
-            if (res === '') return NaN;
-            else return env.internals.toCharCode(res);
+            if (typeof this !== 'string') {
+                if (this instanceof String) return (this as any).value.charAt(pos);
+                else throw new Error('This function may be used only with primitive or object strings.');
+            }
+
+            pos = pos | 0;
+            if (pos < 0 || pos >= this.length) return 0 / 0;
+            return internals.char(this[pos]);
         },
 
         startsWith(term, pos) {
@@ -68,7 +107,15 @@ define("values/string", () => {
                 else throw new Error('This function may be used only with primitive or object strings.');
             }
             pos = pos! | 0;
-            return env.internals.startsWith(this, term + '', pos);
+            term = term + "";
+
+            if (pos < 0 || this.length < term.length + pos) return false;
+
+            for (let i = 0; i < term.length; i++) {
+                if (this[i + pos] !== term[i]) return false;
+            }
+
+            return true;
         },
         endsWith(term, pos) {
             if (typeof this !== 'string') {
@@ -76,7 +123,17 @@ define("values/string", () => {
                 else throw new Error('This function may be used only with primitive or object strings.');
             }
             pos = (pos ?? this.length) | 0;
-            return env.internals.endsWith(this, term + '', pos);
+            term = term + "";
+
+            const start = pos - term.length;
+
+            if (start < 0 || this.length < term.length + start) return false;
+
+            for (let i = 0; i < term.length; i++) {
+                if (this[i + start] !== term[i]) return false;
+            }
+
+            return true;
         },
 
         indexOf(term: any, start) {
@@ -189,9 +246,9 @@ define("values/string", () => {
         }
     });
 
-    setProps(String, env, {
+    setProps(String, {
         fromCharCode(val) {
-            return env.internals.fromCharCode(val | 0);
+            return internals.stringFromChars([val | 0]);
         },
     })
 
@@ -202,7 +259,7 @@ define("values/string", () => {
                 else throw new Error('This function may be used only with primitive or object strings.');
             }
 
-            return env.internals.strlen(this);
+            return internals.strlen(this);
         },
         configurable: true,
         enumerable: false,

@@ -5,7 +5,8 @@ var { define, run } = (() => {
         modules[name] = func;
     }
     function run(name: string) {
-        return modules[name]();
+        if (typeof modules[name] === 'function') return modules[name]();
+        else throw "The module '" + name + "' doesn't exist.";
     }
 
     return { define, run };

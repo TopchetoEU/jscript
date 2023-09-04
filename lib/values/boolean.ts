@@ -7,6 +7,6 @@ define("values/boolean", () => {
         else (this as any).value = val;
     } as BooleanConstructor;
     
-    Boolean.prototype = (false as any).__proto__ as Boolean;
-    setConstr(Boolean.prototype, Boolean, env);
+    env.setProto('bool', Boolean.prototype);
+    setConstr(Boolean.prototype, Boolean);
 });

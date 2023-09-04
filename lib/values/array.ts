@@ -11,20 +11,20 @@ define("values/array", () => {
                 res[i] = arguments[i];
             }
         }
-    
+
         return res;
     } as ArrayConstructor;
-    
-    Array.prototype = ([] as any).__proto__ as Array<any>;
-    setConstr(Array.prototype, Array, env);
-    
+
+    env.setProto('array', Array.prototype);
     (Array.prototype as any)[Symbol.typeName] = "Array";
-    
-    setProps(Array.prototype, env, {
+    setConstr(Array.prototype, Array);
+
+    setProps(Array.prototype, {
         [Symbol.iterator]: function() {
             return this.values();
         },
-    
+        [Symbol.typeName]: "Array",
+
         values() {
             var i = 0;
     
@@ -67,7 +67,7 @@ define("values/array", () => {
         concat() {
             var res = [] as any[];
             res.push.apply(res, this);
-    
+
             for (var i = 0; i < arguments.length; i++) {
                 var arg = arguments[i];
                 if (arg instanceof Array) {
@@ -296,7 +296,7 @@ define("values/array", () => {
     
             if (typeof func !== 'function') throw new TypeError('Expected func to be undefined or a function.');
     
-            env.internals.sort(this, func);
+            internals.sort(this, func);
             return this;
         },
         splice(start, deleteCount, ...items) {
@@ -328,8 +328,9 @@ define("values/array", () => {
             return res;
         }
     });
-    
-    setProps(Array, env, {
-        isArray(val: any) { return env.internals.isArr(val); }
+
+    setProps(Array, {
+        isArray(val: any) { return internals.isArray(val); }
     });
+    internals.markSpecial(Array);
 });

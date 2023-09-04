@@ -6,7 +6,6 @@ import java.util.List;
 import me.topchetoeu.jscript.Location;
 import me.topchetoeu.jscript.engine.CallContext;
 import me.topchetoeu.jscript.engine.DebugCommand;
-import me.topchetoeu.jscript.engine.Engine;
 import me.topchetoeu.jscript.engine.CallContext.DataKey;
 import me.topchetoeu.jscript.engine.scope.LocalScope;
 import me.topchetoeu.jscript.engine.scope.ValueVariable;
@@ -106,14 +105,14 @@ public class CodeFrame {
         if (ctx.getData(STACK_N_KEY, 0) >= ctx.addData(MAX_STACK_KEY, 10000)) throw EngineException.ofRange("Stack overflow!");
         ctx.changeData(STACK_N_KEY);
 
-        var debugState = ctx.getData(Engine.DEBUG_STATE_KEY);
-        if (debugState != null) debugState.pushFrame(this);
+        // var debugState = ctx.getData(Engine.DEBUG_STATE_KEY);
+        // if (debugState != null) debugState.pushFrame(this);
     }
     public void end(CallContext ctx) {
-        var debugState = ctx.getData(Engine.DEBUG_STATE_KEY);
-
-        if (debugState != null) debugState.popFrame();
         ctx.changeData(STACK_N_KEY, -1);
+
+        // var debugState = ctx.getData(Engine.DEBUG_STATE_KEY);
+        // if (debugState != null) debugState.popFrame();
     }
 
     private Object nextNoTry(CallContext ctx) throws InterruptedException {

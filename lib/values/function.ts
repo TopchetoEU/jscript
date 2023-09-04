@@ -3,15 +3,15 @@ define("values/function", () => {
         throw 'Using the constructor Function() is forbidden.';
     } as unknown as FunctionConstructor;
 
-    Function.prototype = (Function as any).__proto__ as Function;
-    setConstr(Function.prototype, Function, env);
+    env.setProto('function', Function.prototype);
+    setConstr(Function.prototype, Function);
 
-    setProps(Function.prototype, env, {
+    setProps(Function.prototype, {
         apply(thisArg, args) {
             if (typeof args !== 'object') throw 'Expected arguments to be an array-like object.';
             var len = args.length - 0;
             let newArgs: any[];
-            if (Array.isArray(args)) newArgs = args;
+            if (internals.isArray(args)) newArgs = args;
             else {
                 newArgs = [];
 
@@ -21,21 +21,20 @@ define("values/function", () => {
                 }
             }
 
-            return env.internals.apply(this, thisArg, newArgs);
+            return internals.apply(this, thisArg, newArgs);
         },
         call(thisArg, ...args) {
             return this.apply(thisArg, args);
         },
         bind(thisArg, ...args) {
-            var func = this;
+            const func = this;
+            const res = function() {
+                const resArgs = [];
 
-            var res = function() {
-                var resArgs = [];
-
-                for (var i = 0; i < args.length; i++) {
+                for (let i = 0; i < args.length; i++) {
                     resArgs[i] = args[i];
                 }
-                for (var i = 0; i < arguments.length; i++) {
+                for (let i = 0; i < arguments.length; i++) {
                     resArgs[i + args.length] = arguments[i];
                 }
 
@@ -48,7 +47,7 @@ define("values/function", () => {
             return 'function (...) { ... }';
         },
     });
-    setProps(Function, env, {
+    setProps(Function, {
         async(func) {
             if (typeof func !== 'function') throw new TypeError('Expected func to be function.');
 
@@ -56,7 +55,7 @@ define("values/function", () => {
                 const args = arguments;
 
                 return new Promise((res, rej) => {
-                    const gen = Function.generator(func as any).apply(this, args as any);
+                    const gen = internals.apply(internals.generator(func as any), this, args as any);
 
                     (function next(type: 'none' | 'err' | 'ret', val?: any) {
                         try {
@@ -83,11 +82,11 @@ define("values/function", () => {
         asyncGenerator(func) {
             if (typeof func !== 'function') throw new TypeError('Expected func to be function.');
 
-            return function(this: any) {
-                const gen = Function.generator<any[], ['await' | 'yield', any]>((_yield) => func(
+            return function(this: any, ...args: any[]) {
+                const gen = internals.apply(internals.generator((_yield) => func(
                     val => _yield(['await', val]) as any,
                     val => _yield(['yield', val])
-                )).apply(this, arguments as any);
+                )), this, args) as Generator<['await' | 'yield', any]>;
 
                 const next = (resolve: Function, reject: Function, type: 'none' | 'val' | 'ret' | 'err', val?: any) => {
                     let res;
@@ -124,17 +123,18 @@ define("values/function", () => {
         },
         generator(func) {
             if (typeof func !== 'function') throw new TypeError('Expected func to be function.');
-            const gen = env.internals.makeGenerator(func);
-            return (...args: any[]) => {
-                const it = gen(args);
+            const gen = internals.generator(func);
+            return function(this: any, ...args: any[]) {
+                const it = internals.apply(gen, this, args);
 
                 return {
-                    next: it.next,
-                    return: it.return,
-                    throw: it.throw,
+                    next: (...args) => internals.apply(it.next, it, args),
+                    return: (val) => internals.apply(it.next, it, [val]),
+                    throw: (val) => internals.apply(it.next, it, [val]),
                     [Symbol.iterator]() { return this; }
                 }
             }
         }
     })
+    internals.markSpecial(Function);
 });

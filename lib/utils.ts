@@ -1,9 +1,3 @@
-interface Environment {
-    global: typeof globalThis & Record<string, any>;
-    captureErr: boolean;
-    internals: any;
-}
-
 function setProps<
     TargetT extends object,
     DescT extends {
@@ -11,11 +5,11 @@ function setProps<
             ((this: TargetT, ...args: ArgsT) => RetT) :
             TargetT[x]
     }
->(target: TargetT, env: Environment, desc: DescT) {
-    var props = env.internals.keys(desc, false);
+>(target: TargetT, desc: DescT) {
+    var props = internals.keys(desc, false);
     for (var i = 0; i < props.length; i++) {
         var key = props[i];
-        env.internals.defineField(
+        internals.defineField(
             target, key, (desc as any)[key],
             true, // writable
             false, // enumerable
@@ -23,8 +17,8 @@ function setProps<
         );
     }
 }
-function setConstr<ConstrT, T extends { constructor: ConstrT }>(target: T, constr: ConstrT, env: Environment) {
-    env.internals.defineField(
+function setConstr(target: object, constr: Function) {
+    internals.defineField(
         target, 'constructor', constr,
         true, // writable
         false, // enumerable

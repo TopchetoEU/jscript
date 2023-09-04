@@ -8,8 +8,9 @@ define("values/object", () => {
         return arg;
     } as ObjectConstructor;
 
-    Object.prototype = ({} as any).__proto__ as Object;
-    setConstr(Object.prototype, Object as any, env);
+    env.setProto('object', Object.prototype);
+    (Object.prototype as any).__proto__ = null;
+    setConstr(Object.prototype, Object as any);
 
     function throwNotObject(obj: any, name: string) {
         if (obj === null || typeof obj !== 'object' && typeof obj !== 'function') {
@@ -20,8 +21,8 @@ define("values/object", () => {
         return typeof obj === 'object' && obj !== null || typeof obj === 'function';
     }
 
-    setProps(Object, env, {
-        assign: function(dst, ...src) {
+    setProps(Object, {
+        assign(dst, ...src) {
             throwNotObject(dst, 'assign');
             for (let i = 0; i < src.length; i++) {
                 const obj = src[i];
@@ -40,10 +41,10 @@ define("values/object", () => {
         defineProperty(obj, key, attrib) {
             throwNotObject(obj, 'defineProperty');
             if (typeof attrib !== 'object') throw new TypeError('Expected attributes to be an object.');
-        
+
             if ('value' in attrib) {
                 if ('get' in attrib || 'set' in attrib) throw new TypeError('Cannot specify a value and accessors for a property.');
-                if (!env.internals.defineField(
+                if (!internals.defineField(
                     obj, key,
                     attrib.value,
                     !!attrib.writable,
@@ -54,8 +55,8 @@ define("values/object", () => {
             else {
                 if (typeof attrib.get !== 'function' && attrib.get !== undefined) throw new TypeError('Get accessor must be a function.');
                 if (typeof attrib.set !== 'function' && attrib.set !== undefined) throw new TypeError('Set accessor must be a function.');
-        
-                if (!env.internals.defineProp(
+
+                if (!internals.defineProp(
                     obj, key,
                     attrib.get,
                     attrib.set,
@@ -63,50 +64,87 @@ define("values/object", () => {
                     !!attrib.configurable
                 )) throw new TypeError('Can\'t define property \'' + key + '\'.');
             }
-        
+
             return obj;
         },
         defineProperties(obj, attrib) {
             throwNotObject(obj, 'defineProperties');
             if (typeof attrib !== 'object' && typeof attrib !== 'function') throw 'Expected second argument to be an object.';
-        
+
             for (var key in attrib) {
                 Object.defineProperty(obj, key, attrib[key]);
             }
-        
+
             return obj;
         },
 
         keys(obj, onlyString) {
-            onlyString = !!(onlyString ?? true);
-            return env.internals.keys(obj, onlyString);
+            return internals.keys(obj, !!(onlyString ?? true));
         },
         entries(obj, onlyString) {
-            return Object.keys(obj, onlyString).map(v => [ v, (obj as any)[v] ]);
+            const res = [];
+            const keys = internals.keys(obj, !!(onlyString ?? true));
+
+            for (let i = 0; i < keys.length; i++) {
+                res[i] = [ keys[i], (obj as any)[keys[i]] ];
+            }
+
+            return keys;
         },
         values(obj, onlyString) {
-            return Object.keys(obj, onlyString).map(v => (obj as any)[v]);
+            const res = [];
+            const keys = internals.keys(obj, !!(onlyString ?? true));
+
+            for (let i = 0; i < keys.length; i++) {
+                res[i] = (obj as any)[keys[i]];
+            }
+
+            return keys;
         },
 
         getOwnPropertyDescriptor(obj, key) {
-            return env.internals.ownProp(obj, key);
+            return internals.ownProp(obj, key) as any;
         },
         getOwnPropertyDescriptors(obj) {
-            return Object.fromEntries([
-                ...Object.getOwnPropertyNames(obj),
-                ...Object.getOwnPropertySymbols(obj)
-            ].map(v => [ v, Object.getOwnPropertyDescriptor(obj, v) ])) as any;
+            const res = [];
+            const keys = internals.ownPropKeys(obj);
+
+            for (let i = 0; i < keys.length; i++) {
+                res[i] = internals.ownProp(obj, keys[i]);
+            }
+
+            return res;
         },
 
         getOwnPropertyNames(obj) {
-            return env.internals.ownPropKeys(obj, false);
+            const arr = internals.ownPropKeys(obj);
+            const res = [];
+
+            for (let i = 0; i < arr.length; i++) {
+                if (typeof arr[i] === 'symbol') continue;
+                res[res.length] = arr[i];
+            }
+
+            return res as any;
         },
         getOwnPropertySymbols(obj) {
-            return env.internals.ownPropKeys(obj, true);
+            const arr = internals.ownPropKeys(obj);
+            const res = [];
+
+            for (let i = 0; i < arr.length; i++) {
+                if (typeof arr[i] !== 'symbol') continue;
+                res[res.length] = arr[i];
+            }
+
+            return res as any;
         },
         hasOwn(obj, key) {
-            if (Object.getOwnPropertyNames(obj).includes(key)) return true;
-            if (Object.getOwnPropertySymbols(obj).includes(key)) return true;
+            const keys = internals.ownPropKeys(obj);
+
+            for (let i = 0; i < keys.length; i++) {
+                if (keys[i] === key) return true;
+            }
+
             return false;
         },
 
@@ -130,41 +168,51 @@ define("values/object", () => {
 
         preventExtensions(obj) {
             throwNotObject(obj, 'preventExtensions');
-            env.internals.preventExtensions(obj);
+            internals.lock(obj, 'ext');
             return obj;
         },
         seal(obj) {
             throwNotObject(obj, 'seal');
-            env.internals.seal(obj);
+            internals.lock(obj, 'seal');
             return obj;
         },
         freeze(obj) {
             throwNotObject(obj, 'freeze');
-            env.internals.freeze(obj);
+            internals.lock(obj, 'freeze');
             return obj;
         },
 
         isExtensible(obj) {
             if (!check(obj)) return false;
-            return env.internals.extensible(obj);
+            return internals.extensible(obj);
         },
         isSealed(obj) {
             if (!check(obj)) return true;
-            if (Object.isExtensible(obj)) return false;
-            return Object.getOwnPropertyNames(obj).every(v => !Object.getOwnPropertyDescriptor(obj, v).configurable);
+            if (internals.extensible(obj)) return false;
+            const keys = internals.ownPropKeys(obj);
+
+            for (let i = 0; i < keys.length; i++) {
+                if (internals.ownProp(obj, keys[i]).configurable) return false;
+            }
+
+            return true;
         },
         isFrozen(obj) {
             if (!check(obj)) return true;
-            if (Object.isExtensible(obj)) return false;
-            return Object.getOwnPropertyNames(obj).every(v => {
-                var prop = Object.getOwnPropertyDescriptor(obj, v);
+            if (internals.extensible(obj)) return false;
+            const keys = internals.ownPropKeys(obj);
+
+            for (let i = 0; i < keys.length; i++) {
+                const prop = internals.ownProp(obj, keys[i]);
+                if (prop.configurable) return false;
                 if ('writable' in prop && prop.writable) return false;
-                return !prop.configurable;
-            });
+            }
+
+            return true;
         }
     });
 
-    setProps(Object.prototype, env, {
+    setProps(Object.prototype, {
         valueOf() {
             return this;
         },
@@ -175,4 +223,5 @@ define("values/object", () => {
             return Object.hasOwn(this, key);
         },
     });
+    internals.markSpecial(Object);
 });
