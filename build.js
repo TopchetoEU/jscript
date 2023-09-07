@@ -46,7 +46,7 @@ async function compileJava() {
 
     const args = ['-d', 'dst/classes', 'Metadata.java'];
     for await (const path of find('src', undefined, v => v.endsWith('.java') && !v.endsWith('Metadata.java'))) args.push(path);
-    await run('javac', ...args);
+    await run(conf.javahome + '/javac', ...args);
     await fs.rm('Metadata.java');
 }
 

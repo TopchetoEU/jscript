@@ -1,4 +1,3 @@
-/** @internal */
 define("values/object", () => {
     var Object = env.global.Object = function(arg: any) {
         if (arg === undefined || arg === null) return {};

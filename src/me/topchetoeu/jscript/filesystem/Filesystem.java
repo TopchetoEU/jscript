@@ -9,7 +9,7 @@ public interface Filesystem extends PermissionsProvider {
         FILE,
         FOLDER,
     }
-    
+
     File open(Path path) throws IOException;
     EntryType type(Path path);
     boolean mkdir(Path path);
