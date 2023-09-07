@@ -1,6 +1,5 @@
 {
-    "version": "0.0.1-alpha",
     "name": "java-jscript",
     "author": "TopchetoEU",
-    "javahome": "/usr/lib/jvm/java-8-openjdk-amd64/bin"
+    "javahome": ""
 }

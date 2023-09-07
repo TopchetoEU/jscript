@@ -38,16 +38,22 @@ function run(cmd, ...args) {
 }
 
 async function compileJava() {
-    await fs.writeFile('Metadata.java', (await fs.readFile('src/me/topchetoeu/jscript/Metadata.java')).toString()
-        .replace('${VERSION}', conf.version)
-        .replace('${NAME}', conf.name)
-        .replace('${AUTHOR}', conf.author)
-    );
-
-    const args = ['-d', 'dst/classes', 'Metadata.java'];
-    for await (const path of find('src', undefined, v => v.endsWith('.java') && !v.endsWith('Metadata.java'))) args.push(path);
-    await run(conf.javahome + '/javac', ...args);
-    await fs.rm('Metadata.java');
+    try {
+        await fs.writeFile('Metadata.java', (await fs.readFile('src/me/topchetoeu/jscript/Metadata.java')).toString()
+            .replace('${VERSION}', conf.version)
+            .replace('${NAME}', conf.name)
+            .replace('${AUTHOR}', conf.author)
+        );
+        const args = ['--release', '10', ];
+        if (argv[1] === 'debug') args.push('-g');
+        args.push('-d', 'dst/classes', 'Metadata.java');
+    
+        for await (const path of find('src', undefined, v => v.endsWith('.java') && !v.endsWith('Metadata.java'))) args.push(path);
+        await run(conf.javahome + 'javac', ...args);
+    }
+    finally {
+        await fs.rm('Metadata.java');
+    }
 }
 
 (async () => {
@@ -59,7 +65,7 @@ async function compileJava() {
         await run('jar', '-c', '-f', 'dst/jscript.jar', '-e', 'me.topchetoeu.jscript.Main', '-C', 'dst/classes', '.');
     }
     catch (e) {
-        if (argv.includes('debug')) throw e;
+        if (argv[1] === 'debug') throw e;
         else console.log(e.toString());
     }
 })();
