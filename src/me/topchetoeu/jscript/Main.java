@@ -96,7 +96,7 @@ public class Main {
         });
         env.global.define("go", ctx -> {
             try {
-                var func = engine.compile(ctx, "do.js", new String(Files.readAllBytes(Path.of("do.js"))));
+                var func = ctx.compile("do.js", new String(Files.readAllBytes(Path.of("do.js"))));
                 return func.call(ctx);
             }
             catch (IOException e) {

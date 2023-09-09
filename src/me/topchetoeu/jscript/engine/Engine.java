@@ -1,14 +1,11 @@
 package me.topchetoeu.jscript.engine;
 
-import java.util.Map;
 import java.util.concurrent.LinkedBlockingDeque;
 
 import me.topchetoeu.jscript.engine.values.FunctionValue;
-import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.events.Awaitable;
 import me.topchetoeu.jscript.events.DataNotifier;
 import me.topchetoeu.jscript.exceptions.EngineException;
-import me.topchetoeu.jscript.parsing.Parsing;
 
 public class Engine {
     private class UncompiledFunction extends FunctionValue {
@@ -19,7 +16,7 @@ public class Engine {
         @Override
         public Object call(Context ctx, Object thisArg, Object ...args) throws InterruptedException {
             ctx = new Context(this.ctx, ctx.message);
-            return compile(ctx, filename, raw).call(ctx, thisArg, args);
+            return ctx.compile(filename, raw).call(ctx, thisArg, args);
         }
 
         public UncompiledFunction(FunctionContext ctx, String filename, String raw) {
@@ -47,20 +44,15 @@ public class Engine {
 
     private static int nextId = 0;
 
-    // private Map<DataKey<?>, Object> callCtxVals = new HashMap<>();
-    // private NativeTypeRegister typeRegister;
     private Thread thread;
-
     private LinkedBlockingDeque<Task> macroTasks = new LinkedBlockingDeque<>();
     private LinkedBlockingDeque<Task> microTasks = new LinkedBlockingDeque<>();
 
     public final int id = ++nextId;
 
-    // public NativeTypeRegister typeRegister() { return typeRegister; }
-
     private void runTask(Task task) throws InterruptedException {
         try {
-            task.notifier.next(task.func.call(new Context(null, new MessageContext(this)), task.thisArg, task.args));
+            task.notifier.next(task.func.call(new Context(null, task.ctx), task.thisArg, task.args));
         }
         catch (InterruptedException e) {
             task.notifier.error(new RuntimeException(e));
@@ -118,11 +110,6 @@ public class Engine {
     }
     public Awaitable<Object> pushMsg(boolean micro, Context ctx, String filename, String raw, Object thisArg, Object ...args) {
         return pushMsg(micro, ctx.message, new UncompiledFunction(ctx.function, filename, raw), thisArg, args);
-    }
-
-    public FunctionValue compile(Context ctx, String filename, String raw) throws InterruptedException {
-        var res = Values.toString(ctx, ctx.function.compile.call(ctx, null, raw, filename));
-        return Parsing.compile(ctx.function, filename, res);
     }
 
     // public Engine() {
