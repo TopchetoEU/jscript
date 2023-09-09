@@ -1,9 +1,14 @@
 const { spawn } = require('child_process');
 const fs = require('fs/promises');
 const pt = require('path');
-const conf = require('./meta');
 const { argv } = require('process');
-conf.version ??= argv[3];
+
+const conf = {
+    name: "java-jscript",
+    author: "TopchetoEU",
+    javahome: "",
+    version: argv[3]
+};
 
 if (conf.version.startsWith('refs/tags/')) conf.version = conf.version.substring(10);
 if (conf.version.startsWith('v')) conf.version = conf.version.substring(1);
