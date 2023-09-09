@@ -129,7 +129,7 @@ public class Instruction {
         return params[i].equals(arg);
     }
 
-    private Instruction(Location location, Type type, Object... params) {
+    private Instruction(Location location, Type type, Object ...params) {
         this.location = location;
         this.type = type;
         this.params = params;

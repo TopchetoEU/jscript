@@ -6,7 +6,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
-import me.topchetoeu.jscript.engine.CallContext;
+import me.topchetoeu.jscript.engine.Context;
 
 public class ObjectValue {
     public static enum PlaceholderProto {
@@ -78,7 +78,7 @@ public class ObjectValue {
         state = State.FROZEN;
     }
 
-    public final boolean defineProperty(CallContext ctx, Object key, Object val, boolean writable, boolean configurable, boolean enumerable) {
+    public final boolean defineProperty(Context ctx, Object key, Object val, boolean writable, boolean configurable, boolean enumerable) {
         key = Values.normalize(ctx, key); val = Values.normalize(ctx, val);
         boolean reconfigured = 
             writable != memberWritable(key) ||
@@ -118,10 +118,10 @@ public class ObjectValue {
         values.put(key, val);
         return true;
     }
-    public final boolean defineProperty(CallContext ctx, Object key, Object val) {
+    public final boolean defineProperty(Context ctx, Object key, Object val) {
         return defineProperty(ctx, key, val, true, true, true);
     }
-    public final boolean defineProperty(CallContext ctx, Object key, FunctionValue getter, FunctionValue setter, boolean configurable, boolean enumerable) {
+    public final boolean defineProperty(Context ctx, Object key, FunctionValue getter, FunctionValue setter, boolean configurable, boolean enumerable) {
         key = Values.normalize(ctx, key);
         if (
             properties.containsKey(key) &&
@@ -145,15 +145,15 @@ public class ObjectValue {
         return true;
     }
 
-    public ObjectValue getPrototype(CallContext ctx) throws InterruptedException {
+    public ObjectValue getPrototype(Context ctx) throws InterruptedException {
         try {
-            if (prototype == OBJ_PROTO) return ctx.environment.proto("object");
-            if (prototype == ARR_PROTO) return ctx.environment.proto("array");
-            if (prototype == FUNC_PROTO) return ctx.environment.proto("function");
-            if (prototype == ERR_PROTO) return ctx.environment.proto("error");
-            if (prototype == RANGE_ERR_PROTO) return ctx.environment.proto("rangeErr");
-            if (prototype == SYNTAX_ERR_PROTO) return ctx.environment.proto("syntaxErr");
-            if (prototype == TYPE_ERR_PROTO) return ctx.environment.proto("typeErr");
+            if (prototype == OBJ_PROTO) return ctx.function.proto("object");
+            if (prototype == ARR_PROTO) return ctx.function.proto("array");
+            if (prototype == FUNC_PROTO) return ctx.function.proto("function");
+            if (prototype == ERR_PROTO) return ctx.function.proto("error");
+            if (prototype == RANGE_ERR_PROTO) return ctx.function.proto("rangeErr");
+            if (prototype == SYNTAX_ERR_PROTO) return ctx.function.proto("syntaxErr");
+            if (prototype == TYPE_ERR_PROTO) return ctx.function.proto("typeErr");
         }
         catch (NullPointerException e) {
             return null;
@@ -161,7 +161,7 @@ public class ObjectValue {
 
         return (ObjectValue)prototype;
     }
-    public final boolean setPrototype(CallContext ctx, Object val) {
+    public final boolean setPrototype(Context ctx, Object val) {
         val = Values.normalize(ctx, val);
 
         if (!extensible()) return false;
@@ -172,14 +172,14 @@ public class ObjectValue {
         else if (Values.isObject(val)) {
             var obj = Values.object(val);
 
-            if (ctx != null && ctx.environment != null) {
-                if (obj == ctx.environment.proto("object")) prototype = OBJ_PROTO;
-                else if (obj == ctx.environment.proto("array")) prototype = ARR_PROTO;
-                else if (obj == ctx.environment.proto("function")) prototype = FUNC_PROTO;
-                else if (obj == ctx.environment.proto("error")) prototype = ERR_PROTO;
-                else if (obj == ctx.environment.proto("syntaxErr")) prototype = SYNTAX_ERR_PROTO;
-                else if (obj == ctx.environment.proto("typeErr")) prototype = TYPE_ERR_PROTO;
-                else if (obj == ctx.environment.proto("rangeErr")) prototype = RANGE_ERR_PROTO;
+            if (ctx != null && ctx.function != null) {
+                if (obj == ctx.function.proto("object")) prototype = OBJ_PROTO;
+                else if (obj == ctx.function.proto("array")) prototype = ARR_PROTO;
+                else if (obj == ctx.function.proto("function")) prototype = FUNC_PROTO;
+                else if (obj == ctx.function.proto("error")) prototype = ERR_PROTO;
+                else if (obj == ctx.function.proto("syntaxErr")) prototype = SYNTAX_ERR_PROTO;
+                else if (obj == ctx.function.proto("typeErr")) prototype = TYPE_ERR_PROTO;
+                else if (obj == ctx.function.proto("rangeErr")) prototype = RANGE_ERR_PROTO;
                 else prototype = obj;
             }
             else prototype = obj;
@@ -203,19 +203,19 @@ public class ObjectValue {
         return true;
     }
 
-    protected Property getProperty(CallContext ctx, Object key) throws InterruptedException {
+    protected Property getProperty(Context ctx, Object key) throws InterruptedException {
         if (properties.containsKey(key)) return properties.get(key);
         var proto = getPrototype(ctx);
         if (proto != null) return proto.getProperty(ctx, key);
         else return null;
     }
-    protected Object getField(CallContext ctx, Object key) throws InterruptedException {
+    protected Object getField(Context ctx, Object key) throws InterruptedException {
         if (values.containsKey(key)) return values.get(key);
         var proto = getPrototype(ctx);
         if (proto != null) return proto.getField(ctx, key);
         else return null;
     }
-    protected boolean setField(CallContext ctx, Object key, Object val) throws InterruptedException {
+    protected boolean setField(Context ctx, Object key, Object val) throws InterruptedException {
         if (val instanceof FunctionValue && ((FunctionValue)val).name.equals("")) {
             ((FunctionValue)val).name = Values.toString(ctx, key);
         }
@@ -223,14 +223,14 @@ public class ObjectValue {
         values.put(key, val);
         return true;
     }
-    protected void deleteField(CallContext ctx, Object key) throws InterruptedException {
+    protected void deleteField(Context ctx, Object key) throws InterruptedException {
         values.remove(key);
     }
-    protected boolean hasField(CallContext ctx, Object key) throws InterruptedException {
+    protected boolean hasField(Context ctx, Object key) throws InterruptedException {
         return values.containsKey(key);
     }
 
-    public final Object getMember(CallContext ctx, Object key, Object thisArg) throws InterruptedException {
+    public final Object getMember(Context ctx, Object key, Object thisArg) throws InterruptedException {
         key = Values.normalize(ctx, key);
 
         if (key.equals("__proto__")) {
@@ -246,11 +246,11 @@ public class ObjectValue {
         }
         else return getField(ctx, key);
     }
-    public final Object getMember(CallContext ctx, Object key) throws InterruptedException {
+    public final Object getMember(Context ctx, Object key) throws InterruptedException {
         return getMember(ctx, key, this);
     }
 
-    public final boolean setMember(CallContext ctx, Object key, Object val, Object thisArg, boolean onlyProps) throws InterruptedException {
+    public final boolean setMember(Context ctx, Object key, Object val, Object thisArg, boolean onlyProps) throws InterruptedException {
         key = Values.normalize(ctx, key); val = Values.normalize(ctx, val);
 
         var prop = getProperty(ctx, key);
@@ -269,11 +269,11 @@ public class ObjectValue {
         else if (nonWritableSet.contains(key)) return false;
         else return setField(ctx, key, val);
     }
-    public final boolean setMember(CallContext ctx, Object key, Object val, boolean onlyProps) throws InterruptedException {
+    public final boolean setMember(Context ctx, Object key, Object val, boolean onlyProps) throws InterruptedException {
         return setMember(ctx, Values.normalize(ctx, key), Values.normalize(ctx, val), this, onlyProps);
     }
 
-    public final boolean hasMember(CallContext ctx, Object key, boolean own) throws InterruptedException {
+    public final boolean hasMember(Context ctx, Object key, boolean own) throws InterruptedException {
         key = Values.normalize(ctx, key);
 
         if (key != null && key.equals("__proto__")) return true;
@@ -283,7 +283,7 @@ public class ObjectValue {
         var proto = getPrototype(ctx);
         return proto != null && proto.hasMember(ctx, key, own);
     }
-    public final boolean deleteMember(CallContext ctx, Object key) throws InterruptedException {
+    public final boolean deleteMember(Context ctx, Object key) throws InterruptedException {
         key = Values.normalize(ctx, key);
 
         if (!memberConfigurable(key)) return false;
@@ -294,7 +294,7 @@ public class ObjectValue {
         return true;
     }
 
-    public final ObjectValue getMemberDescriptor(CallContext ctx, Object key) throws InterruptedException {
+    public final ObjectValue getMemberDescriptor(Context ctx, Object key) throws InterruptedException {
         key = Values.normalize(ctx, key);
 
         var prop = properties.get(key);
@@ -330,7 +330,7 @@ public class ObjectValue {
         return res;
     }
 
-    public ObjectValue(CallContext ctx, Map<?, ?> values) {
+    public ObjectValue(Context ctx, Map<?, ?> values) {
         this(PlaceholderProto.OBJECT);
         for (var el : values.entrySet()) {
             defineProperty(ctx, el.getKey(), el.getValue());

@@ -3,7 +3,7 @@ package me.topchetoeu.jscript.polyfills;
 import java.util.Calendar;
 import java.util.TimeZone;
 
-import me.topchetoeu.jscript.engine.CallContext;
+import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.interop.Native;
 
@@ -47,7 +47,7 @@ public class Date {
         return normal.get(Calendar.YEAR) - 1900;
     }
     @Native
-    public double setYear(CallContext ctx, Object val) throws InterruptedException {
+    public double setYear(Context ctx, Object val) throws InterruptedException {
         var real = Values.toNumber(ctx, val);
         if (real >= 0 && real <= 99) real = real + 1900;
         if (Double.isNaN(real)) invalidate();
@@ -139,7 +139,7 @@ public class Date {
     }
 
     @Native
-    public double setFullYear(CallContext ctx, Object val) throws InterruptedException {
+    public double setFullYear(Context ctx, Object val) throws InterruptedException {
         var real = Values.toNumber(ctx, val);
         if (Double.isNaN(real)) invalidate();
         else normal.set(Calendar.YEAR, (int)real);
@@ -147,7 +147,7 @@ public class Date {
         return getTime();
     }
     @Native
-    public double setMonth(CallContext ctx, Object val) throws InterruptedException {
+    public double setMonth(Context ctx, Object val) throws InterruptedException {
         var real = Values.toNumber(ctx, val);
         if (Double.isNaN(real)) invalidate();
         else normal.set(Calendar.MONTH, (int)real);
@@ -155,7 +155,7 @@ public class Date {
         return getTime();
     }
     @Native
-    public double setDate(CallContext ctx, Object val) throws InterruptedException {
+    public double setDate(Context ctx, Object val) throws InterruptedException {
         var real = Values.toNumber(ctx, val);
         if (Double.isNaN(real)) invalidate();
         else normal.set(Calendar.DAY_OF_MONTH, (int)real);
@@ -163,7 +163,7 @@ public class Date {
         return getTime();
     }
     @Native
-    public double setDay(CallContext ctx, Object val) throws InterruptedException {
+    public double setDay(Context ctx, Object val) throws InterruptedException {
         var real = Values.toNumber(ctx, val);
         if (Double.isNaN(real)) invalidate();
         else normal.set(Calendar.DAY_OF_WEEK, (int)real);
@@ -171,7 +171,7 @@ public class Date {
         return getTime();
     }
     @Native
-    public double setHours(CallContext ctx, Object val) throws InterruptedException {
+    public double setHours(Context ctx, Object val) throws InterruptedException {
         var real = Values.toNumber(ctx, val);
         if (Double.isNaN(real)) invalidate();
         else normal.set(Calendar.HOUR_OF_DAY, (int)real);
@@ -179,7 +179,7 @@ public class Date {
         return getTime();
     }
     @Native
-    public double setMinutes(CallContext ctx, Object val) throws InterruptedException {
+    public double setMinutes(Context ctx, Object val) throws InterruptedException {
         var real = Values.toNumber(ctx, val);
         if (Double.isNaN(real)) invalidate();
         else normal.set(Calendar.MINUTE, (int)real);
@@ -187,7 +187,7 @@ public class Date {
         return getTime();
     }
     @Native
-    public double setSeconds(CallContext ctx, Object val) throws InterruptedException {
+    public double setSeconds(Context ctx, Object val) throws InterruptedException {
         var real = Values.toNumber(ctx, val);
         if (Double.isNaN(real)) invalidate();
         else normal.set(Calendar.SECOND, (int)real);
@@ -195,7 +195,7 @@ public class Date {
         return getTime();
     }
     @Native
-    public double setMilliseconds(CallContext ctx, Object val) throws InterruptedException {
+    public double setMilliseconds(Context ctx, Object val) throws InterruptedException {
         var real = Values.toNumber(ctx, val);
         if (Double.isNaN(real)) invalidate();
         else normal.set(Calendar.MILLISECOND, (int)real);
@@ -204,7 +204,7 @@ public class Date {
     }
 
     @Native
-    public double setUTCFullYear(CallContext ctx, Object val) throws InterruptedException {
+    public double setUTCFullYear(Context ctx, Object val) throws InterruptedException {
         var real = Values.toNumber(ctx, val);
         if (Double.isNaN(real)) invalidate();
         else utc.set(Calendar.YEAR, (int)real);
@@ -212,7 +212,7 @@ public class Date {
         return getTime();
     }
     @Native
-    public double setUTCMonth(CallContext ctx, Object val) throws InterruptedException {
+    public double setUTCMonth(Context ctx, Object val) throws InterruptedException {
         var real = Values.toNumber(ctx, val);
         if (Double.isNaN(real)) invalidate();
         else utc.set(Calendar.MONTH, (int)real);
@@ -220,7 +220,7 @@ public class Date {
         return getTime();
     }
     @Native
-    public double setUTCDate(CallContext ctx, Object val) throws InterruptedException {
+    public double setUTCDate(Context ctx, Object val) throws InterruptedException {
         var real = Values.toNumber(ctx, val);
         if (Double.isNaN(real)) invalidate();
         else utc.set(Calendar.DAY_OF_MONTH, (int)real);
@@ -228,7 +228,7 @@ public class Date {
         return getTime();
     }
     @Native
-    public double setUTCDay(CallContext ctx, Object val) throws InterruptedException {
+    public double setUTCDay(Context ctx, Object val) throws InterruptedException {
         var real = Values.toNumber(ctx, val);
         if (Double.isNaN(real)) invalidate();
         else utc.set(Calendar.DAY_OF_WEEK, (int)real);
@@ -236,7 +236,7 @@ public class Date {
         return getTime();
     }
     @Native
-    public double setUTCHours(CallContext ctx, Object val) throws InterruptedException {
+    public double setUTCHours(Context ctx, Object val) throws InterruptedException {
         var real = Values.toNumber(ctx, val);
         if (Double.isNaN(real)) invalidate();
         else utc.set(Calendar.HOUR_OF_DAY, (int)real);
@@ -244,7 +244,7 @@ public class Date {
         return getTime();
     }
     @Native
-    public double setUTCMinutes(CallContext ctx, Object val) throws InterruptedException {
+    public double setUTCMinutes(Context ctx, Object val) throws InterruptedException {
         var real = Values.toNumber(ctx, val);
         if (Double.isNaN(real)) invalidate();
         else utc.set(Calendar.MINUTE, (int)real);
@@ -252,7 +252,7 @@ public class Date {
         return getTime();
     }
     @Native
-    public double setUTCSeconds(CallContext ctx, Object val) throws InterruptedException {
+    public double setUTCSeconds(Context ctx, Object val) throws InterruptedException {
         var real = Values.toNumber(ctx, val);
         if (Double.isNaN(real)) invalidate();
         else utc.set(Calendar.SECOND, (int)real);
@@ -260,7 +260,7 @@ public class Date {
         return getTime();
     }
     @Native
-    public double setUTCMilliseconds(CallContext ctx, Object val) throws InterruptedException {
+    public double setUTCMilliseconds(Context ctx, Object val) throws InterruptedException {
         var real = Values.toNumber(ctx, val);
         if (Double.isNaN(real)) invalidate();
         else utc.set(Calendar.MILLISECOND, (int)real);

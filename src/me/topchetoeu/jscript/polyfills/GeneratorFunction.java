@@ -1,6 +1,6 @@
 package me.topchetoeu.jscript.polyfills;
 
-import me.topchetoeu.jscript.engine.CallContext;
+import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.frame.CodeFrame;
 import me.topchetoeu.jscript.engine.frame.Runners;
 import me.topchetoeu.jscript.engine.values.CodeFunction;
@@ -18,7 +18,7 @@ public class GeneratorFunction extends FunctionValue {
         private boolean done = false;
         public CodeFrame frame;
 
-        private ObjectValue next(CallContext ctx, Object inducedValue, Object inducedReturn, Object inducedError) throws InterruptedException {
+        private ObjectValue next(Context ctx, Object inducedValue, Object inducedReturn, Object inducedError) throws InterruptedException {
             if (done) {
                 if (inducedError != Runners.NO_RETURN) throw new EngineException(inducedError);
                 var res = new ObjectValue();
@@ -29,7 +29,7 @@ public class GeneratorFunction extends FunctionValue {
 
             Object res = null;
             if (inducedValue != Runners.NO_RETURN) frame.push(ctx, inducedValue);
-            frame.start(ctx);
+            ctx.message.pushFrame(frame);
             yielding = false;
             while (!yielding) {
                 try {
@@ -46,7 +46,7 @@ public class GeneratorFunction extends FunctionValue {
                 }
             }
 
-            frame.end(ctx);
+            ctx.message.popFrame(frame);
             if (done) frame = null;
             else res = frame.pop();
 
@@ -57,16 +57,16 @@ public class GeneratorFunction extends FunctionValue {
         }
 
         @Native
-        public ObjectValue next(CallContext ctx, Object... args) throws InterruptedException {
+        public ObjectValue next(Context ctx, Object ...args) throws InterruptedException {
             if (args.length == 0) return next(ctx, Runners.NO_RETURN, Runners.NO_RETURN, Runners.NO_RETURN);
             else return next(ctx, args[0], Runners.NO_RETURN, Runners.NO_RETURN);
         }
         @Native("throw")
-        public ObjectValue _throw(CallContext ctx, Object error) throws InterruptedException {
+        public ObjectValue _throw(Context ctx, Object error) throws InterruptedException {
             return next(ctx, Runners.NO_RETURN, Runners.NO_RETURN, error);
         }
         @Native("return")
-        public ObjectValue _return(CallContext ctx, Object value) throws InterruptedException {
+        public ObjectValue _return(Context ctx, Object value) throws InterruptedException {
             return next(ctx, Runners.NO_RETURN, value, Runners.NO_RETURN);
         }
 
@@ -77,14 +77,14 @@ public class GeneratorFunction extends FunctionValue {
             return "Generator " + (done ? "[closed]" : "[suspended]");
         }
 
-        public Object yield(CallContext ctx, Object thisArg, Object[] args) {
+        public Object yield(Context ctx, Object thisArg, Object[] args) {
             this.yielding = true;
             return args.length > 0 ? args[0] : null;
         }
     }
 
     @Override
-    public Object call(CallContext ctx, Object thisArg, Object... args) throws InterruptedException {
+    public Object call(Context ctx, Object thisArg, Object ...args) throws InterruptedException {
         var handler = new Generator();
         var func = factory.call(ctx, thisArg, new NativeFunction("yield", handler::yield));
         if (!(func instanceof CodeFunction)) throw EngineException.ofType("Return value of argument must be a js function.");

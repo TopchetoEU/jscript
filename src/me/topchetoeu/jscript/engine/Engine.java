@@ -3,7 +3,6 @@ package me.topchetoeu.jscript.engine;
 import java.util.Map;
 import java.util.concurrent.LinkedBlockingDeque;
 
-import me.topchetoeu.jscript.engine.CallContext.DataKey;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
 import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.events.Awaitable;
@@ -15,16 +14,19 @@ public class Engine {
     private class UncompiledFunction extends FunctionValue {
         public final String filename;
         public final String raw;
+        public final FunctionContext ctx;
 
         @Override
-        public Object call(CallContext ctx, Object thisArg, Object... args) throws InterruptedException {
+        public Object call(Context ctx, Object thisArg, Object ...args) throws InterruptedException {
+            ctx = new Context(this.ctx, ctx.message);
             return compile(ctx, filename, raw).call(ctx, thisArg, args);
         }
 
-        public UncompiledFunction(String filename, String raw) {
+        public UncompiledFunction(FunctionContext ctx, String filename, String raw) {
             super(filename, 0);
             this.filename = filename;
             this.raw = raw;
+            this.ctx = ctx; 
         }
     }
 
@@ -32,14 +34,12 @@ public class Engine {
         public final FunctionValue func;
         public final Object thisArg;
         public final Object[] args;
-        public final Map<DataKey<?>, Object> data;
         public final DataNotifier<Object> notifier = new DataNotifier<>();
-        public final Environment env;
+        public final MessageContext ctx;
 
-        public Task(Environment env, FunctionValue func, Map<DataKey<?>, Object> data, Object thisArg, Object[] args) {
-            this.env = env;
+        public Task(MessageContext ctx, FunctionValue func, Object thisArg, Object[] args) {
+            this.ctx = ctx;
             this.func = func;
-            this.data = data;
             this.thisArg = thisArg;
             this.args = args;
         }
@@ -60,7 +60,7 @@ public class Engine {
 
     private void runTask(Task task) throws InterruptedException {
         try {
-            task.notifier.next(task.func.call(new CallContext(this, task.env).mergeData(task.data), task.thisArg, task.args));
+            task.notifier.next(task.func.call(new Context(null, new MessageContext(this)), task.thisArg, task.args));
         }
         catch (InterruptedException e) {
             task.notifier.error(new RuntimeException(e));
@@ -110,19 +110,19 @@ public class Engine {
         return this.thread != null;
     }
 
-    public Awaitable<Object> pushMsg(boolean micro, Map<DataKey<?>, Object> data, Environment env, FunctionValue func, Object thisArg, Object... args) {
-        var msg = new Task(env, func, data, thisArg, args);
+    public Awaitable<Object> pushMsg(boolean micro, MessageContext ctx, FunctionValue func, Object thisArg, Object ...args) {
+        var msg = new Task(ctx, func, thisArg, args);
         if (micro) microTasks.addLast(msg);
         else macroTasks.addLast(msg);
         return msg.notifier;
     }
-    public Awaitable<Object> pushMsg(boolean micro, Map<DataKey<?>, Object> data, Environment env, String filename, String raw, Object thisArg, Object... args) {
-        return pushMsg(micro, data, env, new UncompiledFunction(filename, raw), thisArg, args);
+    public Awaitable<Object> pushMsg(boolean micro, Context ctx, String filename, String raw, Object thisArg, Object ...args) {
+        return pushMsg(micro, ctx.message, new UncompiledFunction(ctx.function, filename, raw), thisArg, args);
     }
 
-    public FunctionValue compile(CallContext ctx, String filename, String raw) throws InterruptedException {
-        var res = Values.toString(ctx, ctx.environment.compile.call(ctx, null, raw, filename));
-        return Parsing.compile(ctx.environment, filename, res);
+    public FunctionValue compile(Context ctx, String filename, String raw) throws InterruptedException {
+        var res = Values.toString(ctx, ctx.function.compile.call(ctx, null, raw, filename));
+        return Parsing.compile(ctx.function, filename, res);
     }
 
     // public Engine() {

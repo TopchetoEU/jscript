@@ -31,6 +31,6 @@ define("values/symbol", () => {
         asyncIterator: Symbol('Symbol.asyncIterator') as any,
     });
 
-    env.global.Object.defineProperty(Object.prototype, Symbol.typeName, { value: 'Object' });
-    env.global.Object.defineProperty(env.global, Symbol.typeName, { value: 'Window' });
+    internals.defineField(env.global.Object.prototype, Symbol.typeName, 'Object', false, false, false);
+    internals.defineField(env.global, Symbol.typeName, 'Window', false, false, false);
 });

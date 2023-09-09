@@ -1,7 +1,7 @@
 package me.topchetoeu.jscript.polyfills;
 
-import me.topchetoeu.jscript.engine.CallContext;
-import me.topchetoeu.jscript.engine.Environment;
+import me.topchetoeu.jscript.engine.Context;
+import me.topchetoeu.jscript.engine.FunctionContext;
 import me.topchetoeu.jscript.engine.values.ArrayValue;
 import me.topchetoeu.jscript.engine.values.CodeFunction;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
@@ -12,23 +12,23 @@ import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.interop.Native;
 
 public class Internals {
-    @Native public void markSpecial(FunctionValue... funcs) {
+    @Native public void markSpecial(FunctionValue ...funcs) {
         for (var func : funcs) {
             func.special = true;
         }
     }
-    @Native public Environment getEnv(Object func) {
+    @Native public FunctionContext getEnv(Object func) {
         if (func instanceof CodeFunction) return ((CodeFunction)func).environment;
         else return null;
     }
-    @Native public Object setEnv(Object func, Environment env) {
+    @Native public Object setEnv(Object func, FunctionContext env) {
         if (func instanceof CodeFunction) ((CodeFunction)func).environment = env;
         return func;
     }
-    @Native public Object apply(CallContext ctx, FunctionValue func, Object thisArg, ArrayValue args) throws InterruptedException {
+    @Native public Object apply(Context ctx, FunctionValue func, Object thisArg, ArrayValue args) throws InterruptedException {
         return func.call(ctx, thisArg, args.toArray());
     }
-    @Native public FunctionValue delay(CallContext ctx, double delay, FunctionValue callback) throws InterruptedException {
+    @Native public FunctionValue delay(Context ctx, double delay, FunctionValue callback) throws InterruptedException {
         var thread = new Thread((Runnable)() -> {
             var ms = (long)delay;
             var ns = (int)((delay - ms) * 10000000);
@@ -38,7 +38,7 @@ public class Internals {
             }
             catch (InterruptedException e) { return; }
 
-            ctx.engine.pushMsg(false, ctx.data(), ctx.environment, callback, null);
+            ctx.message.engine.pushMsg(false, ctx.message, callback, null);
         });
         thread.start();
 
@@ -47,8 +47,8 @@ public class Internals {
             return null;
         });
     }
-    @Native public void pushMessage(CallContext ctx, boolean micro, FunctionValue func, Object thisArg, Object[] args) {
-        ctx.engine.pushMsg(micro, ctx.data(), ctx.environment, func, thisArg, args);
+    @Native public void pushMessage(Context ctx, boolean micro, FunctionValue func, Object thisArg, Object[] args) {
+        ctx.message.engine.pushMsg(micro, ctx.message, func, thisArg, args);
     }
 
     @Native public int strlen(String str) {
@@ -74,6 +74,13 @@ public class Internals {
         return str.value;
     }
 
+    @Native public static void log(Context ctx, Object ...args) throws InterruptedException {
+        for (var arg : args) {
+            Values.printValue(ctx, arg);
+        }
+        System.out.println();
+    }
+
     @Native public boolean isArray(Object obj) {
         return obj instanceof ArrayValue;
     }
@@ -81,14 +88,14 @@ public class Internals {
         return new GeneratorFunction(obj);
     }
 
-    @Native public boolean defineField(CallContext ctx, ObjectValue obj, Object key, Object val, boolean writable, boolean enumerable, boolean configurable) {
+    @Native public boolean defineField(Context ctx, ObjectValue obj, Object key, Object val, boolean writable, boolean enumerable, boolean configurable) {
         return obj.defineProperty(ctx, key, val, writable, configurable, enumerable);
     }
-    @Native public boolean defineProp(CallContext ctx, ObjectValue obj, Object key, FunctionValue getter, FunctionValue setter, boolean enumerable, boolean configurable) {
+    @Native public boolean defineProp(Context ctx, ObjectValue obj, Object key, FunctionValue getter, FunctionValue setter, boolean enumerable, boolean configurable) {
         return obj.defineProperty(ctx, key, getter, setter, configurable, enumerable);
     }
 
-    @Native public ArrayValue keys(CallContext ctx, Object obj, boolean onlyString) throws InterruptedException {
+    @Native public ArrayValue keys(Context ctx, Object obj, boolean onlyString) throws InterruptedException {
         var res = new ArrayValue();
 
         var i = 0;
@@ -98,7 +105,7 @@ public class Internals {
 
         return res;
     }
-    @Native public ArrayValue ownPropKeys(CallContext ctx, Object obj, boolean symbols) throws InterruptedException {
+    @Native public ArrayValue ownPropKeys(Context ctx, Object obj, boolean symbols) throws InterruptedException {
         var res = new ArrayValue();
 
         if (Values.isObject(obj)) {
@@ -110,7 +117,7 @@ public class Internals {
 
         return res;
     }
-    @Native public ObjectValue ownProp(CallContext ctx, ObjectValue val, Object key) throws InterruptedException {
+    @Native public ObjectValue ownProp(Context ctx, ObjectValue val, Object key) throws InterruptedException {
         return val.getMemberDescriptor(ctx, key);
     }
     @Native public void lock(ObjectValue val, String type) {
@@ -124,7 +131,7 @@ public class Internals {
         return val.extensible();
     }
 
-    @Native public void sort(CallContext ctx, ArrayValue arr, FunctionValue cmp) {
+    @Native public void sort(Context ctx, ArrayValue arr, FunctionValue cmp) {
         arr.sort((a, b) -> {
             try {
                 var res = Values.toNumber(ctx, cmp.call(ctx, null, a, b));

@@ -1,6 +1,6 @@
 package me.topchetoeu.jscript.engine.scope;
 
-import me.topchetoeu.jscript.engine.CallContext;
+import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.values.Values;
 
 public class ValueVariable implements Variable {
@@ -11,12 +11,12 @@ public class ValueVariable implements Variable {
     public boolean readonly() { return readonly; }
 
     @Override
-    public Object get(CallContext ctx) {
+    public Object get(Context ctx) {
         return value;
     }
 
     @Override
-    public void set(CallContext ctx, Object val) {
+    public void set(Context ctx, Object val) {
         if (readonly) return;
         this.value = Values.normalize(ctx, val);
     }

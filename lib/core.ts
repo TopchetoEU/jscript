@@ -29,9 +29,14 @@ interface Internals {
     extensible(obj: object): boolean;
 
     sort(arr: any[], comaprator: (a: any, b: any) => number): void;
+
+    constructor: {
+        log(...args: any[]): void;
+    }
 }
 
-var env: Environment = arguments[0], internals: Internals = arguments[1];
+// @ts-ignore
+var env: Environment = arguments[0], internals: Internals = arguments[1], log = internals.constructor.log;
 
 try {
     run('values/object');
@@ -47,7 +52,9 @@ try {
     run('set');
     run('regex');
     run('timeout');
-    
+
+    env.global.log = log;
+
     log('Loaded polyfills!');
 }
 catch (e: any) {

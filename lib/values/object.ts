@@ -216,7 +216,7 @@ define("values/object", () => {
             return this;
         },
         toString() {
-            return '[object ' + (this[Symbol.typeName] ?? 'Unknown') + ']';
+            return '[object ' + (this[env.global.Symbol.typeName] ?? 'Unknown') + ']';
         },
         hasOwnProperty(key) {
             return Object.hasOwn(this, key);

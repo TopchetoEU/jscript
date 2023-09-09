@@ -5,11 +5,11 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 
-import me.topchetoeu.jscript.engine.CallContext;
+import me.topchetoeu.jscript.engine.Context;
 
 public class Overload {
     public static interface OverloadRunner {
-        Object run(CallContext ctx, Object thisArg, Object[] args) throws
+        Object run(Context ctx, Object thisArg, Object[] args) throws
             InterruptedException,
             ReflectiveOperationException,
             IllegalArgumentException;

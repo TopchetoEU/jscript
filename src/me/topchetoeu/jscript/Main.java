@@ -6,12 +6,11 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Map;
 
-import me.topchetoeu.jscript.engine.CallContext;
+import me.topchetoeu.jscript.engine.MessageContext;
+import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.Engine;
-import me.topchetoeu.jscript.engine.Environment;
-import me.topchetoeu.jscript.engine.values.NativeFunction;
+import me.topchetoeu.jscript.engine.FunctionContext;
 import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.events.Observer;
 import me.topchetoeu.jscript.exceptions.EngineException;
@@ -22,7 +21,7 @@ import me.topchetoeu.jscript.polyfills.Internals;
 public class Main {
     static Thread task;
     static Engine engine;
-    static Environment env;
+    static FunctionContext env;
 
     public static String streamToString(InputStream in) {
         try {
@@ -59,7 +58,7 @@ public class Main {
             try {
                 try {
                     if (err instanceof EngineException) {
-                        System.out.println("Uncaught " + ((EngineException)err).toString(new CallContext(engine, env)));
+                        System.out.println("Uncaught " + ((EngineException)err).toString(new Context(null, new MessageContext(engine))));
                     }
                     else if (err instanceof SyntaxException) {
                         System.out.println("Syntax error:" + ((SyntaxException)err).msg);
@@ -86,7 +85,8 @@ public class Main {
         System.out.println(String.format("Running %s v%s by %s", Metadata.NAME, Metadata.VERSION, Metadata.AUTHOR));
         var in = new BufferedReader(new InputStreamReader(System.in));
         engine = new Engine();
-        env = new Environment(null, null, null);
+        env = new FunctionContext(null, null, null);
+        var builderEnv = new FunctionContext(null, new NativeTypeRegister(), null);
         var exited = new boolean[1];
 
         env.global.define("exit", ctx -> {
@@ -103,16 +103,8 @@ public class Main {
                 throw new EngineException("Couldn't open do.js");
             }
         });
-        env.global.define(true, new NativeFunction("log", (el, t, _args) -> {
-            for (var obj : _args) Values.printValue(el, obj);
-            System.out.println();
-            return null;
-        }));
 
-        var builderEnv = env.child();
-        builderEnv.wrappersProvider = new NativeTypeRegister();
-
-        engine.pushMsg(false, Map.of(), builderEnv, "core.js", resourceToString("js/core.js"), null, env, new Internals());
+        engine.pushMsg(false, new Context(builderEnv, new MessageContext(engine)), "core.js", resourceToString("js/core.js"), null, env, new Internals()).toObservable().on(valuePrinter);
 
         task = engine.start();
         var reader = new Thread(() -> {
@@ -122,7 +114,7 @@ public class Main {
                         var raw = in.readLine();
 
                         if (raw == null) break;
-                        engine.pushMsg(false, Map.of(), env, "<stdio>", raw, null).toObservable().once(valuePrinter);
+                        engine.pushMsg(false, new Context(env, new MessageContext(engine)), "<stdio>", raw, null).toObservable().once(valuePrinter);
                     }
                     catch (EngineException e) {
                         try {

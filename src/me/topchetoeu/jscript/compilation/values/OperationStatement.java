@@ -63,7 +63,7 @@ public class OperationStatement extends Statement {
 
     }
 
-    public OperationStatement(Location loc, Operation operation, Statement... args) {
+    public OperationStatement(Location loc, Operation operation, Statement ...args) {
         super(loc);
         this.operation = operation;
         this.args = args;

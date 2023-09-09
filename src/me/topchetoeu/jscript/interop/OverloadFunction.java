@@ -5,7 +5,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 
-import me.topchetoeu.jscript.engine.CallContext;
+import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
 import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.exceptions.EngineException;
@@ -13,9 +13,9 @@ import me.topchetoeu.jscript.exceptions.EngineException;
 public class OverloadFunction extends FunctionValue {
     public final List<Overload> overloads = new ArrayList<>();
 
-    public Object call(CallContext ctx, Object thisArg, Object... args) throws InterruptedException {
+    public Object call(Context ctx, Object thisArg, Object ...args) throws InterruptedException {
         for (var overload : overloads) {
-            boolean consumesEngine = overload.params.length > 0 && overload.params[0] == CallContext.class;
+            boolean consumesEngine = overload.params.length > 0 && overload.params[0] == Context.class;
             int start = consumesEngine ? 1 : 0;
             int end = overload.params.length - (overload.variadic ? 1 : 0);
 

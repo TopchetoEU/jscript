@@ -117,7 +117,7 @@ define("values/function", () => {
                     },
                     return: (value) => new Promise((res, rej) => next(res, rej, 'ret', value)),
                     throw: (value) => new Promise((res, rej) => next(res, rej, 'err', value)),
-                    [Symbol.asyncIterator]() { return this; }
+                    [env.global.Symbol.asyncIterator]() { return this; }
                 }
             }
         },
@@ -131,7 +131,7 @@ define("values/function", () => {
                     next: (...args) => internals.apply(it.next, it, args),
                     return: (val) => internals.apply(it.next, it, [val]),
                     throw: (val) => internals.apply(it.next, it, [val]),
-                    [Symbol.iterator]() { return this; }
+                    [env.global.Symbol.iterator]() { return this; }
                 }
             }
         }

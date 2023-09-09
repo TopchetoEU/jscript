@@ -1,10 +1,11 @@
 define("map", () => {
     const syms = { values: internals.symbol('Map.values') } as { readonly values: unique symbol };
+    const Object = env.global.Object;
 
     class Map<KeyT, ValueT> {
         [syms.values]: any = {};
 
-        public [Symbol.iterator](): IterableIterator<[KeyT, ValueT]> {
+        public [env.global.Symbol.iterator](): IterableIterator<[KeyT, ValueT]> {
             return this.entries();
         }
 
@@ -28,7 +29,7 @@ define("map", () => {
                     if (i >= keys.length) return { done: true };
                     else return { done: false, value: [ keys[i], this[syms.values][keys[i++]] ] }
                 },
-                [Symbol.iterator]() { return this; }
+                [env.global.Symbol.iterator]() { return this; }
             }
         }
         public keys(): IterableIterator<KeyT> {
@@ -40,7 +41,7 @@ define("map", () => {
                     if (i >= keys.length) return { done: true };
                     else return { done: false, value: keys[i] }
                 },
-                [Symbol.iterator]() { return this; }
+                [env.global.Symbol.iterator]() { return this; }
             }
         }
         public values(): IterableIterator<ValueT> {
@@ -52,7 +53,7 @@ define("map", () => {
                     if (i >= keys.length) return { done: true };
                     else return { done: false, value: this[syms.values][keys[i++]] }
                 },
-                [Symbol.iterator]() { return this; }
+                [env.global.Symbol.iterator]() { return this; }
             }
         }
 
@@ -80,7 +81,7 @@ define("map", () => {
         }
 
         public constructor(iterable: Iterable<[KeyT, ValueT]>) {
-            const it = iterable[Symbol.iterator]();
+            const it = iterable[env.global.Symbol.iterator]();
 
             for (let el = it.next(); !el.done; el = it.next()) {
                 this[syms.values][el.value[0]] = el.value[1];

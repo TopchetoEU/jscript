@@ -2,7 +2,7 @@ package me.topchetoeu.jscript.engine.scope;
 
 import java.util.ArrayList;
 
-import me.topchetoeu.jscript.engine.CallContext;
+import me.topchetoeu.jscript.engine.Context;
 
 public class LocalScopeRecord implements ScopeRecord {
     public final LocalScopeRecord parent;
@@ -59,7 +59,7 @@ public class LocalScopeRecord implements ScopeRecord {
 
         return name;
     }
-    public boolean has(CallContext ctx, String name) throws InterruptedException {
+    public boolean has(Context ctx, String name) throws InterruptedException {
         return
             global.has(ctx, name) ||
             locals.contains(name) ||

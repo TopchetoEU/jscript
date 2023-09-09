@@ -13,7 +13,7 @@ import me.topchetoeu.jscript.compilation.VariableDeclareStatement.Pair;
 import me.topchetoeu.jscript.compilation.control.*;
 import me.topchetoeu.jscript.compilation.control.SwitchStatement.SwitchCase;
 import me.topchetoeu.jscript.compilation.values.*;
-import me.topchetoeu.jscript.engine.Environment;
+import me.topchetoeu.jscript.engine.FunctionContext;
 import me.topchetoeu.jscript.engine.Operation;
 import me.topchetoeu.jscript.engine.scope.ValueVariable;
 import me.topchetoeu.jscript.engine.values.CodeFunction;
@@ -1842,7 +1842,7 @@ public class Parsing {
         return list.toArray(Statement[]::new);
     }
 
-    public static CodeFunction compile(Environment environment, Statement... statements) {
+    public static CodeFunction compile(FunctionContext environment, Statement ...statements) {
         var target = environment.global.globalChild();
         var subscope = target.child();
         var res = new ArrayList<Instruction>();
@@ -1870,14 +1870,14 @@ public class Parsing {
         }
         else res.add(Instruction.ret());
 
-        return new CodeFunction("", subscope.localsCount(), 0, environment, new ValueVariable[0], res.toArray(Instruction[]::new));
+        return new CodeFunction(environment, "", subscope.localsCount(), 0, new ValueVariable[0], res.toArray(Instruction[]::new));
     }
-    public static CodeFunction compile(Environment environment, String filename, String raw) {
+    public static CodeFunction compile(FunctionContext environment, String filename, String raw) {
         try {
             return compile(environment, parse(filename, raw));
         }
         catch (SyntaxException e) {
-            return new CodeFunction(null, 2, 0, environment, new ValueVariable[0], new Instruction[] { Instruction.throwSyntax(e) });
+            return new CodeFunction(environment, null, 2, 0, new ValueVariable[0], new Instruction[] { Instruction.throwSyntax(e) });
         }
     }
 }

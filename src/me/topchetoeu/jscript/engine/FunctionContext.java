@@ -11,7 +11,7 @@ import me.topchetoeu.jscript.interop.Native;
 import me.topchetoeu.jscript.interop.NativeGetter;
 import me.topchetoeu.jscript.interop.NativeSetter;
 
-public class Environment {
+public class FunctionContext {
     private HashMap<String, ObjectValue> prototypes = new HashMap<>();
     public GlobalScope global;
     public WrappersProvider wrappersProvider;
@@ -48,21 +48,21 @@ public class Environment {
     }
 
     @Native
-    public Environment fork() {
-        var res = new Environment(compile, wrappersProvider, global);
+    public FunctionContext fork() {
+        var res = new FunctionContext(compile, wrappersProvider, global);
         res.regexConstructor = regexConstructor;
         res.prototypes = new HashMap<>(prototypes);
         return res;
     }
 
     @Native
-    public Environment child() {
+    public FunctionContext child() {
         var res = fork();
         res.global = res.global.globalChild();
         return res;
     }
 
-    public Environment(FunctionValue compile, WrappersProvider nativeConverter, GlobalScope global) {
+    public FunctionContext(FunctionValue compile, WrappersProvider nativeConverter, GlobalScope global) {
         if (compile == null) compile = new NativeFunction("compile", (ctx, thisArg, args) -> args.length == 0 ? "" : args[0]);
         if (nativeConverter == null) nativeConverter = new WrappersProvider() {
             public ObjectValue getConstr(Class<?> obj) {

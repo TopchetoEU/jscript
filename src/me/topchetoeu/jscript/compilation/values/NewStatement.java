@@ -24,7 +24,7 @@ public class NewStatement extends Statement {
         target.add(Instruction.callNew(args.length).locate(loc()).setDebug(true));
     }
 
-    public NewStatement(Location loc, Statement func, Statement... args) {
+    public NewStatement(Location loc, Statement func, Statement ...args) {
         super(loc);
         this.func = func;
         this.args = args;

@@ -3,7 +3,7 @@ package me.topchetoeu.jscript.polyfills;
 import java.util.ArrayList;
 import java.util.regex.Pattern;
 
-import me.topchetoeu.jscript.engine.CallContext;
+import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.values.ArrayValue;
 import me.topchetoeu.jscript.engine.values.NativeWrapper;
 import me.topchetoeu.jscript.engine.values.ObjectValue;
@@ -17,7 +17,7 @@ public class RegExp {
     private static final Pattern NAMED_PATTERN = Pattern.compile("\\(\\?<([^=!].*?)>", Pattern.DOTALL);
     private static final Pattern ESCAPE_PATTERN = Pattern.compile("[/\\-\\\\^$*+?.()|\\[\\]{}]");
 
-    private static String cleanupPattern(CallContext ctx, Object val) throws InterruptedException {
+    private static String cleanupPattern(Context ctx, Object val) throws InterruptedException {
         if (val == null) return "(?:)";
         if (val instanceof RegExp) return ((RegExp)val).source;
         if (val instanceof NativeWrapper && ((NativeWrapper)val).wrapped instanceof RegExp) {
@@ -27,7 +27,7 @@ public class RegExp {
         if (res.equals("")) return "(?:)";
         return res;
     }
-    private static String cleanupFlags(CallContext ctx, Object val) throws InterruptedException {
+    private static String cleanupFlags(Context ctx, Object val) throws InterruptedException {
         if (val == null) return "";
         return Values.toString(ctx, val);
     }
@@ -46,7 +46,7 @@ public class RegExp {
     }
 
     @Native
-    public static RegExp escape(CallContext ctx, Object raw, Object flags) throws InterruptedException {
+    public static RegExp escape(Context ctx, Object raw, Object flags) throws InterruptedException {
         return escape(Values.toString(ctx, raw), cleanupFlags(ctx, flags));
     }
     public static RegExp escape(String raw, String flags) {
@@ -79,7 +79,7 @@ public class RegExp {
     @NativeGetter("lastIndex")
     public int lastIndex() { return lastI; }
     @NativeSetter("lastIndex")
-    public void setLastIndex(CallContext ctx, Object i) throws InterruptedException {
+    public void setLastIndex(Context ctx, Object i) throws InterruptedException {
         lastI = (int)Values.toNumber(ctx, i);
     }
     public void setLastIndex(int i) {
@@ -100,7 +100,7 @@ public class RegExp {
     }
 
     @Native
-    public Object exec(CallContext ctx, Object str) throws InterruptedException {
+    public Object exec(Context ctx, Object str) throws InterruptedException {
         return exec(Values.toString(ctx, str));
     }
     public Object exec(String str) {
@@ -150,7 +150,7 @@ public class RegExp {
     }
 
     @Native
-    public RegExp(CallContext ctx, Object pattern, Object flags) throws InterruptedException {
+    public RegExp(Context ctx, Object pattern, Object flags) throws InterruptedException {
         this(cleanupPattern(ctx, pattern), cleanupFlags(ctx, flags));
     }
     public RegExp(String pattern, String flags) {

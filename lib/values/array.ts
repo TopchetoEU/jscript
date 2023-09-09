@@ -16,14 +16,14 @@ define("values/array", () => {
     } as ArrayConstructor;
 
     env.setProto('array', Array.prototype);
-    (Array.prototype as any)[Symbol.typeName] = "Array";
+    (Array.prototype as any)[env.global.Symbol.typeName] = "Array";
     setConstr(Array.prototype, Array);
 
     setProps(Array.prototype, {
-        [Symbol.iterator]: function() {
+        [env.global.Symbol.iterator]: function() {
             return this.values();
         },
-        [Symbol.typeName]: "Array",
+        [env.global.Symbol.typeName]: "Array",
 
         values() {
             var i = 0;
@@ -35,7 +35,7 @@ define("values/array", () => {
                     }
                     return { done: true, value: undefined };
                 },
-                [Symbol.iterator]() { return this; }
+                [env.global.Symbol.iterator]() { return this; }
             };
         },
         keys() {
@@ -48,7 +48,7 @@ define("values/array", () => {
                     }
                     return { done: true, value: undefined };
                 },
-                [Symbol.iterator]() { return this; }
+                [env.global.Symbol.iterator]() { return this; }
             };
         },
         entries() {
@@ -61,7 +61,7 @@ define("values/array", () => {
                     }
                     return { done: true, value: undefined };
                 },
-                [Symbol.iterator]() { return this; }
+                [env.global.Symbol.iterator]() { return this; }
             };
         },
         concat() {

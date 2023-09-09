@@ -1,10 +1,11 @@
 define("set", () => {
     const syms = { values: internals.symbol('Map.values') } as { readonly values: unique symbol };
+    const Object = env.global.Object;
 
     class Set<T> {
         [syms.values]: any = {};
 
-        public [Symbol.iterator](): IterableIterator<[T, T]> {
+        public [env.global.Symbol.iterator](): IterableIterator<[T, T]> {
             return this.entries();
         }
 
@@ -28,7 +29,7 @@ define("set", () => {
                     if (i >= keys.length) return { done: true };
                     else return { done: false, value: [ keys[i], keys[i] ] }
                 },
-                [Symbol.iterator]() { return this; }
+                [env.global.Symbol.iterator]() { return this; }
             }
         }
         public keys(): IterableIterator<T> {
@@ -40,7 +41,7 @@ define("set", () => {
                     if (i >= keys.length) return { done: true };
                     else return { done: false, value: keys[i] }
                 },
-                [Symbol.iterator]() { return this; }
+                [env.global.Symbol.iterator]() { return this; }
             }
         }
         public values(): IterableIterator<T> {
@@ -68,7 +69,7 @@ define("set", () => {
         }
 
         public constructor(iterable: Iterable<T>) {
-            const it = iterable[Symbol.iterator]();
+            const it = iterable[env.global.Symbol.iterator]();
 
             for (let el = it.next(); !el.done; el = it.next()) {
                 this[syms.values][el.value] = undefined;

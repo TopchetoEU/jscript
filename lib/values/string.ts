@@ -142,9 +142,9 @@ define("values/string", () => {
                 else throw new Error('This function may be used only with primitive or object strings.');
             }
 
-            if (typeof term[Symbol.search] !== 'function') term = RegExp.escape(term);
+            if (typeof term[env.global.Symbol.search] !== 'function') term = RegExp.escape(term);
 
-            return term[Symbol.search](this, false, start);
+            return term[env.global.Symbol.search](this, false, start);
         },
         lastIndexOf(term: any, start) {
             if (typeof this !== 'string') {
@@ -152,9 +152,9 @@ define("values/string", () => {
                 else throw new Error('This function may be used only with primitive or object strings.');
             }
 
-            if (typeof term[Symbol.search] !== 'function') term = RegExp.escape(term);
+            if (typeof term[env.global.Symbol.search] !== 'function') term = RegExp.escape(term);
 
-            return term[Symbol.search](this, true, start);
+            return term[env.global.Symbol.search](this, true, start);
         },
         includes(term, start) {
             return this.indexOf(term, start) >= 0;
@@ -166,9 +166,9 @@ define("values/string", () => {
                 else throw new Error('This function may be used only with primitive or object strings.');
             }
 
-            if (typeof pattern[Symbol.replace] !== 'function') pattern = RegExp.escape(pattern);
+            if (typeof pattern[env.global.Symbol.replace] !== 'function') pattern = RegExp.escape(pattern);
 
-            return pattern[Symbol.replace](this, val);
+            return pattern[env.global.Symbol.replace](this, val);
         },
         replaceAll(pattern: any, val) {
             if (typeof this !== 'string') {
@@ -176,10 +176,10 @@ define("values/string", () => {
                 else throw new Error('This function may be used only with primitive or object strings.');
             }
 
-            if (typeof pattern[Symbol.replace] !== 'function') pattern = RegExp.escape(pattern, "g");
+            if (typeof pattern[env.global.Symbol.replace] !== 'function') pattern = RegExp.escape(pattern, "g");
             if (pattern instanceof RegExp && !pattern.global) pattern = new pattern.constructor(pattern.source, pattern.flags + "g");
 
-            return pattern[Symbol.replace](this, val);
+            return pattern[env.global.Symbol.replace](this, val);
         },
 
         match(pattern: any) {
@@ -188,9 +188,9 @@ define("values/string", () => {
                 else throw new Error('This function may be used only with primitive or object strings.');
             }
 
-            if (typeof pattern[Symbol.match] !== 'function') pattern = RegExp.escape(pattern);
+            if (typeof pattern[env.global.Symbol.match] !== 'function') pattern = RegExp.escape(pattern);
 
-            return pattern[Symbol.match](this);
+            return pattern[env.global.Symbol.match](this);
         },
         matchAll(pattern: any) {
             if (typeof this !== 'string') {
@@ -198,10 +198,10 @@ define("values/string", () => {
                 else throw new Error('This function may be used only with primitive or object strings.');
             }
 
-            if (typeof pattern[Symbol.match] !== 'function') pattern = RegExp.escape(pattern, "g");
+            if (typeof pattern[env.global.Symbol.match] !== 'function') pattern = RegExp.escape(pattern, "g");
             if (pattern instanceof RegExp && !pattern.global) pattern = new pattern.constructor(pattern.source, pattern.flags + "g");
 
-            return pattern[Symbol.match](this);
+            return pattern[env.global.Symbol.match](this);
         },
 
         split(pattern: any, lim, sensible) {
@@ -210,9 +210,9 @@ define("values/string", () => {
                 else throw new Error('This function may be used only with primitive or object strings.');
             }
 
-            if (typeof pattern[Symbol.split] !== 'function') pattern = RegExp.escape(pattern, "g");
+            if (typeof pattern[env.global.Symbol.split] !== 'function') pattern = RegExp.escape(pattern, "g");
 
-            return pattern[Symbol.split](this, lim, sensible);
+            return pattern[env.global.Symbol.split](this, lim, sensible);
         },
         slice(start, end) {
             if (typeof this !== 'string') {
