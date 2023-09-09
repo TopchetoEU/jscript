@@ -35,8 +35,8 @@ interface Internals {
     }
 }
 
-// @ts-ignore
-var env: Environment = arguments[0], internals: Internals = arguments[1], log = internals.constructor.log;
+var env: Environment = arguments[0], internals: Internals = arguments[1];
+globalThis.log = internals.constructor.log;
 
 try {
     run('values/object');

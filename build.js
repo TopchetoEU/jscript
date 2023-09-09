@@ -3,7 +3,7 @@ const fs = require('fs/promises');
 const pt = require('path');
 const conf = require('./meta');
 const { argv } = require('process');
-conf.version = argv[2];
+conf.version = argv[3].substring(1);
 
 async function* find(src, dst, wildcard) {
     const stat = await fs.stat(src);
@@ -45,7 +45,7 @@ async function compileJava() {
             .replace('${NAME}', conf.name)
             .replace('${AUTHOR}', conf.author)
         );
-        const args = ['--release', '10', ];
+        const args = ['--release', '11', ];
         if (argv[1] === 'debug') args.push('-g');
         args.push('-d', 'dst/classes', 'Metadata.java');
     
@@ -59,14 +59,14 @@ async function compileJava() {
 
 (async () => {
     try {
-        fs.rm('dst', { recursive: true });
+        try { await fs.rm('dst', { recursive: true }); } catch {}
         await copy('src', 'dst/classes', v => !v.endsWith('.java'));
         await run('tsc', '-p', 'lib/tsconfig.json', '--outFile', 'dst/classes/me/topchetoeu/jscript/js/core.js'),
         await compileJava();
         await run('jar', '-c', '-f', 'dst/jscript.jar', '-e', 'me.topchetoeu.jscript.Main', '-C', 'dst/classes', '.');
     }
     catch (e) {
-        if (argv[1] === 'debug') throw e;
+        if (argv[2] === 'debug') throw e;
         else console.log(e.toString());
     }
 })();
