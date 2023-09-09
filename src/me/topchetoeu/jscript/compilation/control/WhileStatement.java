@@ -81,14 +81,6 @@ public class WhileStatement extends Statement {
                 target.set(i, Instruction.jmp(breakPoint - i));
                 target.get(i).location = instr.location;
             }
-            if (instr.type == Type.NOP && instr.is(0, "try_cont") && (instr.get(1) == null || instr.is(1, label))) {
-                target.set(i, Instruction.signal("jmp_" + (continuePoint - (Integer)instr.get(2))));
-                target.get(i).location = instr.location;
-            }
-            if (instr.type == Type.NOP && instr.is(0, "try_break") && (instr.get(1) == null || instr.is(1, label))) {
-                target.set(i, Instruction.signal("jmp_" + (breakPoint - (Integer)instr.get(2))));
-                target.get(i).location = instr.location;
-            }
         }
     }
 

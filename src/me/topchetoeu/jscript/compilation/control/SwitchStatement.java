@@ -66,9 +66,6 @@ public class SwitchStatement extends Statement {
             if (instr.type == Type.NOP && instr.is(0, "break") && instr.get(1) == null) {
                 target.set(i, Instruction.jmp(target.size() - i).locate(instr.location));
             }
-            if (instr.type == Type.NOP && instr.is(0, "try_break") && instr.get(1) == null) {
-                target.set(i, Instruction.signal("jmp_" + (target.size() - (Integer)instr.get(2))).locate(instr.location));
-            }
         }
         for (var el : caseMap.entrySet()) {
             var loc = target.get(el.getKey()).location;

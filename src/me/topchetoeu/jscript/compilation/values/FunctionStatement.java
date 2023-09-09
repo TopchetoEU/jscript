@@ -28,10 +28,10 @@ public class FunctionStatement extends Statement {
     public static void checkBreakAndCont(List<Instruction> target, int start) {
         for (int i = start; i < target.size(); i++) {
             if (target.get(i).type == Type.NOP) {
-                if (target.get(i).is(0, "break") || target.get(i).is(0, "try_break")) {
+                if (target.get(i).is(0, "break") ) {
                     throw new SyntaxException(target.get(i).location, "Break was placed outside a loop.");
                 }
-                if (target.get(i).is(0, "cont") || target.get(i).is(0, "try_cont")) {
+                if (target.get(i).is(0, "cont")) {
                     throw new SyntaxException(target.get(i).location, "Continue was placed outside a loop.");
                 }
             }
