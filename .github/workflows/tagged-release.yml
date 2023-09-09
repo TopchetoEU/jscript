@@ -18,7 +18,7 @@ jobs:
           repository: 'java-jscript'
       - name: "Build"
         run: |
-          cd java-jscript; node ./build.js
+          cd java-jscript; node ./build.js ${{ github.ref }}
 
       - uses: "marvinpinto/action-automatic-releases@latest"
         with:

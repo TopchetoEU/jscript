@@ -3,6 +3,7 @@ const fs = require('fs/promises');
 const pt = require('path');
 const conf = require('./meta');
 const { argv } = require('process');
+conf.version = argv[2];
 
 async function* find(src, dst, wildcard) {
     const stat = await fs.stat(src);
