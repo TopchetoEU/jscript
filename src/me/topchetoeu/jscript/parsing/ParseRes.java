@@ -68,7 +68,7 @@ public class ParseRes<T> {
     }
 
     @SafeVarargs
-    public static <T> ParseRes<? extends T> any(ParseRes<? extends T>... parsers) {
+    public static <T> ParseRes<? extends T> any(ParseRes<? extends T> ...parsers) {
         ParseRes<? extends T> best = null;
         ParseRes<? extends T> error = ParseRes.failed();
 
@@ -83,7 +83,7 @@ public class ParseRes<T> {
         else return error;
     }
     @SafeVarargs
-    public static <T> ParseRes<? extends T> first(String filename, List<Token> tokens, Map<String, Parser<T>> named, Parser<? extends T>... parsers) {
+    public static <T> ParseRes<? extends T> first(String filename, List<Token> tokens, Map<String, Parser<T>> named, Parser<? extends T> ...parsers) {
         ParseRes<? extends T> error = ParseRes.failed();
 
         for (var parser : parsers) {

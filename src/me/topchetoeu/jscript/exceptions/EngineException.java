@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import me.topchetoeu.jscript.Location;
-import me.topchetoeu.jscript.engine.CallContext;
+import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.engine.values.ObjectValue.PlaceholderProto;
@@ -28,9 +28,14 @@ public class EngineException extends RuntimeException {
         return this;
     }
 
-    public String toString(CallContext ctx) throws InterruptedException {
+    public String toString(Context ctx) throws InterruptedException {
         var ss = new StringBuilder();
-        ss.append(Values.toString(ctx, value)).append('\n');
+        try {
+            ss.append(Values.toString(ctx, value)).append('\n');
+        }
+        catch (EngineException e) {
+            ss.append("[Error while stringifying]\n");
+        }
         for (var line : stackTrace) {
             ss.append("    ").append(line).append('\n');
         }
@@ -41,7 +46,7 @@ public class EngineException extends RuntimeException {
 
     private static Object err(String msg, PlaceholderProto proto) {
         var res = new ObjectValue(proto);
-        res.defineProperty("message", msg);
+        res.defineProperty(null, "message", msg);
         return res;
     }
 

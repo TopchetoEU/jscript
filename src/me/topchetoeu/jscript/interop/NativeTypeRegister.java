@@ -3,12 +3,13 @@ package me.topchetoeu.jscript.interop;
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
 
+import me.topchetoeu.jscript.engine.WrappersProvider;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
 import me.topchetoeu.jscript.engine.values.NativeFunction;
 import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.exceptions.EngineException;
 
-public class NativeTypeRegister {
+public class NativeTypeRegister implements WrappersProvider {
     private final HashMap<Class<?>, FunctionValue> constructors = new HashMap<>();
     private final HashMap<Class<?>, ObjectValue> prototypes = new HashMap<>();
 
@@ -25,7 +26,7 @@ public class NativeTypeRegister {
                 var val = target.values.get(name);
 
                 if (name.equals("")) name = method.getName();
-                if (!(val instanceof OverloadFunction)) target.defineProperty(name, val = new OverloadFunction(name));
+                if (!(val instanceof OverloadFunction)) target.defineProperty(null, name, val = new OverloadFunction(name));
 
                 ((OverloadFunction)val).overloads.add(Overload.fromMethod(method));
             }
@@ -40,7 +41,7 @@ public class NativeTypeRegister {
                     else getter = new OverloadFunction("get " + name);
 
                     getter.overloads.add(Overload.fromMethod(method));
-                    target.defineProperty(name, getter, setter, true, true);
+                    target.defineProperty(null, name, getter, setter, true, true);
                 }
                 if (set != null) {
                     var name = set.value();
@@ -52,7 +53,7 @@ public class NativeTypeRegister {
                     else setter = new OverloadFunction("set " + name);
 
                     setter.overloads.add(Overload.fromMethod(method));
-                    target.defineProperty(name, getter, setter, true, true);
+                    target.defineProperty(null, name, getter, setter, true, true);
                 }
             }
         }
@@ -67,7 +68,7 @@ public class NativeTypeRegister {
                 if (name.equals("")) name = field.getName();
                 var getter = new OverloadFunction("get " + name).add(Overload.getterFromField(field));
                 var setter = new OverloadFunction("set " + name).add(Overload.setterFromField(field));
-                target.defineProperty(name, getter, setter, true, false);
+                target.defineProperty(null, name, getter, setter, true, false);
             }
         }
     }
@@ -80,11 +81,9 @@ public class NativeTypeRegister {
                 var name = nat.value();
                 if (name.equals("")) name = cl.getSimpleName();
 
-                var getter = new OverloadFunction("get " + name).add(Overload.getter(member ? clazz : null, (ctx, thisArg, args) -> {
-                    return ctx.engine().typeRegister().getConstr(cl);
-                }));
+                var getter = new NativeFunction("get " + name, (ctx, thisArg, args) -> cl);
 
-                target.defineProperty(name, getter, null, true, false);
+                target.defineProperty(null, name, getter, null, true, false);
             }
         }
     }

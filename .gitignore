@@ -1,8 +1,11 @@
 .vscode
 .gradle
 .ignore
-out
-build
-bin
-dst
+/out
+/build
+/bin
+/dst
 /*.js
+!/build.js
+/dead-code
+/Metadata.java

@@ -1,43 +1,203 @@
-type PromiseFulfillFunc<T> = (val: T) => void;
-type PromiseThenFunc<T, NextT> = (val: T) => NextT;
-type PromiseRejectFunc = (err: unknown) => void;
-type PromiseFunc<T> = (resolve: PromiseFulfillFunc<T>, reject: PromiseRejectFunc) => void;
+define("promise", () => {
+    const syms = {
+        callbacks: internals.symbol('Promise.callbacks'),
+        state: internals.symbol('Promise.state'),
+        value: internals.symbol('Promise.value'),
+        handled: internals.symbol('Promise.handled'),
+    } as {
+        readonly callbacks: unique symbol,
+        readonly state: unique symbol,
+        readonly value: unique symbol,
+        readonly handled: unique symbol,
+    }
 
-type PromiseResult<T> ={ type: 'fulfilled'; value: T; } | { type: 'rejected'; reason: any; }
+    type Callback<T> = [ PromiseFulfillFunc<T>, PromiseRejectFunc ];
+    enum State {
+        Pending,
+        Fulfilled,
+        Rejected,
+    }
 
-interface Thenable<T> {
-    then<NextT>(this: Promise<T>, onFulfilled: PromiseThenFunc<T, NextT>, onRejected?: PromiseRejectFunc): Promise<Awaited<NextT>>;
-    then(this: Promise<T>, onFulfilled: undefined, onRejected?: PromiseRejectFunc): Promise<T>;
-}
+    function isAwaitable(val: unknown): val is Thenable<any> {
+        return (
+            typeof val === 'object' &&
+            val !== null &&
+            'then' in val &&
+            typeof val.then === 'function'
+        );
+    }
+    function resolve(promise: Promise<any>, v: any, state: State) {
+        if (promise[syms.state] === State.Pending) {
+            if (typeof v === 'object' && v !== null && 'then' in v && typeof v.then === 'function') {
+                v.then(
+                    (res: any) => resolve(promise, res, state),
+                    (res: any) => resolve(promise, res, State.Rejected)
+                );
+                return;
+            }
+            promise[syms.value] = v;
+            promise[syms.state] = state;
 
-// wippidy-wine, this code is now mine :D
-type Awaited<T> =
-    T extends null | undefined ? T : // special case for `null | undefined` when not in `--strictNullChecks` mode
-        T extends object & { then(onfulfilled: infer F, ...args: infer _): any } ? // `await` only unwraps object types with a callable `then`. Non-object types are not unwrapped
-            F extends ((value: infer V, ...args: infer _) => any) ? // if the argument to `then` is callable, extracts the first argument
-                Awaited<V> : // recursively unwrap the value
-                never : // the argument to `then` was not callable
-        T;
+            for (let i = 0; i < promise[syms.callbacks]!.length; i++) {
+                promise[syms.handled] = true;
+                promise[syms.callbacks]![i][state - 1](v);
+            }
 
-interface PromiseConstructor {
-    prototype: Promise<any>;
+            promise[syms.callbacks] = undefined;
 
-    new <T>(func: PromiseFunc<T>): Promise<Awaited<T>>;
-    resolve<T>(val: T): Promise<Awaited<T>>;
-    reject(val: any): Promise<never>;
+            internals.pushMessage(true, internals.setEnv(() => {
+                if (!promise[syms.handled] && state === State.Rejected) {
+                    log('Uncaught (in promise) ' + promise[syms.value]);
+                }
+            }, env), undefined, []);
+        }
+    }
 
-    any<T>(promises: (Promise<T>|T)[]): Promise<T>;
-    race<T>(promises: (Promise<T>|T)[]): Promise<T>;
-    all<T extends any[]>(promises: T): Promise<{ [Key in keyof T]: Awaited<T[Key]> }>;
-    allSettled<T extends any[]>(...promises: T): Promise<[...{ [P in keyof T]: PromiseResult<Awaited<T[P]>>}]>;
-}
+    class Promise<T> {
+        public static isAwaitable(val: unknown): val is Thenable<any> {
+            return isAwaitable(val);
+        }
 
-interface Promise<T> extends Thenable<T> {
-    constructor: PromiseConstructor;
-    catch(func: PromiseRejectFunc): Promise<T>;
-    finally(func: () => void): Promise<T>;
-}
+        public static resolve<T>(val: T): Promise<Awaited<T>> {
+            return new Promise(res => res(val as any));
+        }
+        public static reject<T>(val: T): Promise<Awaited<T>> {
+            return new Promise((_, rej) => rej(val as any));
+        }
 
-declare var Promise: PromiseConstructor;
+        public static race<T>(vals: T[]): Promise<Awaited<T>> {
+            if (typeof vals.length !== 'number') throw new TypeError('vals must be an array. Note that Promise.race is not variadic.');
+            return new Promise((res, rej) => {
+                for (let i = 0; i < vals.length; i++) {
+                    const val = vals[i];
+                    if (this.isAwaitable(val)) val.then(res, rej);
+                    else res(val as any);
+                }
+            });
+        }
+        public static any<T>(vals: T[]): Promise<Awaited<T>> {
+            if (typeof vals.length !== 'number') throw new TypeError('vals must be an array. Note that Promise.any is not variadic.');
+            return new Promise((res, rej) => {
+                let n = 0;
 
-(Promise.prototype as any)[Symbol.typeName] = 'Promise';
+                for (let i = 0; i < vals.length; i++) {
+                    const val = vals[i];
+                    if (this.isAwaitable(val)) val.then(res, (err) => {
+                        n++;
+                        if (n === vals.length) throw Error('No promise resolved.');
+                    });
+                    else res(val as any);
+                }
+
+                if (vals.length === 0) throw Error('No promise resolved.');
+            });
+        }
+        public static all(vals: any[]): Promise<any[]> {
+            if (typeof vals.length !== 'number') throw new TypeError('vals must be an array. Note that Promise.all is not variadic.');
+            return new Promise((res, rej) => {
+                const result: any[] = [];
+                let n = 0;
+
+                for (let i = 0; i < vals.length; i++) {
+                    const val = vals[i];
+                    if (this.isAwaitable(val)) val.then(
+                        val => {
+                            n++;
+                            result[i] = val;
+                            if (n === vals.length) res(result);
+                        },
+                        rej
+                    );
+                    else {
+                        n++;
+                        result[i] = val;
+                    }
+                }
+
+                if (vals.length === n) res(result);
+            });
+        }
+        public static allSettled(vals: any[]): Promise<any[]> {
+            if (typeof vals.length !== 'number') throw new TypeError('vals must be an array. Note that Promise.allSettled is not variadic.');
+            return new Promise((res, rej) => {
+                const result: any[] = [];
+                let n = 0;
+
+                for (let i = 0; i < vals.length; i++) {
+                    const value = vals[i];
+                    if (this.isAwaitable(value)) value.then(
+                        value => {
+                            n++;
+                            result[i] = { status: 'fulfilled', value };
+                            if (n === vals.length) res(result);
+                        },
+                        reason => {
+                            n++;
+                            result[i] = { status: 'rejected', reason };
+                            if (n === vals.length) res(result);
+                        },
+                    );
+                    else {
+                        n++;
+                        result[i] = { status: 'fulfilled', value };
+                    }
+                }
+
+                if (vals.length === n) res(result);
+            });
+        }
+
+        [syms.callbacks]?: Callback<T>[] = [];
+        [syms.handled] = false;
+        [syms.state] = State.Pending;
+        [syms.value]?: T | unknown;
+
+        public then(onFulfil?: PromiseFulfillFunc<T>, onReject?: PromiseRejectFunc) {
+            return new Promise((resolve, reject) => {
+                onFulfil ??= v => v;
+                onReject ??= v => v;
+
+                const callback = (func: (val: any) => any) => (v: any) => {
+                    try { resolve(func(v)); }
+                    catch (e) { reject(e); }
+                }
+                switch (this[syms.state]) {
+                    case State.Pending:
+                        this[syms.callbacks]![this[syms.callbacks]!.length] = [callback(onFulfil), callback(onReject)];
+                        break;
+                    case State.Fulfilled:
+                        this[syms.handled] = true;
+                        callback(onFulfil)(this[syms.value]);
+                        break;
+                    case State.Rejected:
+                        this[syms.handled] = true;
+                        callback(onReject)(this[syms.value]);
+                        break;
+                }
+            })
+        }
+        public catch(func: PromiseRejectFunc) {
+            return this.then(undefined, func);
+        }
+        public finally(func: () => void) {
+            return this.then(
+                v => {
+                    func();
+                    return v;
+                },
+                v => {
+                    func();
+                    throw v;
+                }
+            );
+        }
+
+        public constructor(func: PromiseFunc<T>) {
+            internals.pushMessage(true, func, undefined, [
+                ((v) => resolve(this, v, State.Fulfilled)) as PromiseFulfillFunc<T>,
+                ((err) => resolve(this, err, State.Rejected)) as PromiseRejectFunc
+            ]);
+        }
+    }
+    env.global.Promise = Promise as any;
+});

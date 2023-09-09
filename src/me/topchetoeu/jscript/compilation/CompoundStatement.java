@@ -70,7 +70,7 @@ public class CompoundStatement extends Statement {
         else return new CompoundStatement(loc(), res.toArray(Statement[]::new));
     }
 
-    public CompoundStatement(Location loc, Statement... statements) {
+    public CompoundStatement(Location loc, Statement ...statements) {
         super(loc);
         this.statements = statements;
     }

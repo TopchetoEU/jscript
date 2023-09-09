@@ -1,0 +1,34 @@
+{
+    "files": [
+        "lib.d.ts",
+        "modules.ts",
+        "utils.ts",
+        "values/object.ts",
+        "values/symbol.ts",
+        "values/function.ts",
+        "values/errors.ts",
+        "values/string.ts",
+        "values/number.ts",
+        "values/boolean.ts",
+        "values/array.ts",
+        "promise.ts",
+        "map.ts",
+        "set.ts",
+        "regex.ts",
+        "timeout.ts",
+        "core.ts"
+    ],
+    "compilerOptions": {
+        "outFile": "../bin/me/topchetoeu/jscript/js/core.js",
+        // "declarationDir": "",
+        // "declarationDir": "bin/me/topchetoeu/jscript/dts",
+        "target": "ES5",
+        "lib": [],
+        "module": "None",
+        "stripInternal": true,
+        "downlevelIteration": true,
+        "esModuleInterop": true,
+        "forceConsistentCasingInFileNames": true,
+        "strict": true,
+    }
+}

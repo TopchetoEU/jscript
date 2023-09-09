@@ -5,7 +5,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 
-import me.topchetoeu.jscript.engine.CallContext;
+import me.topchetoeu.jscript.engine.Context;
 
 public class ArrayValue extends ObjectValue {
     private static final Object EMPTY = new Object();
@@ -29,14 +29,14 @@ public class ArrayValue extends ObjectValue {
         if (res == EMPTY) return null;
         else return res;
     }
-    public void set(int i, Object val) {
+    public void set(Context ctx, int i, Object val) {
         if (i < 0) return;
 
         while (values.size() <= i) {
             values.add(EMPTY);
         }
 
-        values.set(i, Values.normalize(val));
+        values.set(i, Values.normalize(ctx, val));
     }
     public boolean has(int i) {
         return i >= 0 && i < values.size() && values.get(i) != EMPTY;
@@ -83,7 +83,7 @@ public class ArrayValue extends ObjectValue {
     }
 
     @Override
-    protected Object getField(CallContext ctx, Object key) throws InterruptedException {
+    protected Object getField(Context ctx, Object key) throws InterruptedException {
         if (key.equals("length")) return values.size();
         if (key instanceof Number) {
             var i = ((Number)key).doubleValue();
@@ -95,14 +95,14 @@ public class ArrayValue extends ObjectValue {
         return super.getField(ctx, key);
     }
     @Override
-    protected boolean setField(CallContext ctx, Object key, Object val) throws InterruptedException {
+    protected boolean setField(Context ctx, Object key, Object val) throws InterruptedException {
         if (key.equals("length")) {
             return setSize((int)Values.toNumber(ctx, val));
         }
         if (key instanceof Number) {
             var i = Values.number(key);
             if (i >= 0 && i - Math.floor(i) == 0) {
-                set((int)i, val);
+                set(ctx, (int)i, val);
                 return true;
             }
         }
@@ -110,7 +110,7 @@ public class ArrayValue extends ObjectValue {
         return super.setField(ctx, key, val);
     }
     @Override
-    protected boolean hasField(CallContext ctx, Object key) throws InterruptedException {
+    protected boolean hasField(Context ctx, Object key) throws InterruptedException {
         if (key.equals("length")) return true;
         if (key instanceof Number) {
             var i = Values.number(key);
@@ -122,7 +122,7 @@ public class ArrayValue extends ObjectValue {
         return super.hasField(ctx, key);
     }
     @Override
-    protected void deleteField(CallContext ctx, Object key) throws InterruptedException {
+    protected void deleteField(Context ctx, Object key) throws InterruptedException {
         if (key instanceof Number) {
             var i = Values.number(key);
             if (i >= 0 && i - Math.floor(i) == 0) {
@@ -149,12 +149,12 @@ public class ArrayValue extends ObjectValue {
         nonEnumerableSet.add("length");
         nonConfigurableSet.add("length");
     }
-    public ArrayValue(Object ...values) {
+    public ArrayValue(Context ctx, Object ...values) {
         this();
-        for (var i = 0; i < values.length; i++) this.values.add(values[i]);
+        for (var i = 0; i < values.length; i++) this.values.add(Values.normalize(ctx, values[i]));
     }
 
-    public static ArrayValue of(Collection<Object> values) {
-        return new ArrayValue(values.toArray(Object[]::new));
+    public static ArrayValue of(Context ctx, Collection<Object> values) {
+        return new ArrayValue(ctx, values.toArray(Object[]::new));
     }
 }

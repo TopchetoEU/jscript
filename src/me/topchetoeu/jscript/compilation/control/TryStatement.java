@@ -49,18 +49,6 @@ public class TryStatement extends Statement {
             finN = target.size() - tmp;
         }
 
-        // for (int i = start; i < target.size(); i++) {
-        //     if (target.get(i).type == Type.NOP) {
-        //         var instr = target.get(i);
-        //         if (instr.is(0, "break")) {
-        //             target.set(i, Instruction.nop("try_break", instr.get(1), target.size()).locate(instr.location));
-        //         }
-        //         else if (instr.is(0, "cont")) {
-        //             target.set(i, Instruction.nop("try_cont", instr.get(1), target.size()).locate(instr.location));
-        //         }
-        //     }
-        // }
-
         target.set(start - 1, Instruction.tryInstr(tryN, catchN, finN).locate(loc()));
     }
 

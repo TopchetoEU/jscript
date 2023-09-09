@@ -1,44 +1,93 @@
-declare class Map<KeyT, ValueT> {
-    public [Symbol.iterator](): IterableIterator<[KeyT, ValueT]>;
+define("map", () => {
+    const syms = { values: internals.symbol('Map.values') } as { readonly values: unique symbol };
+    const Object = env.global.Object;
 
-    public clear(): void;
-    public delete(key: KeyT): boolean;
+    class Map<KeyT, ValueT> {
+        [syms.values]: any = {};
 
-    public entries(): IterableIterator<[KeyT, ValueT]>;
-    public keys(): IterableIterator<KeyT>;
-    public values(): IterableIterator<ValueT>;
+        public [env.global.Symbol.iterator](): IterableIterator<[KeyT, ValueT]> {
+            return this.entries();
+        }
 
-    public get(key: KeyT): ValueT;
-    public set(key: KeyT, val: ValueT): this;
-    public has(key: KeyT): boolean;
+        public clear() {
+            this[syms.values] = {};
+        }
+        public delete(key: KeyT) {
+            if ((key as any) in this[syms.values]) {
+                delete this[syms.values];
+                return true;
+            }
+            else return false;
+        }
 
-    public get size(): number;
+        public entries(): IterableIterator<[KeyT, ValueT]> {
+            const keys = internals.ownPropKeys(this[syms.values]);
+            let i = 0;
 
-    public forEach(func: (key: KeyT, val: ValueT, map: Map<KeyT, ValueT>) => void, thisArg?: any): void;
+            return {
+                next: () => {
+                    if (i >= keys.length) return { done: true };
+                    else return { done: false, value: [ keys[i], this[syms.values][keys[i++]] ] }
+                },
+                [env.global.Symbol.iterator]() { return this; }
+            }
+        }
+        public keys(): IterableIterator<KeyT> {
+            const keys = internals.ownPropKeys(this[syms.values]);
+            let i = 0;
 
-    public constructor();
-}
+            return {
+                next: () => {
+                    if (i >= keys.length) return { done: true };
+                    else return { done: false, value: keys[i] }
+                },
+                [env.global.Symbol.iterator]() { return this; }
+            }
+        }
+        public values(): IterableIterator<ValueT> {
+            const keys = internals.ownPropKeys(this[syms.values]);
+            let i = 0;
 
-Map.prototype[Symbol.iterator] = function() {
-    return this.entries();
-};
+            return {
+                next: () => {
+                    if (i >= keys.length) return { done: true };
+                    else return { done: false, value: this[syms.values][keys[i++]] }
+                },
+                [env.global.Symbol.iterator]() { return this; }
+            }
+        }
 
-var entries = Map.prototype.entries;
-var keys = Map.prototype.keys;
-var values = Map.prototype.values;
+        public get(key: KeyT) {
+            return this[syms.values][key];
+        }
+        public set(key: KeyT, val: ValueT) {
+            this[syms.values][key] = val;
+            return this;
+        }
+        public has(key: KeyT) {
+            return (key as any) in this[syms.values][key];
+        }
 
-Map.prototype.entries = function() {
-    var it = entries.call(this);
-    it[Symbol.iterator] = () => it;
-    return it;
-};
-Map.prototype.keys = function() {
-    var it = keys.call(this);
-    it[Symbol.iterator] = () => it;
-    return it;
-};
-Map.prototype.values = function() {
-    var it = values.call(this);
-    it[Symbol.iterator] = () => it;
-    return it;
-};
+        public get size() {
+            return internals.ownPropKeys(this[syms.values]).length;
+        }
+
+        public forEach(func: (key: KeyT, val: ValueT, map: Map<KeyT, ValueT>) => void, thisArg?: any) {
+            const keys = internals.ownPropKeys(this[syms.values]);
+
+            for (let i = 0; i < keys.length; i++) {
+                func(keys[i], this[syms.values][keys[i]], this);
+            }
+        }
+
+        public constructor(iterable: Iterable<[KeyT, ValueT]>) {
+            const it = iterable[env.global.Symbol.iterator]();
+
+            for (let el = it.next(); !el.done; el = it.next()) {
+                this[syms.values][el.value[0]] = el.value[1];
+            }
+        }
+    }
+
+    env.global.Map = Map;
+});

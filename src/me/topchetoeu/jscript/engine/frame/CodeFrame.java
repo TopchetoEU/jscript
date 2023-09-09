@@ -4,10 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import me.topchetoeu.jscript.Location;
-import me.topchetoeu.jscript.engine.CallContext;
-import me.topchetoeu.jscript.engine.DebugCommand;
-import me.topchetoeu.jscript.engine.Engine;
-import me.topchetoeu.jscript.engine.CallContext.DataKey;
+import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.scope.LocalScope;
 import me.topchetoeu.jscript.engine.scope.ValueVariable;
 import me.topchetoeu.jscript.engine.values.ArrayValue;
@@ -45,11 +42,6 @@ public class CodeFrame {
         }
     }
 
-    public static final DataKey<Integer> STACK_N_KEY = new DataKey<>();
-    public static final DataKey<Integer> MAX_STACK_KEY = new DataKey<>();
-    public static final DataKey<Boolean> STOP_AT_START_KEY = new DataKey<>();
-    public static final DataKey<Boolean> STEPPING_TROUGH_KEY = new DataKey<>();
-
     public final LocalScope scope;
     public final Object thisArg;
     public final Object[] args;
@@ -60,7 +52,6 @@ public class CodeFrame {
     public int stackPtr = 0;
     public int codePtr = 0;
     public boolean jumpFlag = false;
-    private DebugCommand debugCmd = null;
     private Location prevLoc = null;
 
     public void addTry(int n, int catchN, int finallyN) {
@@ -93,30 +84,16 @@ public class CodeFrame {
 
         return res;
     }
-    public void push(Object val) {
+    public void push(Context ctx, Object val) {
         if (stack.length <= stackPtr) {
             var newStack = new Object[stack.length * 2];
             System.arraycopy(stack, 0, newStack, 0, stack.length);
             stack = newStack;
         }
-        stack[stackPtr++] = Values.normalize(val);
+        stack[stackPtr++] = Values.normalize(ctx, val);
     }
 
-    public void start(CallContext ctx) {
-        if (ctx.getData(STACK_N_KEY, 0) >= ctx.addData(MAX_STACK_KEY, 10000)) throw EngineException.ofRange("Stack overflow!");
-        ctx.changeData(STACK_N_KEY);
-
-        var debugState = ctx.getData(Engine.DEBUG_STATE_KEY);
-        if (debugState != null) debugState.pushFrame(this);
-    }
-    public void end(CallContext ctx) {
-        var debugState = ctx.getData(Engine.DEBUG_STATE_KEY);
-
-        if (debugState != null) debugState.popFrame();
-        ctx.changeData(STACK_N_KEY, -1);
-    }
-
-    private Object nextNoTry(CallContext ctx) throws InterruptedException {
+    private Object nextNoTry(Context ctx) throws InterruptedException {
         if (Thread.currentThread().isInterrupted()) throw new InterruptedException();
         if (codePtr < 0 || codePtr >= function.body.length) return null;
 
@@ -125,39 +102,16 @@ public class CodeFrame {
         var loc = instr.location;
         if (loc != null) prevLoc = loc;
 
-        // var debugState = ctx.getData(Engine.DEBUG_STATE_KEY);
-        // if (debugCmd == null) {
-        //     if (ctx.getData(STOP_AT_START_KEY, false)) debugCmd = DebugCommand.STEP_OVER;
-        //     else debugCmd = DebugCommand.NORMAL;
-
-        //     if (debugState != null) debugState.pushFrame(this);
-        // }
-
-        // if (debugState != null && loc != null) {
-        //     if (
-        //         instr.type == Type.NOP && instr.match("debug") || debugState.breakpoints.contains(loc) || (
-        //             ctx.getData(STEPPING_TROUGH_KEY, false) &&
-        //             (debugCmd == DebugCommand.STEP_INTO || debugCmd == DebugCommand.STEP_OVER)
-        //         )
-        //     ) {
-        //         ctx.setData(STEPPING_TROUGH_KEY, true);
-
-        //         debugState.breakpointNotifier.next(new BreakpointData(loc, ctx));
-        //         debugCmd = debugState.commandNotifier.toAwaitable().await();
-        //         if (debugCmd == DebugCommand.NORMAL) ctx.setData(STEPPING_TROUGH_KEY, false);
-        //     }
-        // }
-
         try {
             this.jumpFlag = false;
-            return Runners.exec(debugCmd, instr, this, ctx);
+            return Runners.exec(ctx, instr, this);
         }
         catch (EngineException e) {
             throw e.add(function.name, prevLoc);
         }
     }
 
-    public Object next(CallContext ctx, Object prevReturn, Object prevError) throws InterruptedException {
+    public Object next(Context ctx, Object prevReturn, Object prevError) throws InterruptedException {
         TryCtx tryCtx = null;
         if (prevError != Runners.NO_RETURN) prevReturn = Runners.NO_RETURN;
 
@@ -257,6 +211,7 @@ public class CodeFrame {
             catch (EngineException e) {
                 if (tryCtx.hasCatch) {
                     tryCtx.state = TryCtx.STATE_CATCH;
+                    tryCtx.err = e;
                     codePtr = tryCtx.catchStart;
                     scope.catchVars.add(new ValueVariable(false, e.value));
                     return Runners.NO_RETURN;
@@ -281,6 +236,7 @@ public class CodeFrame {
                 else return res;
             }
             catch (EngineException e) {
+                e.cause = tryCtx.err;
                 if (tryCtx.hasFinally) {
                     tryCtx.err = e;
                     tryCtx.state = TryCtx.STATE_FINALLY_THREW;
@@ -291,29 +247,38 @@ public class CodeFrame {
             codePtr = tryCtx.finallyStart;
             return Runners.NO_RETURN;
         }
+        else if (tryCtx.state == TryCtx.STATE_FINALLY_THREW) {
+            try {
+                return nextNoTry(ctx);
+            }
+            catch (EngineException e) {
+                e.cause = tryCtx.err;
+                throw e;
+            }
+        }
         else return nextNoTry(ctx);
     }
 
-    public Object run(CallContext ctx) throws InterruptedException {
+    public Object run(Context ctx) throws InterruptedException {
         try {
-            start(ctx);
+            ctx.message.pushFrame(this);
             while (true) {
                 var res = next(ctx, Runners.NO_RETURN, Runners.NO_RETURN);
                 if (res != Runners.NO_RETURN) return res;
             }
         }
         finally {
-            end(ctx);
+            ctx.message.popFrame(this);
         }
     }
 
-    public CodeFrame(Object thisArg, Object[] args, CodeFunction func) {
+    public CodeFrame(Context ctx, Object thisArg, Object[] args, CodeFunction func) {
         this.args = args.clone();
         this.scope = new LocalScope(func.localsN, func.captures);
         this.scope.get(0).set(null, thisArg);
         var argsObj = new ArrayValue();
         for (var i = 0; i < args.length; i++) {
-            argsObj.set(i, args[i]);
+            argsObj.set(ctx, i, args[i]);
         }
         this.scope.get(1).value = argsObj;
 

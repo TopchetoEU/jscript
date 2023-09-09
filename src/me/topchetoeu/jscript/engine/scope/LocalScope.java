@@ -4,7 +4,6 @@ import java.util.ArrayList;
 
 public class LocalScope {
     private String[] names;
-    private LocalScope parent;
     public final ValueVariable[] captures;
     public final ValueVariable[] locals;
     public final ArrayList<ValueVariable> catchVars = new ArrayList<>();
@@ -33,18 +32,11 @@ public class LocalScope {
         return captures.length + locals.length;
     }
 
-    public GlobalScope toGlobal(GlobalScope global) {
-        GlobalScope res;
-
-        if (parent == null) res = new GlobalScope(global);
-        else res = new GlobalScope(parent.toGlobal(global));
-
+    public void toGlobal(GlobalScope global) {
         var names = getNames();
         for (var i = 0; i < names.length; i++) {
-            res.define(names[i], locals[i]);
+            global.define(names[i], locals[i]);
         }
-
-        return res;
     }
 
     public LocalScope(int n, ValueVariable[] captures) {
@@ -54,9 +46,5 @@ public class LocalScope {
         for (int i = 0; i < n; i++) {
             locals[i] = new ValueVariable(false, null);
         }
-    }
-    public LocalScope(int n, ValueVariable[] captures, LocalScope parent) {
-        this(n, captures);
-        this.parent = parent;
     }
 }

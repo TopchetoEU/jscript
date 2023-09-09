@@ -3,7 +3,7 @@ package me.topchetoeu.jscript.engine.scope;
 import java.util.HashSet;
 import java.util.Set;
 
-import me.topchetoeu.jscript.engine.CallContext;
+import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
 import me.topchetoeu.jscript.engine.values.NativeFunction;
 import me.topchetoeu.jscript.engine.values.ObjectValue;
@@ -11,12 +11,11 @@ import me.topchetoeu.jscript.exceptions.EngineException;
 
 public class GlobalScope implements ScopeRecord {
     public final ObjectValue obj;
-    public final GlobalScope parent;
 
     @Override
-    public GlobalScope parent() { return parent; }
+    public GlobalScope parent() { return null; }
 
-    public boolean has(CallContext ctx, String name) throws InterruptedException {
+    public boolean has(Context ctx, String name) throws InterruptedException {
         return obj.hasMember(ctx, name, false);
     }
     public Object getKey(String name) {
@@ -24,7 +23,9 @@ public class GlobalScope implements ScopeRecord {
     }
 
     public GlobalScope globalChild() {
-        return new GlobalScope(this);
+        var obj = new ObjectValue();
+        obj.setPrototype(null, this.obj);
+        return new GlobalScope(obj);
     }
     public LocalScopeRecord child() {
         return new LocalScopeRecord(this);
@@ -38,31 +39,31 @@ public class GlobalScope implements ScopeRecord {
             Thread.currentThread().interrupt();
             return name;
         }
-        obj.defineProperty(name, null);
+        obj.defineProperty(null, name, null);
         return name;
     }
     public void define(String name, Variable val) {
-        obj.defineProperty(name,
+        obj.defineProperty(null, name,
             new NativeFunction("get " + name, (ctx, th, a) -> val.get(ctx)),
             new NativeFunction("set " + name, (ctx, th, args) -> { val.set(ctx, args.length > 0 ? args[0] : null); return null; }),
             true, true
         );
     }
-    public void define(String name, boolean readonly, Object val) {
-        obj.defineProperty(name, val, readonly, true, true);
+    public void define(Context ctx, String name, boolean readonly, Object val) {
+        obj.defineProperty(ctx, name, val, readonly, true, true);
     }
-    public void define(String... names) {
+    public void define(String ...names) {
         for (var n : names) define(n);
     }
     public void define(boolean readonly, FunctionValue val) {
-        define(val.name, readonly, val);
+        define(null, val.name, readonly, val);
     }
 
-    public Object get(CallContext ctx, String name) throws InterruptedException {
+    public Object get(Context ctx, String name) throws InterruptedException {
         if (!obj.hasMember(ctx, name, false)) throw EngineException.ofSyntax("The variable '" + name + "' doesn't exist.");
         else return obj.getMember(ctx, name);
     }
-    public void set(CallContext ctx, String name, Object val) throws InterruptedException {
+    public void set(Context ctx, String name, Object val) throws InterruptedException {
         if (!obj.hasMember(ctx, name, false)) throw EngineException.ofSyntax("The variable '" + name + "' doesn't exist.");
         if (!obj.setMember(ctx, name, val, false)) throw EngineException.ofSyntax("The global '" + name + "' is readonly.");
     }
@@ -78,12 +79,9 @@ public class GlobalScope implements ScopeRecord {
     }
 
     public GlobalScope() {
-        this.parent = null;
         this.obj = new ObjectValue();
     }
-    public GlobalScope(GlobalScope parent) {
-        this.parent = null;
-        this.obj = new ObjectValue();
-        this.obj.setPrototype(null, parent.obj);
+    public GlobalScope(ObjectValue val) {
+        this.obj = val;
     }
 }
