@@ -516,10 +516,57 @@ public class Parsing {
 
         for (int i = 2; i < literal.length(); i++) {
             res *= 16;
-            res += fromHex(literal.charAt(i));
+            int dig = fromHex(literal.charAt(i));
+            res += dig;
         }
 
         return res;
+    }
+
+    public static Double parseNumber(boolean octals, String value) {
+        if (value.startsWith("0x") || value.startsWith("0X")) {
+            if (value.length() == 2) return null;
+            return parseHex(value);
+        }
+        if (value.endsWith("e") || value.endsWith("E") || value.endsWith("-")) return null;
+
+        int i = 0;
+        double res = 0, dotDivisor = 1;
+        boolean e = false, dot = false;
+        int exponent = 0;
+
+        for (; i < value.length(); i++) {
+            char c = value.charAt(i);
+            if (c == '.') { dot = true; break; }
+            if (c == 'e') { e = true; break; }
+            if (!isDigit(c)) break;
+
+            res = res * 10 + c - '0';
+        }
+
+        if (dot) for (i++; i < value.length(); i++) {
+            char c = value.charAt(i);
+            if (c == 'e') { e = true; break; }
+            if (!isDigit(c)) break;
+
+            res += (c - '0') / (dotDivisor *= 10);
+        }
+
+        if (e) for (i++; i < value.length(); i++) {
+            char c = value.charAt(i);
+            if (!isDigit(c)) break;
+            exponent = 10 * exponent + c - '0';
+        }
+
+        if (exponent < 0) for (int j = 0; j < -exponent; j++) res /= 10;
+        else for (int j = 0; j < exponent; j++) res *= 10;
+
+        return res;
+    }
+    private static double parseNumber(Location loc, String value) {
+        var res = parseNumber(false, value);
+        if (res == null) throw new SyntaxException(loc, "Invalid number format.");
+        else return res;
     }
 
     private static List<Token> parseTokens(String filename, Collection<RawToken> tokens) {
@@ -529,27 +576,13 @@ public class Parsing {
             var loc = new Location(el.line, el.start, filename);
             switch (el.type) {
                 case LITERAL: res.add(Token.identifier(el.line, el.start, el.value)); break;
-                case NUMBER:
-                    if (el.value.startsWith("0x") || el.value.startsWith("0X")) {
-                        if (el.value.endsWith("x") || el.value.endsWith("X")) {
-                            throw new SyntaxException(loc, "Invalid number format.");
-                        }
-                        res.add(Token.number(el.line, el.start, parseHex(el.value))); break;
-                    }
-                    if (
-                        el.value.endsWith("e") || el.value.endsWith("E") || el.value.endsWith("-")
-                    ) throw new SyntaxException(loc, "Invalid number format.");
-                    else res.add(Token.number(el.line, el.start, Double.parseDouble(el.value))); break;
+                case NUMBER: res.add(Token.number(el.line, el.start, parseNumber(loc, el.value))); break;
+                case STRING: res.add(Token.string(el.line, el.start, parseString(loc, el.value))); break;
+                case REGEX: res.add(Token.regex(el.line, el.start, parseRegex(loc, el.value))); break;
                 case OPERATOR:
                     Operator op = Operator.parse(el.value);
                     if (op == null) throw new SyntaxException(loc, String.format("Unrecognized operator '%s'.", el.value));
                     res.add(Token.operator(el.line, el.start, op));
-                    break;
-                case STRING:
-                    res.add(Token.string(el.line, el.start, parseString(loc, el.value)));
-                    break;
-                case REGEX:
-                    res.add(Token.regex(el.line, el.start, parseRegex(loc, el.value)));
                     break;
             }
         }

@@ -44,8 +44,9 @@ public class EngineException extends RuntimeException {
         return ss.toString();
     }
 
-    private static Object err(String msg, PlaceholderProto proto) {
+    private static Object err(String name, String msg, PlaceholderProto proto) {
         var res = new ObjectValue(proto);
+        if (name != null) res.defineProperty(null, "name", name);
         res.defineProperty(null, "message", msg);
         return res;
     }
@@ -57,19 +58,22 @@ public class EngineException extends RuntimeException {
         this.cause = null;
     }
 
+    public static EngineException ofError(String name, String msg) {
+        return new EngineException(err(name, msg, PlaceholderProto.ERROR));
+    }
     public static EngineException ofError(String msg) {
-        return new EngineException(err(msg, PlaceholderProto.ERROR));
+        return new EngineException(err(null, msg, PlaceholderProto.ERROR));
     }
     public static EngineException ofSyntax(SyntaxException e) {
-        return new EngineException(err(e.msg, PlaceholderProto.SYNTAX_ERROR)).add(null, e.loc);
+        return new EngineException(err(null, e.msg, PlaceholderProto.SYNTAX_ERROR)).add(null, e.loc);
     }
     public static EngineException ofSyntax(String msg) {
-        return new EngineException(err(msg, PlaceholderProto.SYNTAX_ERROR));
+        return new EngineException(err(null, msg, PlaceholderProto.SYNTAX_ERROR));
     }
     public static EngineException ofType(String msg) {
-        return new EngineException(err(msg, PlaceholderProto.TYPE_ERROR));
+        return new EngineException(err(null, msg, PlaceholderProto.TYPE_ERROR));
     }
     public static EngineException ofRange(String msg) {
-        return new EngineException(err(msg, PlaceholderProto.RANGE_ERROR));
+        return new EngineException(err(null, msg, PlaceholderProto.RANGE_ERROR));
     }
 }

@@ -2,11 +2,12 @@ define("values/errors", () => {
     var Error = env.global.Error = function Error(msg: string) {
         if (msg === undefined) msg = '';
         else msg += '';
-    
-        return Object.setPrototypeOf({
+
+        return {
             message: msg,
             stack: [] as string[],
-        }, Error.prototype);
+            __proto__: Error.prototype,
+        } as any;
     } as ErrorConstructor;
 
     setConstr(Error.prototype, Error);

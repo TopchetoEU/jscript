@@ -37,6 +37,7 @@ interface Internals {
 
 var env: Environment = arguments[0], internals: Internals = arguments[1];
 globalThis.log = internals.constructor.log;
+var i = 0.0;
 
 try {
     run('values/object');
