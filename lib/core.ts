@@ -2,12 +2,17 @@ interface Environment {
     global: typeof globalThis & Record<string, any>;
     proto(name: string): object;
     setProto(name: string, val: object): void;
+    symbol(name: string): symbol;
 }
 interface Internals {
+    object: ObjectConstructor;
+    function: FunctionConstructor;
+    promise: typeof Promise;
+
     markSpecial(...funcs: Function[]): void;
     getEnv(func: Function): Environment | undefined;
     setEnv<T>(func: T, env: Environment): T;
-    apply(func: Function, thisArg: any, args: any[]): any;
+    apply(func: Function, thisArg: any, args: any[], env?: Environment): any;
     delay(timeout: number, callback: Function): () => void;
     pushMessage(micro: boolean, func: Function, thisArg: any, args: any[]): void;
 
@@ -55,6 +60,7 @@ try {
     run('timeout');
 
     env.global.log = log;
+    env.global.NewObject = internals.object;
 
     log('Loaded polyfills!');
 }

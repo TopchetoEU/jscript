@@ -9,4 +9,5 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface NativeSetter {
     public String value();
+    public boolean raw() default false;
 }

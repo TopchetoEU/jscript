@@ -3,7 +3,7 @@ package me.topchetoeu.jscript.engine.values;
 import me.topchetoeu.jscript.Location;
 import me.topchetoeu.jscript.compilation.Instruction;
 import me.topchetoeu.jscript.engine.Context;
-import me.topchetoeu.jscript.engine.FunctionContext;
+import me.topchetoeu.jscript.engine.Environment;
 import me.topchetoeu.jscript.engine.frame.CodeFrame;
 import me.topchetoeu.jscript.engine.scope.ValueVariable;
 
@@ -12,7 +12,7 @@ public class CodeFunction extends FunctionValue {
     public final int length;
     public final Instruction[] body;
     public final ValueVariable[] captures;
-    public FunctionContext environment;
+    public Environment environment;
 
     public Location loc() {
         for (var instr : body) {
@@ -32,7 +32,7 @@ public class CodeFunction extends FunctionValue {
         return new CodeFrame(ctx, thisArg, args, this).run(new Context(environment, ctx.message));
     }
 
-    public CodeFunction(FunctionContext environment, String name, int localsN, int length, ValueVariable[] captures, Instruction[] body) {
+    public CodeFunction(Environment environment, String name, int localsN, int length, ValueVariable[] captures, Instruction[] body) {
         super(name, length);
         this.captures = captures;
         this.environment = environment;

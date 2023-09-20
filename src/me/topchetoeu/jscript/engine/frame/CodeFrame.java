@@ -107,11 +107,11 @@ public class CodeFrame {
             return Runners.exec(ctx, instr, this);
         }
         catch (EngineException e) {
-            throw e.add(function.name, prevLoc);
+            throw e.add(function.name, prevLoc).setContext(ctx);
         }
     }
 
-    public Object next(Context ctx, Object prevReturn, Object prevError) throws InterruptedException {
+    public Object next(Context ctx, Object prevValue, Object prevReturn, Object prevError) throws InterruptedException {
         TryCtx tryCtx = null;
         if (prevError != Runners.NO_RETURN) prevReturn = Runners.NO_RETURN;
 
@@ -196,6 +196,7 @@ public class CodeFrame {
 
         if (prevError != Runners.NO_RETURN) throw new EngineException(prevError);
         if (prevReturn != Runners.NO_RETURN) return prevReturn;
+        if (prevValue != Runners.NO_RETURN) push(ctx, prevValue);
 
         if (tryCtx == null) return nextNoTry(ctx);
         else if (tryCtx.state == TryCtx.STATE_TRY) {
@@ -263,7 +264,7 @@ public class CodeFrame {
         try {
             ctx.message.pushFrame(this);
             while (true) {
-                var res = next(ctx, Runners.NO_RETURN, Runners.NO_RETURN);
+                var res = next(ctx, Runners.NO_RETURN, Runners.NO_RETURN, Runners.NO_RETURN);
                 if (res != Runners.NO_RETURN) return res;
             }
         }

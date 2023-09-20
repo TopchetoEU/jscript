@@ -4,14 +4,14 @@ define("timeout", () => {
     let timeoutI = 0, intervalI = 0;
 
     env.global.setTimeout = (func, delay, ...args) => {
-        if (typeof func !== 'function') throw new TypeError("func must be a function.");
+        if (typeof func !== 'function') throw new env.global.TypeError("func must be a function.");
         delay = (delay ?? 0) - 0;
         const cancelFunc = internals.delay(delay, () => internals.apply(func, undefined, args));
         timeouts[++timeoutI] = cancelFunc;
         return timeoutI;
     };
     env.global.setInterval = (func, delay, ...args) => {
-        if (typeof func !== 'function') throw new TypeError("func must be a function.");
+        if (typeof func !== 'function') throw new env.global.TypeError("func must be a function.");
         delay = (delay ?? 0) - 0;
 
         const i = ++intervalI;

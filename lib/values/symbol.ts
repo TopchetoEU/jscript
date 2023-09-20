@@ -2,8 +2,8 @@ define("values/symbol", () => {
     const symbols: Record<string, symbol> = { };
 
     var Symbol = env.global.Symbol = function(this: any, val?: string) {
-        if (this !== undefined && this !== null) throw new TypeError("Symbol may not be called with 'new'.");
-        if (typeof val !== 'string' && val !== undefined) throw new TypeError('val must be a string or undefined.');
+        if (this !== undefined && this !== null) throw new env.global.TypeError("Symbol may not be called with 'new'.");
+        if (typeof val !== 'string' && val !== undefined) throw new env.global.TypeError('val must be a string or undefined.');
         return internals.symbol(val);
     } as SymbolConstructor;
 
@@ -12,23 +12,23 @@ define("values/symbol", () => {
 
     setProps(Symbol, {
         for(key) {
-            if (typeof key !== 'string' && key !== undefined) throw new TypeError('key must be a string or undefined.');
+            if (typeof key !== 'string' && key !== undefined) throw new env.global.TypeError('key must be a string or undefined.');
             if (key in symbols) return symbols[key];
             else return symbols[key] = internals.symbol(key);
         },
         keyFor(sym) {
-            if (typeof sym !== 'symbol') throw new TypeError('sym must be a symbol.');
+            if (typeof sym !== 'symbol') throw new env.global.TypeError('sym must be a symbol.');
             return internals.symbolToString(sym);
         },
 
-        typeName: Symbol("Symbol.name") as any,
-        replace: Symbol('Symbol.replace') as any,
-        match: Symbol('Symbol.match') as any,
-        matchAll: Symbol('Symbol.matchAll') as any,
-        split: Symbol('Symbol.split') as any,
-        search: Symbol('Symbol.search') as any,
-        iterator: Symbol('Symbol.iterator') as any,
-        asyncIterator: Symbol('Symbol.asyncIterator') as any,
+        typeName: env.symbol("Symbol.typeName") as any,
+        replace: env.symbol('Symbol.replace') as any,
+        match: env.symbol('Symbol.match') as any,
+        matchAll: env.symbol('Symbol.matchAll') as any,
+        split: env.symbol('Symbol.split') as any,
+        search: env.symbol('Symbol.search') as any,
+        iterator: env.symbol('Symbol.iterator') as any,
+        asyncIterator: env.symbol('Symbol.asyncIterator') as any,
     });
 
     internals.defineField(env.global.Object.prototype, Symbol.typeName, 'Object', false, false, false);

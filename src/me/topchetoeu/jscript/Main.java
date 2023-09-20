@@ -10,7 +10,7 @@ import java.nio.file.Path;
 import me.topchetoeu.jscript.engine.MessageContext;
 import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.Engine;
-import me.topchetoeu.jscript.engine.FunctionContext;
+import me.topchetoeu.jscript.engine.Environment;
 import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.events.Observer;
 import me.topchetoeu.jscript.exceptions.EngineException;
@@ -21,7 +21,7 @@ import me.topchetoeu.jscript.polyfills.Internals;
 public class Main {
     static Thread task;
     static Engine engine;
-    static FunctionContext env;
+    static Environment env;
 
     public static String streamToString(InputStream in) {
         try {
@@ -47,37 +47,14 @@ public class Main {
 
     private static Observer<Object> valuePrinter = new Observer<Object>() {
         public void next(Object data) {
-            try {
-                Values.printValue(null, data);
-            }
+            try { Values.printValue(null, data); }
             catch (InterruptedException e) { }
             System.out.println();
         }
 
         public void error(RuntimeException err) {
-            try {
-                try {
-                    if (err instanceof EngineException) {
-                        System.out.println("Uncaught " + ((EngineException)err).toString(new Context(null, new MessageContext(engine))));
-                    }
-                    else if (err instanceof SyntaxException) {
-                        System.out.println("Syntax error:" + ((SyntaxException)err).msg);
-                    }
-                    else if (err.getCause() instanceof InterruptedException) return;
-                    else {
-                        System.out.println("Internal error ocurred:");
-                        err.printStackTrace();
-                    }
-                }
-                catch (EngineException ex) {
-                    System.out.println("Uncaught ");
-                    Values.printValue(null, ((EngineException)err).value);
-                    System.out.println();
-                }
-            }
-            catch (InterruptedException ex) {
-                return;
-            }
+            try { Values.printError(err, null); }
+            catch (InterruptedException ex) { return; }
         }
     };
 
@@ -85,8 +62,10 @@ public class Main {
         System.out.println(String.format("Running %s v%s by %s", Metadata.NAME, Metadata.VERSION, Metadata.AUTHOR));
         var in = new BufferedReader(new InputStreamReader(System.in));
         engine = new Engine();
-        env = new FunctionContext(null, null, null);
-        var builderEnv = new FunctionContext(null, new NativeTypeRegister(), null);
+
+        // TODO: Replace type register with safer accessor
+        env = new Environment(null, new NativeTypeRegister(), null);
+        var builderEnv = new Environment(null, new NativeTypeRegister(), null);
         var exited = new boolean[1];
 
         env.global.define("exit", ctx -> {

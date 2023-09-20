@@ -12,6 +12,7 @@ import me.topchetoeu.jscript.engine.values.ObjectValue.PlaceholderProto;
 public class EngineException extends RuntimeException {
     public final Object value;
     public EngineException cause;
+    public Context ctx = null;
     public final List<String> stackTrace = new ArrayList<>();
 
     public EngineException add(String name, Location location) {
@@ -25,6 +26,10 @@ public class EngineException extends RuntimeException {
     }
     public EngineException setCause(EngineException cause) {
         this.cause = cause;
+        return this;
+    }
+    public EngineException setContext(Context ctx) {
+        this.ctx = ctx;
         return this;
     }
 

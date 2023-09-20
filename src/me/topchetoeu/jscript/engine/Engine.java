@@ -11,7 +11,7 @@ public class Engine {
     private class UncompiledFunction extends FunctionValue {
         public final String filename;
         public final String raw;
-        public final FunctionContext ctx;
+        public final Environment ctx;
 
         @Override
         public Object call(Context ctx, Object thisArg, Object ...args) throws InterruptedException {
@@ -19,7 +19,7 @@ public class Engine {
             return ctx.compile(filename, raw).call(ctx, thisArg, args);
         }
 
-        public UncompiledFunction(FunctionContext ctx, String filename, String raw) {
+        public UncompiledFunction(Environment ctx, String filename, String raw) {
             super(filename, 0);
             this.filename = filename;
             this.raw = raw;
@@ -109,7 +109,7 @@ public class Engine {
         return msg.notifier;
     }
     public Awaitable<Object> pushMsg(boolean micro, Context ctx, String filename, String raw, Object thisArg, Object ...args) {
-        return pushMsg(micro, ctx.message, new UncompiledFunction(ctx.function, filename, raw), thisArg, args);
+        return pushMsg(micro, ctx.message, new UncompiledFunction(ctx.env, filename, raw), thisArg, args);
     }
 
     // public Engine() {

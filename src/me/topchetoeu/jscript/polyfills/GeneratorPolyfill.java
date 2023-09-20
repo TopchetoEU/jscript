@@ -10,7 +10,7 @@ import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.exceptions.EngineException;
 import me.topchetoeu.jscript.interop.Native;
 
-public class GeneratorFunction extends FunctionValue {
+public class GeneratorPolyfill extends FunctionValue {
     public final FunctionValue factory;
 
     public static class Generator {
@@ -28,12 +28,12 @@ public class GeneratorFunction extends FunctionValue {
             }
 
             Object res = null;
-            if (inducedValue != Runners.NO_RETURN) frame.push(ctx, inducedValue);
             ctx.message.pushFrame(frame);
             yielding = false;
+
             while (!yielding) {
                 try {
-                    res = frame.next(ctx, inducedReturn, inducedError);
+                    res = frame.next(ctx, inducedValue, inducedReturn, inducedError);
                     inducedReturn = inducedError = Runners.NO_RETURN;
                     if (res != Runners.NO_RETURN) {
                         done = true;
@@ -74,7 +74,7 @@ public class GeneratorFunction extends FunctionValue {
         public String toString() {
             if (done) return "Generator [closed]";
             if (yielding) return "Generator [suspended]";
-            return "Generator " + (done ? "[closed]" : "[suspended]");
+            return "Generator [running]";
         }
 
         public Object yield(Context ctx, Object thisArg, Object[] args) {
@@ -92,7 +92,7 @@ public class GeneratorFunction extends FunctionValue {
         return handler;
     }
 
-    public GeneratorFunction(FunctionValue factory) {
+    public GeneratorPolyfill(FunctionValue factory) {
         super(factory.name, factory.length);
         this.factory = factory;
     }

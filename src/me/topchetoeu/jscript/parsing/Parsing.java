@@ -13,7 +13,7 @@ import me.topchetoeu.jscript.compilation.VariableDeclareStatement.Pair;
 import me.topchetoeu.jscript.compilation.control.*;
 import me.topchetoeu.jscript.compilation.control.SwitchStatement.SwitchCase;
 import me.topchetoeu.jscript.compilation.values.*;
-import me.topchetoeu.jscript.engine.FunctionContext;
+import me.topchetoeu.jscript.engine.Environment;
 import me.topchetoeu.jscript.engine.Operation;
 import me.topchetoeu.jscript.engine.scope.ValueVariable;
 import me.topchetoeu.jscript.engine.values.CodeFunction;
@@ -1875,7 +1875,7 @@ public class Parsing {
         return list.toArray(Statement[]::new);
     }
 
-    public static CodeFunction compile(FunctionContext environment, Statement ...statements) {
+    public static CodeFunction compile(Environment environment, Statement ...statements) {
         var target = environment.global.globalChild();
         var subscope = target.child();
         var res = new ArrayList<Instruction>();
@@ -1905,7 +1905,7 @@ public class Parsing {
 
         return new CodeFunction(environment, "", subscope.localsCount(), 0, new ValueVariable[0], res.toArray(Instruction[]::new));
     }
-    public static CodeFunction compile(FunctionContext environment, String filename, String raw) {
+    public static CodeFunction compile(Environment environment, String filename, String raw) {
         try {
             return compile(environment, parse(filename, raw));
         }

@@ -1,7 +1,7 @@
 package me.topchetoeu.jscript.polyfills;
 
 import me.topchetoeu.jscript.engine.Context;
-import me.topchetoeu.jscript.engine.FunctionContext;
+import me.topchetoeu.jscript.engine.Environment;
 import me.topchetoeu.jscript.engine.values.ArrayValue;
 import me.topchetoeu.jscript.engine.values.CodeFunction;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
@@ -12,20 +12,25 @@ import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.interop.Native;
 
 public class Internals {
+    @Native public final Class<ObjectPolyfill> object = ObjectPolyfill.class;
+    @Native public final Class<FunctionPolyfill> function = FunctionPolyfill.class;
+    @Native public final Class<PromisePolyfill> promise = PromisePolyfill.class;
+
     @Native public void markSpecial(FunctionValue ...funcs) {
         for (var func : funcs) {
             func.special = true;
         }
     }
-    @Native public FunctionContext getEnv(Object func) {
+    @Native public Environment getEnv(Object func) {
         if (func instanceof CodeFunction) return ((CodeFunction)func).environment;
         else return null;
     }
-    @Native public Object setEnv(Object func, FunctionContext env) {
+    @Native public Object setEnv(Object func, Environment env) {
         if (func instanceof CodeFunction) ((CodeFunction)func).environment = env;
         return func;
     }
-    @Native public Object apply(Context ctx, FunctionValue func, Object thisArg, ArrayValue args) throws InterruptedException {
+    @Native public Object apply(Context ctx, FunctionValue func, Object thisArg, ArrayValue args, Environment env) throws InterruptedException {
+        if (env != null) ctx = new Context(env, ctx.message);
         return func.call(ctx, thisArg, args.toArray());
     }
     @Native public FunctionValue delay(Context ctx, double delay, FunctionValue callback) throws InterruptedException {
@@ -84,8 +89,8 @@ public class Internals {
     @Native public boolean isArray(Object obj) {
         return obj instanceof ArrayValue;
     }
-    @Native public GeneratorFunction generator(FunctionValue obj) {
-        return new GeneratorFunction(obj);
+    @Native public GeneratorPolyfill generator(FunctionValue obj) {
+        return new GeneratorPolyfill(obj);
     }
 
     @Native public boolean defineField(Context ctx, ObjectValue obj, Object key, Object val, boolean writable, boolean enumerable, boolean configurable) {

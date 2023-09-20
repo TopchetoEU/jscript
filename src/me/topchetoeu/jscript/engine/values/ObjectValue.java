@@ -55,7 +55,7 @@ public class ObjectValue {
 
     public final boolean memberWritable(Object key) {
         if (state == State.FROZEN) return false;
-        return !nonWritableSet.contains(key);
+        return values.containsKey(key) && !nonWritableSet.contains(key);
     }
     public final boolean memberConfigurable(Object key) {
         if (state == State.SEALED || state == State.FROZEN) return false;
@@ -147,13 +147,13 @@ public class ObjectValue {
 
     public ObjectValue getPrototype(Context ctx) throws InterruptedException {
         try {
-            if (prototype == OBJ_PROTO) return ctx.function.proto("object");
-            if (prototype == ARR_PROTO) return ctx.function.proto("array");
-            if (prototype == FUNC_PROTO) return ctx.function.proto("function");
-            if (prototype == ERR_PROTO) return ctx.function.proto("error");
-            if (prototype == RANGE_ERR_PROTO) return ctx.function.proto("rangeErr");
-            if (prototype == SYNTAX_ERR_PROTO) return ctx.function.proto("syntaxErr");
-            if (prototype == TYPE_ERR_PROTO) return ctx.function.proto("typeErr");
+            if (prototype == OBJ_PROTO) return ctx.env.proto("object");
+            if (prototype == ARR_PROTO) return ctx.env.proto("array");
+            if (prototype == FUNC_PROTO) return ctx.env.proto("function");
+            if (prototype == ERR_PROTO) return ctx.env.proto("error");
+            if (prototype == RANGE_ERR_PROTO) return ctx.env.proto("rangeErr");
+            if (prototype == SYNTAX_ERR_PROTO) return ctx.env.proto("syntaxErr");
+            if (prototype == TYPE_ERR_PROTO) return ctx.env.proto("typeErr");
         }
         catch (NullPointerException e) {
             return null;
@@ -172,14 +172,14 @@ public class ObjectValue {
         else if (Values.isObject(val)) {
             var obj = Values.object(val);
 
-            if (ctx != null && ctx.function != null) {
-                if (obj == ctx.function.proto("object")) prototype = OBJ_PROTO;
-                else if (obj == ctx.function.proto("array")) prototype = ARR_PROTO;
-                else if (obj == ctx.function.proto("function")) prototype = FUNC_PROTO;
-                else if (obj == ctx.function.proto("error")) prototype = ERR_PROTO;
-                else if (obj == ctx.function.proto("syntaxErr")) prototype = SYNTAX_ERR_PROTO;
-                else if (obj == ctx.function.proto("typeErr")) prototype = TYPE_ERR_PROTO;
-                else if (obj == ctx.function.proto("rangeErr")) prototype = RANGE_ERR_PROTO;
+            if (ctx != null && ctx.env != null) {
+                if (obj == ctx.env.proto("object")) prototype = OBJ_PROTO;
+                else if (obj == ctx.env.proto("array")) prototype = ARR_PROTO;
+                else if (obj == ctx.env.proto("function")) prototype = FUNC_PROTO;
+                else if (obj == ctx.env.proto("error")) prototype = ERR_PROTO;
+                else if (obj == ctx.env.proto("syntaxErr")) prototype = SYNTAX_ERR_PROTO;
+                else if (obj == ctx.env.proto("typeErr")) prototype = TYPE_ERR_PROTO;
+                else if (obj == ctx.env.proto("rangeErr")) prototype = RANGE_ERR_PROTO;
                 else prototype = obj;
             }
             else prototype = obj;
