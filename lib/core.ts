@@ -45,15 +45,22 @@ globalThis.log = internals.constructor.log;
 var i = 0.0;
 
 try {
-    run('values/object');
+    var Object = env.global.Object = internals.object;
+    var Function = env.global.Function = internals.function;
+    var Promise = env.global.Promise = internals.promise;
+
+    env.setProto('object', Object.prototype);
+    env.setProto('function', Function.prototype);
+
+    (Object.prototype as any).__proto__ = null;
+
     run('values/symbol');
-    run('values/function');
+
     run('values/errors');
     run('values/string');
     run('values/number');
     run('values/boolean');
     run('values/array');
-    run('promise');
     run('map');
     run('set');
     run('regex');
