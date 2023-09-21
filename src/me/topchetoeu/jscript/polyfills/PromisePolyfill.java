@@ -152,12 +152,9 @@ public class PromisePolyfill {
      * Thread safe - you can call this from anywhere
      * HOWEVER, it's strongly recommended to use this only in javascript
      */
-    @Native(raw = true) public static Object then(Context ctx, Object thisArg, Object ...args) throws InterruptedException {
-        var onFulfill = args.length > 0 ? args[0] : null;
-        var onReject = args.length > 1 ? args[1]: null;
-
-        if (!(onFulfill instanceof FunctionValue)) onFulfill = null;
-        if (!(onReject instanceof FunctionValue)) onReject = null;
+    @Native(thisArg=true) public static Object then(Context ctx, Object thisArg, Object _onFulfill, Object _onReject) throws InterruptedException {
+        var onFulfill = _onFulfill instanceof FunctionValue ? ((FunctionValue)_onFulfill) : null;
+        var onReject = _onReject instanceof FunctionValue ? ((FunctionValue)_onReject) : null;
 
         var res = new PromisePolyfill();
 
@@ -206,24 +203,22 @@ public class PromisePolyfill {
      * Thread safe - you can call this from anywhere
      * HOWEVER, it's strongly recommended to use this only in javascript
      */
-    @Native(value = "catch", raw = true) public static Object _catch(Context ctx, Object thisArg, Object ...args) throws InterruptedException {
-        return then(ctx, thisArg, null, args.length > 0 ? args[0] : null);
+    @Native(value="catch", thisArg=true) public static Object _catch(Context ctx, Object thisArg, Object _onReject) throws InterruptedException {
+        return then(ctx, thisArg, null, _onReject);
     }
     /**
      * Thread safe - you can call this from anywhere
      * HOWEVER, it's strongly recommended to use this only in javascript
      */
-    @Native(value = "finally", raw = true) public static Object _finally(Context ctx, Object thisArg, Object ...args) throws InterruptedException {
-        var handleFunc = args.length > 0 ? args[0] : null;
-
+    @Native(value="finally", thisArg=true) public static Object _finally(Context ctx, Object thisArg, Object _handle) throws InterruptedException {
         return then(ctx, thisArg,
             new NativeFunction(null, (e, th, _args) -> {
-                if (handleFunc instanceof FunctionValue) ((FunctionValue)handleFunc).call(ctx);
-                return args[0];
+                if (_handle instanceof FunctionValue) ((FunctionValue)_handle).call(ctx);
+                return _args.length > 0 ? _args[0] : null;
             }),
             new NativeFunction(null, (e, th, _args) -> {
-                if (handleFunc instanceof FunctionValue) ((FunctionValue)handleFunc).call(ctx);
-                throw new EngineException(_args[0]);
+                if (_handle instanceof FunctionValue) ((FunctionValue)_handle).call(ctx);
+                throw new EngineException(_args.length > 0 ? _args[0] : null);
             })
         );
     }

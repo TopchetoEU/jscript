@@ -13,23 +13,15 @@ public class NativeTypeRegister implements WrappersProvider {
     private final HashMap<Class<?>, FunctionValue> constructors = new HashMap<>();
     private final HashMap<Class<?>, ObjectValue> prototypes = new HashMap<>();
 
-    private static boolean isMember(Class<?>[] args) {
-        return args.length == 3;
-    }
-
     private static void applyMethods(boolean member, ObjectValue target, Class<?> clazz) {
         for (var method : clazz.getDeclaredMethods()) {
             var nat = method.getAnnotation(Native.class);
             var get = method.getAnnotation(NativeGetter.class);
             var set = method.getAnnotation(NativeSetter.class);
-            var params = method.getParameterTypes();
             var memberMismatch = !Modifier.isStatic(method.getModifiers()) != member;
 
             if (nat != null) {
-                if (nat.raw()) {
-                    if (isMember(params) != member) continue;
-                }
-                else if (memberMismatch) continue;
+                if (nat.thisArg() != member && memberMismatch) continue;
 
                 var name = nat.value();
                 var val = target.values.get(name);
@@ -37,11 +29,12 @@ public class NativeTypeRegister implements WrappersProvider {
                 if (name.equals("")) name = method.getName();
                 if (!(val instanceof OverloadFunction)) target.defineProperty(null, name, val = new OverloadFunction(name));
 
-                ((OverloadFunction)val).overloads.add(Overload.fromMethod(method, nat.raw()));
+                ((OverloadFunction)val).overloads.add(Overload.fromMethod(method, nat.thisArg()));
             }
             else {
                 if (get != null) {
-                    if (get.raw() && isMember(params) != member || memberMismatch) continue;
+                    if (get.thisArg() != member && memberMismatch) continue;
+
                     var name = get.value();
                     var prop = target.properties.get(name);
                     OverloadFunction getter = null;
@@ -50,11 +43,12 @@ public class NativeTypeRegister implements WrappersProvider {
                     if (prop != null && prop.getter instanceof OverloadFunction) getter = (OverloadFunction)prop.getter;
                     else getter = new OverloadFunction("get " + name);
 
-                    getter.overloads.add(Overload.fromMethod(method, get.raw()));
+                    getter.overloads.add(Overload.fromMethod(method, get.thisArg()));
                     target.defineProperty(null, name, getter, setter, true, true);
                 }
                 if (set != null) {
-                    if (set.raw() && isMember(params) != member || memberMismatch) continue;
+                    if (set.thisArg() != member && memberMismatch) continue;
+
                     var name = set.value();
                     var prop = target.properties.get(name);
                     var getter = prop == null ? null : prop.getter;
@@ -63,7 +57,7 @@ public class NativeTypeRegister implements WrappersProvider {
                     if (prop != null && prop.setter instanceof OverloadFunction) setter = (OverloadFunction)prop.setter;
                     else setter = new OverloadFunction("set " + name);
 
-                    setter.overloads.add(Overload.fromMethod(method, set.raw()));
+                    setter.overloads.add(Overload.fromMethod(method, set.thisArg()));
                     target.defineProperty(null, name, getter, setter, true, true);
                 }
             }
@@ -77,8 +71,8 @@ public class NativeTypeRegister implements WrappersProvider {
             if (nat != null) {
                 var name = nat.value();
                 if (name.equals("")) name = field.getName();
-                var getter = new OverloadFunction("get " + name).add(Overload.getterFromField(field, nat.raw()));
-                var setter = new OverloadFunction("set " + name).add(Overload.setterFromField(field, nat.raw()));
+                var getter = new OverloadFunction("get " + name).add(Overload.getterFromField(field));
+                var setter = new OverloadFunction("set " + name).add(Overload.setterFromField(field));
                 target.defineProperty(null, name, getter, setter, true, false);
             }
         }
@@ -126,12 +120,12 @@ public class NativeTypeRegister implements WrappersProvider {
         for (var overload : clazz.getConstructors()) {
             var nat = overload.getAnnotation(Native.class);
             if (nat == null) continue;
-            ((OverloadFunction)func).add(Overload.fromConstructor(overload, nat.raw()));
+            ((OverloadFunction)func).add(Overload.fromConstructor(overload, nat.thisArg()));
         }
         for (var overload : clazz.getMethods()) {
             var constr = overload.getAnnotation(NativeConstructor.class);
             if (constr == null) continue;
-            ((OverloadFunction)func).add(Overload.fromMethod(overload, constr.raw()));
+            ((OverloadFunction)func).add(Overload.fromMethod(overload, constr.thisArg()));
         }
 
         if (((OverloadFunction)func).overloads.size() == 0) {

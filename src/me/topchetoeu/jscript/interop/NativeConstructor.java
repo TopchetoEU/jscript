@@ -8,6 +8,6 @@ import java.lang.annotation.Target;
 @Target({ ElementType.METHOD })
 @Retention(RetentionPolicy.RUNTIME)
 public @interface NativeConstructor {
-    public boolean raw() default false;
+    public boolean thisArg() default false;
 }
 

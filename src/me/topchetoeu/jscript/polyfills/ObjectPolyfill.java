@@ -187,18 +187,18 @@ public class ObjectPolyfill {
         return true;
     }
 
-    @Native(raw = true) public static Object valueOf(Context ctx, Object thisArg, Object[] args) {
+    @Native(thisArg = true) public static Object valueOf(Context ctx, Object thisArg) {
         return thisArg;
     }
-    @Native(raw = true) public static String toString(Context ctx, Object thisArg, Object[] args) throws InterruptedException {
+    @Native(thisArg = true) public static String toString(Context ctx, Object thisArg) throws InterruptedException {
         var name = Values.getMember(ctx, thisArg, ctx.env.symbol("Symbol.typeName"));
         if (name == null) name = "Unknown";
         else name = Values.toString(ctx, name);
 
         return "[object " + name + "]";
     }
-    @Native(raw = true) public static boolean hasOwnProperty(Context ctx, Object thisArg, Object[] args) throws InterruptedException {
-        return ObjectPolyfill.hasOwn(ctx, thisArg, Values.convert(ctx, args.length == 0 ? null : args[0], String.class));
+    @Native(thisArg = true) public static boolean hasOwnProperty(Context ctx, Object thisArg, Object key) throws InterruptedException {
+        return ObjectPolyfill.hasOwn(ctx, thisArg, Values.convert(ctx, key, String.class));
     }
 
     @NativeConstructor public static Object constructor(Context ctx, Object arg) throws InterruptedException {
