@@ -117,8 +117,8 @@ public class Values {
     public static double toNumber(Context ctx, Object obj) throws InterruptedException {
         var val = toPrimitive(ctx, obj, ConvertHint.VALUEOF);
 
-        if (val instanceof Number) return number(obj);
-        if (val instanceof Boolean) return ((Boolean)obj) ? 1 : 0;
+        if (val instanceof Number) return number(val);
+        if (val instanceof Boolean) return ((Boolean)val) ? 1 : 0;
         if (val instanceof String) {
             try {
                 return Double.parseDouble((String)val);
@@ -134,7 +134,7 @@ public class Values {
         if (val == NULL) return "null";
 
         if (val instanceof Number) {
-            var d = number(obj);
+            var d = number(val);
             if (d == Double.NEGATIVE_INFINITY) return "-Infinity";
             if (d == Double.POSITIVE_INFINITY) return "Infinity";
             if (Double.isNaN(d)) return "NaN";
