@@ -233,7 +233,7 @@ public class ObjectValue {
     public final Object getMember(Context ctx, Object key, Object thisArg) throws InterruptedException {
         key = Values.normalize(ctx, key);
 
-        if (key.equals("__proto__")) {
+        if ("__proto__".equals(key)) {
             var res = getPrototype(ctx);
             return res == null ? Values.NULL : res;
         }

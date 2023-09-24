@@ -7,7 +7,7 @@ function setProps<
     }
 >(target: TargetT, desc: DescT) {
     var props = internals.keys(desc, false);
-    for (var i = 0; i < props.length; i++) {
+    for (var i = 0; i in props; i++) {
         var key = props[i];
         internals.defineField(
             target, key, (desc as any)[key],

@@ -16,7 +16,7 @@ public class FunctionPolyfill {
 
         return func.call(ctx, thisArg, args);
     }
-    @Native(thisArg = true) public static Object bind(Context ctx, FunctionValue func, Object thisArg, Object... args) {
+    @Native(thisArg = true) public static FunctionValue bind(Context ctx, FunctionValue func, Object thisArg, Object... args) {
         if (!(func instanceof FunctionValue)) throw EngineException.ofError("Expected this to be a function.");
 
         return new NativeFunction(func.name + " (bound)", (callCtx, _0, callArgs) -> {

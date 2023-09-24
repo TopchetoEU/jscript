@@ -12,9 +12,12 @@ import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.interop.Native;
 
 public class Internals {
-    @Native public final Class<ObjectPolyfill> object = ObjectPolyfill.class;
-    @Native public final Class<FunctionPolyfill> function = FunctionPolyfill.class;
-    @Native public final Class<PromisePolyfill> promise = PromisePolyfill.class;
+    public final Environment targetEnv;
+
+    @Native public final FunctionValue object;
+    @Native public final FunctionValue function;
+    @Native public final FunctionValue promise;
+    @Native public final FunctionValue array;
 
     @Native public void markSpecial(FunctionValue ...funcs) {
         for (var func : funcs) {
@@ -79,7 +82,7 @@ public class Internals {
         return str.value;
     }
 
-    @Native public static void log(Context ctx, Object ...args) throws InterruptedException {
+    @Native public void log(Context ctx, Object ...args) throws InterruptedException {
         for (var arg : args) {
             Values.printValue(ctx, arg);
         }
@@ -149,5 +152,13 @@ public class Internals {
                 return 0;
             }
         });
+    }
+
+    public Internals(Environment targetEnv) {
+        this.targetEnv = targetEnv;
+        this.object = targetEnv.wrappersProvider.getConstr(ObjectPolyfill.class);
+        this.function = targetEnv.wrappersProvider.getConstr(FunctionPolyfill.class);
+        this.promise = targetEnv.wrappersProvider.getConstr(PromisePolyfill.class);
+        this.array = targetEnv.wrappersProvider.getConstr(ArrayPolyfill.class);
     }
 }

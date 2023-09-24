@@ -268,6 +268,10 @@ public class CodeFrame {
                 if (res != Runners.NO_RETURN) return res;
             }
         }
+        catch (Throwable e) {
+            // e.printStackTrace();
+            throw e;
+        }
         finally {
             ctx.message.popFrame(this);
         }

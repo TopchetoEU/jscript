@@ -7,7 +7,8 @@ interface Environment {
 interface Internals {
     object: ObjectConstructor;
     function: FunctionConstructor;
-    promise: typeof Promise;
+    array: ArrayConstructor;
+    promise: PromiseConstructor;
 
     markSpecial(...funcs: Function[]): void;
     getEnv(func: Function): Environment | undefined;
@@ -35,32 +36,31 @@ interface Internals {
 
     sort(arr: any[], comaprator: (a: any, b: any) => number): void;
 
-    constructor: {
-        log(...args: any[]): void;
-    }
+    log(...args: any[]): void;
 }
 
-var env: Environment = arguments[0], internals: Internals = arguments[1];
-globalThis.log = internals.constructor.log;
-var i = 0.0;
-
 try {
+    var env: Environment = arguments[0], internals: Internals = arguments[1];
+
     var Object = env.global.Object = internals.object;
     var Function = env.global.Function = internals.function;
+    var Array = env.global.Array = internals.array;
     var Promise = env.global.Promise = internals.promise;
 
     env.setProto('object', Object.prototype);
     env.setProto('function', Function.prototype);
-
+    env.setProto('array', Array.prototype);
     (Object.prototype as any).__proto__ = null;
 
-    run('values/symbol');
+    internals.getEnv(run)?.setProto('array', Array.prototype);
 
+    globalThis.log = (...args) => internals.apply(internals.log, internals, args);
+
+    run('values/symbol');
     run('values/errors');
     run('values/string');
     run('values/number');
     run('values/boolean');
-    run('values/array');
     run('map');
     run('set');
     run('regex');

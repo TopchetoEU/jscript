@@ -11,6 +11,7 @@ import me.topchetoeu.jscript.exceptions.EngineException;
 import me.topchetoeu.jscript.interop.Native;
 import me.topchetoeu.jscript.interop.NativeGetter;
 import me.topchetoeu.jscript.interop.NativeSetter;
+import me.topchetoeu.jscript.interop.NativeWrapperProvider;
 
 public class Environment {
     private HashMap<String, ObjectValue> prototypes = new HashMap<>();
@@ -33,7 +34,8 @@ public class Environment {
     }
 
     @Native public Symbol symbol(String name) {
-        if (symbols.containsKey(name)) return symbols.get(name);
+        if (symbols.containsKey(name))
+            return symbols.get(name);
         else {
             var res = new Symbol(name);
             symbols.put(name, res);
@@ -79,14 +81,7 @@ public class Environment {
 
     public Environment(FunctionValue compile, WrappersProvider nativeConverter, GlobalScope global) {
         if (compile == null) compile = new NativeFunction("compile", (ctx, thisArg, args) -> args.length == 0 ? "" : args[0]);
-        if (nativeConverter == null) nativeConverter = new WrappersProvider() {
-            public ObjectValue getConstr(Class<?> obj) {
-                throw EngineException.ofType("Java objects not passable to Javascript.");
-            }
-            public ObjectValue getProto(Class<?> obj) {
-                throw EngineException.ofType("Java objects not passable to Javascript.");
-            }
-        };
+        if (nativeConverter == null) nativeConverter = new NativeWrapperProvider(this);
         if (global == null) global = new GlobalScope();
 
         this.wrappersProvider = nativeConverter;

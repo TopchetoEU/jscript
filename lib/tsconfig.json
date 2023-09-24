@@ -8,7 +8,6 @@
         "values/string.ts",
         "values/number.ts",
         "values/boolean.ts",
-        "values/array.ts",
         "map.ts",
         "set.ts",
         "regex.ts",

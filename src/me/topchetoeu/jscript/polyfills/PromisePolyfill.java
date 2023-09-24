@@ -262,7 +262,7 @@ public class PromisePolyfill {
                         if (handles.size() == 0) {
                             ctx.message.engine.pushMsg(true, ctx.message, new NativeFunction((_ctx, _thisArg, _args) -> {
                                 if (!handled) {
-                                    try { Values.printError(new EngineException(val), "(in promise)"); }
+                                    try { Values.printError(new EngineException(val).setContext(ctx), "(in promise)"); }
                                     catch (InterruptedException ex) { }
                                 }
 

@@ -15,7 +15,6 @@ import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.events.Observer;
 import me.topchetoeu.jscript.exceptions.EngineException;
 import me.topchetoeu.jscript.exceptions.SyntaxException;
-import me.topchetoeu.jscript.interop.NativeTypeRegister;
 import me.topchetoeu.jscript.polyfills.Internals;
 
 public class Main {
@@ -63,9 +62,8 @@ public class Main {
         var in = new BufferedReader(new InputStreamReader(System.in));
         engine = new Engine();
 
-        // TODO: Replace type register with safer accessor
-        env = new Environment(null, new NativeTypeRegister(), null);
-        var builderEnv = new Environment(null, new NativeTypeRegister(), null);
+        env = new Environment(null, null, null);
+        var builderEnv = new Environment(null, null, null);
         var exited = new boolean[1];
 
         env.global.define("exit", ctx -> {
@@ -83,7 +81,12 @@ public class Main {
             }
         });
 
-        engine.pushMsg(false, new Context(builderEnv, new MessageContext(engine)), "core.js", resourceToString("js/core.js"), null, env, new Internals()).toObservable().on(valuePrinter);
+        engine.pushMsg(
+            false,
+            new Context(builderEnv, new MessageContext(engine)),
+            "core.js", resourceToString("js/core.js"),
+            null, env, new Internals(env)
+        ).toObservable().on(valuePrinter);
 
         task = engine.start();
         var reader = new Thread(() -> {

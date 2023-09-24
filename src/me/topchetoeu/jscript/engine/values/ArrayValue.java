@@ -1,90 +1,128 @@
 package me.topchetoeu.jscript.engine.values;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
 
 import me.topchetoeu.jscript.engine.Context;
 
-public class ArrayValue extends ObjectValue {
-    private static final Object EMPTY = new Object();
-    private final ArrayList<Object> values = new ArrayList<>();
+// TODO: Make methods generic
+public class ArrayValue extends ObjectValue implements Iterable<Object> {
+    private static final Object UNDEFINED = new Object();
+    private Object[] values;
+    private int size;
 
-    public int size() { return values.size(); }
+    private void alloc(int index) {
+        if (index < values.length) return;
+        if (index < values.length * 2) index = values.length * 2;
+
+        var arr = new Object[index];
+        System.arraycopy(values, 0, arr, 0, values.length);
+        values = arr;
+    }
+
+    public int size() { return size; }
     public boolean setSize(int val) {
         if (val < 0) return false;
-        while (size() > val) {
-            values.remove(values.size() - 1);
-        }
-        while (size() < val) {
-            values.add(EMPTY);
+        if (size > val) shrink(size - val);
+        else {
+            alloc(val);
+            size = val;
         }
         return true;
     }
 
     public Object get(int i) {
-        if (i < 0 || i >= values.size()) return null;
-        var res = values.get(i);
-        if (res == EMPTY) return null;
+        if (i < 0 || i >= size) return null;
+        var res = values[i];
+        if (res == UNDEFINED) return null;
         else return res;
     }
     public void set(Context ctx, int i, Object val) {
         if (i < 0) return;
 
-        while (values.size() <= i) {
-            values.add(EMPTY);
-        }
+        alloc(i);
 
-        values.set(i, Values.normalize(ctx, val));
+        val = Values.normalize(ctx, val);
+        if (val == null) val = UNDEFINED;
+        values[i] = val;
+        if (i >= size) size = i + 1;
     }
     public boolean has(int i) {
-        return i >= 0 && i < values.size() && values.get(i) != EMPTY;
+        return i >= 0 && i < values.length && values[i] != null;
     }
     public void remove(int i) {
-        if (i < 0 || i >= values.size()) return;
-        values.set(i, EMPTY);
+        if (i < 0 || i >= values.length) return;
+        values[i] = null;
     }
     public void shrink(int n) {
-        if (n > values.size()) values.clear();
+        if (n >= values.length) {
+            values = new Object[16];
+            size = 0;
+        }
         else {
-            for (int i = 0; i < n && values.size() > 0; i++) {
-                values.remove(values.size() - 1);
+            for (int i = 0; i < n; i++) {
+                values[--size] = null;
             }
         }
     }
 
+    public Object[] toArray() {
+        Object[] res = new Object[size];
+        copyTo(res, 0, 0, size);
+        return res;
+    }
+    public void copyTo(Object[] arr, int sourceStart, int destStart, int count) {
+        for (var i = 0; i < count; i++) {
+            if (i + sourceStart < 0 || i + sourceStart >= size) arr[i + destStart] = null;
+            if (values[i + sourceStart] == UNDEFINED) arr[i + destStart] = null;
+            else arr[i + sourceStart] = values[i + destStart];
+        }
+    }
+    public void copyTo(Context ctx, ArrayValue arr, int sourceStart, int destStart, int count) {
+        // Iterate in reverse to reallocate at most once
+        for (var i = count - 1; i >= 0; i--) {
+            if (i + sourceStart < 0 || i + sourceStart >= size) arr.set(ctx, i + destStart, null);
+            if (values[i + sourceStart] == UNDEFINED) arr.set(ctx, i + destStart, null);
+            else arr.set(ctx, i + destStart, values[i + sourceStart]);
+        }
+    }
+
+    public void copyFrom(Context ctx, Object[] arr, int sourceStart, int destStart, int count) {
+        for (var i = 0; i < count; i++) {
+            set(ctx, i + destStart, arr[i + sourceStart]);
+        }
+    }
+
+    public void move(int srcI, int dstI, int n) {
+        alloc(dstI + n);
+
+        System.arraycopy(values, srcI, values, dstI, n);
+
+        if (dstI + n >= size) size = dstI + n;
+    }
+
     public void sort(Comparator<Object> comparator) {
-        values.sort((a, b) -> {
+        Arrays.sort(values, 0, size, (a, b) -> {
             var _a = 0;
             var _b = 0;
 
-            if (a == null) _a = 1;
-            if (a == EMPTY) _a = 2;
+            if (a == UNDEFINED) _a = 1;
+            if (a == null) _a = 2;
 
-            if (b == null) _b = 1;
-            if (b == EMPTY) _b = 2;
+            if (b == UNDEFINED) _b = 1;
+            if (b == null) _b = 2;
 
-            if (Integer.compare(_a, _b) != 0) return Integer.compare(_a, _b);
+            if (_a != 0 || _b != 0) return Integer.compare(_a, _b);
 
             return comparator.compare(a, b);
         });
     }
 
-    public Object[] toArray() {
-        Object[] res = new Object[values.size()];
-
-        for (var i = 0; i < values.size(); i++) {
-            if (values.get(i) == EMPTY) res[i] = null;
-            else res[i] = values.get(i);
-        }
-
-        return res;
-    }
-
     @Override
     protected Object getField(Context ctx, Object key) throws InterruptedException {
-        if (key.equals("length")) return values.size();
         if (key instanceof Number) {
             var i = ((Number)key).doubleValue();
             if (i >= 0 && i - Math.floor(i) == 0) {
@@ -96,9 +134,6 @@ public class ArrayValue extends ObjectValue {
     }
     @Override
     protected boolean setField(Context ctx, Object key, Object val) throws InterruptedException {
-        if (key.equals("length")) {
-            return setSize((int)Values.toNumber(ctx, val));
-        }
         if (key instanceof Number) {
             var i = Values.number(key);
             if (i >= 0 && i - Math.floor(i) == 0) {
@@ -111,7 +146,6 @@ public class ArrayValue extends ObjectValue {
     }
     @Override
     protected boolean hasField(Context ctx, Object key) throws InterruptedException {
-        if (key.equals("length")) return true;
         if (key instanceof Number) {
             var i = Values.number(key);
             if (i >= 0 && i - Math.floor(i) == 0) {
@@ -140,18 +174,42 @@ public class ArrayValue extends ObjectValue {
         for (var i = 0; i < size(); i++) {
             if (has(i)) res.add(i);
         }
-        if (includeNonEnumerable) res.add("length");
         return res;
+    }
+
+    @Override
+    public Iterator<Object> iterator() {
+        return new Iterator<Object>() {
+            private int i = 0;
+
+            @Override
+            public boolean hasNext() {
+                return i < size();
+            }
+            @Override
+            public Object next() {
+                if (!hasNext()) return null;
+                return get(i++);
+            }
+        };
     }
 
     public ArrayValue() {
         super(PlaceholderProto.ARRAY);
-        nonEnumerableSet.add("length");
-        nonConfigurableSet.add("length");
+        values = new Object[16];
+        size = 0;
+    }
+    public ArrayValue(int cap) {
+        super(PlaceholderProto.ARRAY);
+        values = new Object[cap];
+        size = 0;
     }
     public ArrayValue(Context ctx, Object ...values) {
         this();
-        for (var i = 0; i < values.length; i++) this.values.add(Values.normalize(ctx, values[i]));
+        values = new Object[values.length];
+        size = values.length;
+
+        for (var i = 0; i < size; i++) this.values[i] = Values.normalize(ctx, values[i]);
     }
 
     public static ArrayValue of(Context ctx, Collection<Object> values) {

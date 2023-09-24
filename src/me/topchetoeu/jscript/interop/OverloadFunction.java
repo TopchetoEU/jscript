@@ -59,7 +59,10 @@ public class OverloadFunction extends FunctionValue {
             Object _this = thisArgType == null ? null : Values.convert(ctx, thisArg, thisArgType);
 
             if (consumesEngine) newArgs[0] = ctx;
-            if (overload.passThis) newArgs[consumesEngine ? 1 : 0] = _this;
+            if (overload.passThis) {
+                newArgs[consumesEngine ? 1 : 0] = _this;
+                _this = null;
+            }
 
             try {
                 return Values.normalize(ctx, overload.runner.run(ctx, _this, newArgs));

@@ -517,7 +517,7 @@ public class Values {
         if (obj == null) return null;
         if (clazz.isInstance(obj)) return (T)obj;
 
-        throw new ConvertException(type(obj), clazz.getName());
+        throw new ConvertException(type(obj), clazz.getSimpleName());
     }
 
     public static Iterable<Object> toJavaIterable(Context ctx, Object obj) throws InterruptedException {
@@ -631,7 +631,7 @@ public class Values {
                 if (i != 0) System.out.print(", ");
                 else System.out.print(" ");
                 if (obj.has(i)) printValue(ctx, obj.get(i), passed, tab);
-                else System.out.print(", ");
+                else System.out.print("<empty>");
             }
             System.out.print(" ] ");
         }
