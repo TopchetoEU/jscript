@@ -19,6 +19,20 @@ public class NumberPolyfill {
 
     public final double value;
 
+    @Native public static boolean isFinite(Context ctx, double val) { return Double.isFinite(val); }
+    @Native public static boolean isInfinite(Context ctx, double val) { return Double.isInfinite(val); }
+    @Native public static boolean isNaN(Context ctx, double val) { return Double.isNaN(val); }
+    @Native public static boolean isSafeInteger(Context ctx, double val) {
+        return val > MIN_SAFE_INTEGER && val < MAX_SAFE_INTEGER;
+    }
+
+    @Native public static double parseFloat(Context ctx, String val) throws InterruptedException {
+        return Values.toNumber(ctx, val);
+    }
+    @Native public static double parseInt(Context ctx, String val) throws InterruptedException {
+        return (long)Values.toNumber(ctx, val);
+    }
+
     @NativeConstructor(thisArg = true) public static Object constructor(Context ctx, Object thisArg, Object val) throws InterruptedException {
         val = Values.toNumber(ctx, val);
         if (thisArg instanceof ObjectValue) return new NumberPolyfill((double)val);
