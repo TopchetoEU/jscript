@@ -201,9 +201,9 @@ public class ObjectPolyfill {
         return ObjectPolyfill.hasOwn(ctx, thisArg, Values.convert(ctx, key, String.class));
     }
 
-    @NativeConstructor public static Object constructor(Context ctx, Object arg) throws InterruptedException {
+    @NativeConstructor(thisArg = true) public static Object constructor(Context ctx, Object thisArg, Object arg) throws InterruptedException {
         if (arg == null || arg == Values.NULL) return new ObjectValue();
-        else if (arg instanceof Boolean) return Values.callNew(ctx, ctx.env.global.get(ctx, "Boolean"), arg);
+        else if (arg instanceof Boolean) return BooleanPolyfill.constructor(ctx, thisArg, arg);
         else if (arg instanceof Number) return Values.callNew(ctx, ctx.env.global.get(ctx, "Number"), arg);
         else if (arg instanceof String) return Values.callNew(ctx, ctx.env.global.get(ctx, "String"), arg);
         else if (arg instanceof Symbol) return Values.callNew(ctx, ctx.env.global.get(ctx, "Symbol"), arg);

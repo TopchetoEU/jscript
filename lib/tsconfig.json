@@ -7,7 +7,6 @@
         "values/errors.ts",
         "values/string.ts",
         "values/number.ts",
-        "values/boolean.ts",
         "map.ts",
         "set.ts",
         "regex.ts",

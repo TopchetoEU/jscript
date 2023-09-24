@@ -9,6 +9,7 @@ interface Internals {
     function: FunctionConstructor;
     array: ArrayConstructor;
     promise: PromiseConstructor;
+    bool: BooleanConstructor;
 
     markSpecial(...funcs: Function[]): void;
     getEnv(func: Function): Environment | undefined;
@@ -46,21 +47,22 @@ try {
     var Function = env.global.Function = internals.function;
     var Array = env.global.Array = internals.array;
     var Promise = env.global.Promise = internals.promise;
+    var Boolean = env.global.Boolean = internals.bool;
 
     env.setProto('object', Object.prototype);
     env.setProto('function', Function.prototype);
     env.setProto('array', Array.prototype);
+    env.setProto('bool', Boolean.prototype);
+
     (Object.prototype as any).__proto__ = null;
 
     internals.getEnv(run)?.setProto('array', Array.prototype);
-
     globalThis.log = (...args) => internals.apply(internals.log, internals, args);
 
     run('values/symbol');
     run('values/errors');
     run('values/string');
     run('values/number');
-    run('values/boolean');
     run('map');
     run('set');
     run('regex');

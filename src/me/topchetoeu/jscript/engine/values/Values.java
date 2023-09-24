@@ -377,14 +377,13 @@ public class Values {
         return function(func).call(ctx, thisArg, args);
     }
     public static Object callNew(Context ctx, Object func, Object ...args) throws InterruptedException {
-        if (func instanceof FunctionValue && ((FunctionValue)func).special) return ((FunctionValue)func).call(ctx, null, args);
-
         var res = new ObjectValue();
         var proto = Values.getMember(ctx, func, "prototype");
         res.setPrototype(ctx, proto);
 
-        call(ctx, func, res, args);
+        var ret = call(ctx, func, res, args);
 
+        if (ret != null && func instanceof FunctionValue && ((FunctionValue)func).special) return ret;
         return res;
     }
 

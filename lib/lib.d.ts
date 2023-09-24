@@ -244,6 +244,7 @@ interface ArrayConstructor {
 }
 
 interface Boolean {
+    toString(): string;
     valueOf(): boolean;
 }
 interface BooleanConstructor {
