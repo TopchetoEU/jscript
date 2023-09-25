@@ -19,7 +19,7 @@ public class StringPolyfill {
     private static String passThis(String funcName, Object val) {
         if (val instanceof StringPolyfill) return ((StringPolyfill)val).value;
         else if (val instanceof String) return (String)val;
-        else throw EngineException.ofType(String.format("'%s' may be called upon object and primitve strings.", funcName));
+        else throw EngineException.ofType(String.format("'%s' may only be called upon object and primitve strings.", funcName));
     }
     private static int normalizeI(int i, int len, boolean clamp) {
         if (i < 0) i += len;
@@ -198,7 +198,7 @@ public class StringPolyfill {
             if (parts.length > limit) res = new ArrayValue(limit);
             else res = new ArrayValue(parts.length);
 
-            for (var i = 0; i < parts.length; i++) res.set(ctx, i, parts[i]);
+            for (var i = 0; i < parts.length && i < limit; i++) res.set(ctx, i, parts[i]);
 
             return res;
         }
@@ -235,11 +235,10 @@ public class StringPolyfill {
         else return val;
     }
     @Native(thisArg = true) public static String toString(Context ctx, Object thisArg) throws InterruptedException {
-        return Values.toString(ctx, Values.toNumber(ctx, thisArg));
+        return passThis("toString", thisArg);
     }
     @Native(thisArg = true) public static String valueOf(Context ctx, Object thisArg) throws InterruptedException {
-        if (thisArg instanceof StringPolyfill) return ((StringPolyfill)thisArg).value;
-        else return Values.toString(ctx, thisArg);
+        return passThis("valueOf", thisArg);
     }
 
     @Native public static String fromCharCode(int ...val) {
