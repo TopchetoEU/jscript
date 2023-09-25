@@ -11,6 +11,7 @@ interface Internals {
     promise: PromiseConstructor;
     bool: BooleanConstructor;
     number: NumberConstructor;
+    string: StringConstructor;
 
     markSpecial(...funcs: Function[]): void;
     getEnv(func: Function): Environment | undefined;
@@ -50,11 +51,13 @@ try {
     var Promise = env.global.Promise = internals.promise;
     var Boolean = env.global.Boolean = internals.bool;
     var Number = env.global.Number = internals.number;
+    var String = env.global.String = internals.string;
 
     env.setProto('object', Object.prototype);
     env.setProto('function', Function.prototype);
     env.setProto('array', Array.prototype);
     env.setProto('number', Number.prototype);
+    env.setProto('string', String.prototype);
 
     (Object.prototype as any).__proto__ = null;
 
@@ -64,7 +67,6 @@ try {
     run('values/symbol');
     run('values/errors');
     run('values/string');
-    // run('values/number');
     run('map');
     run('set');
     run('regex');

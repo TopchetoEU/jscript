@@ -14,7 +14,7 @@ import me.topchetoeu.jscript.interop.Native;
 public class Internals {
     public final Environment targetEnv;
 
-    @Native public final FunctionValue object, function, promise, array, bool, number;
+    @Native public final FunctionValue object, function, promise, array, bool, number, string;
 
     @Native public void markSpecial(FunctionValue ...funcs) {
         for (var func : funcs) {
@@ -159,5 +159,6 @@ public class Internals {
         this.array = targetEnv.wrappersProvider.getConstr(ArrayPolyfill.class);
         this.bool = targetEnv.wrappersProvider.getConstr(BooleanPolyfill.class);
         this.number = targetEnv.wrappersProvider.getConstr(NumberPolyfill.class);
+        this.string = targetEnv.wrappersProvider.getConstr(StringPolyfill.class);
     }
 }

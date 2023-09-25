@@ -5,8 +5,6 @@
         "utils.ts",
         "values/symbol.ts",
         "values/errors.ts",
-        "values/string.ts",
-        "values/number.ts",
         "map.ts",
         "set.ts",
         "regex.ts",
