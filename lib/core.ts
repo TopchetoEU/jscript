@@ -66,7 +66,6 @@ try {
 
     run('values/symbol');
     run('values/errors');
-    run('values/string');
     run('map');
     run('set');
     run('regex');
