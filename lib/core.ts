@@ -13,6 +13,10 @@ interface Internals {
     number: NumberConstructor;
     string: StringConstructor;
     symbol: SymbolConstructor;
+    error: ErrorConstructor;
+    syntax: SyntaxErrorConstructor;
+    type: TypeErrorConstructor;
+    range: RangeErrorConstructor;
 
     map: typeof Map;
     set: typeof Set;
@@ -57,6 +61,10 @@ try {
     const Number = env.global.Number = internals.number;
     const String = env.global.String = internals.string;
     const Symbol = env.global.Symbol = internals.symbol;
+    const Error = env.global.Error = internals.error;
+    const SyntaxError = env.global.SyntaxError = internals.syntax;
+    const TypeError = env.global.TypeError = internals.type;
+    const RangeError = env.global.RangeError = internals.range;
 
     const Map = env.global.Map = internals.map;
     const Set = env.global.Set = internals.set;
@@ -69,12 +77,16 @@ try {
     env.setProto('symbol', Symbol.prototype);
     env.setProto('bool', Boolean.prototype);
 
+    env.setProto('error', Error.prototype);
+    env.setProto('rangeErr', RangeError.prototype);
+    env.setProto('typeErr', TypeError.prototype);
+    env.setProto('syntaxErr', SyntaxError.prototype);
+
     (Object.prototype as any).__proto__ = null;
 
     internals.getEnv(run)?.setProto('array', Array.prototype);
     globalThis.log = (...args) => internals.apply(internals.log, internals, args);
 
-    run('values/errors');
     run('regex');
     run('timeout');
 

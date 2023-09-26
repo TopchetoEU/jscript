@@ -3,7 +3,6 @@
         "lib.d.ts",
         "modules.ts",
         "utils.ts",
-        "values/errors.ts",
         "regex.ts",
         "timeout.ts",
         "core.ts"

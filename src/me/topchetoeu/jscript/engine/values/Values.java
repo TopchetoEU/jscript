@@ -75,7 +75,7 @@ public class Values {
             if (isPrimitive(res)) return res;
         }
 
-        throw EngineException.ofType("Value couldn't be converted to a primitive.");
+        throw EngineException.ofType(ctx, "Value couldn't be converted to a primitive.");
     }
 
     public static boolean isPrimitive(Object obj) {
@@ -105,7 +105,7 @@ public class Values {
             }
         }
 
-        throw EngineException.ofType("Value couldn't be converted to a primitive.");
+        throw EngineException.ofType(ctx, "Value couldn't be converted to a primitive.");
     }
     public static boolean toBoolean(Object obj) {
         if (obj == NULL || obj == null) return false;
@@ -284,8 +284,8 @@ public class Values {
     }
     public static boolean setMember(Context ctx, Object obj, Object key, Object val) throws InterruptedException {
         obj = normalize(ctx, obj); key = normalize(ctx, key); val = normalize(ctx, val);
-        if (obj == null) throw EngineException.ofType("Tried to access member of undefined.");
-        if (obj == NULL) throw EngineException.ofType("Tried to access member of null.");
+        if (obj == null) throw EngineException.ofType(ctx, "Tried to access member of undefined.");
+        if (obj == NULL) throw EngineException.ofType(ctx, "Tried to access member of null.");
         if (key.equals("__proto__")) return setPrototype(ctx, obj, val);
         if (isObject(obj)) return object(obj).setMember(ctx, key, val, false);
 
@@ -373,7 +373,7 @@ public class Values {
     }
 
     public static Object call(Context ctx, Object func, Object thisArg, Object ...args) throws InterruptedException {
-        if (!isFunction(func)) throw EngineException.ofType("Tried to call a non-function value.");
+        if (!isFunction(func)) throw EngineException.ofType(ctx, "Tried to call a non-function value.");
         return function(func).call(ctx, thisArg, args);
     }
     public static Object callNew(Context ctx, Object func, Object ...args) throws InterruptedException {

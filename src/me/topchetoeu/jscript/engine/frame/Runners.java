@@ -26,8 +26,8 @@ public class Runners {
     public static Object execThrow(Context ctx, Instruction instr, CodeFrame frame) {
         throw new EngineException(frame.pop());
     }
-    public static Object execThrowSyntax(Context ctx, Instruction instr, CodeFrame frame) {
-        throw EngineException.ofSyntax((String)instr.get(0));
+    public static Object execThrowSyntax(Context ctx, Instruction instr, CodeFrame frame) throws InterruptedException {
+        throw EngineException.ofSyntax(ctx, (String)instr.get(0));
     }
 
     private static Object call(Context ctx, Object func, Object thisArg, Object ...args) throws InterruptedException {
@@ -77,9 +77,9 @@ public class Runners {
         var name = frame.pop();
         var obj = frame.pop();
 
-        if (getter != null && !Values.isFunction(getter)) throw EngineException.ofType("Getter must be a function or undefined.");
-        if (setter != null && !Values.isFunction(setter)) throw EngineException.ofType("Setter must be a function or undefined.");
-        if (!Values.isObject(obj)) throw EngineException.ofType("Property apply target must be an object.");
+        if (getter != null && !Values.isFunction(getter)) throw EngineException.ofType(ctx, "Getter must be a function or undefined.");
+        if (setter != null && !Values.isFunction(setter)) throw EngineException.ofType(ctx, "Setter must be a function or undefined.");
+        if (!Values.isObject(obj)) throw EngineException.ofType(ctx, "Property apply target must be an object.");
         Values.object(obj).defineProperty(ctx, name, Values.function(getter), Values.function(setter), false, false);
 
         frame.push(ctx, obj);
@@ -214,7 +214,7 @@ public class Runners {
             frame.push(ctx, Values.getMember(ctx, obj, key));
         }
         catch (IllegalArgumentException e) {
-            throw EngineException.ofType(e.getMessage());
+            throw EngineException.ofType(ctx, e.getMessage());
         }
         frame.codePtr++;
         return NO_RETURN;
@@ -239,7 +239,7 @@ public class Runners {
         var key = frame.pop();
         var obj = frame.pop();
 
-        if (!Values.setMember(ctx, obj, key, val)) throw EngineException.ofSyntax("Can't set member '" + key + "'.");
+        if (!Values.setMember(ctx, obj, key, val)) throw EngineException.ofSyntax(ctx, "Can't set member '" + key + "'.");
         if ((boolean)instr.get(0)) frame.push(ctx, val);
         frame.codePtr++;
         return NO_RETURN;
@@ -307,11 +307,11 @@ public class Runners {
         frame.codePtr++;
         return NO_RETURN;
     }
-    public static Object execNop(Context ctx, Instruction instr, CodeFrame frame) {
+    public static Object execNop(Context ctx, Instruction instr, CodeFrame frame) throws InterruptedException {
         if (instr.is(0, "dbg_names")) {
             var names = new String[instr.params.length - 1];
             for (var i = 0; i < instr.params.length - 1; i++) {
-                if (!(instr.params[i + 1] instanceof String)) throw EngineException.ofSyntax("NOP dbg_names instruction must specify only string parameters.");
+                if (!(instr.params[i + 1] instanceof String)) throw EngineException.ofSyntax(ctx, "NOP dbg_names instruction must specify only string parameters.");
                 names[i] = (String)instr.params[i + 1];
             }
             frame.scope.setNames(names);
@@ -325,7 +325,7 @@ public class Runners {
         var key = frame.pop();
         var val = frame.pop();
 
-        if (!Values.deleteMember(ctx, val, key)) throw EngineException.ofSyntax("Can't delete member '" + key + "'.");
+        if (!Values.deleteMember(ctx, val, key)) throw EngineException.ofSyntax(ctx, "Can't delete member '" + key + "'.");
         frame.push(ctx, true);
         frame.codePtr++;
         return NO_RETURN;
@@ -383,7 +383,7 @@ public class Runners {
 
             case OPERATION: return execOperation(ctx, instr, frame);
 
-            default: throw EngineException.ofSyntax("Invalid instruction " + instr.type.name() + ".");
+            default: throw EngineException.ofSyntax(ctx, "Invalid instruction " + instr.type.name() + ".");
         }
     }
 }

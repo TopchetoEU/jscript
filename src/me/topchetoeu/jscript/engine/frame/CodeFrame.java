@@ -9,6 +9,7 @@ import me.topchetoeu.jscript.engine.scope.LocalScope;
 import me.topchetoeu.jscript.engine.scope.ValueVariable;
 import me.topchetoeu.jscript.engine.values.ArrayValue;
 import me.topchetoeu.jscript.engine.values.CodeFunction;
+import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.exceptions.EngineException;
 
@@ -93,6 +94,9 @@ public class CodeFrame {
         stack[stackPtr++] = Values.normalize(ctx, val);
     }
 
+    // TODO: THIS SYSTEM IS SEVERLY BROKEN
+    // MUST FIX!!!!!
+
     private Object nextNoTry(Context ctx) throws InterruptedException {
         if (Thread.currentThread().isInterrupted()) throw new InterruptedException();
         if (codePtr < 0 || codePtr >= function.body.length) return null;
@@ -110,6 +114,58 @@ public class CodeFrame {
             throw e.add(function.name, prevLoc).setContext(ctx);
         }
     }
+
+    private void setCause(Context ctx, Object err, Object cause) throws InterruptedException {
+        if (err instanceof ObjectValue) {
+            Values.setMember(ctx, err, ctx.env.symbol("Symbol.cause"), cause);
+        }
+    }
+    // private void propagateErr(Context ctx, Object err) {
+    //     while (!tryStack.isEmpty()) {
+    //         var tmp = tryStack.get(tryStack.size() - 1);
+
+    //         if (tmp.state == TryCtx.STATE_TRY || tmp.state == TryCtx.STATE_CATCH) {
+    //             tmp.jumpPtr = tmp.end;
+
+    //             if (tmp.state == TryCtx.STATE_TRY && tmp.hasCatch) {
+    //                 tmp.state = TryCtx.STATE_CATCH;
+    //                 scope.catchVars.add(new ValueVariable(false, err));
+    //                 codePtr = tmp.catchStart;
+    //                 return;
+    //             }
+    //             else if (tmp.hasFinally) {
+    //                 tmp.state = TryCtx.STATE_FINALLY_THREW;
+    //                 tmp.err = new EngineException(err);
+    //                 codePtr = tmp.finallyStart;
+    //                 return;
+    //             }
+    //             else if (tmp.state == TryCtx.STATE_CATCH) scope.catchVars.remove(scope.catchVars.size() - 1);
+    //         }
+
+    //         tryStack.remove(tryStack.size() - 1);
+    //     }
+    //     throw new EngineException(err);
+    // }
+    // private void propagateRet(Context ctx, Object val) {
+    //     while (!tryStack.isEmpty()) {
+    //         var tmp = tryStack.get(tryStack.size() - 1);
+
+    //         if (tmp.state == TryCtx.STATE_TRY || tmp.state == TryCtx.STATE_CATCH) {
+    //             tmp.jumpPtr = tmp.end;
+
+    //             if (tmp.hasFinally) {
+    //                 tmp.state = TryCtx.STATE_FINALLY_RETURNED;
+    //                 tmp.err = new EngineException(err);
+    //                 codePtr = tmp.finallyStart;
+    //                 return;
+    //             }
+    //             else if (tmp.state == TryCtx.STATE_CATCH) scope.catchVars.remove(scope.catchVars.size() - 1);
+    //         }
+
+    //         tryStack.remove(tryStack.size() - 1);
+    //     }
+    //     return val;
+    // }
 
     public Object next(Context ctx, Object prevValue, Object prevReturn, Object prevError) throws InterruptedException {
         TryCtx tryCtx = null;
@@ -210,18 +266,8 @@ public class CodeFrame {
                 else return res;
             }
             catch (EngineException e) {
-                if (tryCtx.hasCatch) {
-                    tryCtx.state = TryCtx.STATE_CATCH;
-                    tryCtx.err = e;
-                    codePtr = tryCtx.catchStart;
-                    scope.catchVars.add(new ValueVariable(false, e.value));
-                    return Runners.NO_RETURN;
-                }
-                else if (tryCtx.hasFinally) {
-                    tryCtx.err = e;
-                    tryCtx.state = TryCtx.STATE_FINALLY_THREW;
-                }
-                else throw e;
+                throw e;
+                // propagateErr(ctx, e.value);
             }
 
             codePtr = tryCtx.finallyStart;
@@ -237,7 +283,7 @@ public class CodeFrame {
                 else return res;
             }
             catch (EngineException e) {
-                e.cause = tryCtx.err;
+                setCause(ctx, e.value, tryCtx.err);
                 if (tryCtx.hasFinally) {
                     tryCtx.err = e;
                     tryCtx.state = TryCtx.STATE_FINALLY_THREW;
@@ -253,7 +299,7 @@ public class CodeFrame {
                 return nextNoTry(ctx);
             }
             catch (EngineException e) {
-                e.cause = tryCtx.err;
+                setCause(ctx, e.value, tryCtx.err);
                 throw e;
             }
         }
@@ -262,15 +308,11 @@ public class CodeFrame {
 
     public Object run(Context ctx) throws InterruptedException {
         try {
-            ctx.message.pushFrame(this);
+            ctx.message.pushFrame(ctx, this);
             while (true) {
                 var res = next(ctx, Runners.NO_RETURN, Runners.NO_RETURN, Runners.NO_RETURN);
                 if (res != Runners.NO_RETURN) return res;
             }
-        }
-        catch (Throwable e) {
-            // e.printStackTrace();
-            throw e;
         }
         finally {
             ctx.message.popFrame(this);

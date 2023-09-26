@@ -34,7 +34,7 @@ public class AsyncGeneratorPolyfill extends FunctionValue {
             }
 
             Object res = null;
-            ctx.message.pushFrame(frame);
+            ctx.message.pushFrame(ctx, frame);
             state = 0;
 
             while (state == 0) {
@@ -122,7 +122,7 @@ public class AsyncGeneratorPolyfill extends FunctionValue {
             new NativeFunction("await", handler::await),
             new NativeFunction("yield", handler::yield)
         );
-        if (!(func instanceof CodeFunction)) throw EngineException.ofType("Return value of argument must be a js function.");
+        if (!(func instanceof CodeFunction)) throw EngineException.ofType(ctx, "Return value of argument must be a js function.");
         handler.frame = new CodeFrame(ctx, thisArg, args, (CodeFunction)func);
         return handler;
     }

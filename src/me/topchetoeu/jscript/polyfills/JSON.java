@@ -75,7 +75,7 @@ public class JSON {
             return toJS(me.topchetoeu.jscript.json.JSON.parse("<value>", val));
         }
         catch (SyntaxException e) {
-            throw EngineException.ofSyntax(e.msg);
+            throw EngineException.ofSyntax(ctx, e.msg);
         }
     }
     @Native

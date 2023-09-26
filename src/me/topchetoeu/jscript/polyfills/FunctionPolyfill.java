@@ -14,12 +14,12 @@ public class FunctionPolyfill {
         return func.call(ctx, thisArg, args.toArray());
     }
     @Native(thisArg = true) public static Object call(Context ctx, FunctionValue func, Object thisArg, Object... args) throws InterruptedException {
-        if (!(func instanceof FunctionValue)) throw EngineException.ofError("Expected this to be a function.");
+        if (!(func instanceof FunctionValue)) throw EngineException.ofError(ctx, "Expected this to be a function.");
 
         return func.call(ctx, thisArg, args);
     }
-    @Native(thisArg = true) public static FunctionValue bind(Context ctx, FunctionValue func, Object thisArg, Object... args) {
-        if (!(func instanceof FunctionValue)) throw EngineException.ofError("Expected this to be a function.");
+    @Native(thisArg = true) public static FunctionValue bind(Context ctx, FunctionValue func, Object thisArg, Object... args) throws InterruptedException {
+        if (!(func instanceof FunctionValue)) throw EngineException.ofError(ctx, "Expected this to be a function.");
 
         return new NativeFunction(func.name + " (bound)", (callCtx, _0, callArgs) -> {
             var resArgs = new Object[args.length + callArgs.length];

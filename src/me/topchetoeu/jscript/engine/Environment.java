@@ -17,14 +17,12 @@ public class Environment {
     private HashMap<String, ObjectValue> prototypes = new HashMap<>();
     public GlobalScope global;
     public WrappersProvider wrappersProvider;
-    /**
-     * NOTE: This is not the register for Symbol.for, but for the symbols like Symbol.iterator
-     */
+    /** NOTE: This is not the register for Symbol.for, but for the symbols like Symbol.iterator */
     public HashMap<String, Symbol> symbols = new HashMap<>();
 
     @Native public FunctionValue compile;
     @Native public FunctionValue regexConstructor = new NativeFunction("RegExp", (ctx, thisArg, args) -> {
-        throw EngineException.ofError("Regular expressions not supported.");
+        throw EngineException.ofError(ctx, "Regular expressions not supported.");
     });
     @Native public ObjectValue proto(String name) {
         return prototypes.get(name);
@@ -43,37 +41,20 @@ public class Environment {
         }
     }
 
-    // @Native public ObjectValue arrayPrototype = new ObjectValue();
-    // @Native public ObjectValue boolPrototype = new ObjectValue();
-    // @Native public ObjectValue functionPrototype = new ObjectValue();
-    // @Native public ObjectValue numberPrototype = new ObjectValue();
-    // @Native public ObjectValue objectPrototype = new ObjectValue(PlaceholderProto.NONE);
-    // @Native public ObjectValue stringPrototype = new ObjectValue();
-    // @Native public ObjectValue symbolPrototype = new ObjectValue();
-    // @Native public ObjectValue errorPrototype = new ObjectValue();
-    // @Native public ObjectValue syntaxErrPrototype = new ObjectValue(PlaceholderProto.ERROR);
-    // @Native public ObjectValue typeErrPrototype = new ObjectValue(PlaceholderProto.ERROR);
-    // @Native public ObjectValue rangeErrPrototype = new ObjectValue(PlaceholderProto.ERROR);
-
-    @NativeGetter("global")
-    public ObjectValue getGlobal() {
+    @NativeGetter("global") public ObjectValue getGlobal() {
         return global.obj;
     }
-    @NativeSetter("global")
-    public void setGlobal(ObjectValue val) {
+    @NativeSetter("global") public void setGlobal(ObjectValue val) {
         global = new GlobalScope(val);
     }
 
-    @Native
-    public Environment fork() {
+    @Native public Environment fork() {
         var res = new Environment(compile, wrappersProvider, global);
         res.regexConstructor = regexConstructor;
         res.prototypes = new HashMap<>(prototypes);
         return res;
     }
-
-    @Native
-    public Environment child() {
+    @Native public Environment child() {
         var res = fork();
         res.global = res.global.globalChild();
         return res;

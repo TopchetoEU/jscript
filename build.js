@@ -54,7 +54,7 @@ async function compileJava() {
             .replace('${AUTHOR}', conf.author)
         );
         const args = ['--release', '11', ];
-        if (argv[1] === 'debug') args.push('-g');
+        if (argv[2] === 'debug') args.push('-g');
         args.push('-d', 'dst/classes', 'Metadata.java');
     
         for await (const path of find('src', undefined, v => v.endsWith('.java') && !v.endsWith('Metadata.java'))) args.push(path);

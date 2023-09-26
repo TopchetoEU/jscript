@@ -10,11 +10,18 @@ import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.engine.values.Symbol;
 import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.interop.Native;
+import me.topchetoeu.jscript.polyfills.ErrorPolyfill.RangeErrorPolyfill;
+import me.topchetoeu.jscript.polyfills.ErrorPolyfill.SyntaxErrorPolyfill;
+import me.topchetoeu.jscript.polyfills.ErrorPolyfill.TypeErrorPolyfill;
 
 public class Internals {
     public final Environment targetEnv;
 
-    @Native public final FunctionValue object, function, promise, array, bool, number, string, symbol, map, set;
+    @Native public final FunctionValue
+        object, function, array,
+        bool, number, string, symbol,
+        promise, map, set,
+        error, syntax, type, range;
 
     @Native public void markSpecial(FunctionValue ...funcs) {
         for (var func : funcs) {
@@ -163,5 +170,9 @@ public class Internals {
         this.symbol = targetEnv.wrappersProvider.getConstr(SymbolPolyfill.class);
         this.map = targetEnv.wrappersProvider.getConstr(MapPolyfill.class);
         this.set = targetEnv.wrappersProvider.getConstr(SetPolyfill.class);
+        this.error = targetEnv.wrappersProvider.getConstr(ErrorPolyfill.class);
+        this.syntax = targetEnv.wrappersProvider.getConstr(SyntaxErrorPolyfill.class);
+        this.type = targetEnv.wrappersProvider.getConstr(TypeErrorPolyfill.class);
+        this.range = targetEnv.wrappersProvider.getConstr(RangeErrorPolyfill.class);
     }
 }

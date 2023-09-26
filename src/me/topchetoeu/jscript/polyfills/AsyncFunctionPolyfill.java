@@ -21,7 +21,7 @@ public class AsyncFunctionPolyfill extends FunctionValue {
 
         private void next(Context ctx, Object inducedValue, Object inducedError) throws InterruptedException {
             Object res = null;
-            ctx.message.pushFrame(frame);
+            ctx.message.pushFrame(ctx, frame);
 
             awaiting = false;
             while (!awaiting) {
@@ -65,7 +65,7 @@ public class AsyncFunctionPolyfill extends FunctionValue {
     public Object call(Context ctx, Object thisArg, Object ...args) throws InterruptedException {
         var handler = new AsyncHelper();
         var func = factory.call(ctx, thisArg, new NativeFunction("await", handler::await));
-        if (!(func instanceof CodeFunction)) throw EngineException.ofType("Return value of argument must be a js function.");
+        if (!(func instanceof CodeFunction)) throw EngineException.ofType(ctx, "Return value of argument must be a js function.");
         handler.frame = new CodeFrame(ctx, thisArg, args, (CodeFunction)func);
         handler.next(ctx, Runners.NO_RETURN, Runners.NO_RETURN);
         return handler.promise;

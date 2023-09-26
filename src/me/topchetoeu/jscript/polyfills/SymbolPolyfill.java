@@ -27,28 +27,22 @@ public class SymbolPolyfill {
 
     public final Symbol value;
 
-    private static Symbol passThis(String funcName, Object val) {
+    private static Symbol passThis(Context ctx, String funcName, Object val) throws InterruptedException {
         if (val instanceof SymbolPolyfill) return ((SymbolPolyfill)val).value;
         else if (val instanceof Symbol) return (Symbol)val;
-        else throw EngineException.ofType(String.format("'%s' may only be called upon object and primitve symbols.", funcName));
+        else throw EngineException.ofType(ctx, String.format("'%s' may only be called upon object and primitve symbols.", funcName));
     }
 
     @NativeConstructor(thisArg = true) public static Object constructor(Context ctx, Object thisArg, Object val) throws InterruptedException {
-        if (thisArg instanceof ObjectValue) throw EngineException.ofType("Symbol constructor may not be called with new.");
+        if (thisArg instanceof ObjectValue) throw EngineException.ofType(ctx, "Symbol constructor may not be called with new.");
         if (val == null) return new Symbol("");
         else return new Symbol(Values.toString(ctx, val));
     }
     @Native(thisArg = true) public static String toString(Context ctx, Object thisArg) throws InterruptedException {
-        return passThis("toString", thisArg).value;
+        return passThis(ctx, "toString", thisArg).value;
     }
     @Native(thisArg = true) public static Symbol valueOf(Context ctx, Object thisArg) throws InterruptedException {
-        return passThis("valueOf", thisArg);
-    }
-
-    @Native public static String fromCharCode(int ...val) {
-        char[] arr = new char[val.length];
-        for (var i = 0; i < val.length; i++) arr[i] = (char)val[i];
-        return new String(arr);
+        return passThis(ctx, "valueOf", thisArg);
     }
 
     @Native("for") public static Symbol _for(String key) {

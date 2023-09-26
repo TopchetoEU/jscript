@@ -20,10 +20,10 @@ public class NativeWrapperProvider implements WrappersProvider {
             var nat = method.getAnnotation(Native.class);
             var get = method.getAnnotation(NativeGetter.class);
             var set = method.getAnnotation(NativeSetter.class);
-            var memberMismatch = !Modifier.isStatic(method.getModifiers()) != member;
+            var memberMatch = !Modifier.isStatic(method.getModifiers()) == member;
 
             if (nat != null) {
-                if (nat.thisArg() != member && memberMismatch) continue;
+                if (nat.thisArg() && !member || !nat.thisArg() && !memberMatch) continue;
 
                 Object name = nat.value();
                 if (((String)name).startsWith("@@")) name = env.symbol(((String)name).substring(2));
@@ -37,7 +37,7 @@ public class NativeWrapperProvider implements WrappersProvider {
             }
             else {
                 if (get != null) {
-                    if (get.thisArg() != member && memberMismatch) continue;
+                    if (get.thisArg() && !member || !get.thisArg() && !memberMatch) continue;
 
                     Object name = get.value();
                     if (((String)name).startsWith("@@")) name = env.symbol(((String)name).substring(2));
@@ -54,7 +54,7 @@ public class NativeWrapperProvider implements WrappersProvider {
                     target.defineProperty(null, name, getter, setter, true, true);
                 }
                 if (set != null) {
-                    if (set.thisArg() != member && memberMismatch) continue;
+                    if (set.thisArg() && !member || !set.thisArg() && !memberMatch) continue;
 
                     Object name = set.value();
                     if (((String)name).startsWith("@@")) name = env.symbol(((String)name).substring(2));
@@ -130,19 +130,19 @@ public class NativeWrapperProvider implements WrappersProvider {
     public static FunctionValue makeConstructor(Environment ctx, Class<?> clazz) {
         FunctionValue func = new OverloadFunction(clazz.getName());
 
-        for (var overload : clazz.getConstructors()) {
+        for (var overload : clazz.getDeclaredConstructors()) {
             var nat = overload.getAnnotation(Native.class);
             if (nat == null) continue;
             ((OverloadFunction)func).add(Overload.fromConstructor(overload, nat.thisArg()));
         }
-        for (var overload : clazz.getMethods()) {
+        for (var overload : clazz.getDeclaredMethods()) {
             var constr = overload.getAnnotation(NativeConstructor.class);
             if (constr == null) continue;
             ((OverloadFunction)func).add(Overload.fromMethod(overload, constr.thisArg()));
         }
 
         if (((OverloadFunction)func).overloads.size() == 0) {
-            func = new NativeFunction(clazz.getName(), (a, b, c) -> { throw EngineException.ofError("This constructor is not invokable."); });
+            func = new NativeFunction(clazz.getName(), (a, b, c) -> { throw EngineException.ofError(a, "This constructor is not invokable."); });
         }
 
         applyMethods(ctx, false, func, clazz);
