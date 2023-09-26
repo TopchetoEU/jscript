@@ -519,7 +519,7 @@ public class Values {
         throw new ConvertException(type(obj), clazz.getSimpleName());
     }
 
-    public static Iterable<Object> toJavaIterable(Context ctx, Object obj) throws InterruptedException {
+    public static Iterable<Object> toJavaIterable(Context ctx, Object obj) {
         return () -> {
             try {
                 var symbol = ctx.env.symbol("Symbol.iterator");
@@ -527,7 +527,7 @@ public class Values {
                 var iteratorFunc = getMember(ctx, obj, symbol);
                 if (!isFunction(iteratorFunc)) return Collections.emptyIterator();
                 var iterator = iteratorFunc instanceof FunctionValue ?
-                    ((FunctionValue)iteratorFunc).call(ctx, iteratorFunc, obj) :
+                    ((FunctionValue)iteratorFunc).call(ctx, obj, obj) :
                     iteratorFunc;
                 var nextFunc = getMember(ctx, call(ctx, iteratorFunc, obj), "next");
 
@@ -536,7 +536,7 @@ public class Values {
                 return new Iterator<Object>() {
                     private Object value = null;
                     public boolean consumed = true;
-                    private FunctionValue next = function(iterator);
+                    private FunctionValue next = (FunctionValue)nextFunc;
 
                     private void loadNext() throws InterruptedException {
                         if (next == null) value = null;
@@ -588,9 +588,8 @@ public class Values {
         };
     }
 
-    public static ObjectValue fromJavaIterable(Context ctx, Iterable<?> iterable) throws InterruptedException {
+    public static ObjectValue fromJavaIterator(Context ctx, Iterator<?> it) throws InterruptedException {
         var res = new ObjectValue();
-        var it = iterable.iterator();
 
         try {
             var key = getMember(ctx, getMember(ctx, ctx.env.proto("symbol"), "constructor"), "iterator");
@@ -604,6 +603,10 @@ public class Values {
         }));
 
         return res;
+    }
+
+    public static ObjectValue fromJavaIterable(Context ctx, Iterable<?> it) throws InterruptedException {
+        return fromJavaIterator(ctx, it.iterator());
     }
 
     private static void printValue(Context ctx, Object val, HashSet<Object> passed, int tab) throws InterruptedException {

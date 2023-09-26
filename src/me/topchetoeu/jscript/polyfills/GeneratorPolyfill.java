@@ -18,6 +18,8 @@ public class GeneratorPolyfill extends FunctionValue {
         private boolean done = false;
         public CodeFrame frame;
 
+        @Native("@@Symbol.typeName") public final String name = "Generator";
+
         private ObjectValue next(Context ctx, Object inducedValue, Object inducedReturn, Object inducedError) throws InterruptedException {
             if (done) {
                 if (inducedError != Runners.NO_RETURN) throw new EngineException(inducedError);

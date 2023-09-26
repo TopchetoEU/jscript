@@ -206,7 +206,7 @@ public class ArrayValue extends ObjectValue implements Iterable<Object> {
     }
     public ArrayValue(Context ctx, Object ...values) {
         this();
-        values = new Object[values.length];
+        this.values = new Object[values.length];
         size = values.length;
 
         for (var i = 0; i < size; i++) this.values[i] = Values.normalize(ctx, values[i]);

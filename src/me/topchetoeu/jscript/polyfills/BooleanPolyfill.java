@@ -7,6 +7,8 @@ import me.topchetoeu.jscript.interop.Native;
 import me.topchetoeu.jscript.interop.NativeConstructor;
 
 public class BooleanPolyfill {
+    @Native("@@Symbol.typeName") public final String name = "Boolean";
+
     public static final BooleanPolyfill TRUE = new BooleanPolyfill(true);
     public static final BooleanPolyfill FALSE = new BooleanPolyfill(false);
 

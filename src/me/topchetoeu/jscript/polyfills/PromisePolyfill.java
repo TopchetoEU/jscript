@@ -28,6 +28,8 @@ public class PromisePolyfill {
         }
     }
 
+    @Native("@@Symbol.typeName") public final String name = "Promise";
+
     @Native("resolve")
     public static PromisePolyfill ofResolved(Context ctx, Object val) throws InterruptedException {
         var res = new PromisePolyfill();

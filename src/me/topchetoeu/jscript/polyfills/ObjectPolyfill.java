@@ -11,6 +11,8 @@ import me.topchetoeu.jscript.interop.Native;
 import me.topchetoeu.jscript.interop.NativeConstructor;
 
 public class ObjectPolyfill {
+    @Native("@@Symbol.typeName") public final String name = "Object";
+
     @Native public static ObjectValue assign(Context ctx, ObjectValue dst, Object... src) throws InterruptedException {
         for (var obj : src) {
             for (var key : Values.getMembers(ctx, obj, true, true)) {
@@ -204,9 +206,9 @@ public class ObjectPolyfill {
     @NativeConstructor(thisArg = true) public static Object constructor(Context ctx, Object thisArg, Object arg) throws InterruptedException {
         if (arg == null || arg == Values.NULL) return new ObjectValue();
         else if (arg instanceof Boolean) return BooleanPolyfill.constructor(ctx, thisArg, arg);
-        else if (arg instanceof Number) return Values.callNew(ctx, ctx.env.global.get(ctx, "Number"), arg);
-        else if (arg instanceof String) return Values.callNew(ctx, ctx.env.global.get(ctx, "String"), arg);
-        else if (arg instanceof Symbol) return Values.callNew(ctx, ctx.env.global.get(ctx, "Symbol"), arg);
+        else if (arg instanceof Number) return NumberPolyfill.constructor(ctx, thisArg, arg);
+        else if (arg instanceof String) return StringPolyfill.constructor(ctx, thisArg, arg);
+        // else if (arg instanceof Symbol) return SymbolPolyfill.constructor(ctx, thisArg, arg);
         else return arg;
     }
 }

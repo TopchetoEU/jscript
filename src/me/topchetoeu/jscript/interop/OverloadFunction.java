@@ -5,6 +5,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 
+import me.topchetoeu.jscript.Location;
 import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
 import me.topchetoeu.jscript.engine.values.Values;
@@ -56,7 +57,15 @@ public class OverloadFunction extends FunctionValue {
             }
 
             var thisArgType = overload.passThis ? overload.params[consumesEngine ? 1 : 0] : overload.thisArg;
-            Object _this = thisArgType == null ? null : Values.convert(ctx, thisArg, thisArgType);
+            Object _this;
+
+            try {
+                _this = thisArgType == null ? null : Values.convert(ctx, thisArg, thisArgType);
+            }
+            catch (ConvertException e) {
+                if (overloads.size() > 1) continue loop;
+                else throw EngineException.ofType(String.format("This argument can't be converted from %s to %s", e.source, e.target));
+            }
 
             if (consumesEngine) newArgs[0] = ctx;
             if (overload.passThis) {
@@ -74,15 +83,19 @@ public class OverloadFunction extends FunctionValue {
                 continue;
             }
             catch (InvocationTargetException e) {
+                var loc = new Location(0, 0, "<internal>");
                 if (e.getTargetException() instanceof EngineException) {
-                    throw ((EngineException)e.getTargetException());
+                    throw ((EngineException)e.getTargetException()).add(name, loc);
+                }
+                else if (e.getTargetException() instanceof NullPointerException) {
+                    throw EngineException.ofType("Unexpected value of 'undefined'.").add(name, loc);
                 }
                 else {
-                    throw EngineException.ofError(e.getTargetException().getMessage());
+                    throw EngineException.ofError(e.getTargetException().getMessage()).add(name, loc);
                 }
             }
             catch (ReflectiveOperationException e) {
-                throw EngineException.ofError(e.getMessage());
+                throw EngineException.ofError(e.getMessage()).add(name, new Location(0, 0, "<internal>"));
             }
             catch (Exception e) {
                 throw e;

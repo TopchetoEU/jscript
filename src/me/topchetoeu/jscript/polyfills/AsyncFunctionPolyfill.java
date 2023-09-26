@@ -7,11 +7,13 @@ import me.topchetoeu.jscript.engine.values.CodeFunction;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
 import me.topchetoeu.jscript.engine.values.NativeFunction;
 import me.topchetoeu.jscript.exceptions.EngineException;
+import me.topchetoeu.jscript.interop.Native;
 
 public class AsyncFunctionPolyfill extends FunctionValue {
     public final FunctionValue factory;
 
     public static class AsyncHelper {
+        @Native("@@Symbol.typeName") public final String name = "AsyncFunction";
         public PromisePolyfill promise = new PromisePolyfill();
         public CodeFrame frame;
 

@@ -7,6 +7,8 @@ import me.topchetoeu.jscript.interop.Native;
 import me.topchetoeu.jscript.interop.NativeConstructor;
 
 public class NumberPolyfill {
+    @Native("@@Symbol.typeName") public final String name = "Number";
+
     @Native public static final double EPSILON = java.lang.Math.ulp(1.0);
     @Native public static final double MAX_SAFE_INTEGER = 9007199254740991.;
     @Native public static final double MIN_SAFE_INTEGER = -MAX_SAFE_INTEGER;

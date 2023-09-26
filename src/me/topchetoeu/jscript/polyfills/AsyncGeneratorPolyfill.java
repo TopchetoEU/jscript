@@ -16,6 +16,7 @@ public class AsyncGeneratorPolyfill extends FunctionValue {
     public final FunctionValue factory;
 
     public static class AsyncGenerator {
+        @Native("@@Symbol.typeName") public final String name = "AsyncGenerator";
         private int state = 0;
         private boolean done = false;
         private PromisePolyfill currPromise;

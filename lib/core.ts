@@ -12,6 +12,8 @@ interface Internals {
     bool: BooleanConstructor;
     number: NumberConstructor;
     string: StringConstructor;
+    map: typeof Map;
+    set: typeof Set;
 
     markSpecial(...funcs: Function[]): void;
     getEnv(func: Function): Environment | undefined;
@@ -45,19 +47,23 @@ interface Internals {
 try {
     var env: Environment = arguments[0], internals: Internals = arguments[1];
 
-    var Object = env.global.Object = internals.object;
-    var Function = env.global.Function = internals.function;
-    var Array = env.global.Array = internals.array;
-    var Promise = env.global.Promise = internals.promise;
-    var Boolean = env.global.Boolean = internals.bool;
-    var Number = env.global.Number = internals.number;
-    var String = env.global.String = internals.string;
+    const Object = env.global.Object = internals.object;
+    const Function = env.global.Function = internals.function;
+    const Array = env.global.Array = internals.array;
+    const Promise = env.global.Promise = internals.promise;
+    const Boolean = env.global.Boolean = internals.bool;
+    const Number = env.global.Number = internals.number;
+    const String = env.global.String = internals.string;
+
+    const Map = env.global.Map = internals.map;
+    const Set = env.global.Set = internals.set;
 
     env.setProto('object', Object.prototype);
     env.setProto('function', Function.prototype);
     env.setProto('array', Array.prototype);
     env.setProto('number', Number.prototype);
     env.setProto('string', String.prototype);
+    env.setProto('bool', Boolean.prototype);
 
     (Object.prototype as any).__proto__ = null;
 
@@ -66,8 +72,6 @@ try {
 
     run('values/symbol');
     run('values/errors');
-    run('map');
-    run('set');
     run('regex');
     run('timeout');
 

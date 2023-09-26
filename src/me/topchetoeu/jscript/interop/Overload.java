@@ -33,7 +33,7 @@ public class Overload {
         return new Overload(
             (ctx, th, args) -> method.newInstance(args),
             method.isVarArgs(), passThis,
-            Modifier.isStatic(method.getModifiers()) ? null : method.getDeclaringClass(),
+            null,
             method.getParameterTypes()
         );
     }

@@ -14,6 +14,8 @@ import me.topchetoeu.jscript.interop.NativeGetter;
 
 // TODO: implement index wrapping properly
 public class StringPolyfill {
+    @Native("@@Symbol.typeName") public final String name = "String";
+
     public final String value;
 
     private static String passThis(String funcName, Object val) {
