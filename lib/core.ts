@@ -12,6 +12,8 @@ interface Internals {
     bool: BooleanConstructor;
     number: NumberConstructor;
     string: StringConstructor;
+    symbol: SymbolConstructor;
+
     map: typeof Map;
     set: typeof Set;
 
@@ -26,7 +28,7 @@ interface Internals {
     char(val: string): number;
     stringFromStrings(arr: string[]): string;
     stringFromChars(arr: number[]): string;
-    symbol(name?: string): symbol;
+    getSymbol(name?: string): symbol;
     symbolToString(sym: symbol): string;
 
     isArray(obj: any): boolean;
@@ -54,6 +56,7 @@ try {
     const Boolean = env.global.Boolean = internals.bool;
     const Number = env.global.Number = internals.number;
     const String = env.global.String = internals.string;
+    const Symbol = env.global.Symbol = internals.symbol;
 
     const Map = env.global.Map = internals.map;
     const Set = env.global.Set = internals.set;
@@ -63,6 +66,7 @@ try {
     env.setProto('array', Array.prototype);
     env.setProto('number', Number.prototype);
     env.setProto('string', String.prototype);
+    env.setProto('symbol', Symbol.prototype);
     env.setProto('bool', Boolean.prototype);
 
     (Object.prototype as any).__proto__ = null;
@@ -70,7 +74,6 @@ try {
     internals.getEnv(run)?.setProto('array', Array.prototype);
     globalThis.log = (...args) => internals.apply(internals.log, internals, args);
 
-    run('values/symbol');
     run('values/errors');
     run('regex');
     run('timeout');

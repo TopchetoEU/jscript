@@ -14,7 +14,7 @@ import me.topchetoeu.jscript.interop.Native;
 public class Internals {
     public final Environment targetEnv;
 
-    @Native public final FunctionValue object, function, promise, array, bool, number, string, map, set;
+    @Native public final FunctionValue object, function, promise, array, bool, number, string, symbol, map, set;
 
     @Native public void markSpecial(FunctionValue ...funcs) {
         for (var func : funcs) {
@@ -72,7 +72,7 @@ public class Internals {
 
         return stringFromChars(res);
     }
-    @Native public Symbol symbol(String str) {
+    @Native public Symbol getSymbol(String str) {
         return new Symbol(str);
     }
     @Native public String symbolToString(Symbol str) {
@@ -160,6 +160,7 @@ public class Internals {
         this.bool = targetEnv.wrappersProvider.getConstr(BooleanPolyfill.class);
         this.number = targetEnv.wrappersProvider.getConstr(NumberPolyfill.class);
         this.string = targetEnv.wrappersProvider.getConstr(StringPolyfill.class);
+        this.symbol = targetEnv.wrappersProvider.getConstr(SymbolPolyfill.class);
         this.map = targetEnv.wrappersProvider.getConstr(MapPolyfill.class);
         this.set = targetEnv.wrappersProvider.getConstr(SetPolyfill.class);
     }

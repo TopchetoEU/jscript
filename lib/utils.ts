@@ -25,14 +25,3 @@ function setConstr(target: object, constr: Function) {
         true // configurable
     );
 }
-
-function wrapI(max: number, i: number) {
-    i |= 0;
-    if (i < 0) i = max + i;
-    return i;
-}
-function clampI(max: number, i: number) {
-    if (i < 0) i = 0;
-    if (i > max) i = max;
-    return i;
-}
