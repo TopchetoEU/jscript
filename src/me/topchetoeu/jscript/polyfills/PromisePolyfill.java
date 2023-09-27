@@ -44,7 +44,7 @@ public class PromisePolyfill {
     }
 
     @Native public static PromisePolyfill any(Context ctx, Object _promises) throws InterruptedException {
-        if (!Values.isArray(_promises)) throw EngineException.ofType(ctx, "Expected argument for any to be an array.");
+        if (!Values.isArray(_promises)) throw EngineException.ofType("Expected argument for any to be an array.");
         var promises = Values.array(_promises); 
         if (promises.size() == 0) return ofResolved(ctx, new ArrayValue());
         var n = new int[] { promises.size() };
@@ -69,7 +69,7 @@ public class PromisePolyfill {
         return res;
     }
     @Native public static PromisePolyfill race(Context ctx, Object _promises) throws InterruptedException  {
-        if (!Values.isArray(_promises)) throw EngineException.ofType(ctx, "Expected argument for any to be an array.");
+        if (!Values.isArray(_promises)) throw EngineException.ofType("Expected argument for any to be an array.");
         var promises = Values.array(_promises); 
         if (promises.size() == 0) return ofResolved(ctx, new ArrayValue());
         var res = new PromisePolyfill();
@@ -85,7 +85,7 @@ public class PromisePolyfill {
         return res;
     }
     @Native public static PromisePolyfill all(Context ctx, Object _promises) throws InterruptedException  {
-        if (!Values.isArray(_promises)) throw EngineException.ofType(ctx, "Expected argument for any to be an array.");
+        if (!Values.isArray(_promises)) throw EngineException.ofType("Expected argument for any to be an array.");
         var promises = Values.array(_promises); 
         if (promises.size() == 0) return ofResolved(ctx, new ArrayValue());
         var n = new int[] { promises.size() };
@@ -112,7 +112,7 @@ public class PromisePolyfill {
         return res;
     }
     @Native public static PromisePolyfill allSettled(Context ctx, Object _promises) throws InterruptedException  {
-        if (!Values.isArray(_promises)) throw EngineException.ofType(ctx, "Expected argument for any to be an array.");
+        if (!Values.isArray(_promises)) throw EngineException.ofType("Expected argument for any to be an array.");
         var promises = Values.array(_promises); 
         if (promises.size() == 0) return ofResolved(ctx, new ArrayValue());
         var n = new int[] { promises.size() };
@@ -314,7 +314,7 @@ public class PromisePolyfill {
      * NOT THREAD SAFE - must be called from the engine executor thread
      */
     @Native public PromisePolyfill(Context ctx, FunctionValue func) throws InterruptedException {
-        if (!(func instanceof FunctionValue)) throw EngineException.ofType(ctx, "A function must be passed to the promise constructor.");
+        if (!(func instanceof FunctionValue)) throw EngineException.ofType("A function must be passed to the promise constructor.");
         try {
             func.call(
                 ctx, null,

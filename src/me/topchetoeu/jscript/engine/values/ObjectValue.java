@@ -14,6 +14,10 @@ public class ObjectValue {
         OBJECT,
         ARRAY,
         FUNCTION,
+        ERROR,
+        SYNTAX_ERROR,
+        TYPE_ERROR,
+        RANGE_ERROR,
     }
     public static enum State {
         NORMAL,
@@ -35,6 +39,10 @@ public class ObjectValue {
     private static final Object OBJ_PROTO = new Object();
     private static final Object ARR_PROTO = new Object();
     private static final Object FUNC_PROTO = new Object();
+    private static final Object ERR_PROTO = new Object();
+    private static final Object SYNTAX_ERR_PROTO = new Object();
+    private static final Object TYPE_ERR_PROTO = new Object();
+    private static final Object RANGE_ERR_PROTO = new Object();
 
     protected Object prototype;
 
@@ -142,6 +150,10 @@ public class ObjectValue {
             if (prototype == OBJ_PROTO) return ctx.env.proto("object");
             if (prototype == ARR_PROTO) return ctx.env.proto("array");
             if (prototype == FUNC_PROTO) return ctx.env.proto("function");
+            if (prototype == ERR_PROTO) return ctx.env.proto("error");
+            if (prototype == RANGE_ERR_PROTO) return ctx.env.proto("rangeErr");
+            if (prototype == SYNTAX_ERR_PROTO) return ctx.env.proto("syntaxErr");
+            if (prototype == TYPE_ERR_PROTO) return ctx.env.proto("typeErr");
         }
         catch (NullPointerException e) {
             return null;
@@ -164,6 +176,10 @@ public class ObjectValue {
                 if (obj == ctx.env.proto("object")) prototype = OBJ_PROTO;
                 else if (obj == ctx.env.proto("array")) prototype = ARR_PROTO;
                 else if (obj == ctx.env.proto("function")) prototype = FUNC_PROTO;
+                else if (obj == ctx.env.proto("error")) prototype = ERR_PROTO;
+                else if (obj == ctx.env.proto("syntaxErr")) prototype = SYNTAX_ERR_PROTO;
+                else if (obj == ctx.env.proto("typeErr")) prototype = TYPE_ERR_PROTO;
+                else if (obj == ctx.env.proto("rangeErr")) prototype = RANGE_ERR_PROTO;
                 else prototype = obj;
             }
             else prototype = obj;
@@ -178,6 +194,10 @@ public class ObjectValue {
             case OBJECT: prototype = OBJ_PROTO; break;
             case FUNCTION: prototype = FUNC_PROTO; break;
             case ARRAY: prototype = ARR_PROTO; break;
+            case ERROR: prototype = ERR_PROTO; break;
+            case SYNTAX_ERROR: prototype = SYNTAX_ERR_PROTO; break;
+            case TYPE_ERROR: prototype = TYPE_ERR_PROTO; break;
+            case RANGE_ERROR: prototype = RANGE_ERR_PROTO; break;
             case NONE: prototype = null; break;
         }
         return true;

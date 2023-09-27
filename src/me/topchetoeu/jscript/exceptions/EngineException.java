@@ -5,8 +5,9 @@ import java.util.List;
 
 import me.topchetoeu.jscript.Location;
 import me.topchetoeu.jscript.engine.Context;
-import me.topchetoeu.jscript.engine.values.FunctionValue;
+import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.engine.values.Values;
+import me.topchetoeu.jscript.engine.values.ObjectValue.PlaceholderProto;
 
 public class EngineException extends RuntimeException {
     public final Object value;
@@ -48,20 +49,11 @@ public class EngineException extends RuntimeException {
         return ss.toString();
     }
 
-    private static Object err(Context ctx, String type, String name, String msg) throws InterruptedException {
-        try {
-            var proto = ctx.env.proto(type);
-            var constr = Values.getMember(ctx, proto, "constructor");
-
-            if (constr instanceof FunctionValue) {
-                var res = Values.callNew(ctx, constr, msg);
-                if (name != null) Values.setMember(ctx, res, "name", name);
-                return res;
-            }
-        }
-        catch (IllegalArgumentException e) { }
-
-        return name + ": " + msg;
+    private static Object err(String name, String msg, PlaceholderProto proto) {
+        var res = new ObjectValue(proto);
+        if (name != null) res.defineProperty(null, "name", name);
+        res.defineProperty(null, "message", msg);
+        return res;
     }
 
     public EngineException(Object error) {
@@ -71,22 +63,22 @@ public class EngineException extends RuntimeException {
         this.cause = null;
     }
 
-    public static EngineException ofError(Context ctx, String name, String msg) throws InterruptedException {
-        return new EngineException(err(ctx, "error", name, msg));
+    public static EngineException ofError(String name, String msg) {
+        return new EngineException(err(name, msg, PlaceholderProto.ERROR));
     }
-    public static EngineException ofError(Context ctx, String msg) throws InterruptedException {
-        return new EngineException(err(ctx, "error", null, msg));
+    public static EngineException ofError(String msg) {
+        return new EngineException(err(null, msg, PlaceholderProto.ERROR));
     }
-    public static EngineException ofSyntax(Context ctx, SyntaxException e) throws InterruptedException {
-        return new EngineException(err(ctx, "syntaxErr", null, e.msg)).add(null, e.loc);
+    public static EngineException ofSyntax(SyntaxException e) {
+        return new EngineException(err(null, e.msg, PlaceholderProto.SYNTAX_ERROR)).add(null, e.loc);
     }
-    public static EngineException ofSyntax(Context ctx, String msg) throws InterruptedException {
-        return new EngineException(err(ctx, "syntaxErr", null, msg));
+    public static EngineException ofSyntax(String msg) {
+        return new EngineException(err(null, msg, PlaceholderProto.SYNTAX_ERROR));
     }
-    public static EngineException ofType(Context ctx, String msg) throws InterruptedException {
-        return new EngineException(err(ctx, "typeErr", null, msg));
+    public static EngineException ofType(String msg) {
+        return new EngineException(err(null, msg, PlaceholderProto.TYPE_ERROR));
     }
-    public static EngineException ofRange(Context ctx, String msg) throws InterruptedException {
-        return new EngineException(err(ctx, "rangeErr", null, msg));
+    public static EngineException ofRange(String msg) {
+        return new EngineException(err(null, msg, PlaceholderProto.RANGE_ERROR));
     }
 }

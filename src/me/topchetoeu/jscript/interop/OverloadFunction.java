@@ -34,7 +34,7 @@ public class OverloadFunction extends FunctionValue {
                 }
                 catch (ConvertException e) {
                     if (overloads.size() > 1) continue loop;
-                    else throw EngineException.ofType(ctx, String.format("Argument %d can't be converted from %s to %s", i - start, e.source, e.target));
+                    else throw EngineException.ofType(String.format("Argument %d can't be converted from %s to %s", i - start, e.source, e.target));
                 }
             }
 
@@ -49,7 +49,7 @@ public class OverloadFunction extends FunctionValue {
                     }
                     catch (ConvertException e) {
                         if (overloads.size() > 1) continue loop;
-                        else throw EngineException.ofType(ctx, String.format("Element in variadic argument can't be converted from %s to %s", e.source, e.target));
+                        else throw EngineException.ofType(String.format("Element in variadic argument can't be converted from %s to %s", e.source, e.target));
                     }
                 }
 
@@ -64,7 +64,7 @@ public class OverloadFunction extends FunctionValue {
             }
             catch (ConvertException e) {
                 if (overloads.size() > 1) continue loop;
-                else throw EngineException.ofType(ctx, String.format("This argument can't be converted from %s to %s", e.source, e.target));
+                else throw EngineException.ofType(String.format("This argument can't be converted from %s to %s", e.source, e.target));
             }
 
             if (consumesEngine) newArgs[0] = ctx;
@@ -77,7 +77,7 @@ public class OverloadFunction extends FunctionValue {
                 return Values.normalize(ctx, overload.runner.run(ctx, _this, newArgs));
             }
             catch (InstantiationException e) {
-                throw EngineException.ofError(ctx, "The class may not be instantiated.");
+                throw EngineException.ofError("The class may not be instantiated.");
             }
             catch (IllegalAccessException | IllegalArgumentException e) {
                 continue;
@@ -88,21 +88,21 @@ public class OverloadFunction extends FunctionValue {
                     throw ((EngineException)e.getTargetException()).add(name, loc);
                 }
                 else if (e.getTargetException() instanceof NullPointerException) {
-                    throw EngineException.ofType(ctx, "Unexpected value of 'undefined'.").add(name, loc);
+                    throw EngineException.ofType("Unexpected value of 'undefined'.").add(name, loc);
                 }
                 else {
-                    throw EngineException.ofError(ctx, e.getTargetException().getMessage()).add(name, loc);
+                    throw EngineException.ofError(e.getTargetException().getMessage()).add(name, loc);
                 }
             }
             catch (ReflectiveOperationException e) {
-                throw EngineException.ofError(ctx, e.getMessage()).add(name, new Location(0, 0, "<internal>"));
+                throw EngineException.ofError(e.getMessage()).add(name, new Location(0, 0, "<internal>"));
             }
             catch (Exception e) {
                 throw e;
             }
         }
 
-        throw EngineException.ofType(ctx, "No overload found for native method.");
+        throw EngineException.ofType("No overload found for native method.");
     }
 
     public OverloadFunction add(Overload overload) {

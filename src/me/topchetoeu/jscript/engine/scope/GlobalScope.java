@@ -60,12 +60,12 @@ public class GlobalScope implements ScopeRecord {
     }
 
     public Object get(Context ctx, String name) throws InterruptedException {
-        if (!obj.hasMember(ctx, name, false)) throw EngineException.ofSyntax(ctx, "The variable '" + name + "' doesn't exist.");
+        if (!obj.hasMember(ctx, name, false)) throw EngineException.ofSyntax("The variable '" + name + "' doesn't exist.");
         else return obj.getMember(ctx, name);
     }
     public void set(Context ctx, String name, Object val) throws InterruptedException {
-        if (!obj.hasMember(ctx, name, false)) throw EngineException.ofSyntax(ctx, "The variable '" + name + "' doesn't exist.");
-        if (!obj.setMember(ctx, name, val, false)) throw EngineException.ofSyntax(ctx, "The global '" + name + "' is readonly.");
+        if (!obj.hasMember(ctx, name, false)) throw EngineException.ofSyntax("The variable '" + name + "' doesn't exist.");
+        if (!obj.setMember(ctx, name, val, false)) throw EngineException.ofSyntax("The global '" + name + "' is readonly.");
     }
 
     public Set<String> keys() {

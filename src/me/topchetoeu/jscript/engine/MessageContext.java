@@ -17,7 +17,7 @@ public class MessageContext {
 
     public MessageContext pushFrame(Context ctx, CodeFrame frame) throws InterruptedException {
         this.frames.add(frame);
-        if (this.frames.size() > maxStackFrames) throw EngineException.ofRange(ctx, "Stack overflow!");
+        if (this.frames.size() > maxStackFrames) throw EngineException.ofRange("Stack overflow!");
         return this;
     }
     public boolean popFrame(CodeFrame frame) {

@@ -5,30 +5,30 @@ import me.topchetoeu.jscript.engine.values.ArrayValue;
 import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.interop.Native;
+import me.topchetoeu.jscript.interop.NativeConstructor;
 
 public class ErrorPolyfill {
     public static class SyntaxErrorPolyfill extends ErrorPolyfill {
-        @Native public SyntaxErrorPolyfill(Context ctx, Object message) throws InterruptedException {
-            super(ctx, message);
-            this.name = "SyntaxError";
+        @NativeConstructor(thisArg = true) public static ObjectValue constructor(Context ctx, Object thisArg, Object message) throws InterruptedException {
+            var target = ErrorPolyfill.constructor(ctx, thisArg, message);
+            target.defineProperty(ctx, "name", "SyntaxError");
+            return target;
         }
     }
     public static class TypeErrorPolyfill extends ErrorPolyfill {
-        @Native public TypeErrorPolyfill(Context ctx, Object message) throws InterruptedException {
-            super(ctx, message);
-            this.name = "TypeError";
+        @NativeConstructor(thisArg = true) public static ObjectValue constructor(Context ctx, Object thisArg, Object message) throws InterruptedException {
+            var target = ErrorPolyfill.constructor(ctx, thisArg, message);
+            target.defineProperty(ctx, "name", "TypeError");
+            return target;
         }
     }
     public static class RangeErrorPolyfill extends ErrorPolyfill {
-        @Native public RangeErrorPolyfill(Context ctx, Object message) throws InterruptedException {
-            super(ctx, message);
-            this.name = "RangeError";
+        @NativeConstructor(thisArg = true) public static ObjectValue constructor(Context ctx, Object thisArg, Object message) throws InterruptedException {
+            var target = ErrorPolyfill.constructor(ctx, thisArg, message);
+            target.defineProperty(ctx, "name", "RangeError");
+            return target;
         }
     }
-
-    @Native public final ArrayValue stack;
-    @Native public String message;
-    @Native public String name = "Error";
 
     private static String toString(Context ctx, Object name, Object message, ArrayValue stack) throws InterruptedException {
         if (name == null) name = "";
@@ -52,10 +52,7 @@ public class ErrorPolyfill {
     }
 
     @Native(thisArg = true) public static String toString(Context ctx, Object thisArg) throws InterruptedException {
-        if (thisArg instanceof ErrorPolyfill) {
-            return toString(ctx, ((ErrorPolyfill)thisArg).name, ((ErrorPolyfill)thisArg).message, ((ErrorPolyfill)thisArg).stack);
-        }
-        else if (thisArg instanceof ObjectValue) {
+        if (thisArg instanceof ObjectValue) {
             var stack = Values.getMember(ctx, thisArg, "stack");
             if (!(stack instanceof ArrayValue)) stack = null;
             return toString(ctx,
@@ -67,9 +64,15 @@ public class ErrorPolyfill {
         else return "[Invalid error]";
     }
 
-    @Native public ErrorPolyfill(Context ctx, Object message) throws InterruptedException {
-        this.stack = new ArrayValue(ctx, ctx.message.stackTrace().toArray());
-        if (message == null) this.message = "";
-        else this.message = Values.toString(ctx, message);
+    @NativeConstructor(thisArg = true) public static ObjectValue constructor(Context ctx, Object thisArg, Object message) throws InterruptedException {
+        var target = new ObjectValue();
+        if (thisArg instanceof ObjectValue) target = (ObjectValue)thisArg;
+
+        target.defineProperty(ctx, "stack", new ArrayValue(ctx, ctx.message.stackTrace().toArray()));
+        target.defineProperty(ctx, "name", "Error");
+        if (message == null) target.defineProperty(ctx, "message", "");
+        else target.defineProperty(ctx, "message", Values.toString(ctx, message));
+
+        return target;
     }
 }

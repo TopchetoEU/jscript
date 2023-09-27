@@ -33,27 +33,27 @@ public class ObjectPolyfill {
         var hasSet = attrib.hasMember(ctx, "set", false);
 
         if (hasVal) {
-            if (hasGet || hasSet) throw EngineException.ofType(ctx, "Cannot specify a value and accessors for a property.");
+            if (hasGet || hasSet) throw EngineException.ofType("Cannot specify a value and accessors for a property.");
             if (!obj.defineProperty(
                 ctx, key,
                 attrib.getMember(ctx, "value"),
                 Values.toBoolean(attrib.getMember(ctx, "writable")),
                 Values.toBoolean(attrib.getMember(ctx, "configurable")),
                 Values.toBoolean(attrib.getMember(ctx, "enumerable"))
-            )) throw EngineException.ofType(ctx, "Can't define property '" + key + "'.");
+            )) throw EngineException.ofType("Can't define property '" + key + "'.");
         }
         else {
             var get = attrib.getMember(ctx, "get");
             var set = attrib.getMember(ctx, "set");
-            if (get != null && !(get instanceof FunctionValue)) throw EngineException.ofType(ctx, "Get accessor must be a function.");
-            if (set != null && !(set instanceof FunctionValue)) throw EngineException.ofType(ctx, "Set accessor must be a function.");
+            if (get != null && !(get instanceof FunctionValue)) throw EngineException.ofType("Get accessor must be a function.");
+            if (set != null && !(set instanceof FunctionValue)) throw EngineException.ofType("Set accessor must be a function.");
 
             if (!obj.defineProperty(
                 ctx, key,
                 (FunctionValue)get, (FunctionValue)set,
                 Values.toBoolean(attrib.getMember(ctx, "configurable")),
                 Values.toBoolean(attrib.getMember(ctx, "enumerable"))
-            )) throw EngineException.ofType(ctx, "Can't define property '" + key + "'.");
+            )) throw EngineException.ofType("Can't define property '" + key + "'.");
         }
 
         return obj;

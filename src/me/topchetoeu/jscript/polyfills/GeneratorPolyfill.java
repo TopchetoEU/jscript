@@ -89,7 +89,7 @@ public class GeneratorPolyfill extends FunctionValue {
     public Object call(Context ctx, Object thisArg, Object ...args) throws InterruptedException {
         var handler = new Generator();
         var func = factory.call(ctx, thisArg, new NativeFunction("yield", handler::yield));
-        if (!(func instanceof CodeFunction)) throw EngineException.ofType(ctx, "Return value of argument must be a js function.");
+        if (!(func instanceof CodeFunction)) throw EngineException.ofType("Return value of argument must be a js function.");
         handler.frame = new CodeFrame(ctx, thisArg, args, (CodeFunction)func);
         return handler;
     }

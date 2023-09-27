@@ -30,11 +30,11 @@ public class SymbolPolyfill {
     private static Symbol passThis(Context ctx, String funcName, Object val) throws InterruptedException {
         if (val instanceof SymbolPolyfill) return ((SymbolPolyfill)val).value;
         else if (val instanceof Symbol) return (Symbol)val;
-        else throw EngineException.ofType(ctx, String.format("'%s' may only be called upon object and primitve symbols.", funcName));
+        else throw EngineException.ofType(String.format("'%s' may only be called upon object and primitve symbols.", funcName));
     }
 
     @NativeConstructor(thisArg = true) public static Object constructor(Context ctx, Object thisArg, Object val) throws InterruptedException {
-        if (thisArg instanceof ObjectValue) throw EngineException.ofType(ctx, "Symbol constructor may not be called with new.");
+        if (thisArg instanceof ObjectValue) throw EngineException.ofType("Symbol constructor may not be called with new.");
         if (val == null) return new Symbol("");
         else return new Symbol(Values.toString(ctx, val));
     }

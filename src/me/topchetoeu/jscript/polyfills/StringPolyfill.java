@@ -21,7 +21,7 @@ public class StringPolyfill {
     private static String passThis(Context ctx, String funcName, Object val) throws InterruptedException {
         if (val instanceof StringPolyfill) return ((StringPolyfill)val).value;
         else if (val instanceof String) return (String)val;
-        else throw EngineException.ofType(ctx, String.format("'%s' may only be called upon object and primitve strings.", funcName));
+        else throw EngineException.ofType(String.format("'%s' may only be called upon object and primitve strings.", funcName));
     }
     private static int normalizeI(int i, int len, boolean clamp) {
         if (i < 0) i += len;
@@ -137,9 +137,9 @@ public class StringPolyfill {
                 var regex = Values.callNew(ctx, ctx.env.regexConstructor, Values.toString(ctx, term), "");
                 _match = Values.getMember(ctx, regex, ctx.env.symbol("Symbol.match"));
                 if (_match instanceof FunctionValue) match = (FunctionValue)_match;
-                else throw EngineException.ofError(ctx, "Regular expressions don't support matching.");
+                else throw EngineException.ofError("Regular expressions don't support matching.");
             }
-            else throw EngineException.ofError(ctx, "Regular expressions not supported.");
+            else throw EngineException.ofError("Regular expressions not supported.");
         }
         catch (IllegalArgumentException e) { return new ArrayValue(ctx, ""); }
 
@@ -162,9 +162,9 @@ public class StringPolyfill {
             var regex = Values.callNew(ctx, ctx.env.regexConstructor, Values.toString(ctx, term), "g");
             var _match = Values.getMember(ctx, regex, ctx.env.symbol("Symbol.matchAll"));
             if (_match instanceof FunctionValue) match = (FunctionValue)_match;
-            else throw EngineException.ofError(ctx, "Regular expressions don't support matching.");
+            else throw EngineException.ofError("Regular expressions don't support matching.");
         }
-        else throw EngineException.ofError(ctx, "Regular expressions not supported.");
+        else throw EngineException.ofError("Regular expressions not supported.");
 
         return match.call(ctx, term, val);
     }
