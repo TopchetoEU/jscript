@@ -8,9 +8,7 @@ import me.topchetoeu.jscript.exceptions.EngineException;
 import me.topchetoeu.jscript.interop.Native;
 
 public class FunctionPolyfill {
-        @Native("@@Symbol.typeName") public final String name = "Function";
-
-        @Native(thisArg = true) public static Object apply(Context ctx, FunctionValue func, Object thisArg, ArrayValue args) throws InterruptedException {
+    @Native(thisArg = true) public static Object apply(Context ctx, FunctionValue func, Object thisArg, ArrayValue args) throws InterruptedException {
         return func.call(ctx, thisArg, args.toArray());
     }
     @Native(thisArg = true) public static Object call(Context ctx, FunctionValue func, Object thisArg, Object... args) throws InterruptedException {

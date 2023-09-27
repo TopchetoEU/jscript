@@ -20,7 +20,7 @@ public class Internals {
     @Native public final FunctionValue
         object, function, array,
         bool, number, string, symbol,
-        promise, map, set,
+        promise, map, set, regexp,
         error, syntax, type, range;
 
     @Native public void markSpecial(FunctionValue ...funcs) {
@@ -174,5 +174,6 @@ public class Internals {
         this.syntax = targetEnv.wrappersProvider.getConstr(SyntaxErrorPolyfill.class);
         this.type = targetEnv.wrappersProvider.getConstr(TypeErrorPolyfill.class);
         this.range = targetEnv.wrappersProvider.getConstr(RangeErrorPolyfill.class);
+        this.regexp = targetEnv.wrappersProvider.getConstr(RegExpPolyfill.class);
     }
 }

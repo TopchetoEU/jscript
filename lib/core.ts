@@ -17,7 +17,8 @@ interface Internals {
     syntax: SyntaxErrorConstructor;
     type: TypeErrorConstructor;
     range: RangeErrorConstructor;
-
+    
+    regexp: typeof RegExp;
     map: typeof Map;
     set: typeof Set;
 
@@ -50,44 +51,51 @@ interface Internals {
     log(...args: any[]): void;
 }
 
+var env: Environment = arguments[0], internals: Internals = arguments[1];
+
 try {
-    var env: Environment = arguments[0], internals: Internals = arguments[1];
 
-    const Object = env.global.Object = internals.object;
-    const Function = env.global.Function = internals.function;
-    const Array = env.global.Array = internals.array;
-    const Promise = env.global.Promise = internals.promise;
-    const Boolean = env.global.Boolean = internals.bool;
-    const Number = env.global.Number = internals.number;
-    const String = env.global.String = internals.string;
-    const Symbol = env.global.Symbol = internals.symbol;
-    const Error = env.global.Error = internals.error;
-    const SyntaxError = env.global.SyntaxError = internals.syntax;
-    const TypeError = env.global.TypeError = internals.type;
-    const RangeError = env.global.RangeError = internals.range;
+    const values = {
+        Object: env.global.Object = internals.object,
+        Function: env.global.Function = internals.function,
+        Array: env.global.Array = internals.array,
+        Promise: env.global.Promise = internals.promise,
+        Boolean: env.global.Boolean = internals.bool,
+        Number: env.global.Number = internals.number,
+        String: env.global.String = internals.string,
+        Symbol: env.global.Symbol = internals.symbol,
+        Error: env.global.Error = internals.error,
+        SyntaxError: env.global.SyntaxError = internals.syntax,
+        TypeError: env.global.TypeError = internals.type,
+        RangeError: env.global.RangeError = internals.range,
+        RegExp: env.global.RegExp = internals.regexp,
+        Map: env.global.Map = internals.map,
+        Set: env.global.Set = internals.set,
+    }
+    const Array = values.Array;
 
-    const Map = env.global.Map = internals.map;
-    const Set = env.global.Set = internals.set;
+    env.setProto('object', env.global.Object.prototype);
+    env.setProto('function', env.global.Function.prototype);
+    env.setProto('array', env.global.Array.prototype);
+    env.setProto('number', env.global.Number.prototype);
+    env.setProto('string', env.global.String.prototype);
+    env.setProto('symbol', env.global.Symbol.prototype);
+    env.setProto('bool', env.global.Boolean.prototype);
 
-    env.setProto('object', Object.prototype);
-    env.setProto('function', Function.prototype);
-    env.setProto('array', Array.prototype);
-    env.setProto('number', Number.prototype);
-    env.setProto('string', String.prototype);
-    env.setProto('symbol', Symbol.prototype);
-    env.setProto('bool', Boolean.prototype);
-
-    env.setProto('error', Error.prototype);
-    env.setProto('rangeErr', RangeError.prototype);
-    env.setProto('typeErr', TypeError.prototype);
-    env.setProto('syntaxErr', SyntaxError.prototype);
-
-    (Object.prototype as any).__proto__ = null;
+    env.setProto('error', env.global.Error.prototype);
+    env.setProto('rangeErr', env.global.RangeError.prototype);
+    env.setProto('typeErr', env.global.TypeError.prototype);
+    env.setProto('syntaxErr', env.global.SyntaxError.prototype);
+    (env.global.Object.prototype as any).__proto__ = null;
 
     internals.getEnv(run)?.setProto('array', Array.prototype);
     globalThis.log = (...args) => internals.apply(internals.log, internals, args);
 
-    run('regex');
+    for (const key in values) {
+        (values as any)[key].prototype[env.symbol('Symbol.typeName')] = key;
+        log();
+    }
+
     run('timeout');
 
     env.global.log = log;
@@ -103,7 +111,7 @@ catch (e: any) {
         if ('name' in e) err += e.name + ": " + e.message;
         else err += 'Error: ' + e.message;
     }
-    else err += e;
+    else err += "[unknown]";
 
-    log(e);
+    internals.log(err);
 }

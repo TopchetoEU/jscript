@@ -685,7 +685,7 @@ public class Values {
         printValue(ctx, val, new HashSet<>(), 0);
     }
     public static void printError(RuntimeException err, String prefix) throws InterruptedException {
-        prefix = prefix == null ? "Uncauthg" : "Uncaught " + prefix;
+        prefix = prefix == null ? "Uncaught" : "Uncaught " + prefix;
         try {
             if (err instanceof EngineException) {
                 System.out.println(prefix + " " + ((EngineException)err).toString(((EngineException)err).ctx));

@@ -11,8 +11,6 @@ import me.topchetoeu.jscript.interop.Native;
 import me.topchetoeu.jscript.interop.NativeConstructor;
 
 public class ObjectPolyfill {
-    @Native("@@Symbol.typeName") public final String name = "Object";
-
     @Native public static ObjectValue assign(Context ctx, ObjectValue dst, Object... src) throws InterruptedException {
         for (var obj : src) {
             for (var key : Values.getMembers(ctx, obj, true, true)) {

@@ -39,7 +39,7 @@ public class AsyncGeneratorPolyfill extends FunctionValue {
 
             while (state == 0) {
                 try {
-                    res = frame.next(ctx, inducedValue, inducedReturn, inducedError);
+                    res = frame.next(ctx, inducedValue, inducedReturn, inducedError == Runners.NO_RETURN ? null : new EngineException(inducedError));
                     inducedValue = inducedReturn = inducedError = Runners.NO_RETURN;
                     if (res != Runners.NO_RETURN) {
                         var obj = new ObjectValue();

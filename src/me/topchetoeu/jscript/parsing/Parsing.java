@@ -685,7 +685,7 @@ public class Parsing {
         }
 
     }
-    public static ParseRes<NewStatement> parseRegex(String filename, List<Token> tokens, int i) {
+    public static ParseRes<RegexStatement> parseRegex(String filename, List<Token> tokens, int i) {
         var loc = getLoc(filename, tokens, i);
         try {
             if (tokens.get(i).isRegex()) {
@@ -693,11 +693,7 @@ public class Parsing {
                 var index = val.lastIndexOf('/');
                 var first = val.substring(1, index);
                 var second = val.substring(index + 1);
-                return ParseRes.res(new NewStatement(loc,
-                    new VariableStatement(null, "RegExp"),
-                    new ConstantStatement(loc, first),
-                    new ConstantStatement(loc, second)
-                ), 1);
+                return ParseRes.res(new RegexStatement(loc, first, second), 1);
             }
             else return ParseRes.failed();
         }

@@ -30,7 +30,7 @@ public class ErrorPolyfill {
         }
     }
 
-    private static String toString(Context ctx, Object name, Object message, ArrayValue stack) throws InterruptedException {
+    private static String toString(Context ctx, Object cause, Object name, Object message, ArrayValue stack) throws InterruptedException {
         if (name == null) name = "";
         else name = Values.toString(ctx, name).trim();
         if (message == null) message = "";
@@ -39,7 +39,7 @@ public class ErrorPolyfill {
 
         if (!name.equals("")) res.append(name);
         if (!message.equals("") && !name.equals("")) res.append(": ");
-        if (!name.equals("")) res.append(message);
+        if (!message.equals("")) res.append(message);
 
         if (stack != null) {
             for (var el : stack) {
@@ -47,6 +47,8 @@ public class ErrorPolyfill {
                 if (!str.equals("")) res.append("\n    ").append(el);
             }
         }
+
+        if (cause instanceof ObjectValue) res.append(toString(ctx, cause));
 
         return res.toString();
     }
@@ -56,6 +58,7 @@ public class ErrorPolyfill {
             var stack = Values.getMember(ctx, thisArg, "stack");
             if (!(stack instanceof ArrayValue)) stack = null;
             return toString(ctx,
+                Values.getMember(ctx, thisArg, "cause"),
                 Values.getMember(ctx, thisArg, "name"),
                 Values.getMember(ctx, thisArg, "message"),
                 (ArrayValue)stack

@@ -24,7 +24,7 @@ public class CodeFrame {
         public final int tryStart, catchStart, finallyStart, end;
         public int state;
         public Object retVal;
-        public Object err;
+        public EngineException err;
         public int jumpPtr;
 
         public TryCtx(int tryStart, int tryN, int catchN, int finallyN) {
@@ -93,10 +93,11 @@ public class CodeFrame {
         stack[stackPtr++] = Values.normalize(ctx, val);
     }
 
-    private void setCause(Context ctx, Object err, Object cause) throws InterruptedException {
-        if (err instanceof ObjectValue) {
+    private void setCause(Context ctx, EngineException err, EngineException cause) throws InterruptedException {
+        if (err.value instanceof ObjectValue) {
             Values.setMember(ctx, err, ctx.env.symbol("Symbol.cause"), cause);
         }
+        err.cause = cause;
     }
     private Object nextNoTry(Context ctx) throws InterruptedException {
         if (Thread.currentThread().isInterrupted()) throw new InterruptedException();
@@ -116,12 +117,12 @@ public class CodeFrame {
         }
     }
 
-    public Object next(Context ctx, Object value, Object returnValue, Object error) throws InterruptedException {
+    public Object next(Context ctx, Object value, Object returnValue, EngineException error) throws InterruptedException {
         if (value != Runners.NO_RETURN) push(ctx, value);
 
-        if (returnValue == Runners.NO_RETURN && error == Runners.NO_RETURN) {
+        if (returnValue == Runners.NO_RETURN && error == null) {
             try { returnValue = nextNoTry(ctx); }
-            catch (EngineException e) { error = e.value; }
+            catch (EngineException e) { error = e; }
         }
 
         while (!tryStack.empty()) {
@@ -130,7 +131,7 @@ public class CodeFrame {
 
             switch (tryCtx.state) {
                 case TryCtx.STATE_TRY:
-                    if (error != Runners.NO_RETURN) {
+                    if (error != null) {
                         if (tryCtx.hasCatch) {
                             tryCtx.err = error;
                             newState = TryCtx.STATE_CATCH;
@@ -158,7 +159,7 @@ public class CodeFrame {
                     else codePtr = tryCtx.end;
                     break;
                 case TryCtx.STATE_CATCH:
-                    if (error != Runners.NO_RETURN) {
+                    if (error != null) {
                         if (tryCtx.hasFinally) {
                             tryCtx.err = error;
                             newState = TryCtx.STATE_FINALLY_THREW;
@@ -167,7 +168,7 @@ public class CodeFrame {
                     }
                     else if (returnValue != Runners.NO_RETURN) {
                         if (tryCtx.hasFinally) {
-                            tryCtx.retVal = error;
+                            tryCtx.retVal = returnValue;
                             newState = TryCtx.STATE_FINALLY_RETURNED;
                         }
                         break;
@@ -182,7 +183,7 @@ public class CodeFrame {
                     else codePtr = tryCtx.end;
                     break;
                 case TryCtx.STATE_FINALLY_THREW:
-                    if (error != Runners.NO_RETURN) setCause(ctx, error, tryCtx.err);
+                    if (error != null) setCause(ctx, error, tryCtx.err);
                     else if (codePtr < tryCtx.finallyStart || codePtr >= tryCtx.end) error = tryCtx.err;
                     else return Runners.NO_RETURN;
                     break;
@@ -211,7 +212,7 @@ public class CodeFrame {
             tryCtx.state = newState;
             switch (newState) {
                 case TryCtx.STATE_CATCH:
-                    scope.catchVars.add(new ValueVariable(false, tryCtx.err));
+                    scope.catchVars.add(new ValueVariable(false, tryCtx.err.value));
                     codePtr = tryCtx.catchStart;
                     break;
                 default:
@@ -221,7 +222,7 @@ public class CodeFrame {
             return Runners.NO_RETURN;
         }
     
-        if (error != Runners.NO_RETURN) throw new EngineException(error);
+        if (error != null) throw error.setContext(ctx);
         if (returnValue != Runners.NO_RETURN) return returnValue;
         return Runners.NO_RETURN;
     }
@@ -230,7 +231,7 @@ public class CodeFrame {
         try {
             ctx.message.pushFrame(ctx, this);
             while (true) {
-                var res = next(ctx, Runners.NO_RETURN, Runners.NO_RETURN, Runners.NO_RETURN);
+                var res = next(ctx, Runners.NO_RETURN, Runners.NO_RETURN, null);
                 if (res != Runners.NO_RETURN) return res;
             }
         }

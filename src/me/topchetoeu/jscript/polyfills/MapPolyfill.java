@@ -13,7 +13,6 @@ import me.topchetoeu.jscript.interop.Native;
 import me.topchetoeu.jscript.interop.NativeGetter;
 
 public class MapPolyfill {
-    @Native("@@Symbol.typeName") public final String name = "Map";
     private LinkedHashMap<Object, Object> map = new LinkedHashMap<>();
 
     @Native("@@Symbol.iterator") public ObjectValue iterator(Context ctx) throws InterruptedException {

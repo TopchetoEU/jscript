@@ -26,7 +26,7 @@ public class AsyncFunctionPolyfill extends FunctionValue {
             awaiting = false;
             while (!awaiting) {
                 try {
-                    res = frame.next(ctx, inducedValue, Runners.NO_RETURN, inducedError);
+                    res = frame.next(ctx, inducedValue, Runners.NO_RETURN, inducedError == Runners.NO_RETURN ? null : new EngineException(inducedError));
                     inducedValue = inducedError = Runners.NO_RETURN;
                     if (res != Runners.NO_RETURN) {
                         promise.fulfill(ctx, res);

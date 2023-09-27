@@ -14,7 +14,6 @@ import me.topchetoeu.jscript.interop.NativeGetter;
 
 public class SymbolPolyfill {
     private static final Map<String, Symbol> symbols = new HashMap<>();
-    @Native("@@Symbol.typeName") public final String name = "Symbol";
 
     @NativeGetter public static Symbol typeName(Context ctx) { return ctx.env.symbol("Symbol.typeName"); }
     @NativeGetter public static Symbol replace(Context ctx) { return ctx.env.symbol("Symbol.replace"); }

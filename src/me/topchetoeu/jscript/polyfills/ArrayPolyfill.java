@@ -14,7 +14,6 @@ import me.topchetoeu.jscript.interop.NativeGetter;
 import me.topchetoeu.jscript.interop.NativeSetter;
 
 public class ArrayPolyfill {
-    @Native("@@Symbol.typeName") public final String name = "AsyncFunction";
     @NativeGetter(thisArg = true) public static int length(Context ctx, ArrayValue thisArg) throws InterruptedException {
         return thisArg.size();
     }

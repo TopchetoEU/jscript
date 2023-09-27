@@ -35,7 +35,7 @@ public class GeneratorPolyfill extends FunctionValue {
 
             while (!yielding) {
                 try {
-                    res = frame.next(ctx, inducedValue, inducedReturn, inducedError);
+                    res = frame.next(ctx, inducedValue, inducedReturn, inducedError == Runners.NO_RETURN ? null : new EngineException(inducedError));
                     inducedReturn = inducedError = Runners.NO_RETURN;
                     if (res != Runners.NO_RETURN) {
                         done = true;
