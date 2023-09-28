@@ -1,9 +1,6 @@
 {
     "files": [
         "lib.d.ts",
-        "modules.ts",
-        "regex.ts",
-        "timeout.ts",
         "core.ts"
     ],
     "compilerOptions": {

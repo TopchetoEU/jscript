@@ -24,9 +24,14 @@ public class FunctionPolyfill {
         if (!(func instanceof FunctionValue)) throw EngineException.ofError("Expected this to be a function.");
 
         return new NativeFunction(func.name + " (bound)", (callCtx, _0, callArgs) -> {
-            var resArgs = new Object[args.length + callArgs.length];
-            System.arraycopy(args, 0, resArgs, 0, args.length);
-            System.arraycopy(callArgs, 0, resArgs, args.length, callArgs.length);
+            Object[] resArgs;
+
+            if (args.length == 0) resArgs = callArgs;
+            else {
+                resArgs = new Object[args.length + callArgs.length];
+                System.arraycopy(args, 0, resArgs, 0, args.length);
+                System.arraycopy(callArgs, 0, resArgs, args.length, callArgs.length);
+            }
 
             return func.call(ctx, thisArg, resArgs);
         });

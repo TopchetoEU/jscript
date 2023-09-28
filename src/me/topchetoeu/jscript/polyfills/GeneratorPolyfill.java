@@ -1,7 +1,6 @@
 package me.topchetoeu.jscript.polyfills;
 
 import me.topchetoeu.jscript.engine.Context;
-import me.topchetoeu.jscript.engine.Environment;
 import me.topchetoeu.jscript.engine.frame.CodeFrame;
 import me.topchetoeu.jscript.engine.frame.Runners;
 import me.topchetoeu.jscript.engine.values.CodeFunction;

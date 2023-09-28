@@ -20,6 +20,8 @@ public class Internals {
         promise, map, set, regexp,
         error, syntax, type, range;
 
+    @Native public final TimerPolyfills timers = new TimerPolyfills();
+
     @Native public void markSpecial(FunctionValue ...funcs) {
         for (var func : funcs) {
             func.special = true;
@@ -36,6 +38,9 @@ public class Internals {
     @Native public Object apply(Context ctx, FunctionValue func, Object thisArg, ArrayValue args, Environment env) throws InterruptedException {
         if (env != null) ctx = new Context(env, ctx.message);
         return func.call(ctx, thisArg, args.toArray());
+    }
+    @Native public FunctionValue bind(Context ctx, FunctionValue func, Object thisArg) throws InterruptedException {
+        return FunctionPolyfill.bind(ctx, func, thisArg);
     }
     @Native public FunctionValue delay(Context ctx, double delay, FunctionValue callback) throws InterruptedException {
         var thread = new Thread((Runnable)() -> {

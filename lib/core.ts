@@ -17,15 +17,23 @@ interface Internals {
     syntax: SyntaxErrorConstructor;
     type: TypeErrorConstructor;
     range: RangeErrorConstructor;
-    
+
     regexp: typeof RegExp;
     map: typeof Map;
     set: typeof Set;
+
+    timers: {
+        setTimeout: <T extends any[]>(handle: (...args: [ ...T, ...any[] ]) => void, delay?: number, ...args: T) => number,
+        setInterval: <T extends any[]>(handle: (...args: [ ...T, ...any[] ]) => void, delay?: number, ...args: T) => number,
+        clearTimeout: (id: number) => void,
+        clearInterval: (id: number) => void,
+    }
 
     markSpecial(...funcs: Function[]): void;
     getEnv(func: Function): Environment | undefined;
     setEnv<T>(func: T, env: Environment): T;
     apply(func: Function, thisArg: any, args: any[], env?: Environment): any;
+    bind(func: Function, thisArg: any): any;
     delay(timeout: number, callback: Function): () => void;
     pushMessage(micro: boolean, func: Function, thisArg: any, args: any[]): void;
 
@@ -54,24 +62,26 @@ interface Internals {
 var env: Environment = arguments[0], internals: Internals = arguments[1];
 
 try {
-    const values = {
-        Object: env.global.Object = internals.object,
-        Function: env.global.Function = internals.function,
-        Array: env.global.Array = internals.array,
-        Promise: env.global.Promise = internals.promise,
-        Boolean: env.global.Boolean = internals.bool,
-        Number: env.global.Number = internals.number,
-        String: env.global.String = internals.string,
-        Symbol: env.global.Symbol = internals.symbol,
-        Error: env.global.Error = internals.error,
-        SyntaxError: env.global.SyntaxError = internals.syntax,
-        TypeError: env.global.TypeError = internals.type,
-        RangeError: env.global.RangeError = internals.range,
-        RegExp: env.global.RegExp = internals.regexp,
-        Map: env.global.Map = internals.map,
-        Set: env.global.Set = internals.set,
-    }
-    const Array = values.Array;
+    const Array = env.global.Array = internals.array;
+    env.global.Object = internals.object;
+    env.global.Function = internals.function;
+    env.global.Promise = internals.promise;
+    env.global.Boolean = internals.bool;
+    env.global.Number = internals.number;
+    env.global.String = internals.string;
+    env.global.Symbol = internals.symbol;
+    env.global.Error = internals.error;
+    env.global.SyntaxError = internals.syntax;
+    env.global.TypeError = internals.type;
+    env.global.RangeError = internals.range;
+    env.global.RegExp = internals.regexp;
+    env.global.Map = internals.map;
+    env.global.Set = internals.set;
+    env.global.setInterval = internals.bind(internals.timers.setInterval, internals.timers);
+    env.global.setTimeout = internals.bind(internals.timers.setTimeout, internals.timers);
+    env.global.clearInterval = internals.bind(internals.timers.clearInterval, internals.timers);
+    env.global.clearTimeout = internals.bind(internals.timers.clearTimeout, internals.timers);
+    const log = env.global.log = internals.bind(internals.log, internals);
 
     env.setProto('object', env.global.Object.prototype);
     env.setProto('function', env.global.Function.prototype);
@@ -87,14 +97,6 @@ try {
     env.setProto('syntaxErr', env.global.SyntaxError.prototype);
 
     (env.global.Object.prototype as any).__proto__ = null;
-
-    internals.getEnv(run)?.setProto('array', Array.prototype);
-    globalThis.log = (...args) => internals.apply(internals.log, internals, args);
-
-    run('timeout');
-
-    env.global.log = log;
-    env.global.NewObject = internals.object;
 
     log('Loaded polyfills!');
 }
