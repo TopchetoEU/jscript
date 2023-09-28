@@ -62,6 +62,7 @@ public class RegExpPolyfill {
     @Native public final boolean hasIndices;
     @Native public final boolean global;
     @Native public final boolean sticky;
+    @Native("@@Symbol.typeName") public final String name = "RegExp";
 
     @NativeGetter public boolean ignoreCase() { return (flags & Pattern.CASE_INSENSITIVE) != 0; }
     @NativeGetter public boolean multiline() { return (flags & Pattern.MULTILINE) != 0; }

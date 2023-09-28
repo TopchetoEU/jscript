@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import me.topchetoeu.jscript.engine.Context;
+import me.topchetoeu.jscript.engine.Environment;
 import me.topchetoeu.jscript.engine.MessageContext;
 import me.topchetoeu.jscript.engine.values.ArrayValue;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
@@ -13,7 +14,9 @@ import me.topchetoeu.jscript.engine.values.NativeWrapper;
 import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.exceptions.EngineException;
+import me.topchetoeu.jscript.interop.InitType;
 import me.topchetoeu.jscript.interop.Native;
+import me.topchetoeu.jscript.interop.NativeInit;
 
 public class PromisePolyfill {
     private static class Handle {
@@ -337,5 +340,9 @@ public class PromisePolyfill {
     }
     public PromisePolyfill() {
         this(STATE_PENDING, null);
+    }
+
+    @NativeInit(InitType.PROTOTYPE) public static void init(Environment env, ObjectValue target) {
+        target.defineProperty(null, env.symbol("Symbol.typeName"), "Promise");
     }
 }

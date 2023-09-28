@@ -15,6 +15,7 @@ import me.topchetoeu.jscript.interop.NativeGetter;
 public class SetPolyfill {
     private LinkedHashSet<Object> set = new LinkedHashSet<>();
 
+    @Native("@@Symbol.typeName") public final String name = "Set";
     @Native("@@Symbol.iterator") public ObjectValue iterator(Context ctx) throws InterruptedException {
         return this.values(ctx);
     }

@@ -54,7 +54,6 @@ interface Internals {
 var env: Environment = arguments[0], internals: Internals = arguments[1];
 
 try {
-
     const values = {
         Object: env.global.Object = internals.object,
         Function: env.global.Function = internals.function,
@@ -86,15 +85,11 @@ try {
     env.setProto('rangeErr', env.global.RangeError.prototype);
     env.setProto('typeErr', env.global.TypeError.prototype);
     env.setProto('syntaxErr', env.global.SyntaxError.prototype);
+
     (env.global.Object.prototype as any).__proto__ = null;
 
     internals.getEnv(run)?.setProto('array', Array.prototype);
     globalThis.log = (...args) => internals.apply(internals.log, internals, args);
-
-    for (const key in values) {
-        (values as any)[key].prototype[env.symbol('Symbol.typeName')] = key;
-        log();
-    }
 
     run('timeout');
 

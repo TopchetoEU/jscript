@@ -1,11 +1,15 @@
 package me.topchetoeu.jscript.polyfills;
 
 import me.topchetoeu.jscript.engine.Context;
+import me.topchetoeu.jscript.engine.Environment;
 import me.topchetoeu.jscript.engine.values.ArrayValue;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
 import me.topchetoeu.jscript.engine.values.NativeFunction;
+import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.exceptions.EngineException;
+import me.topchetoeu.jscript.interop.InitType;
 import me.topchetoeu.jscript.interop.Native;
+import me.topchetoeu.jscript.interop.NativeInit;
 
 public class FunctionPolyfill {
     @Native(thisArg = true) public static Object apply(Context ctx, FunctionValue func, Object thisArg, ArrayValue args) throws InterruptedException {
@@ -39,5 +43,9 @@ public class FunctionPolyfill {
     }
     @Native public static FunctionValue generator(FunctionValue func) {
         return new GeneratorPolyfill(func);
+    }
+
+    @NativeInit(InitType.PROTOTYPE) public static void init(Environment env, ObjectValue target) {
+        target.defineProperty(null, env.symbol("Symbol.typeName"), "Function");
     }
 }

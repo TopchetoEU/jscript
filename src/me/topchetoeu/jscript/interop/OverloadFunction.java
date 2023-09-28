@@ -113,4 +113,9 @@ public class OverloadFunction extends FunctionValue {
     public OverloadFunction(String name) {
         super(name, 0);
     }
+
+    public static OverloadFunction of(String name, Overload overload) {
+        if (overload == null) return null;
+        else return new OverloadFunction(name).add(overload);
+    }
 }

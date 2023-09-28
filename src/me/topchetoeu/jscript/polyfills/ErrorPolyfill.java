@@ -1,35 +1,16 @@
 package me.topchetoeu.jscript.polyfills;
 
 import me.topchetoeu.jscript.engine.Context;
+import me.topchetoeu.jscript.engine.Environment;
 import me.topchetoeu.jscript.engine.values.ArrayValue;
 import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.engine.values.Values;
+import me.topchetoeu.jscript.interop.InitType;
 import me.topchetoeu.jscript.interop.Native;
 import me.topchetoeu.jscript.interop.NativeConstructor;
+import me.topchetoeu.jscript.interop.NativeInit;
 
 public class ErrorPolyfill {
-    public static class SyntaxErrorPolyfill extends ErrorPolyfill {
-        @NativeConstructor(thisArg = true) public static ObjectValue constructor(Context ctx, Object thisArg, Object message) throws InterruptedException {
-            var target = ErrorPolyfill.constructor(ctx, thisArg, message);
-            target.defineProperty(ctx, "name", "SyntaxError");
-            return target;
-        }
-    }
-    public static class TypeErrorPolyfill extends ErrorPolyfill {
-        @NativeConstructor(thisArg = true) public static ObjectValue constructor(Context ctx, Object thisArg, Object message) throws InterruptedException {
-            var target = ErrorPolyfill.constructor(ctx, thisArg, message);
-            target.defineProperty(ctx, "name", "TypeError");
-            return target;
-        }
-    }
-    public static class RangeErrorPolyfill extends ErrorPolyfill {
-        @NativeConstructor(thisArg = true) public static ObjectValue constructor(Context ctx, Object thisArg, Object message) throws InterruptedException {
-            var target = ErrorPolyfill.constructor(ctx, thisArg, message);
-            target.defineProperty(ctx, "name", "RangeError");
-            return target;
-        }
-    }
-
     private static String toString(Context ctx, Object cause, Object name, Object message, ArrayValue stack) throws InterruptedException {
         if (name == null) name = "";
         else name = Values.toString(ctx, name).trim();
@@ -77,5 +58,10 @@ public class ErrorPolyfill {
         else target.defineProperty(ctx, "message", Values.toString(ctx, message));
 
         return target;
+    }
+
+    @NativeInit(InitType.PROTOTYPE) public static void init(Environment env, ObjectValue target) {
+        target.defineProperty(null, env.symbol("Symbol.typeName"), "Error");
+        target.defineProperty(null, "name", "Error");
     }
 }

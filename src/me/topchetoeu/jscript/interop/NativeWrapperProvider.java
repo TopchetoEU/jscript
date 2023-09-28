@@ -33,7 +33,7 @@ public class NativeWrapperProvider implements WrappersProvider {
 
                 if (!(val instanceof OverloadFunction)) target.defineProperty(null, name, val = new OverloadFunction(name.toString()));
 
-                ((OverloadFunction)val).overloads.add(Overload.fromMethod(method, nat.thisArg()));
+                ((OverloadFunction)val).add(Overload.fromMethod(method, nat.thisArg()));
             }
             else {
                 if (get != null) {
@@ -50,7 +50,7 @@ public class NativeWrapperProvider implements WrappersProvider {
                     if (prop != null && prop.getter instanceof OverloadFunction) getter = (OverloadFunction)prop.getter;
                     else getter = new OverloadFunction("get " + name);
 
-                    getter.overloads.add(Overload.fromMethod(method, get.thisArg()));
+                    getter.add(Overload.fromMethod(method, get.thisArg()));
                     target.defineProperty(null, name, getter, setter, true, true);
                 }
                 if (set != null) {
@@ -67,7 +67,7 @@ public class NativeWrapperProvider implements WrappersProvider {
                     if (prop != null && prop.setter instanceof OverloadFunction) setter = (OverloadFunction)prop.setter;
                     else setter = new OverloadFunction("set " + name);
 
-                    setter.overloads.add(Overload.fromMethod(method, set.thisArg()));
+                    setter.add(Overload.fromMethod(method, set.thisArg()));
                     target.defineProperty(null, name, getter, setter, true, true);
                 }
             }
@@ -83,8 +83,8 @@ public class NativeWrapperProvider implements WrappersProvider {
                 if (((String)name).startsWith("@@")) name = env.symbol(((String)name).substring(2));
                 else if (name.equals("")) name = field.getName();
     
-                var getter = new OverloadFunction("get " + name).add(Overload.getterFromField(field));
-                var setter = new OverloadFunction("set " + name).add(Overload.setterFromField(field));
+                var getter = OverloadFunction.of("get " + name, Overload.getterFromField(field));
+                var setter = OverloadFunction.of("set " + name, Overload.setterFromField(field));
                 target.defineProperty(null, name, getter, setter, true, false);
             }
         }
@@ -115,6 +115,13 @@ public class NativeWrapperProvider implements WrappersProvider {
     public static ObjectValue makeProto(Environment ctx, Class<?> clazz) {
         var res = new ObjectValue();
 
+        for (var overload : clazz.getDeclaredMethods()) {
+            var init = overload.getAnnotation(NativeInit.class);
+            if (init == null || init.value() != InitType.PROTOTYPE) continue;
+            try { overload.invoke(null, ctx, res); }
+            catch (ReflectiveOperationException e) { e.printStackTrace(); }
+        }
+
         applyMethods(ctx, true, res, clazz);
         applyFields(ctx, true, res, clazz);
         applyClasses(ctx, true, res, clazz);
@@ -140,6 +147,12 @@ public class NativeWrapperProvider implements WrappersProvider {
             if (constr == null) continue;
             ((OverloadFunction)func).add(Overload.fromMethod(overload, constr.thisArg()));
         }
+        for (var overload : clazz.getDeclaredMethods()) {
+            var init = overload.getAnnotation(NativeInit.class);
+            if (init == null || init.value() != InitType.CONSTRUCTOR) continue;
+            try { overload.invoke(null, ctx, func); }
+            catch (ReflectiveOperationException e) { e.printStackTrace(); }
+        }
 
         if (((OverloadFunction)func).overloads.size() == 0) {
             func = new NativeFunction(clazz.getName(), (a, b, c) -> { throw EngineException.ofError("This constructor is not invokable."); });
@@ -161,6 +174,13 @@ public class NativeWrapperProvider implements WrappersProvider {
      */
     public static ObjectValue makeNamespace(Environment ctx, Class<?> clazz) {
         ObjectValue res = new ObjectValue();
+
+        for (var overload : clazz.getDeclaredMethods()) {
+            var init = overload.getAnnotation(NativeInit.class);
+            if (init == null || init.value() != InitType.NAMESPACE) continue;
+            try { overload.invoke(null, ctx, res); }
+            catch (ReflectiveOperationException e) { e.printStackTrace(); }
+        }
 
         applyMethods(ctx, false, res, clazz);
         applyFields(ctx, false, res, clazz);

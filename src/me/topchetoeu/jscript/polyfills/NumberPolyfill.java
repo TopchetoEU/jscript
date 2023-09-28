@@ -1,10 +1,13 @@
 package me.topchetoeu.jscript.polyfills;
 
 import me.topchetoeu.jscript.engine.Context;
+import me.topchetoeu.jscript.engine.Environment;
 import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.engine.values.Values;
+import me.topchetoeu.jscript.interop.InitType;
 import me.topchetoeu.jscript.interop.Native;
 import me.topchetoeu.jscript.interop.NativeConstructor;
+import me.topchetoeu.jscript.interop.NativeInit;
 
 public class NumberPolyfill {
     @Native public static final double EPSILON = java.lang.Math.ulp(1.0);
@@ -48,5 +51,9 @@ public class NumberPolyfill {
 
     public NumberPolyfill(double val) {
         this.value = val;
+    }
+
+    @NativeInit(InitType.PROTOTYPE) public static void init(Environment env, ObjectValue target) {
+        target.defineProperty(null, env.symbol("Symbol.typeName"), "Number");
     }
 }

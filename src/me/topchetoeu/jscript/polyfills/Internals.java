@@ -10,9 +10,6 @@ import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.engine.values.Symbol;
 import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.interop.Native;
-import me.topchetoeu.jscript.polyfills.ErrorPolyfill.RangeErrorPolyfill;
-import me.topchetoeu.jscript.polyfills.ErrorPolyfill.SyntaxErrorPolyfill;
-import me.topchetoeu.jscript.polyfills.ErrorPolyfill.TypeErrorPolyfill;
 
 public class Internals {
     public final Environment targetEnv;
