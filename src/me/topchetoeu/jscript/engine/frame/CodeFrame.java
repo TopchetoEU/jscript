@@ -1,7 +1,6 @@
 package me.topchetoeu.jscript.engine.frame;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Stack;
 
 import me.topchetoeu.jscript.Location;
 import me.topchetoeu.jscript.engine.Context;
@@ -9,6 +8,7 @@ import me.topchetoeu.jscript.engine.scope.LocalScope;
 import me.topchetoeu.jscript.engine.scope.ValueVariable;
 import me.topchetoeu.jscript.engine.values.ArrayValue;
 import me.topchetoeu.jscript.engine.values.CodeFunction;
+import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.exceptions.EngineException;
 
@@ -24,8 +24,8 @@ public class CodeFrame {
         public final int tryStart, catchStart, finallyStart, end;
         public int state;
         public Object retVal;
-        public int jumpPtr;
         public EngineException err;
+        public int jumpPtr;
 
         public TryCtx(int tryStart, int tryN, int catchN, int finallyN) {
             hasCatch = catchN >= 0;
@@ -45,7 +45,7 @@ public class CodeFrame {
     public final LocalScope scope;
     public final Object thisArg;
     public final Object[] args;
-    public final List<TryCtx> tryStack = new ArrayList<>();
+    public final Stack<TryCtx> tryStack = new Stack<>();
     public final CodeFunction function;
 
     public Object[] stack = new Object[32];
@@ -93,6 +93,12 @@ public class CodeFrame {
         stack[stackPtr++] = Values.normalize(ctx, val);
     }
 
+    private void setCause(Context ctx, EngineException err, EngineException cause) throws InterruptedException {
+        if (err.value instanceof ObjectValue) {
+            Values.setMember(ctx, err, ctx.env.symbol("Symbol.cause"), cause);
+        }
+        err.cause = cause;
+    }
     private Object nextNoTry(Context ctx) throws InterruptedException {
         if (Thread.currentThread().isInterrupted()) throw new InterruptedException();
         if (codePtr < 0 || codePtr >= function.body.length) return null;
@@ -107,163 +113,125 @@ public class CodeFrame {
             return Runners.exec(ctx, instr, this);
         }
         catch (EngineException e) {
-            throw e.add(function.name, prevLoc);
+            throw e.add(function.name, prevLoc).setContext(ctx);
         }
     }
 
-    public Object next(Context ctx, Object prevReturn, Object prevError) throws InterruptedException {
-        TryCtx tryCtx = null;
-        if (prevError != Runners.NO_RETURN) prevReturn = Runners.NO_RETURN;
+    public Object next(Context ctx, Object value, Object returnValue, EngineException error) throws InterruptedException {
+        if (value != Runners.NO_RETURN) push(ctx, value);
 
-        while (!tryStack.isEmpty()) {
-            var tmp = tryStack.get(tryStack.size() - 1);
-            var remove = false;
-
-            if (prevError != Runners.NO_RETURN) {
-                remove = true;
-                if (tmp.state == TryCtx.STATE_TRY) {
-                    tmp.jumpPtr = tmp.end;
-
-                    if (tmp.hasCatch) {
-                        tmp.state = TryCtx.STATE_CATCH;
-                        scope.catchVars.add(new ValueVariable(false, prevError));
-                        prevError = Runners.NO_RETURN;
-                        codePtr = tmp.catchStart;
-                        remove = false;
-                    }
-                    else if (tmp.hasFinally) {
-                        tmp.state = TryCtx.STATE_FINALLY_THREW;
-                        tmp.err = new EngineException(prevError);
-                        prevError = Runners.NO_RETURN;
-                        codePtr = tmp.finallyStart;
-                        remove = false;
-                    }
-                }
-            }
-            else if (prevReturn != Runners.NO_RETURN) {
-                remove = true;
-                if (tmp.hasFinally && tmp.state <= TryCtx.STATE_CATCH) {
-                    tmp.state = TryCtx.STATE_FINALLY_RETURNED;
-                    tmp.retVal = prevReturn;
-                    prevReturn = Runners.NO_RETURN;
-                    codePtr = tmp.finallyStart;
-                    remove = false;
-                }
-            }
-            else if (tmp.state == TryCtx.STATE_TRY) {
-                if (codePtr < tmp.tryStart || codePtr >= tmp.catchStart) {
-                    if (jumpFlag) tmp.jumpPtr = codePtr;
-                    else tmp.jumpPtr = tmp.end;
-
-                    if (tmp.hasFinally) {
-                        tmp.state = TryCtx.STATE_FINALLY_JUMPED;
-                        codePtr = tmp.finallyStart;
-                    }
-                    else codePtr = tmp.jumpPtr;
-                    remove = !tmp.hasFinally;
-                }
-            }
-            else if (tmp.state == TryCtx.STATE_CATCH) {
-                if (codePtr < tmp.catchStart || codePtr >= tmp.finallyStart) {
-                    if (jumpFlag) tmp.jumpPtr = codePtr;
-                    else tmp.jumpPtr = tmp.end;
-                    scope.catchVars.remove(scope.catchVars.size() - 1);
-
-                    if (tmp.hasFinally) {
-                        tmp.state = TryCtx.STATE_FINALLY_JUMPED;
-                        codePtr = tmp.finallyStart;
-                    }
-                    else codePtr = tmp.jumpPtr;
-                    remove = !tmp.hasFinally;
-                }
-            }
-            else if (codePtr < tmp.finallyStart || codePtr >= tmp.end) {
-                if (!jumpFlag) {
-                    if (tmp.state == TryCtx.STATE_FINALLY_THREW) throw tmp.err;
-                    else if (tmp.state == TryCtx.STATE_FINALLY_RETURNED) return tmp.retVal;
-                    else if (tmp.state == TryCtx.STATE_FINALLY_JUMPED) codePtr = tmp.jumpPtr;
-                }
-                else codePtr = tmp.jumpPtr;
-                remove = true;
-            }
-
-            if (remove) tryStack.remove(tryStack.size() - 1);
-            else {
-                tryCtx = tmp;
-                break;
-            }
+        if (returnValue == Runners.NO_RETURN && error == null) {
+            try { returnValue = nextNoTry(ctx); }
+            catch (EngineException e) { error = e; }
         }
 
-        if (prevError != Runners.NO_RETURN) throw new EngineException(prevError);
-        if (prevReturn != Runners.NO_RETURN) return prevReturn;
+        while (!tryStack.empty()) {
+            var tryCtx = tryStack.peek();
+            var newState = -1;
 
-        if (tryCtx == null) return nextNoTry(ctx);
-        else if (tryCtx.state == TryCtx.STATE_TRY) {
-            try {
-                var res = nextNoTry(ctx);
-                if (res != Runners.NO_RETURN && tryCtx.hasFinally) {
-                    tryCtx.retVal = res;
-                    tryCtx.state = TryCtx.STATE_FINALLY_RETURNED;
-                }
+            switch (tryCtx.state) {
+                case TryCtx.STATE_TRY:
+                    if (error != null) {
+                        if (tryCtx.hasCatch) {
+                            tryCtx.err = error;
+                            newState = TryCtx.STATE_CATCH;
+                        }
+                        else if (tryCtx.hasFinally) {
+                            tryCtx.err = error;
+                            newState = TryCtx.STATE_FINALLY_THREW;
+                        }
+                        break;
+                    }
+                    else if (returnValue != Runners.NO_RETURN) {
+                        if (tryCtx.hasFinally) {
+                            tryCtx.retVal = error;
+                            newState = TryCtx.STATE_FINALLY_RETURNED;
+                        }
+                        break;
+                    }
+                    else if (codePtr >= tryCtx.tryStart && codePtr < tryCtx.catchStart) return Runners.NO_RETURN;
 
-                else return res;
+                    if (tryCtx.hasFinally) {
+                        if (jumpFlag) tryCtx.jumpPtr = codePtr;
+                        else tryCtx.jumpPtr = tryCtx.end;
+                        newState = TryCtx.STATE_FINALLY_JUMPED;
+                    }
+                    else codePtr = tryCtx.end;
+                    break;
+                case TryCtx.STATE_CATCH:
+                    if (error != null) {
+                        if (tryCtx.hasFinally) {
+                            tryCtx.err = error;
+                            newState = TryCtx.STATE_FINALLY_THREW;
+                        }
+                        break;
+                    }
+                    else if (returnValue != Runners.NO_RETURN) {
+                        if (tryCtx.hasFinally) {
+                            tryCtx.retVal = returnValue;
+                            newState = TryCtx.STATE_FINALLY_RETURNED;
+                        }
+                        break;
+                    }
+                    else if (codePtr >= tryCtx.catchStart && codePtr < tryCtx.finallyStart) return Runners.NO_RETURN;
+
+                    if (tryCtx.hasFinally) {
+                        if (jumpFlag) tryCtx.jumpPtr = codePtr;
+                        else tryCtx.jumpPtr = tryCtx.end;
+                        newState = TryCtx.STATE_FINALLY_JUMPED;
+                    }
+                    else codePtr = tryCtx.end;
+                    break;
+                case TryCtx.STATE_FINALLY_THREW:
+                    if (error != null) setCause(ctx, error, tryCtx.err);
+                    else if (codePtr < tryCtx.finallyStart || codePtr >= tryCtx.end) error = tryCtx.err;
+                    else return Runners.NO_RETURN;
+                    break;
+                case TryCtx.STATE_FINALLY_RETURNED:
+                    if (returnValue == Runners.NO_RETURN) {
+                        if (codePtr < tryCtx.finallyStart || codePtr >= tryCtx.end) returnValue = tryCtx.retVal;
+                        else return Runners.NO_RETURN;
+                    }
+                    break;
+                case TryCtx.STATE_FINALLY_JUMPED:
+                    if (codePtr < tryCtx.finallyStart || codePtr >= tryCtx.end) {
+                        if (!jumpFlag) codePtr = tryCtx.jumpPtr;
+                        else codePtr = tryCtx.end;
+                    }
+                    else return Runners.NO_RETURN;
+                    break;
             }
-            catch (EngineException e) {
-                if (tryCtx.hasCatch) {
-                    tryCtx.state = TryCtx.STATE_CATCH;
-                    tryCtx.err = e;
+
+            if (tryCtx.state == TryCtx.STATE_CATCH) scope.catchVars.remove(scope.catchVars.size() - 1);
+
+            if (newState == -1) {
+                tryStack.pop();
+                continue;
+            }
+
+            tryCtx.state = newState;
+            switch (newState) {
+                case TryCtx.STATE_CATCH:
+                    scope.catchVars.add(new ValueVariable(false, tryCtx.err.value));
                     codePtr = tryCtx.catchStart;
-                    scope.catchVars.add(new ValueVariable(false, e.value));
-                    return Runners.NO_RETURN;
-                }
-                else if (tryCtx.hasFinally) {
-                    tryCtx.err = e;
-                    tryCtx.state = TryCtx.STATE_FINALLY_THREW;
-                }
-                else throw e;
+                    break;
+                default:
+                    codePtr = tryCtx.finallyStart;
             }
 
-            codePtr = tryCtx.finallyStart;
             return Runners.NO_RETURN;
         }
-        else if (tryCtx.state == TryCtx.STATE_CATCH) {
-            try {
-                var res = nextNoTry(ctx);
-                if (res != Runners.NO_RETURN && tryCtx.hasFinally) {
-                    tryCtx.retVal = res;
-                    tryCtx.state = TryCtx.STATE_FINALLY_RETURNED;
-                }
-                else return res;
-            }
-            catch (EngineException e) {
-                e.cause = tryCtx.err;
-                if (tryCtx.hasFinally) {
-                    tryCtx.err = e;
-                    tryCtx.state = TryCtx.STATE_FINALLY_THREW;
-                }
-                else throw e;
-            }
-
-            codePtr = tryCtx.finallyStart;
-            return Runners.NO_RETURN;
-        }
-        else if (tryCtx.state == TryCtx.STATE_FINALLY_THREW) {
-            try {
-                return nextNoTry(ctx);
-            }
-            catch (EngineException e) {
-                e.cause = tryCtx.err;
-                throw e;
-            }
-        }
-        else return nextNoTry(ctx);
+    
+        if (error != null) throw error.setContext(ctx);
+        if (returnValue != Runners.NO_RETURN) return returnValue;
+        return Runners.NO_RETURN;
     }
 
     public Object run(Context ctx) throws InterruptedException {
         try {
-            ctx.message.pushFrame(this);
+            ctx.message.pushFrame(ctx, this);
             while (true) {
-                var res = next(ctx, Runners.NO_RETURN, Runners.NO_RETURN);
+                var res = next(ctx, Runners.NO_RETURN, Runners.NO_RETURN, null);
                 if (res != Runners.NO_RETURN) return res;
             }
         }

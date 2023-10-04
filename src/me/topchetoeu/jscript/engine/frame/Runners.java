@@ -26,7 +26,7 @@ public class Runners {
     public static Object execThrow(Context ctx, Instruction instr, CodeFrame frame) {
         throw new EngineException(frame.pop());
     }
-    public static Object execThrowSyntax(Context ctx, Instruction instr, CodeFrame frame) {
+    public static Object execThrowSyntax(Context ctx, Instruction instr, CodeFrame frame) throws InterruptedException {
         throw EngineException.ofSyntax((String)instr.get(0));
     }
 
@@ -48,16 +48,18 @@ public class Runners {
         var callArgs = frame.take(instr.get(0));
         var funcObj = frame.pop();
 
-        if (Values.isFunction(funcObj) && Values.function(funcObj).special) {
-            frame.push(ctx, call(ctx, funcObj, null, callArgs));
-        }
-        else {
-            var proto = Values.getMember(ctx, funcObj, "prototype");
-            var obj = new ObjectValue();
-            obj.setPrototype(ctx, proto);
-            call(ctx, funcObj, obj, callArgs);
-            frame.push(ctx, obj);
-        }
+        frame.push(ctx, Values.callNew(ctx, funcObj, callArgs));
+
+        // if (Values.isFunction(funcObj) && Values.function(funcObj).special) {
+        //     frame.push(ctx, call(ctx, funcObj, null, callArgs));
+        // }
+        // else {
+        //     var proto = Values.getMember(ctx, funcObj, "prototype");
+        //     var obj = new ObjectValue();
+        //     obj.setPrototype(ctx, proto);
+        //     call(ctx, funcObj, obj, callArgs);
+        //     frame.push(ctx, obj);
+        // }
 
         frame.codePtr++;
         return NO_RETURN;
@@ -65,7 +67,7 @@ public class Runners {
 
     public static Object execMakeVar(Context ctx, Instruction instr, CodeFrame frame) throws InterruptedException {
         var name = (String)instr.get(0);
-        ctx.function.global.define(name);
+        ctx.env.global.define(name);
         frame.codePtr++;
         return NO_RETURN;
     }
@@ -160,7 +162,7 @@ public class Runners {
     public static Object execLoadVar(Context ctx, Instruction instr, CodeFrame frame) throws InterruptedException {
         var i = instr.get(0);
 
-        if (i instanceof String) frame.push(ctx, ctx.function.global.get(ctx, (String)i));
+        if (i instanceof String) frame.push(ctx, ctx.env.global.get(ctx, (String)i));
         else frame.push(ctx, frame.scope.get((int)i).get(ctx));
 
         frame.codePtr++;
@@ -172,7 +174,7 @@ public class Runners {
         return NO_RETURN;
     }
     public static Object execLoadGlob(Context ctx, Instruction instr, CodeFrame frame) {
-        frame.push(ctx, ctx.function.global.obj);
+        frame.push(ctx, ctx.env.global.obj);
         frame.codePtr++;
         return NO_RETURN;
     }
@@ -198,7 +200,7 @@ public class Runners {
         var body = new Instruction[end - start];
         System.arraycopy(frame.function.body, start, body, 0, end - start);
 
-        var func = new CodeFunction(ctx.function, "", localsN, len, captures, body);
+        var func = new CodeFunction(ctx.env, "", localsN, len, captures, body);
         frame.push(ctx, func);
 
         frame.codePtr += n;
@@ -222,7 +224,7 @@ public class Runners {
         return execLoadMember(ctx, instr, frame);
     }
     public static Object execLoadRegEx(Context ctx, Instruction instr, CodeFrame frame) throws InterruptedException {
-        frame.push(ctx, ctx.function.regexConstructor.call(ctx, null, instr.get(0), instr.get(1)));
+        frame.push(ctx, ctx.env.regexConstructor.call(ctx, null, instr.get(0), instr.get(1)));
         frame.codePtr++;
         return NO_RETURN;
     }
@@ -246,7 +248,7 @@ public class Runners {
         var val = (boolean)instr.get(1) ? frame.peek() : frame.pop();
         var i = instr.get(0);
 
-        if (i instanceof String) ctx.function.global.set(ctx, (String)i, val);
+        if (i instanceof String) ctx.env.global.set(ctx, (String)i, val);
         else frame.scope.get((int)i).set(ctx, val);
 
         frame.codePtr++;
@@ -293,8 +295,8 @@ public class Runners {
         Object obj;
 
         if (name != null) {
-            if (ctx.function.global.has(ctx, name)) {
-                obj = ctx.function.global.get(ctx, name);
+            if (ctx.env.global.has(ctx, name)) {
+                obj = ctx.env.global.get(ctx, name);
             }
             else obj = null;
         }
@@ -305,7 +307,7 @@ public class Runners {
         frame.codePtr++;
         return NO_RETURN;
     }
-    public static Object execNop(Context ctx, Instruction instr, CodeFrame frame) {
+    public static Object execNop(Context ctx, Instruction instr, CodeFrame frame) throws InterruptedException {
         if (instr.is(0, "dbg_names")) {
             var names = new String[instr.params.length - 1];
             for (var i = 0; i < instr.params.length - 1; i++) {

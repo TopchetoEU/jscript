@@ -5,21 +5,23 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 
+import me.topchetoeu.jscript.Location;
 import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
 import me.topchetoeu.jscript.engine.values.Values;
+import me.topchetoeu.jscript.exceptions.ConvertException;
 import me.topchetoeu.jscript.exceptions.EngineException;
 
 public class OverloadFunction extends FunctionValue {
     public final List<Overload> overloads = new ArrayList<>();
 
     public Object call(Context ctx, Object thisArg, Object ...args) throws InterruptedException {
-        for (var overload : overloads) {
-            boolean consumesEngine = overload.params.length > 0 && overload.params[0] == Context.class;
-            int start = consumesEngine ? 1 : 0;
-            int end = overload.params.length - (overload.variadic ? 1 : 0);
-
+        loop: for (var overload : overloads) {
             Object[] newArgs = new Object[overload.params.length];
+
+            boolean consumesEngine = overload.params.length > 0 && overload.params[0] == Context.class;
+            int start = (consumesEngine ? 1 : 0) + (overload.passThis ? 1 : 0);
+            int end = overload.params.length - (overload.variadic ? 1 : 0);
 
             for (var i = start; i < end; i++) {
                 Object val;
@@ -27,7 +29,13 @@ public class OverloadFunction extends FunctionValue {
                 if (i - start >= args.length) val = null;
                 else val = args[i - start];
 
-                newArgs[i] = Values.convert(ctx, val, overload.params[i]);
+                try {
+                    newArgs[i] = Values.convert(ctx, val, overload.params[i]);
+                }
+                catch (ConvertException e) {
+                    if (overloads.size() > 1) continue loop;
+                    else throw EngineException.ofType(String.format("Argument %d can't be converted from %s to %s", i - start, e.source, e.target));
+                }
             }
 
             if (overload.variadic) {
@@ -36,15 +44,34 @@ public class OverloadFunction extends FunctionValue {
                 Object varArg = Array.newInstance(type, n);
 
                 for (var i = 0; i < n; i++) {
-                    Array.set(varArg, i, Values.convert(ctx, args[i + end - start], type));
+                    try {
+                        Array.set(varArg, i, Values.convert(ctx, args[i + end - start], type));
+                    }
+                    catch (ConvertException e) {
+                        if (overloads.size() > 1) continue loop;
+                        else throw EngineException.ofType(String.format("Element in variadic argument can't be converted from %s to %s", e.source, e.target));
+                    }
                 }
 
                 newArgs[newArgs.length - 1] = varArg;
             }
 
-            if (consumesEngine) newArgs[0] = ctx;
+            var thisArgType = overload.passThis ? overload.params[consumesEngine ? 1 : 0] : overload.thisArg;
+            Object _this;
 
-            Object _this = overload.thisArg == null ? null : Values.convert(ctx, thisArg, overload.thisArg);
+            try {
+                _this = thisArgType == null ? null : Values.convert(ctx, thisArg, thisArgType);
+            }
+            catch (ConvertException e) {
+                if (overloads.size() > 1) continue loop;
+                else throw EngineException.ofType(String.format("This argument can't be converted from %s to %s", e.source, e.target));
+            }
+
+            if (consumesEngine) newArgs[0] = ctx;
+            if (overload.passThis) {
+                newArgs[consumesEngine ? 1 : 0] = _this;
+                _this = null;
+            }
 
             try {
                 return Values.normalize(ctx, overload.runner.run(ctx, _this, newArgs));
@@ -56,15 +83,19 @@ public class OverloadFunction extends FunctionValue {
                 continue;
             }
             catch (InvocationTargetException e) {
+                var loc = new Location(0, 0, "<internal>");
                 if (e.getTargetException() instanceof EngineException) {
-                    throw ((EngineException)e.getTargetException());
+                    throw ((EngineException)e.getTargetException()).add(name, loc);
+                }
+                else if (e.getTargetException() instanceof NullPointerException) {
+                    throw EngineException.ofType("Unexpected value of 'undefined'.").add(name, loc);
                 }
                 else {
-                    throw EngineException.ofError(e.getTargetException().getMessage());
+                    throw EngineException.ofError(e.getTargetException().getMessage()).add(name, loc);
                 }
             }
             catch (ReflectiveOperationException e) {
-                throw EngineException.ofError(e.getMessage());
+                throw EngineException.ofError(e.getMessage()).add(name, new Location(0, 0, "<internal>"));
             }
             catch (Exception e) {
                 throw e;
@@ -81,5 +112,10 @@ public class OverloadFunction extends FunctionValue {
 
     public OverloadFunction(String name) {
         super(name, 0);
+    }
+
+    public static OverloadFunction of(String name, Overload overload) {
+        if (overload == null) return null;
+        else return new OverloadFunction(name).add(overload);
     }
 }

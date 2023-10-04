@@ -7,21 +7,20 @@ import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import me.topchetoeu.jscript.engine.MessageContext;
-import me.topchetoeu.jscript.engine.Context;
+import me.topchetoeu.jscript.engine.Message;
 import me.topchetoeu.jscript.engine.Engine;
-import me.topchetoeu.jscript.engine.FunctionContext;
+import me.topchetoeu.jscript.engine.Environment;
+import me.topchetoeu.jscript.engine.values.NativeFunction;
 import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.events.Observer;
 import me.topchetoeu.jscript.exceptions.EngineException;
 import me.topchetoeu.jscript.exceptions.SyntaxException;
-import me.topchetoeu.jscript.interop.NativeTypeRegister;
 import me.topchetoeu.jscript.polyfills.Internals;
 
 public class Main {
     static Thread task;
     static Engine engine;
-    static FunctionContext env;
+    static Environment env;
 
     public static String streamToString(InputStream in) {
         try {
@@ -47,37 +46,14 @@ public class Main {
 
     private static Observer<Object> valuePrinter = new Observer<Object>() {
         public void next(Object data) {
-            try {
-                Values.printValue(null, data);
-            }
+            try { Values.printValue(null, data); }
             catch (InterruptedException e) { }
             System.out.println();
         }
 
         public void error(RuntimeException err) {
-            try {
-                try {
-                    if (err instanceof EngineException) {
-                        System.out.println("Uncaught " + ((EngineException)err).toString(new Context(null, new MessageContext(engine))));
-                    }
-                    else if (err instanceof SyntaxException) {
-                        System.out.println("Syntax error:" + ((SyntaxException)err).msg);
-                    }
-                    else if (err.getCause() instanceof InterruptedException) return;
-                    else {
-                        System.out.println("Internal error ocurred:");
-                        err.printStackTrace();
-                    }
-                }
-                catch (EngineException ex) {
-                    System.out.println("Uncaught ");
-                    Values.printValue(null, ((EngineException)err).value);
-                    System.out.println();
-                }
-            }
-            catch (InterruptedException ex) {
-                return;
-            }
+            try { Values.printError(err, null); }
+            catch (InterruptedException ex) { return; }
         }
     };
 
@@ -85,26 +61,30 @@ public class Main {
         System.out.println(String.format("Running %s v%s by %s", Metadata.NAME, Metadata.VERSION, Metadata.AUTHOR));
         var in = new BufferedReader(new InputStreamReader(System.in));
         engine = new Engine();
-        env = new FunctionContext(null, null, null);
-        var builderEnv = new FunctionContext(null, new NativeTypeRegister(), null);
+
+        env = new Environment(null, null, null);
         var exited = new boolean[1];
 
-        env.global.define("exit", ctx -> {
-            exited[0] = true;
-            task.interrupt();
-            throw new InterruptedException();
-        });
-        env.global.define("go", ctx -> {
-            try {
-                var func = ctx.compile("do.js", new String(Files.readAllBytes(Path.of("do.js"))));
-                return func.call(ctx);
-            }
-            catch (IOException e) {
-                throw new EngineException("Couldn't open do.js");
-            }
-        });
+        engine.pushMsg(false, new Message(engine), new NativeFunction((ctx, thisArg, _a) -> {
+            new Internals().apply(env);
 
-        engine.pushMsg(false, new Context(builderEnv, new MessageContext(engine)), "core.js", resourceToString("js/core.js"), null, env, new Internals()).toObservable().on(valuePrinter);
+            env.global.define("exit", _ctx -> {
+                exited[0] = true;
+                task.interrupt();
+                throw new InterruptedException();
+            });
+            env.global.define("go", _ctx -> {
+                try {
+                    var func = _ctx.compile("do.js", new String(Files.readAllBytes(Path.of("do.js"))));
+                    return func.call(_ctx);
+                }
+                catch (IOException e) {
+                    throw new EngineException("Couldn't open do.js");
+                }
+            });
+
+            return null;
+        }), null);
 
         task = engine.start();
         var reader = new Thread(() -> {
@@ -114,7 +94,7 @@ public class Main {
                         var raw = in.readLine();
 
                         if (raw == null) break;
-                        engine.pushMsg(false, new Context(env, new MessageContext(engine)), "<stdio>", raw, null).toObservable().once(valuePrinter);
+                        engine.pushMsg(false, env.context(new Message(engine)), "<stdio>", raw, null).toObservable().once(valuePrinter);
                     }
                     catch (EngineException e) {
                         try {

@@ -9,7 +9,8 @@ public class LocalScope {
     public final ArrayList<ValueVariable> catchVars = new ArrayList<>();
 
     public ValueVariable get(int i) {
-        if (i >= locals.length) return catchVars.get(i - locals.length);
+        if (i >= locals.length)
+            return catchVars.get(i - locals.length);
         if (i >= 0) return locals[i];
         else return captures[~i];
     }

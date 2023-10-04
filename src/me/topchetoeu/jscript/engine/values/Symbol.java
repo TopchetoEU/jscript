@@ -10,6 +10,6 @@ public final class Symbol {
     @Override
     public String toString() {
         if (value == null) return "Symbol";
-        else return "Symbol(" + value + ")";
+        else return "@@" + value;
     }
 }
