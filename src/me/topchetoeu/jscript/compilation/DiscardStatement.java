@@ -10,13 +10,9 @@ public class DiscardStatement extends Statement {
     public final Statement value;
 
     @Override
-    public boolean pollutesStack() { return false; }
-
-    @Override
-    public void compile(List<Instruction> target, ScopeRecord scope) {
-        if (value == null) return;
-        value.compile(target, scope);
-        if (value.pollutesStack()) target.add(Instruction.discard());
+    public void compile(List<Instruction> target, ScopeRecord scope, boolean pollute) {
+        value.compile(target, scope, false);
+        
     }
     @Override
     public Statement optimize() {

@@ -15,42 +15,40 @@ public class IfStatement extends Statement {
     public final Statement condition, body, elseBody;
 
     @Override
-    public boolean pollutesStack() { return false; }
-
-    @Override
     public void declare(ScopeRecord globScope) {
         body.declare(globScope);
         if (elseBody != null) elseBody.declare(globScope);
     }
 
     @Override
-    public void compile(List<Instruction> target, ScopeRecord scope) {
+    public void compile(List<Instruction> target, ScopeRecord scope, boolean pollute) {
         if (condition instanceof ConstantStatement) {
             if (Values.not(((ConstantStatement)condition).value)) {
-                if (elseBody != null) elseBody.compileNoPollution(target, scope, true);
+                if (elseBody != null) elseBody.compileWithDebug(target, scope, pollute);
             }
             else {
-                body.compileNoPollution(target, scope, true);
+                body.compileWithDebug(target, scope, pollute);
             }
 
             return;
         }
 
-        condition.compileWithPollution(target, scope);
+        condition.compile(target, scope, true);
+
         if (elseBody == null) {
             int i = target.size();
             target.add(Instruction.nop());
-            body.compileNoPollution(target, scope, true);
+            body.compileWithDebug(target, scope, pollute);
             int endI = target.size();
             target.set(i, Instruction.jmpIfNot(endI - i).locate(loc()));
         }
         else {
             int start = target.size();
             target.add(Instruction.nop());
-            body.compileNoPollution(target, scope, true);
+            body.compileWithDebug(target, scope, pollute);
             target.add(Instruction.nop());
             int mid = target.size();
-            elseBody.compileNoPollution(target, scope, true);
+            elseBody.compileWithDebug(target, scope, pollute);
             int end = target.size();
 
             target.set(start, Instruction.jmpIfNot(mid - start).locate(loc()));

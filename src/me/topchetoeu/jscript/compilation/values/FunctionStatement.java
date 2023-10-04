@@ -17,8 +17,6 @@ public class FunctionStatement extends Statement {
 
     @Override
     public boolean pure() { return name == null; }
-    @Override
-    public boolean pollutesStack() { return true; }
 
     @Override
     public void declare(ScopeRecord scope) {
@@ -69,7 +67,7 @@ public class FunctionStatement extends Statement {
 
         body.declare(subscope);
         target.add(Instruction.debugVarNames(subscope.locals()));
-        body.compile(target, subscope);
+        body.compile(target, subscope, false);
 
         checkBreakAndCont(target, start);
 
@@ -90,12 +88,13 @@ public class FunctionStatement extends Statement {
             var key = scope.getKey(this.name);
 
             if (key instanceof String) target.add(Instruction.makeVar((String)key).locate(loc()));
-            target.add(Instruction.storeVar(scope.getKey(this.name), true).locate(loc()));
+            target.add(Instruction.storeVar(scope.getKey(this.name), false).locate(loc()));
         }
     }
     @Override
-    public void compile(List<Instruction> target, ScopeRecord scope) {
+    public void compile(List<Instruction> target, ScopeRecord scope, boolean pollute) {
         compile(target, scope, null, false);
+        if (!pollute) target.add(Instruction.discard().locate(loc()));
     }
 
     public FunctionStatement(Location loc, String name, String[] args, CompoundStatement body) {

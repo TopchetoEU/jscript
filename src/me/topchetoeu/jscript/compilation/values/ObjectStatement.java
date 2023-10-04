@@ -15,10 +15,7 @@ public class ObjectStatement extends Statement {
     public final Map<Object, FunctionStatement> setters;
 
     @Override
-    public boolean pollutesStack() { return true; }
-
-    @Override
-    public void compile(List<Instruction> target, ScopeRecord scope) {
+    public void compile(List<Instruction> target, ScopeRecord scope, boolean pollute) {
         target.add(Instruction.loadObj().locate(loc()));
 
         for (var el : map.entrySet()) {
@@ -26,7 +23,7 @@ public class ObjectStatement extends Statement {
             target.add(Instruction.loadValue(el.getKey()).locate(loc()));
             var val = el.getValue();
             if (val instanceof FunctionStatement) ((FunctionStatement)val).compile(target, scope, el.getKey().toString(), false);
-            else val.compileWithPollution(target, scope);
+            else val.compile(target, scope, true);
             target.add(Instruction.storeMember().locate(loc()));
         }
 
@@ -38,14 +35,16 @@ public class ObjectStatement extends Statement {
             if (key instanceof String) target.add(Instruction.loadValue((String)key).locate(loc()));
             else target.add(Instruction.loadValue((Double)key).locate(loc()));
 
-            if (getters.containsKey(key)) getters.get(key).compileWithPollution(target, scope);
+            if (getters.containsKey(key)) getters.get(key).compile(target, scope, true);
             else target.add(Instruction.loadValue(null).locate(loc()));
 
-            if (setters.containsKey(key)) setters.get(key).compileWithPollution(target, scope);
+            if (setters.containsKey(key)) setters.get(key).compile(target, scope, true);
             else target.add(Instruction.loadValue(null).locate(loc()));
 
             target.add(Instruction.defProp().locate(loc()));
         }
+
+        if (!pollute) target.add(Instruction.discard().locate(loc()));
     }
 
     public ObjectStatement(Location loc, Map<Object, Statement> map, Map<Object, FunctionStatement> getters, Map<Object, FunctionStatement> setters) {

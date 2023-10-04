@@ -16,15 +16,15 @@ public class OperationStatement extends Statement {
     public final Operation operation;
 
     @Override
-    public void compile(List<Instruction> target, ScopeRecord scope) {
+    public void compile(List<Instruction> target, ScopeRecord scope, boolean pollute) {
         for (var arg : args) {
-            arg.compileWithPollution(target, scope);
+            arg.compile(target, scope, true);
         }
-        target.add(Instruction.operation(operation).locate(loc()));
+
+        if (pollute) target.add(Instruction.operation(operation).locate(loc()));
+        else target.add(Instruction.discard().locate(loc()));
     }
 
-    @Override
-    public boolean pollutesStack() { return true; }
     @Override
     public boolean pure() {
         for (var arg : args) {

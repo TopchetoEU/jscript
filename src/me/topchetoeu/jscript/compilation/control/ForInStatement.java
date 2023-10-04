@@ -15,25 +15,22 @@ public class ForInStatement extends Statement {
     public final String label;
 
     @Override
-    public boolean pollutesStack() { return false; }
-
-    @Override
     public void declare(ScopeRecord globScope) {
         body.declare(globScope);
         if (isDeclaration) globScope.define(varName);
     }
 
     @Override
-    public void compile(List<Instruction> target, ScopeRecord scope) {
+    public void compile(List<Instruction> target, ScopeRecord scope, boolean pollute) {
         var key = scope.getKey(varName);
         if (key instanceof String) target.add(Instruction.makeVar((String)key));
 
         if (varValue != null) {
-            varValue.compileWithPollution(target, scope);
+            varValue.compile(target, scope, true);
             target.add(Instruction.storeVar(scope.getKey(varName)));
         }
 
-        object.compileWithPollution(target, scope);
+        object.compile(target, scope, true);
         target.add(Instruction.keys());
         
         int start = target.size();
@@ -58,8 +55,7 @@ public class ForInStatement extends Statement {
 
         for (var i = start; i < target.size(); i++) target.get(i).locate(loc());
 
-        body.compileNoPollution(target, scope, true);
-
+        body.compileWithDebug(target, scope, false);
 
         int end = target.size();
 
@@ -68,6 +64,7 @@ public class ForInStatement extends Statement {
         target.add(Instruction.jmp(start - end).locate(loc()));
         target.add(Instruction.discard().locate(loc()));
         target.set(mid, Instruction.jmpIf(end - mid + 1).locate(loc()));
+        if (pollute) target.add(Instruction.loadValue(null).locate(loc()));
     }
 
     public ForInStatement(Location loc, String label, boolean isDecl, String varName, Statement varValue, Statement object, Statement body) {

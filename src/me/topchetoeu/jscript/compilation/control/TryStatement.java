@@ -16,9 +16,6 @@ public class TryStatement extends Statement {
     public final String name;
 
     @Override
-    public boolean pollutesStack() { return false; }
-
-    @Override
     public void declare(ScopeRecord globScope) {
         tryBody.declare(globScope);
         if (catchBody != null) catchBody.declare(globScope);
@@ -26,30 +23,31 @@ public class TryStatement extends Statement {
     }
 
     @Override
-    public void compile(List<Instruction> target, ScopeRecord scope) {
+    public void compile(List<Instruction> target, ScopeRecord scope, boolean pollute) {
         target.add(Instruction.nop());
 
         int start = target.size(), tryN, catchN = -1, finN = -1;
 
-        tryBody.compileNoPollution(target, scope);
+        tryBody.compile(target, scope, false);
         tryN = target.size() - start;
 
         if (catchBody != null) {
             int tmp = target.size();
             var local = scope instanceof GlobalScope ? scope.child() : (LocalScopeRecord)scope;
             local.define(name, true);
-            catchBody.compileNoPollution(target, scope);
+            catchBody.compile(target, scope, false);
             local.undefine();
             catchN = target.size() - tmp;
         }
 
         if (finallyBody != null) {
             int tmp = target.size();
-            finallyBody.compileNoPollution(target, scope);
+            finallyBody.compile(target, scope, false);
             finN = target.size() - tmp;
         }
 
         target.set(start - 1, Instruction.tryInstr(tryN, catchN, finN).locate(loc()));
+        if (pollute) target.add(Instruction.loadValue(null).locate(loc()));
     }
 
     public TryStatement(Location loc, Statement tryBody, Statement catchBody, Statement finallyBody, String name) {

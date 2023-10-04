@@ -11,12 +11,9 @@ public class VoidStatement extends Statement {
     public final Statement value;
 
     @Override
-    public boolean pollutesStack() { return true; }
-
-    @Override
-    public void compile(List<Instruction> target, ScopeRecord scope) {
-        if (value != null) value.compileNoPollution(target, scope);
-        target.add(Instruction.loadValue(null).locate(loc()));
+    public void compile(List<Instruction> target, ScopeRecord scope, boolean pollute) {
+        if (value != null) value.compile(target, scope, false);
+        if (pollute) target.add(Instruction.loadValue(null).locate(loc()));
     }
 
     @Override

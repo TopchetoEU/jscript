@@ -17,18 +17,15 @@ public class WhileStatement extends Statement {
     public final String label;
 
     @Override
-    public boolean pollutesStack() { return false; }
-
-    @Override
     public void declare(ScopeRecord globScope) {
         body.declare(globScope);
     }
     @Override
-    public void compile(List<Instruction> target, ScopeRecord scope) {
+    public void compile(List<Instruction> target, ScopeRecord scope, boolean pollute) {
         if (condition instanceof ConstantStatement) {
             if (Values.toBoolean(((ConstantStatement)condition).value)) {
                 int start = target.size();
-                body.compileNoPollution(target, scope);
+                body.compile(target, scope, false);
                 int end = target.size();
                 replaceBreaks(target, label, start, end, start, end + 1);
                 target.add(Instruction.jmp(start - target.size()).locate(loc()));
@@ -37,10 +34,10 @@ public class WhileStatement extends Statement {
         }
 
         int start = target.size();
-        condition.compileWithPollution(target, scope);
+        condition.compile(target, scope, true);
         int mid = target.size();
         target.add(Instruction.nop());
-        body.compileNoPollution(target, scope);
+        body.compile(target, scope, false);
 
         int end = target.size();
 
@@ -48,6 +45,7 @@ public class WhileStatement extends Statement {
 
         target.add(Instruction.jmp(start - end).locate(loc()));
         target.set(mid, Instruction.jmpIfNot(end - mid + 1).locate(loc()));
+        if (pollute) target.add(Instruction.loadValue(null).locate(loc()));
     }
     @Override
     public Statement optimize() {

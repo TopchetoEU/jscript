@@ -9,11 +9,9 @@ import me.topchetoeu.jscript.engine.scope.ScopeRecord;
 
 public class DebugStatement extends Statement {
     @Override
-    public boolean pollutesStack() { return false; }
-
-    @Override
-    public void compile(List<Instruction> target, ScopeRecord scope) {
+    public void compile(List<Instruction> target, ScopeRecord scope, boolean pollute) {
         target.add(Instruction.debug().locate(loc()));
+        if (pollute) target.add(Instruction.loadValue(null).locate(loc()));
     }
 
     public DebugStatement(Location loc) {

@@ -11,12 +11,9 @@ public class ReturnStatement extends Statement {
     public final Statement value;
 
     @Override
-    public boolean pollutesStack() { return false; }
-
-    @Override
-    public void compile(List<Instruction> target, ScopeRecord scope) {
+    public void compile(List<Instruction> target, ScopeRecord scope, boolean pollute) {
         if (value == null) target.add(Instruction.loadValue(null).locate(loc()));
-        else value.compileWithPollution(target, scope);
+        else value.compile(target, scope, true);
         target.add(Instruction.ret().locate(loc()));
     }
 

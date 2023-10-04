@@ -21,9 +21,6 @@ public class SwitchStatement extends Statement {
         }
     }
 
-    @Override
-    public boolean pollutesStack() { return false; }
-
     public final Statement value;
     public final SwitchCase[] cases;
     public final Statement[] body;
@@ -35,15 +32,15 @@ public class SwitchStatement extends Statement {
     }
 
     @Override
-    public void compile(List<Instruction> target, ScopeRecord scope) {
+    public void compile(List<Instruction> target, ScopeRecord scope, boolean pollute) {
         var caseMap = new HashMap<Integer, Integer>();
         var stmIndexMap = new HashMap<Integer, Integer>();
 
-        value.compile(target, scope);
+        value.compile(target, scope, true);
 
         for (var ccase : cases) {
             target.add(Instruction.dup().locate(loc()));
-            ccase.value.compileWithPollution(target, scope);
+            ccase.value.compile(target, scope, true);
             target.add(Instruction.operation(Operation.EQUALS).locate(loc()));
             caseMap.put(target.size(), ccase.statementI);
             target.add(Instruction.nop());
@@ -55,7 +52,7 @@ public class SwitchStatement extends Statement {
 
         for (var stm : body) {
             stmIndexMap.put(stmIndexMap.size(), target.size());
-            stm.compileNoPollution(target, scope, true);
+            stm.compileWithDebug(target, scope, false);
         }
 
         if (defaultI < 0 || defaultI >= body.length) target.set(start, Instruction.jmp(target.size() - start).locate(loc()));

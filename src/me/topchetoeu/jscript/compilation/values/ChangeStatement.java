@@ -15,11 +15,9 @@ public class ChangeStatement extends Statement {
     public final boolean postfix;
 
     @Override
-    public boolean pollutesStack() { return true; }
-
-    @Override
-    public void compile(List<Instruction> target, ScopeRecord scope) {
+    public void compile(List<Instruction> target, ScopeRecord scope, boolean pollute) {
         value.toAssign(new ConstantStatement(loc(), -addAmount), Operation.SUBTRACT).compile(target, scope, postfix);
+        if (!pollute) target.add(Instruction.discard().locate(loc()));
     }
 
     public ChangeStatement(Location loc, AssignableStatement value, double addAmount, boolean postfix) {

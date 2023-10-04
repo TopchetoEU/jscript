@@ -3,7 +3,6 @@ package me.topchetoeu.jscript.compilation.values;
 import java.util.List;
 
 import me.topchetoeu.jscript.Location;
-import me.topchetoeu.jscript.compilation.AssignStatement;
 import me.topchetoeu.jscript.compilation.AssignableStatement;
 import me.topchetoeu.jscript.compilation.Instruction;
 import me.topchetoeu.jscript.compilation.Statement;
@@ -15,30 +14,29 @@ public class IndexStatement extends AssignableStatement {
     public final Statement index;
 
     @Override
-    public boolean pollutesStack() { return true; }
-    @Override
     public boolean pure() { return true; }
 
     @Override
-    public AssignStatement toAssign(Statement val, Operation operation) {
+    public Statement toAssign(Statement val, Operation operation) {
         return new IndexAssignStatement(loc(), object, index, val, operation);
     }
-    public void compile(List<Instruction> target, ScopeRecord scope, boolean dupObj) {
+    public void compile(List<Instruction> target, ScopeRecord scope, boolean dupObj, boolean pollute) {
         int start = 0;
-        object.compileWithPollution(target, scope);
+        object.compile(target, scope, true);
         if (dupObj) target.add(Instruction.dup().locate(loc()));
         if (index instanceof ConstantStatement) {
             target.add(Instruction.loadMember(((ConstantStatement)index).value).locate(loc()));
             return;
         }
 
-        index.compileWithPollution(target, scope);
+        index.compile(target, scope, true);
         target.add(Instruction.loadMember().locate(loc()));
         target.get(start).setDebug(true);
+        if (!pollute) target.add(Instruction.discard().locate(loc()));
     }
     @Override
-    public void compile(List<Instruction> target, ScopeRecord scope) {
-        compile(target, scope, false);
+    public void compile(List<Instruction> target, ScopeRecord scope, boolean pollute) {
+        compile(target, scope, false, pollute);
     }
 
     public IndexStatement(Location loc, Statement object, Statement index) {

@@ -3,7 +3,6 @@ package me.topchetoeu.jscript.compilation.values;
 import java.util.List;
 
 import me.topchetoeu.jscript.Location;
-import me.topchetoeu.jscript.compilation.AssignStatement;
 import me.topchetoeu.jscript.compilation.AssignableStatement;
 import me.topchetoeu.jscript.compilation.Instruction;
 import me.topchetoeu.jscript.compilation.Statement;
@@ -14,19 +13,18 @@ public class VariableStatement extends AssignableStatement {
     public final String name;
 
     @Override
-    public boolean pollutesStack() { return true; }
-    @Override
     public boolean pure() { return true; }
 
     @Override
-    public AssignStatement toAssign(Statement val, Operation operation) {
+    public Statement toAssign(Statement val, Operation operation) {
         return new VariableAssignStatement(loc(), name, val, operation);
     }
 
     @Override
-    public void compile(List<Instruction> target, ScopeRecord scope) {
+    public void compile(List<Instruction> target, ScopeRecord scope, boolean pollute) {
         var i = scope.getKey(name);
         target.add(Instruction.loadVar(i).locate(loc()));
+        if (!pollute) target.add(Instruction.discard().locate(loc()));
     }
 
     public VariableStatement(Location loc, String name) {

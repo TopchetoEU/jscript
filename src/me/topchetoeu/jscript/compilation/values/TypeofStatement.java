@@ -5,6 +5,7 @@ import java.util.List;
 import me.topchetoeu.jscript.Location;
 import me.topchetoeu.jscript.compilation.Instruction;
 import me.topchetoeu.jscript.compilation.Statement;
+import me.topchetoeu.jscript.compilation.control.ArrayStatement;
 import me.topchetoeu.jscript.engine.scope.ScopeRecord;
 import me.topchetoeu.jscript.engine.values.Values;
 
@@ -12,12 +13,10 @@ public class TypeofStatement extends Statement {
     public final Statement value;
 
     @Override
-    public boolean pollutesStack() { return true; }
-    @Override
     public boolean pure() { return true; }
 
     @Override
-    public void compile(List<Instruction> target, ScopeRecord scope) {
+    public void compile(List<Instruction> target, ScopeRecord scope, boolean pollute) {
         if (value instanceof VariableStatement) {
             var i = scope.getKey(((VariableStatement)value).name);
             if (i instanceof String) {
@@ -25,7 +24,7 @@ public class TypeofStatement extends Statement {
                 return;
             }
         }
-        value.compileWithPollution(target, scope);
+        value.compile(target, scope, pollute);
         target.add(Instruction.typeof().locate(loc()));
     }
 

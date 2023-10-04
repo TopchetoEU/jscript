@@ -12,14 +12,10 @@ public class NewStatement extends Statement {
     public final Statement[] args;
 
     @Override
-    public boolean pollutesStack() { return true; }
+    public void compile(List<Instruction> target, ScopeRecord scope, boolean pollute) {
+        func.compile(target, scope, true);
 
-    @Override
-    public void compile(List<Instruction> target, ScopeRecord scope) {
-        func.compileWithPollution(target, scope);
-        for (var arg : args) {
-            arg.compileWithPollution(target, scope);
-        }
+        for (var arg : args) arg.compile(target, scope, true);
 
         target.add(Instruction.callNew(args.length).locate(loc()).setDebug(true));
     }

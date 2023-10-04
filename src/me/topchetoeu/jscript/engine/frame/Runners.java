@@ -9,7 +9,6 @@ import me.topchetoeu.jscript.engine.scope.ValueVariable;
 import me.topchetoeu.jscript.engine.values.ArrayValue;
 import me.topchetoeu.jscript.engine.values.CodeFunction;
 import me.topchetoeu.jscript.engine.values.ObjectValue;
-import me.topchetoeu.jscript.engine.values.SignalValue;
 import me.topchetoeu.jscript.engine.values.Symbol;
 import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.exceptions.EngineException;
@@ -19,9 +18,6 @@ public class Runners {
 
     public static Object execReturn(Context ctx, Instruction instr, CodeFrame frame) {
         return frame.pop();
-    }
-    public static Object execSignal(Context ctx, Instruction instr, CodeFrame frame) {
-        return new SignalValue(instr.get(0));
     }
     public static Object execThrow(Context ctx, Instruction instr, CodeFrame frame) {
         throw new EngineException(frame.pop());
@@ -343,11 +339,9 @@ public class Runners {
     }
 
     public static Object exec(Context ctx, Instruction instr, CodeFrame frame) throws InterruptedException {
-        // System.out.println(instr + "@" + instr.location);
         switch (instr.type) {
             case NOP: return execNop(ctx, instr, frame);
             case RETURN: return execReturn(ctx, instr, frame);
-            case SIGNAL: return execSignal(ctx, instr, frame);
             case THROW: return execThrow(ctx, instr, frame);
             case THROW_SYNTAX: return execThrowSyntax(ctx, instr, frame);
             case CALL: return execCall(ctx, instr, frame);

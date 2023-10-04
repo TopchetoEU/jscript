@@ -12,13 +12,12 @@ public class DeleteStatement extends Statement {
     public final Statement value;
 
     @Override
-    public boolean pollutesStack() { return true; }
+    public void compile(List<Instruction> target, ScopeRecord scope, boolean pollute) {
+        value.compile(target, scope, true);
+        key.compile(target, scope, true);
 
-    @Override
-    public void compile(List<Instruction> target, ScopeRecord scope) {
-        value.compile(target, scope);
-        key.compile(target, scope);
         target.add(Instruction.delete().locate(loc()));
+        if (!pollute) target.add(Instruction.discard().locate(loc()));
     }
 
     public DeleteStatement(Location loc, Statement key, Statement value) {

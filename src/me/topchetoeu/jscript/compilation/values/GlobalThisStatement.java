@@ -9,13 +9,11 @@ import me.topchetoeu.jscript.engine.scope.ScopeRecord;
 
 public class GlobalThisStatement extends Statement {
     @Override
-    public boolean pollutesStack() { return true; }
-    @Override
     public boolean pure() { return true; }
 
     @Override
-    public void compile(List<Instruction> target, ScopeRecord scope) {
-        target.add(Instruction.loadGlob().locate(loc()));
+    public void compile(List<Instruction> target, ScopeRecord scope, boolean pollute) {
+        if (pollute) target.add(Instruction.loadGlob().locate(loc()));
     }
 
     public GlobalThisStatement(Location loc) {

@@ -14,16 +14,6 @@ public class CompoundStatement extends Statement {
     public final Statement[] statements;
 
     @Override
-    public boolean pollutesStack() {
-        for (var stm : statements) {
-            if (stm instanceof FunctionStatement) continue;
-            return true;
-        }
-
-        return false;
-    }
-
-    @Override
     public void declare(ScopeRecord varsScope) {
         for (var stm : statements) {
             stm.declare(varsScope);
@@ -31,7 +21,7 @@ public class CompoundStatement extends Statement {
     }
 
     @Override
-    public void compile(List<Instruction> target, ScopeRecord scope) {
+    public void compile(List<Instruction> target, ScopeRecord scope, boolean pollute) {
         for (var stm : statements) {
             if (stm instanceof FunctionStatement) {
                 int start = target.size();
@@ -45,8 +35,8 @@ public class CompoundStatement extends Statement {
             var stm = statements[i];
             
             if (stm instanceof FunctionStatement) continue;
-            if (i != statements.length - 1) stm.compileNoPollution(target, scope, true);
-            else stm.compileWithPollution(target, scope);
+            if (i != statements.length - 1) stm.compileWithDebug(target, scope, false);
+            else stm.compileWithDebug(target, scope, pollute);
         }
     }
 

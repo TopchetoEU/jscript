@@ -8,29 +8,15 @@ import me.topchetoeu.jscript.engine.scope.ScopeRecord;
 public abstract class Statement {
     private Location _loc;
 
-    public abstract boolean pollutesStack();
     public boolean pure() { return false; }
-    public abstract void compile(List<Instruction> target, ScopeRecord scope);
+    public abstract void compile(List<Instruction> target, ScopeRecord scope, boolean pollute);
     public void declare(ScopeRecord varsScope) { }
     public Statement optimize() { return this; }
 
-    public void compileNoPollution(List<Instruction> target, ScopeRecord scope, boolean debug) {
+    public void compileWithDebug(List<Instruction> target, ScopeRecord scope, boolean pollute) {
         int start = target.size();
-        compile(target, scope);
-        if (debug && target.size() != start) target.get(start).setDebug(true);
-        if (pollutesStack()) target.add(Instruction.discard().locate(loc()));
-    }
-    public void compileWithPollution(List<Instruction> target, ScopeRecord scope, boolean debug) {
-        int start = target.size();
-        compile(target, scope);
-        if (debug && target.size() != start) target.get(start).setDebug(true);
-        if (!pollutesStack()) target.add(Instruction.loadValue(null).locate(loc()));
-    }
-    public void compileNoPollution(List<Instruction> target, ScopeRecord scope) {
-        compileNoPollution(target, scope, false);
-    }
-    public void compileWithPollution(List<Instruction> target, ScopeRecord scope) {
-        compileWithPollution(target, scope, false);
+        compile(target, scope, pollute);
+        if (target.size() != start) target.get(start).setDebug(true);
     }
 
     public Location loc() { return _loc; }

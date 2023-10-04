@@ -11,13 +11,11 @@ public class ConstantStatement extends Statement {
     public final Object value;
 
     @Override
-    public boolean pollutesStack() { return true; }
-    @Override
     public boolean pure() { return true; }
 
     @Override
-    public void compile(List<Instruction> target, ScopeRecord scope) {
-        target.add(Instruction.loadValue(value).locate(loc()));
+    public void compile(List<Instruction> target, ScopeRecord scope, boolean pollute) {
+        if (pollute) target.add(Instruction.loadValue(value).locate(loc()));
     }
 
     public ConstantStatement(Location loc, Object val) {

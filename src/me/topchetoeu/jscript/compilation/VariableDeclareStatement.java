@@ -20,15 +20,13 @@ public class VariableDeclareStatement extends Statement {
     public final List<Pair> values;
 
     @Override
-    public boolean pollutesStack() { return false; }
-    @Override
     public void declare(ScopeRecord varsScope) {
         for (var key : values) {
             varsScope.define(key.name);
         }
     }
     @Override
-    public void compile(List<Instruction> target, ScopeRecord scope) {
+    public void compile(List<Instruction> target, ScopeRecord scope, boolean pollute) {
         for (var entry : values) {
             if (entry.name == null) continue;
             var key = scope.getKey(entry.name);
@@ -39,10 +37,12 @@ public class VariableDeclareStatement extends Statement {
                 target.add(Instruction.storeVar(key).locate(loc()));
             }
             else if (entry.value != null) {
-                entry.value.compileWithPollution(target, scope);
+                entry.value.compile(target, scope, true);
                 target.add(Instruction.storeVar(key).locate(loc()));
             }
         }
+
+        if (pollute) target.add(Instruction.loadValue(null).locate(loc()));
     }
 
     public VariableDeclareStatement(Location loc, List<Pair> values) {

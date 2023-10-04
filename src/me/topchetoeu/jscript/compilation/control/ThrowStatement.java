@@ -11,11 +11,8 @@ public class ThrowStatement extends Statement {
     public final Statement value;
 
     @Override
-    public boolean pollutesStack() { return false; }
-
-    @Override
-    public void compile(List<Instruction> target, ScopeRecord scope) {
-        value.compileWithPollution(target, scope);
+    public void compile(List<Instruction> target, ScopeRecord scope, boolean pollute) {
+        value.compile(target, scope, true);
         target.add(Instruction.throwInstr().locate(loc()));
     }
 

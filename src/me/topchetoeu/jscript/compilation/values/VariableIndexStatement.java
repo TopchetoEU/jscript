@@ -11,13 +11,11 @@ public class VariableIndexStatement extends Statement {
     public final int index;
 
     @Override
-    public boolean pollutesStack() { return true; }
-    @Override
     public boolean pure() { return true; }
 
     @Override
-    public void compile(List<Instruction> target, ScopeRecord scope) {
-        target.add(Instruction.loadVar(index).locate(loc()));
+    public void compile(List<Instruction> target, ScopeRecord scope, boolean pollute) {
+        if (pollute) target.add(Instruction.loadVar(index).locate(loc()));
     }
 
     public VariableIndexStatement(Location loc, int i) {

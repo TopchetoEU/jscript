@@ -15,43 +15,42 @@ public class ForStatement extends Statement {
     public final String label;
 
     @Override
-    public boolean pollutesStack() { return false; }
-
-    @Override
     public void declare(ScopeRecord globScope) {
         declaration.declare(globScope);
         body.declare(globScope);
     }
     @Override
-    public void compile(List<Instruction> target, ScopeRecord scope) {
-        declaration.compile(target, scope);
+    public void compile(List<Instruction> target, ScopeRecord scope, boolean pollute) {
+        declaration.compile(target, scope, false);
 
         if (condition instanceof ConstantStatement) {
             if (Values.toBoolean(((ConstantStatement)condition).value)) {
                 int start = target.size();
-                body.compileNoPollution(target, scope);
+                body.compile(target, scope, false);
                 int mid = target.size();
-                assignment.compileNoPollution(target, scope, true);
+                assignment.compileWithDebug(target, scope, false);
                 int end = target.size();
                 WhileStatement.replaceBreaks(target, label, start, mid, mid, end + 1);
                 target.add(Instruction.jmp(start - target.size()).locate(loc()));
-                return;
+                if (pollute) target.add(Instruction.loadValue(null).locate(loc()));
             }
+            return;
         }
 
         int start = target.size();
-        condition.compileWithPollution(target, scope);
+        condition.compile(target, scope, true);
         int mid = target.size();
         target.add(Instruction.nop());
-        body.compileNoPollution(target, scope);
+        body.compile(target, scope, false);
         int beforeAssign = target.size();
-        assignment.compile(target, scope);
+        assignment.compileWithDebug(target, scope, false);
         int end = target.size();
 
         WhileStatement.replaceBreaks(target, label, mid + 1, end, beforeAssign, end + 1);
 
         target.add(Instruction.jmp(start - end).locate(loc()));
         target.set(mid, Instruction.jmpIfNot(end - mid + 1).locate(loc()));
+        if (pollute) target.add(Instruction.loadValue(null).locate(loc()));
     }
     @Override
     public Statement optimize() {

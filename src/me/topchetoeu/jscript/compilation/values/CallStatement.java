@@ -12,23 +12,19 @@ public class CallStatement extends Statement {
     public final Statement[] args;
 
     @Override
-    public boolean pollutesStack() { return true; }
-
-    @Override
-    public void compile(List<Instruction> target, ScopeRecord scope) {
+    public void compile(List<Instruction> target, ScopeRecord scope, boolean pollute) {
         if (func instanceof IndexStatement) {
-            ((IndexStatement)func).compile(target, scope, true);
+            ((IndexStatement)func).compile(target, scope, true, true);
         }
         else {
-            target.add(Instruction.loadValue(null).locate(loc()));
-            func.compileWithPollution(target, scope);
+               target.add(Instruction.loadValue(null).locate(loc()));
+            func.compile(target, scope, true);
         }
 
-        for (var arg : args) {
-            arg.compileWithPollution(target, scope);
-        }
+        for (var arg : args) arg.compile(target, scope, true);
 
         target.add(Instruction.call(args.length).locate(loc()).setDebug(true));
+        if (!pollute) target.add(Instruction.discard().locate(loc()));
     }
 
     public CallStatement(Location loc, Statement func, Statement ...args) {

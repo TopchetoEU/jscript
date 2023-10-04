@@ -1230,7 +1230,7 @@ public class Parsing {
 
         return ParseRes.res(new OperationStatement(loc, Operation.IN, prev, valRes.result), n);
     }
-    public static ParseRes<CommaStatement> parseComma(String filename, List<Token> tokens, int i, Statement prev, int precedence) {
+    public static ParseRes<CompoundStatement> parseComma(String filename, List<Token> tokens, int i, Statement prev, int precedence) {
         var loc = getLoc(filename, tokens, i);
         var n = 0;
 
@@ -1241,9 +1241,9 @@ public class Parsing {
         if (!res.isSuccess()) return ParseRes.error(loc, "Expected a value after the comma.", res);
         n += res.n;
 
-        return ParseRes.res(new CommaStatement(loc, prev, res.result), n);
+        return ParseRes.res(new CompoundStatement(loc, prev, res.result), n);
     }
-    public static ParseRes<TernaryStatement> parseTernary(String filename, List<Token> tokens, int i, Statement prev, int precedence) {
+    public static ParseRes<IfStatement> parseTernary(String filename, List<Token> tokens, int i, Statement prev, int precedence) {
         var loc = getLoc(filename, tokens, i);
         var n = 0;
 
@@ -1260,7 +1260,7 @@ public class Parsing {
         if (!b.isSuccess()) return ParseRes.error(loc, "Expected a second value after the ternary operator.", b);
         n += b.n;
 
-        return ParseRes.res(new TernaryStatement(loc, prev, a.result, b.result), n);
+        return ParseRes.res(new IfStatement(loc, prev, a.result, b.result), n);
     }
     public static ParseRes<? extends Statement> parseOperator(String filename, List<Token> tokens, int i, Statement prev, int precedence) {
         var loc = getLoc(filename, tokens, i);
@@ -1886,7 +1886,7 @@ public class Parsing {
         body.declare(target);
 
         try {
-            body.compile(res, subscope);
+            body.compile(res, subscope, true);
             FunctionStatement.checkBreakAndCont(res, 0);
         }
         catch (SyntaxException e) {

@@ -84,7 +84,6 @@ public class Values {
             obj instanceof String ||
             obj instanceof Boolean ||
             obj instanceof Symbol ||
-            obj instanceof SignalValue ||
             obj == null ||
             obj == NULL;
     }
@@ -143,7 +142,6 @@ public class Values {
         if (val instanceof Boolean) return (Boolean)val ? "true" : "false";
         if (val instanceof String) return (String)val;
         if (val instanceof Symbol) return ((Symbol)val).toString();
-        if (val instanceof SignalValue) return "[signal '" + ((SignalValue)val).data + "']";
 
         return "Unknown value";
     }

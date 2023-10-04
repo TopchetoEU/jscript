@@ -15,18 +15,15 @@ public class DoWhileStatement extends Statement {
     public final String label;
 
     @Override
-    public boolean pollutesStack() { return false; }
-
-    @Override
     public void declare(ScopeRecord globScope) {
         body.declare(globScope);
     }
 
     @Override
-    public void compile(List<Instruction> target, ScopeRecord scope) {
+    public void compile(List<Instruction> target, ScopeRecord scope, boolean pollute) {
         if (condition instanceof ConstantStatement) {
             int start = target.size();
-            body.compileNoPollution(target, scope);
+            body.compile(target, scope, false);
             int end = target.size();
             if (Values.toBoolean(((ConstantStatement)condition).value)) {
                 WhileStatement.replaceBreaks(target, label, start, end, end + 1, end + 1);
@@ -35,13 +32,14 @@ public class DoWhileStatement extends Statement {
                 target.add(Instruction.jmp(start - end).locate(loc()));
                 WhileStatement.replaceBreaks(target, label, start, end, start, end + 1);
             }
+            if (pollute) target.add(Instruction.loadValue(null).locate(loc()));
             return;
         }
 
         int start = target.size();
-        body.compileNoPollution(target, scope, true);
+        body.compileWithDebug(target, scope, false);
         int mid = target.size();
-        condition.compileWithPollution(target, scope);
+        condition.compile(target, scope, true);
         int end = target.size();
 
         WhileStatement.replaceBreaks(target, label, start, mid - 1, mid, end + 1);

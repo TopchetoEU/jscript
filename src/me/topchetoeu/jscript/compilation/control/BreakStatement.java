@@ -11,11 +11,9 @@ public class BreakStatement extends Statement {
     public final String label;
 
     @Override
-    public boolean pollutesStack() { return false; }
-
-    @Override
-    public void compile(List<Instruction> target, ScopeRecord scope) {
+    public void compile(List<Instruction> target, ScopeRecord scope, boolean pollute) {
         target.add(Instruction.nop("break", label).locate(loc()));
+        if (pollute) target.add(Instruction.loadValue(null).locate(loc()));
     }
 
     public BreakStatement(Location loc, String label) {

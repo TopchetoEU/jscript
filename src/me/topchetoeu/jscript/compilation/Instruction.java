@@ -7,7 +7,6 @@ import me.topchetoeu.jscript.exceptions.SyntaxException;
 public class Instruction {
     public static enum Type {
         RETURN,
-        SIGNAL,
         THROW,
         THROW_SYNTAX,
         DELETE,
@@ -162,12 +161,6 @@ public class Instruction {
         return new Instruction(null, Type.NOP, args);
     }
 
-    /**
-     * ATTENTION: Usage outside of try/catch is broken af
-     */
-    public static Instruction signal(String name) {
-        return new Instruction(null, Type.SIGNAL, name);
-    }
     public static Instruction nop(Object ...params) {
         for (var param : params) {
             if (param instanceof String) continue;

@@ -11,13 +11,12 @@ public class RegexStatement extends Statement {
     public final String pattern, flags;
 
     @Override
-    public boolean pollutesStack() { return true; }
-    @Override
     public boolean pure() { return true; }
 
     @Override
-    public void compile(List<Instruction> target, ScopeRecord scope) {
+    public void compile(List<Instruction> target, ScopeRecord scope, boolean pollute) {
         target.add(Instruction.loadRegex(pattern, flags).locate(loc()));
+        if (!pollute) target.add(Instruction.discard().locate(loc()));
     }
 
     public RegexStatement(Location loc, String pattern, String flags) {

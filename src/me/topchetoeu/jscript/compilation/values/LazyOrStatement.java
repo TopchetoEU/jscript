@@ -12,28 +12,26 @@ public class LazyOrStatement extends Statement {
     public final Statement first, second;
 
     @Override
-    public boolean pollutesStack() { return true; }
-    @Override
     public boolean pure() {
         return first.pure() && second.pure();
     }
 
     @Override
-    public void compile(List<Instruction> target, ScopeRecord scope) {
+    public void compile(List<Instruction> target, ScopeRecord scope, boolean pollute) {
         if (first instanceof ConstantStatement) {
             if (Values.not(((ConstantStatement)first).value)) {
-                second.compileWithPollution(target, scope);
+                second.compile(target, scope, pollute);
             }
-            else first.compileWithPollution(target, scope);
+            else first.compile(target, scope, pollute);
             return;
         }
 
-        first.compileWithPollution(target, scope);
-        target.add(Instruction.dup().locate(loc()));
+        first.compile(target, scope, true);
+        if (pollute) target.add(Instruction.dup().locate(loc()));
         int start = target.size();
         target.add(Instruction.nop());
         target.add(Instruction.discard().locate(loc()));
-        second.compileWithPollution(target, scope);
+        second.compile(target, scope, pollute);
         target.set(start, Instruction.jmpIf(target.size() - start).locate(loc()));
     }
 
