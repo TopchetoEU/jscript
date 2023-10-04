@@ -1,10 +1,10 @@
 package me.topchetoeu.jscript.compilation.values;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 import me.topchetoeu.jscript.Location;
+import me.topchetoeu.jscript.compilation.CompileTarget;
 import me.topchetoeu.jscript.compilation.Instruction;
 import me.topchetoeu.jscript.compilation.Statement;
 import me.topchetoeu.jscript.engine.scope.ScopeRecord;
@@ -15,7 +15,7 @@ public class ObjectStatement extends Statement {
     public final Map<Object, FunctionStatement> setters;
 
     @Override
-    public void compile(List<Instruction> target, ScopeRecord scope, boolean pollute) {
+    public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {
         target.add(Instruction.loadObj().locate(loc()));
 
         for (var el : map.entrySet()) {

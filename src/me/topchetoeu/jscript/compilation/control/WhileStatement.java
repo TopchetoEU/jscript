@@ -1,9 +1,8 @@
 package me.topchetoeu.jscript.compilation.control;
 
-import java.util.List;
-
 import me.topchetoeu.jscript.Location;
 import me.topchetoeu.jscript.compilation.Statement;
+import me.topchetoeu.jscript.compilation.CompileTarget;
 import me.topchetoeu.jscript.compilation.CompoundStatement;
 import me.topchetoeu.jscript.compilation.DiscardStatement;
 import me.topchetoeu.jscript.compilation.Instruction;
@@ -21,7 +20,7 @@ public class WhileStatement extends Statement {
         body.declare(globScope);
     }
     @Override
-    public void compile(List<Instruction> target, ScopeRecord scope, boolean pollute) {
+    public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {
         if (condition instanceof ConstantStatement) {
             if (Values.toBoolean(((ConstantStatement)condition).value)) {
                 int start = target.size();
@@ -68,7 +67,7 @@ public class WhileStatement extends Statement {
         this.body = body;
     }
 
-    public static void replaceBreaks(List<Instruction> target, String label, int start, int end, int continuePoint, int breakPoint) {
+    public static void replaceBreaks(CompileTarget target, String label, int start, int end, int continuePoint, int breakPoint) {
         for (int i = start; i < end; i++) {
             var instr = target.get(i);
             if (instr.type == Type.NOP && instr.is(0, "cont") && (instr.get(1) == null || instr.is(1, label))) {

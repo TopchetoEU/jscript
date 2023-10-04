@@ -10,7 +10,7 @@ public class Context {
 
     public FunctionValue compile(String filename, String raw) throws InterruptedException {
         var res = Values.toString(this, env.compile.call(this, null, raw, filename));
-        return Parsing.compile(env, filename, res);
+        return Parsing.compile(message.engine.functions, env, filename, res);
     }
 
     public Context setEnv(Environment env) {

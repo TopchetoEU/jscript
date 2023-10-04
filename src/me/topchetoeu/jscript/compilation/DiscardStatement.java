@@ -1,7 +1,5 @@
 package me.topchetoeu.jscript.compilation;
 
-import java.util.List;
-
 import me.topchetoeu.jscript.Location;
 import me.topchetoeu.jscript.compilation.values.ConstantStatement;
 import me.topchetoeu.jscript.engine.scope.ScopeRecord;
@@ -10,7 +8,7 @@ public class DiscardStatement extends Statement {
     public final Statement value;
 
     @Override
-    public void compile(List<Instruction> target, ScopeRecord scope, boolean pollute) {
+    public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {
         value.compile(target, scope, false);
         
     }

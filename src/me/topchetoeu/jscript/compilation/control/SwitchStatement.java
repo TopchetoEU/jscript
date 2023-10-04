@@ -1,9 +1,9 @@
 package me.topchetoeu.jscript.compilation.control;
 
 import java.util.HashMap;
-import java.util.List;
 
 import me.topchetoeu.jscript.Location;
+import me.topchetoeu.jscript.compilation.CompileTarget;
 import me.topchetoeu.jscript.compilation.Instruction;
 import me.topchetoeu.jscript.compilation.Statement;
 import me.topchetoeu.jscript.compilation.Instruction.Type;
@@ -32,7 +32,7 @@ public class SwitchStatement extends Statement {
     }
 
     @Override
-    public void compile(List<Instruction> target, ScopeRecord scope, boolean pollute) {
+    public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {
         var caseMap = new HashMap<Integer, Integer>();
         var stmIndexMap = new HashMap<Integer, Integer>();
 

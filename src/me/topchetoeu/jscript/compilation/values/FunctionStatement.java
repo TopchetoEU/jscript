@@ -1,8 +1,9 @@
 package me.topchetoeu.jscript.compilation.values;
 
-import java.util.List;
+import java.util.Random;
 
 import me.topchetoeu.jscript.Location;
+import me.topchetoeu.jscript.compilation.CompileTarget;
 import me.topchetoeu.jscript.compilation.CompoundStatement;
 import me.topchetoeu.jscript.compilation.Instruction;
 import me.topchetoeu.jscript.compilation.Statement;
@@ -15,6 +16,8 @@ public class FunctionStatement extends Statement {
     public final String name;
     public final String[] args;
 
+    private static Random rand = new Random();
+
     @Override
     public boolean pure() { return name == null; }
 
@@ -23,7 +26,7 @@ public class FunctionStatement extends Statement {
         if (name != null) scope.define(name);
     }
 
-    public static void checkBreakAndCont(List<Instruction> target, int start) {
+    public static void checkBreakAndCont(CompileTarget target, int start) {
         for (int i = start; i < target.size(); i++) {
             if (target.get(i).type == Type.NOP) {
                 if (target.get(i).is(0, "break") ) {
@@ -36,7 +39,7 @@ public class FunctionStatement extends Statement {
         }
     }
 
-    public void compile(List<Instruction> target, ScopeRecord scope, String name, boolean isStatement) {
+    public void compile(CompileTarget target, ScopeRecord scope, String name, boolean isStatement) {
         for (var i = 0; i < args.length; i++) {
             for (var j = 0; j < i; j++) {
                 if (args[i].equals(args[j])){
@@ -48,32 +51,33 @@ public class FunctionStatement extends Statement {
         var subscope = scope.child();
 
         int start = target.size();
+        var funcTarget = new CompileTarget(target.functions);
 
-        target.add(Instruction.nop());
         subscope.define("this");
         var argsVar = subscope.define("arguments");
 
         if (args.length > 0) {
             for (var i = 0; i < args.length; i++) {
-                target.add(Instruction.loadVar(argsVar).locate(loc()));
-                target.add(Instruction.loadMember(i).locate(loc()));
-                target.add(Instruction.storeVar(subscope.define(args[i])).locate(loc()));
+                funcTarget.add(Instruction.loadVar(argsVar).locate(loc()));
+                funcTarget.add(Instruction.loadMember(i).locate(loc()));
+                funcTarget.add(Instruction.storeVar(subscope.define(args[i])).locate(loc()));
             }
         }
 
         if (!isStatement && this.name != null) {
-            target.add(Instruction.storeSelfFunc((int)subscope.define(this.name)));
+            funcTarget.add(Instruction.storeSelfFunc((int)subscope.define(this.name)));
         }
 
         body.declare(subscope);
-        target.add(Instruction.debugVarNames(subscope.locals()));
-        body.compile(target, subscope, false);
+        funcTarget.add(Instruction.debugVarNames(subscope.locals()));
+        body.compile(funcTarget, subscope, false);
+        funcTarget.add(Instruction.ret().locate(loc()));
+        checkBreakAndCont(funcTarget, start);
 
-        checkBreakAndCont(target, start);
+        var id = rand.nextLong();
 
-        if (!(body instanceof CompoundStatement)) target.add(Instruction.ret().locate(loc()));
-
-        target.set(start, Instruction.loadFunc(target.size() - start, subscope.localsCount(), args.length, subscope.getCaptures()).locate(loc()));
+        target.add(Instruction.loadFunc(id, subscope.localsCount(), args.length, subscope.getCaptures()).locate(loc()));
+        target.functions.put(id, funcTarget.array());
 
         if (name == null) name = this.name;
 
@@ -90,9 +94,10 @@ public class FunctionStatement extends Statement {
             if (key instanceof String) target.add(Instruction.makeVar((String)key).locate(loc()));
             target.add(Instruction.storeVar(scope.getKey(this.name), false).locate(loc()));
         }
+
     }
     @Override
-    public void compile(List<Instruction> target, ScopeRecord scope, boolean pollute) {
+    public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {
         compile(target, scope, null, false);
         if (!pollute) target.add(Instruction.discard().locate(loc()));
     }

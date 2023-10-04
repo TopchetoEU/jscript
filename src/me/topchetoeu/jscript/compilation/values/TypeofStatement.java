@@ -1,8 +1,7 @@
 package me.topchetoeu.jscript.compilation.values;
 
-import java.util.List;
-
 import me.topchetoeu.jscript.Location;
+import me.topchetoeu.jscript.compilation.CompileTarget;
 import me.topchetoeu.jscript.compilation.Instruction;
 import me.topchetoeu.jscript.compilation.Statement;
 import me.topchetoeu.jscript.compilation.control.ArrayStatement;
@@ -16,7 +15,7 @@ public class TypeofStatement extends Statement {
     public boolean pure() { return true; }
 
     @Override
-    public void compile(List<Instruction> target, ScopeRecord scope, boolean pollute) {
+    public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {
         if (value instanceof VariableStatement) {
             var i = scope.getKey(((VariableStatement)value).name);
             if (i instanceof String) {

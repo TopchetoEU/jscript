@@ -1,8 +1,7 @@
 package me.topchetoeu.jscript.compilation.values;
 
-import java.util.List;
-
 import me.topchetoeu.jscript.Location;
+import me.topchetoeu.jscript.compilation.CompileTarget;
 import me.topchetoeu.jscript.compilation.Instruction;
 import me.topchetoeu.jscript.compilation.Statement;
 import me.topchetoeu.jscript.engine.scope.ScopeRecord;
@@ -17,7 +16,7 @@ public class LazyOrStatement extends Statement {
     }
 
     @Override
-    public void compile(List<Instruction> target, ScopeRecord scope, boolean pollute) {
+    public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {
         if (first instanceof ConstantStatement) {
             if (Values.not(((ConstantStatement)first).value)) {
                 second.compile(target, scope, pollute);

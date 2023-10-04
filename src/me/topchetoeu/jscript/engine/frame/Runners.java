@@ -182,7 +182,7 @@ public class Runners {
         return NO_RETURN;
     }
     public static Object execLoadFunc(Context ctx, Instruction instr, CodeFrame frame) {
-        int n = (Integer)instr.get(0);
+        long id = (Long)instr.get(0);
         int localsN = (Integer)instr.get(1);
         int len = (Integer)instr.get(2);
         var captures = new ValueVariable[instr.params.length - 3];
@@ -191,15 +191,12 @@ public class Runners {
             captures[i - 3] = frame.scope.get(instr.get(i));
         }
 
-        var start = frame.codePtr + 1;
-        var end = start + n - 1;
-        var body = new Instruction[end - start];
-        System.arraycopy(frame.function.body, start, body, 0, end - start);
-
+        var body = ctx.message.engine.functions.get(id);
         var func = new CodeFunction(ctx.env, "", localsN, len, captures, body);
+
         frame.push(ctx, func);
 
-        frame.codePtr += n;
+        frame.codePtr++;
         return NO_RETURN;
     }
     public static Object execLoadMember(Context ctx, Instruction instr, CodeFrame frame) throws InterruptedException {
