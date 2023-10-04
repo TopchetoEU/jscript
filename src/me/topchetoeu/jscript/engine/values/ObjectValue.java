@@ -1,8 +1,8 @@
 package me.topchetoeu.jscript.engine.values;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -47,11 +47,11 @@ public class ObjectValue {
     protected Object prototype;
 
     public State state = State.NORMAL;
-    public HashMap<Object, Object> values = new HashMap<>();
-    public HashMap<Object, Property> properties = new HashMap<>();
-    public HashSet<Object> nonWritableSet = new HashSet<>();
-    public HashSet<Object> nonConfigurableSet = new HashSet<>();
-    public HashSet<Object> nonEnumerableSet = new HashSet<>();
+    public LinkedHashMap<Object, Object> values = new LinkedHashMap<>();
+    public LinkedHashMap<Object, Property> properties = new LinkedHashMap<>();
+    public LinkedHashSet<Object> nonWritableSet = new LinkedHashSet<>();
+    public LinkedHashSet<Object> nonConfigurableSet = new LinkedHashSet<>();
+    public LinkedHashSet<Object> nonEnumerableSet = new LinkedHashSet<>();
 
     public final boolean memberWritable(Object key) {
         if (state == State.FROZEN) return false;
