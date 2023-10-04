@@ -350,7 +350,7 @@ interface Object {
     toString(): string;
     hasOwnProperty(key: any): boolean;
 }
-interface ObjectConstructor extends Function {
+interface ObjectConstructor {
     (arg: string): String;
     (arg: number): Number;
     (arg: boolean): Boolean;

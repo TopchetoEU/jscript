@@ -8,7 +8,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import me.topchetoeu.jscript.engine.Message;
-import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.Engine;
 import me.topchetoeu.jscript.engine.Environment;
 import me.topchetoeu.jscript.engine.values.NativeFunction;
@@ -86,13 +85,6 @@ public class Main {
 
             return null;
         }), null);
-
-        // engine.pushMsg(
-        //     false,
-        //     new Context(builderEnv, new MessageContext(engine)),
-        //     "core.js", resourceToString("js/core.js"),
-        //     null, env, new Internals(env)
-        // ).toObservable().on(valuePrinter);
 
         task = engine.start();
         var reader = new Thread(() -> {

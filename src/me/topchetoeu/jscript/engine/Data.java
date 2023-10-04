@@ -41,13 +41,15 @@ public class Data implements Iterable<Entry<DataKey<?>, ?>> {
     }
     public boolean has(DataKey<?> key) { return data.containsKey(key); }
 
-    public Data increase(DataKey<Integer> key, int n, int start) {
-        return set(key, get(key, start) + n);
+    public int increase(DataKey<Integer> key, int n, int start) {
+        int res;
+        set(key, res = get(key, start) + n);
+        return res;
     }
-    public Data increase(DataKey<Integer> key, int n) {
+    public int increase(DataKey<Integer> key, int n) {
         return increase(key, n, 0);
     }
-    public Data increase(DataKey<Integer> key) {
+    public int increase(DataKey<Integer> key) {
         return increase(key, 1, 0);
     }
 
