@@ -7,7 +7,7 @@ import java.util.List;
 import me.topchetoeu.jscript.engine.frame.CodeFrame;
 import me.topchetoeu.jscript.exceptions.EngineException;
 
-public class MessageContext {
+public class Message {
     public final Engine engine;
 
     private final ArrayList<CodeFrame> frames = new ArrayList<>();
@@ -15,7 +15,7 @@ public class MessageContext {
 
     public List<CodeFrame> frames() { return Collections.unmodifiableList(frames); }
 
-    public MessageContext pushFrame(Context ctx, CodeFrame frame) throws InterruptedException {
+    public Message pushFrame(Context ctx, CodeFrame frame) throws InterruptedException {
         this.frames.add(frame);
         if (this.frames.size() > maxStackFrames) throw EngineException.ofRange("Stack overflow!");
         return this;
@@ -46,7 +46,11 @@ public class MessageContext {
         return res;
     }
 
-    public MessageContext(Engine engine) {
+    public Context context(Environment env) {
+        return new Context(env, this);
+    }
+
+    public Message(Engine engine) {
         this.engine = engine;
     }
 }

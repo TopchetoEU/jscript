@@ -32,9 +32,9 @@ public class Engine {
         public final Object thisArg;
         public final Object[] args;
         public final DataNotifier<Object> notifier = new DataNotifier<>();
-        public final MessageContext ctx;
+        public final Message ctx;
 
-        public Task(MessageContext ctx, FunctionValue func, Object thisArg, Object[] args) {
+        public Task(Message ctx, FunctionValue func, Object thisArg, Object[] args) {
             this.ctx = ctx;
             this.func = func;
             this.thisArg = thisArg;
@@ -102,7 +102,7 @@ public class Engine {
         return this.thread != null;
     }
 
-    public Awaitable<Object> pushMsg(boolean micro, MessageContext ctx, FunctionValue func, Object thisArg, Object ...args) {
+    public Awaitable<Object> pushMsg(boolean micro, Message ctx, FunctionValue func, Object thisArg, Object ...args) {
         var msg = new Task(ctx, func, thisArg, args);
         if (micro) microTasks.addLast(msg);
         else macroTasks.addLast(msg);

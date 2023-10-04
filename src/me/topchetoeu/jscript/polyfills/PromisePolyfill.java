@@ -6,7 +6,7 @@ import java.util.Map;
 
 import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.Environment;
-import me.topchetoeu.jscript.engine.MessageContext;
+import me.topchetoeu.jscript.engine.Message;
 import me.topchetoeu.jscript.engine.values.ArrayValue;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
 import me.topchetoeu.jscript.engine.values.NativeFunction;
@@ -297,9 +297,9 @@ public class PromisePolyfill {
     }
 
     private void handle(Context ctx, FunctionValue fulfill, FunctionValue reject) {
-        if (state == STATE_FULFILLED) ctx.message.engine.pushMsg(true, new MessageContext(ctx.message.engine), fulfill, null, val);
+        if (state == STATE_FULFILLED) ctx.message.engine.pushMsg(true, new Message(ctx.message.engine), fulfill, null, val);
         else if (state == STATE_REJECTED) {
-            ctx.message.engine.pushMsg(true, new MessageContext(ctx.message.engine), reject, null, val);
+            ctx.message.engine.pushMsg(true, new Message(ctx.message.engine), reject, null, val);
             handled = true;
         }
         else handles.add(new Handle(ctx, fulfill, reject));

@@ -7,10 +7,11 @@ import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import me.topchetoeu.jscript.engine.MessageContext;
+import me.topchetoeu.jscript.engine.Message;
 import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.Engine;
 import me.topchetoeu.jscript.engine.Environment;
+import me.topchetoeu.jscript.engine.values.NativeFunction;
 import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.events.Observer;
 import me.topchetoeu.jscript.exceptions.EngineException;
@@ -63,30 +64,35 @@ public class Main {
         engine = new Engine();
 
         env = new Environment(null, null, null);
-        var builderEnv = new Environment(null, null, null);
         var exited = new boolean[1];
 
-        env.global.define("exit", ctx -> {
-            exited[0] = true;
-            task.interrupt();
-            throw new InterruptedException();
-        });
-        env.global.define("go", ctx -> {
-            try {
-                var func = ctx.compile("do.js", new String(Files.readAllBytes(Path.of("do.js"))));
-                return func.call(ctx);
-            }
-            catch (IOException e) {
-                throw new EngineException("Couldn't open do.js");
-            }
-        });
+        engine.pushMsg(false, new Message(engine), new NativeFunction((ctx, thisArg, _a) -> {
+            new Internals().apply(env);
 
-        engine.pushMsg(
-            false,
-            new Context(builderEnv, new MessageContext(engine)),
-            "core.js", resourceToString("js/core.js"),
-            null, env, new Internals(env)
-        ).toObservable().on(valuePrinter);
+            env.global.define("exit", _ctx -> {
+                exited[0] = true;
+                task.interrupt();
+                throw new InterruptedException();
+            });
+            env.global.define("go", _ctx -> {
+                try {
+                    var func = _ctx.compile("do.js", new String(Files.readAllBytes(Path.of("do.js"))));
+                    return func.call(_ctx);
+                }
+                catch (IOException e) {
+                    throw new EngineException("Couldn't open do.js");
+                }
+            });
+
+            return null;
+        }), null);
+
+        // engine.pushMsg(
+        //     false,
+        //     new Context(builderEnv, new MessageContext(engine)),
+        //     "core.js", resourceToString("js/core.js"),
+        //     null, env, new Internals(env)
+        // ).toObservable().on(valuePrinter);
 
         task = engine.start();
         var reader = new Thread(() -> {
@@ -96,7 +102,7 @@ public class Main {
                         var raw = in.readLine();
 
                         if (raw == null) break;
-                        engine.pushMsg(false, new Context(env, new MessageContext(engine)), "<stdio>", raw, null).toObservable().once(valuePrinter);
+                        engine.pushMsg(false, new Context(env, new Message(engine)), "<stdio>", raw, null).toObservable().once(valuePrinter);
                     }
                     catch (EngineException e) {
                         try {

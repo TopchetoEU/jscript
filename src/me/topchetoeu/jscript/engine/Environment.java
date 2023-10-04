@@ -60,6 +60,10 @@ public class Environment {
         return res;
     }
 
+    public Context context(Message msg) {
+        return new Context(this, msg);
+    }
+
     public Environment(FunctionValue compile, WrappersProvider nativeConverter, GlobalScope global) {
         if (compile == null) compile = new NativeFunction("compile", (ctx, thisArg, args) -> args.length == 0 ? "" : args[0]);
         if (nativeConverter == null) nativeConverter = new NativeWrapperProvider(this);

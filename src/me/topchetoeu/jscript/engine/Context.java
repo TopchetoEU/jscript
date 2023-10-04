@@ -6,15 +6,22 @@ import me.topchetoeu.jscript.parsing.Parsing;
 
 public class Context {
     public final Environment env;
-    public final MessageContext message;
+    public final Message message;
 
     public FunctionValue compile(String filename, String raw) throws InterruptedException {
         var res = Values.toString(this, env.compile.call(this, null, raw, filename));
         return Parsing.compile(env, filename, res);
     }
 
-    public Context(Environment funcCtx, MessageContext msgCtx) {
-        this.env = funcCtx;
-        this.message = msgCtx;
+    public Context setEnv(Environment env) {
+        return new Context(env, message);
+    }
+    public Context setMsg(Message msg) {
+        return new Context(env, msg);
+    }
+
+    public Context(Environment env, Message msg) {
+        this.env = env;
+        this.message = msg;
     }
 }

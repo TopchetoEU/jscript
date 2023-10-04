@@ -55,7 +55,7 @@ public class ObjectValue {
 
     public final boolean memberWritable(Object key) {
         if (state == State.FROZEN) return false;
-        return values.containsKey(key) && !nonWritableSet.contains(key);
+        return !values.containsKey(key) || !nonWritableSet.contains(key);
     }
     public final boolean memberConfigurable(Object key) {
         if (state == State.SEALED || state == State.FROZEN) return false;
