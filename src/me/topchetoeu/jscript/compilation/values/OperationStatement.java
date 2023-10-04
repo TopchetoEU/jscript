@@ -1,8 +1,7 @@
 package me.topchetoeu.jscript.compilation.values;
 
-import java.util.List;
-
 import me.topchetoeu.jscript.Location;
+import me.topchetoeu.jscript.compilation.CompileTarget;
 import me.topchetoeu.jscript.compilation.Instruction;
 import me.topchetoeu.jscript.compilation.Statement;
 import me.topchetoeu.jscript.compilation.control.ThrowStatement;
@@ -16,7 +15,7 @@ public class OperationStatement extends Statement {
     public final Operation operation;
 
     @Override
-    public void compile(List<Instruction> target, ScopeRecord scope, boolean pollute) {
+    public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {
         for (var arg : args) {
             arg.compile(target, scope, true);
         }

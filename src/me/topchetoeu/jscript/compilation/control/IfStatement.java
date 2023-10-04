@@ -1,8 +1,7 @@
 package me.topchetoeu.jscript.compilation.control;
 
-import java.util.List;
-
 import me.topchetoeu.jscript.Location;
+import me.topchetoeu.jscript.compilation.CompileTarget;
 import me.topchetoeu.jscript.compilation.CompoundStatement;
 import me.topchetoeu.jscript.compilation.DiscardStatement;
 import me.topchetoeu.jscript.compilation.Instruction;
@@ -21,7 +20,7 @@ public class IfStatement extends Statement {
     }
 
     @Override
-    public void compile(List<Instruction> target, ScopeRecord scope, boolean pollute) {
+    public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {
         if (condition instanceof ConstantStatement) {
             if (Values.not(((ConstantStatement)condition).value)) {
                 if (elseBody != null) elseBody.compileWithDebug(target, scope, pollute);

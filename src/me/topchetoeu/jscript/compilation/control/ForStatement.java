@@ -1,9 +1,8 @@
 package me.topchetoeu.jscript.compilation.control;
 
-import java.util.List;
-
 import me.topchetoeu.jscript.Location;
 import me.topchetoeu.jscript.compilation.Statement;
+import me.topchetoeu.jscript.compilation.CompileTarget;
 import me.topchetoeu.jscript.compilation.CompoundStatement;
 import me.topchetoeu.jscript.compilation.Instruction;
 import me.topchetoeu.jscript.compilation.values.ConstantStatement;
@@ -20,7 +19,7 @@ public class ForStatement extends Statement {
         body.declare(globScope);
     }
     @Override
-    public void compile(List<Instruction> target, ScopeRecord scope, boolean pollute) {
+    public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {
         declaration.compile(target, scope, false);
 
         if (condition instanceof ConstantStatement) {

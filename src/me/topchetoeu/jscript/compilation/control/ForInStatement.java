@@ -1,8 +1,7 @@
 package me.topchetoeu.jscript.compilation.control;
 
-import java.util.List;
-
 import me.topchetoeu.jscript.Location;
+import me.topchetoeu.jscript.compilation.CompileTarget;
 import me.topchetoeu.jscript.compilation.Instruction;
 import me.topchetoeu.jscript.compilation.Statement;
 import me.topchetoeu.jscript.engine.Operation;
@@ -21,7 +20,7 @@ public class ForInStatement extends Statement {
     }
 
     @Override
-    public void compile(List<Instruction> target, ScopeRecord scope, boolean pollute) {
+    public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {
         var key = scope.getKey(varName);
         if (key instanceof String) target.add(Instruction.makeVar((String)key));
 

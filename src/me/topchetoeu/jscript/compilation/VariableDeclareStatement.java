@@ -26,7 +26,7 @@ public class VariableDeclareStatement extends Statement {
         }
     }
     @Override
-    public void compile(List<Instruction> target, ScopeRecord scope, boolean pollute) {
+    public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {
         for (var entry : values) {
             if (entry.name == null) continue;
             var key = scope.getKey(entry.name);

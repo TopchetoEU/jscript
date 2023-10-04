@@ -1,9 +1,8 @@
 package me.topchetoeu.jscript.compilation.values;
 
-import java.util.List;
-
 import me.topchetoeu.jscript.Location;
 import me.topchetoeu.jscript.compilation.AssignableStatement;
+import me.topchetoeu.jscript.compilation.CompileTarget;
 import me.topchetoeu.jscript.compilation.Instruction;
 import me.topchetoeu.jscript.compilation.Statement;
 import me.topchetoeu.jscript.engine.Operation;
@@ -20,7 +19,7 @@ public class IndexStatement extends AssignableStatement {
     public Statement toAssign(Statement val, Operation operation) {
         return new IndexAssignStatement(loc(), object, index, val, operation);
     }
-    public void compile(List<Instruction> target, ScopeRecord scope, boolean dupObj, boolean pollute) {
+    public void compile(CompileTarget target, ScopeRecord scope, boolean dupObj, boolean pollute) {
         int start = 0;
         object.compile(target, scope, true);
         if (dupObj) target.add(Instruction.dup().locate(loc()));
@@ -35,7 +34,7 @@ public class IndexStatement extends AssignableStatement {
         if (!pollute) target.add(Instruction.discard().locate(loc()));
     }
     @Override
-    public void compile(List<Instruction> target, ScopeRecord scope, boolean pollute) {
+    public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {
         compile(target, scope, false, pollute);
     }
 

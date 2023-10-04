@@ -214,9 +214,9 @@ public class Instruction {
     public static Instruction loadRegex(String pattern, String flags) {
         return new Instruction(null, Type.LOAD_REGEX, pattern, flags);
     }
-    public static Instruction loadFunc(int instrN, int varN, int len, int[] captures) {
+    public static Instruction loadFunc(long id, int varN, int len, int[] captures) {
         var args = new Object[3 + captures.length];
-        args[0] = instrN;
+        args[0] = id;
         args[1] = varN;
         args[2] = len;
         for (var i = 0; i < captures.length; i++) args[i + 3] = captures[i];

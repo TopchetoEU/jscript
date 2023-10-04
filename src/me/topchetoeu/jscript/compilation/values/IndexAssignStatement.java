@@ -1,8 +1,7 @@
 package me.topchetoeu.jscript.compilation.values;
 
-import java.util.List;
-
 import me.topchetoeu.jscript.Location;
+import me.topchetoeu.jscript.compilation.CompileTarget;
 import me.topchetoeu.jscript.compilation.Instruction;
 import me.topchetoeu.jscript.compilation.Statement;
 import me.topchetoeu.jscript.engine.Operation;
@@ -15,7 +14,7 @@ public class IndexAssignStatement extends Statement {
     public final Operation operation;
 
     @Override
-    public void compile(List<Instruction> target, ScopeRecord scope, boolean pollute) {
+    public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {
         if (operation != null) {
             object.compile(target, scope, true);
             index.compile(target, scope, true);

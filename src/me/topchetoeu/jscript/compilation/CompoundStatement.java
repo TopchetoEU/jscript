@@ -1,7 +1,6 @@
 package me.topchetoeu.jscript.compilation;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Vector;
 
 import me.topchetoeu.jscript.Location;
 import me.topchetoeu.jscript.compilation.control.ContinueStatement;
@@ -21,7 +20,7 @@ public class CompoundStatement extends Statement {
     }
 
     @Override
-    public void compile(List<Instruction> target, ScopeRecord scope, boolean pollute) {
+    public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {
         for (var stm : statements) {
             if (stm instanceof FunctionStatement) {
                 int start = target.size();
@@ -42,7 +41,7 @@ public class CompoundStatement extends Statement {
 
     @Override
     public Statement optimize() {
-        var res = new ArrayList<Statement>();
+        var res = new Vector<Statement>(statements.length);
 
         for (var i = 0; i < statements.length; i++) {
             var stm = statements[i].optimize();

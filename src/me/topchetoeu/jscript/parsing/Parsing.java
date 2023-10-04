@@ -2,6 +2,7 @@ package me.topchetoeu.jscript.parsing;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -38,6 +39,8 @@ public class Parsing {
             this.func = func;
         }
     }
+
+    public static final HashMap<Long, ArrayList<Instruction>> functions = new HashMap<>();
 
     private static final HashSet<String> reserved = new HashSet<String>();
     static {
@@ -1871,12 +1874,11 @@ public class Parsing {
         return list.toArray(Statement[]::new);
     }
 
-    public static CodeFunction compile(Environment environment, Statement ...statements) {
+    public static CodeFunction compile(HashMap<Long, Instruction[]> funcs, Environment environment, Statement ...statements) {
         var target = environment.global.globalChild();
         var subscope = target.child();
-        var res = new ArrayList<Instruction>();
+        var res = new CompileTarget(funcs);
         var body = new CompoundStatement(null, statements);
-        // var optimized = body.optimize();
         if (body instanceof CompoundStatement) body = (CompoundStatement)body;
         else body = new CompoundStatement(null, new Statement[] { body });
 
@@ -1890,7 +1892,7 @@ public class Parsing {
             FunctionStatement.checkBreakAndCont(res, 0);
         }
         catch (SyntaxException e) {
-            res.clear();
+            res.target.clear();
             res.add(Instruction.throwSyntax(e));
         }
 
@@ -1899,11 +1901,11 @@ public class Parsing {
         }
         else res.add(Instruction.ret());
 
-        return new CodeFunction(environment, "", subscope.localsCount(), 0, new ValueVariable[0], res.toArray(Instruction[]::new));
+        return new CodeFunction(environment, "", subscope.localsCount(), 0, new ValueVariable[0], res.array());
     }
-    public static CodeFunction compile(Environment environment, String filename, String raw) {
+    public static CodeFunction compile(HashMap<Long, Instruction[]> funcs, Environment environment, String filename, String raw) {
         try {
-            return compile(environment, parse(filename, raw));
+            return compile(funcs, environment, parse(filename, raw));
         }
         catch (SyntaxException e) {
             return new CodeFunction(environment, null, 2, 0, new ValueVariable[0], new Instruction[] { Instruction.throwSyntax(e) });

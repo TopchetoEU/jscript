@@ -1,8 +1,7 @@
 package me.topchetoeu.jscript.compilation.control;
 
-import java.util.List;
-
 import me.topchetoeu.jscript.Location;
+import me.topchetoeu.jscript.compilation.CompileTarget;
 import me.topchetoeu.jscript.compilation.CompoundStatement;
 import me.topchetoeu.jscript.compilation.Instruction;
 import me.topchetoeu.jscript.compilation.Statement;
@@ -20,7 +19,7 @@ public class DoWhileStatement extends Statement {
     }
 
     @Override
-    public void compile(List<Instruction> target, ScopeRecord scope, boolean pollute) {
+    public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {
         if (condition instanceof ConstantStatement) {
             int start = target.size();
             body.compile(target, scope, false);

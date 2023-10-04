@@ -1,7 +1,9 @@
 package me.topchetoeu.jscript.engine;
 
+import java.util.HashMap;
 import java.util.concurrent.LinkedBlockingDeque;
 
+import me.topchetoeu.jscript.compilation.Instruction;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
 import me.topchetoeu.jscript.events.Awaitable;
 import me.topchetoeu.jscript.events.DataNotifier;
@@ -49,6 +51,7 @@ public class Engine {
     private LinkedBlockingDeque<Task> microTasks = new LinkedBlockingDeque<>();
 
     public final int id = ++nextId;
+    public final HashMap<Long, Instruction[]> functions = new HashMap<>();
 
     private void runTask(Task task) throws InterruptedException {
         try {
