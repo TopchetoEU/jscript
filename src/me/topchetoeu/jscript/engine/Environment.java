@@ -15,15 +15,23 @@ import me.topchetoeu.jscript.interop.NativeWrapperProvider;
 
 public class Environment {
     private HashMap<String, ObjectValue> prototypes = new HashMap<>();
+
+    public final Data data = new Data();
+    public final HashMap<String, Symbol> symbols = new HashMap<>();
+
     public GlobalScope global;
     public WrappersProvider wrappersProvider;
-    /** NOTE: This is not the register for Symbol.for, but for the symbols like Symbol.iterator */
-    public HashMap<String, Symbol> symbols = new HashMap<>();
 
     @Native public FunctionValue compile;
     @Native public FunctionValue regexConstructor = new NativeFunction("RegExp", (ctx, thisArg, args) -> {
         throw EngineException.ofError("Regular expressions not supported.").setContext(ctx);
     });
+
+    public Environment addData(Data data) {
+        this.data.addAll(data);
+        return this;
+    }
+
     @Native public ObjectValue proto(String name) {
         return prototypes.get(name);
     }

@@ -29,7 +29,7 @@ public class CodeFunction extends FunctionValue {
 
     @Override
     public Object call(Context ctx, Object thisArg, Object ...args) throws InterruptedException {
-        return new CodeFrame(ctx, thisArg, args, this).run(new Context(environment, ctx.message));
+        return new CodeFrame(ctx, thisArg, args, this).run(ctx.setEnv(environment));
     }
 
     public CodeFunction(Environment environment, String name, int localsN, int length, ValueVariable[] captures, Instruction[] body) {

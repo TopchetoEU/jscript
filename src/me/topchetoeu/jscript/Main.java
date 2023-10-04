@@ -102,7 +102,7 @@ public class Main {
                         var raw = in.readLine();
 
                         if (raw == null) break;
-                        engine.pushMsg(false, new Context(env, new Message(engine)), "<stdio>", raw, null).toObservable().once(valuePrinter);
+                        engine.pushMsg(false, env.context(new Message(engine)), "<stdio>", raw, null).toObservable().once(valuePrinter);
                     }
                     catch (EngineException e) {
                         try {

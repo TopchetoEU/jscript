@@ -13,7 +13,14 @@ public class Message {
     private final ArrayList<CodeFrame> frames = new ArrayList<>();
     public int maxStackFrames = 1000;
 
+    public final Data data = new Data();
+
     public List<CodeFrame> frames() { return Collections.unmodifiableList(frames); }
+
+    public Message addData(Data data) {
+        this.data.addAll(data);
+        return this;
+    }
 
     public Message pushFrame(Context ctx, CodeFrame frame) throws InterruptedException {
         this.frames.add(frame);

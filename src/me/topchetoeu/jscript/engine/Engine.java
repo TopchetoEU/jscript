@@ -11,19 +11,19 @@ public class Engine {
     private class UncompiledFunction extends FunctionValue {
         public final String filename;
         public final String raw;
-        public final Environment ctx;
+        public final Environment env;
 
         @Override
         public Object call(Context ctx, Object thisArg, Object ...args) throws InterruptedException {
-            ctx = new Context(this.ctx, ctx.message);
+            ctx = ctx.setEnv(env);
             return ctx.compile(filename, raw).call(ctx, thisArg, args);
         }
 
-        public UncompiledFunction(Environment ctx, String filename, String raw) {
+        public UncompiledFunction(Environment env, String filename, String raw) {
             super(filename, 0);
             this.filename = filename;
             this.raw = raw;
-            this.ctx = ctx; 
+            this.env = env; 
         }
     }
 
@@ -32,10 +32,10 @@ public class Engine {
         public final Object thisArg;
         public final Object[] args;
         public final DataNotifier<Object> notifier = new DataNotifier<>();
-        public final Message ctx;
+        public final Message msg;
 
         public Task(Message ctx, FunctionValue func, Object thisArg, Object[] args) {
-            this.ctx = ctx;
+            this.msg = ctx;
             this.func = func;
             this.thisArg = thisArg;
             this.args = args;
@@ -52,7 +52,7 @@ public class Engine {
 
     private void runTask(Task task) throws InterruptedException {
         try {
-            task.notifier.next(task.func.call(new Context(null, task.ctx), task.thisArg, task.args));
+            task.notifier.next(task.func.call(task.msg.context(null), task.thisArg, task.args));
         }
         catch (InterruptedException e) {
             task.notifier.error(new RuntimeException(e));
