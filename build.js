@@ -69,7 +69,6 @@ async function compileJava() {
     try {
         try { await fs.rm('dst', { recursive: true }); } catch {}
         await copy('src', 'dst/classes', v => !v.endsWith('.java'));
-        await run('tsc', '-p', 'lib/tsconfig.json', '--outFile', 'dst/classes/me/topchetoeu/jscript/js/core.js'),
         await compileJava();
         await run('jar', '-c', '-f', 'dst/jscript.jar', '-e', 'me.topchetoeu.jscript.Main', '-C', 'dst/classes', '.');
     }

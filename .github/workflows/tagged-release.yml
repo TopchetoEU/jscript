@@ -14,6 +14,7 @@ jobs:
       - name: Clone repository
         uses: GuillaumeFalourd/clone-github-repo-action@main
         with:
+          branch: 'master' # fuck this political bullshitshit, took me an hour to fix this
           owner: 'TopchetoEU'
           repository: 'java-jscript'
       - name: "Build"
