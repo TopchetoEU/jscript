@@ -15,9 +15,6 @@ public class Internals {
     private static final DataKey<HashMap<Integer, Thread>> THREADS = new DataKey<>();
     private static final DataKey<Integer> I = new DataKey<>();
 
-    @Native public static FunctionValue bind(FunctionValue func, Object thisArg) throws InterruptedException {
-        return FunctionLib.bind(func, thisArg);
-    }
     @Native public static void log(Context ctx, Object ...args) throws InterruptedException {
         for (var arg : args) {
             Values.printValue(ctx, arg);
@@ -87,6 +84,9 @@ public class Internals {
         var wp = env.wrappersProvider;
         var glob = env.global = new GlobalScope(NativeWrapperProvider.makeNamespace(env, Internals.class));
 
+        glob.define(null, "Math", false, NativeWrapperProvider.makeNamespace(env, MathLib.class));
+        
+        glob.define(null, "Date", false, wp.getConstr(DateLib.class));
         glob.define(null, "Object", false, wp.getConstr(ObjectLib.class));
         glob.define(null, "Function", false, wp.getConstr(FunctionLib.class));
         glob.define(null, "Array", false, wp.getConstr(ArrayLib.class));

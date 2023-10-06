@@ -254,6 +254,12 @@ public class DateLib {
         else return normal.getTimeInMillis();
     }
 
+    @Native
+    public String toString() {
+        return normal.getTime().toString();
+    }
+
+    @Native
     public DateLib(long timestamp) {
         normal = Calendar.getInstance();
         utc = Calendar.getInstance();
