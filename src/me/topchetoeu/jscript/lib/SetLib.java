@@ -1,4 +1,4 @@
-package me.topchetoeu.jscript.polyfills;
+package me.topchetoeu.jscript.lib;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -12,7 +12,7 @@ import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.interop.Native;
 import me.topchetoeu.jscript.interop.NativeGetter;
 
-public class SetPolyfill {
+public class SetLib {
     private LinkedHashSet<Object> set = new LinkedHashSet<>();
 
     @Native("@@Symbol.typeName") public final String name = "Set";
@@ -57,7 +57,7 @@ public class SetPolyfill {
         for (var el : keys) func.call(ctx, thisArg, el, el, this);
     }
 
-    @Native public SetPolyfill(Context ctx, Object iterable) throws InterruptedException {
+    @Native public SetLib(Context ctx, Object iterable) throws InterruptedException {
         for (var el : Values.toJavaIterable(ctx, iterable)) add(el);
     }
 }

@@ -1,4 +1,4 @@
-package me.topchetoeu.jscript.polyfills;
+package me.topchetoeu.jscript.lib;
 
 import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.Environment;
@@ -13,7 +13,7 @@ import me.topchetoeu.jscript.interop.Native;
 import me.topchetoeu.jscript.interop.NativeConstructor;
 import me.topchetoeu.jscript.interop.NativeInit;
 
-public class ObjectPolyfill {
+public class ObjectLib {
     @Native public static ObjectValue assign(Context ctx, ObjectValue dst, Object... src) throws InterruptedException {
         for (var obj : src) {
             for (var key : Values.getMembers(ctx, obj, true, true)) {
@@ -201,14 +201,14 @@ public class ObjectPolyfill {
         return "[object " + name + "]";
     }
     @Native(thisArg = true) public static boolean hasOwnProperty(Context ctx, Object thisArg, Object key) throws InterruptedException {
-        return ObjectPolyfill.hasOwn(ctx, thisArg, Values.convert(ctx, key, String.class));
+        return ObjectLib.hasOwn(ctx, thisArg, Values.convert(ctx, key, String.class));
     }
 
     @NativeConstructor(thisArg = true) public static Object constructor(Context ctx, Object thisArg, Object arg) throws InterruptedException {
         if (arg == null || arg == Values.NULL) return new ObjectValue();
-        else if (arg instanceof Boolean) return BooleanPolyfill.constructor(ctx, thisArg, arg);
-        else if (arg instanceof Number) return NumberPolyfill.constructor(ctx, thisArg, arg);
-        else if (arg instanceof String) return StringPolyfill.constructor(ctx, thisArg, arg);
+        else if (arg instanceof Boolean) return BooleanLib.constructor(ctx, thisArg, arg);
+        else if (arg instanceof Number) return NumberLib.constructor(ctx, thisArg, arg);
+        else if (arg instanceof String) return StringLib.constructor(ctx, thisArg, arg);
         // else if (arg instanceof Symbol) return SymbolPolyfill.constructor(ctx, thisArg, arg);
         else return arg;
     }

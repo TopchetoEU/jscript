@@ -1,4 +1,4 @@
-package me.topchetoeu.jscript.polyfills;
+package me.topchetoeu.jscript.lib;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -12,7 +12,7 @@ import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.interop.Native;
 import me.topchetoeu.jscript.interop.NativeGetter;
 
-public class MapPolyfill {
+public class MapLib {
     private LinkedHashMap<Object, Object> map = new LinkedHashMap<>();
 
     @Native("@@Symbol.typeName") public final String name = "Map";
@@ -49,7 +49,7 @@ public class MapPolyfill {
     @Native public Object get(Object key) {
         return map.get(key);
     }
-    @Native public MapPolyfill set(Object key, Object val) {
+    @Native public MapLib set(Object key, Object val) {
         map.put(key, val);
         return this;
     }
@@ -67,7 +67,7 @@ public class MapPolyfill {
         for (var el : keys) func.call(ctx, thisArg, el, map.get(el), this);
     }
 
-    @Native public MapPolyfill(Context ctx, Object iterable) throws InterruptedException {
+    @Native public MapLib(Context ctx, Object iterable) throws InterruptedException {
         for (var el : Values.toJavaIterable(ctx, iterable)) {
             try {
                 set(Values.getMember(ctx, el, 0), Values.getMember(ctx, el, 1));

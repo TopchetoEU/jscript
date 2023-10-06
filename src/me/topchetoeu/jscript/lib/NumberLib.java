@@ -1,4 +1,4 @@
-package me.topchetoeu.jscript.polyfills;
+package me.topchetoeu.jscript.lib;
 
 import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.Environment;
@@ -9,7 +9,7 @@ import me.topchetoeu.jscript.interop.Native;
 import me.topchetoeu.jscript.interop.NativeConstructor;
 import me.topchetoeu.jscript.interop.NativeInit;
 
-public class NumberPolyfill {
+public class NumberLib {
     @Native public static final double EPSILON = java.lang.Math.ulp(1.0);
     @Native public static final double MAX_SAFE_INTEGER = 9007199254740991.;
     @Native public static final double MIN_SAFE_INTEGER = -MAX_SAFE_INTEGER;
@@ -38,18 +38,18 @@ public class NumberPolyfill {
 
     @NativeConstructor(thisArg = true) public static Object constructor(Context ctx, Object thisArg, Object val) throws InterruptedException {
         val = Values.toNumber(ctx, val);
-        if (thisArg instanceof ObjectValue) return new NumberPolyfill((double)val);
+        if (thisArg instanceof ObjectValue) return new NumberLib((double)val);
         else return val;
     }
     @Native(thisArg = true) public static String toString(Context ctx, Object thisArg) throws InterruptedException {
         return Values.toString(ctx, Values.toNumber(ctx, thisArg));
     }
     @Native(thisArg = true) public static double valueOf(Context ctx, Object thisArg) throws InterruptedException {
-        if (thisArg instanceof NumberPolyfill) return ((NumberPolyfill)thisArg).value;
+        if (thisArg instanceof NumberLib) return ((NumberLib)thisArg).value;
         else return Values.toNumber(ctx, thisArg);
     }
 
-    public NumberPolyfill(double val) {
+    public NumberLib(double val) {
         this.value = val;
     }
 

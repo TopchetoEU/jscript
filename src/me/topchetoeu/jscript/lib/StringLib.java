@@ -1,4 +1,4 @@
-package me.topchetoeu.jscript.polyfills;
+package me.topchetoeu.jscript.lib;
 
 import java.util.regex.Pattern;
 
@@ -16,11 +16,11 @@ import me.topchetoeu.jscript.interop.NativeGetter;
 import me.topchetoeu.jscript.interop.NativeInit;
 
 // TODO: implement index wrapping properly
-public class StringPolyfill {
+public class StringLib {
     public final String value;
 
     private static String passThis(Context ctx, String funcName, Object val) throws InterruptedException {
-        if (val instanceof StringPolyfill) return ((StringPolyfill)val).value;
+        if (val instanceof StringLib) return ((StringLib)val).value;
         else if (val instanceof String) return (String)val;
         else throw EngineException.ofType(String.format("'%s' may only be called upon object and primitve strings.", funcName));
     }
@@ -234,7 +234,7 @@ public class StringPolyfill {
 
     @NativeConstructor(thisArg = true) public static Object constructor(Context ctx, Object thisArg, Object val) throws InterruptedException {
         val = Values.toString(ctx, val);
-        if (thisArg instanceof ObjectValue) return new StringPolyfill((String)val);
+        if (thisArg instanceof ObjectValue) return new StringLib((String)val);
         else return val;
     }
     @Native(thisArg = true) public static String toString(Context ctx, Object thisArg) throws InterruptedException {
@@ -250,7 +250,7 @@ public class StringPolyfill {
         return new String(arr);
     }
 
-    public StringPolyfill(String val) {
+    public StringLib(String val) {
         this.value = val;
     }
 

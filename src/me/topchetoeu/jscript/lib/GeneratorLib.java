@@ -1,4 +1,4 @@
-package me.topchetoeu.jscript.polyfills;
+package me.topchetoeu.jscript.lib;
 
 import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.frame.CodeFrame;
@@ -10,7 +10,7 @@ import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.exceptions.EngineException;
 import me.topchetoeu.jscript.interop.Native;
 
-public class GeneratorPolyfill extends FunctionValue {
+public class GeneratorLib extends FunctionValue {
     public final FunctionValue factory;
 
     public static class Generator {
@@ -94,7 +94,7 @@ public class GeneratorPolyfill extends FunctionValue {
         return handler;
     }
 
-    public GeneratorPolyfill(FunctionValue factory) {
+    public GeneratorLib(FunctionValue factory) {
         super(factory.name, factory.length);
         this.factory = factory;
     }

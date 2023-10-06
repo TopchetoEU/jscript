@@ -1,4 +1,4 @@
-package me.topchetoeu.jscript.polyfills;
+package me.topchetoeu.jscript.lib;
 
 import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.Environment;
@@ -10,7 +10,7 @@ import me.topchetoeu.jscript.interop.Native;
 import me.topchetoeu.jscript.interop.NativeConstructor;
 import me.topchetoeu.jscript.interop.NativeInit;
 
-public class ErrorPolyfill {
+public class ErrorLib {
     private static String toString(Context ctx, Object cause, Object name, Object message, ArrayValue stack) throws InterruptedException {
         if (name == null) name = "";
         else name = Values.toString(ctx, name).trim();

@@ -1,4 +1,4 @@
-package me.topchetoeu.jscript.polyfills;
+package me.topchetoeu.jscript.lib;
 
 import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.frame.CodeFrame;
@@ -8,11 +8,11 @@ import me.topchetoeu.jscript.engine.values.FunctionValue;
 import me.topchetoeu.jscript.engine.values.NativeFunction;
 import me.topchetoeu.jscript.exceptions.EngineException;
 
-public class AsyncFunctionPolyfill extends FunctionValue {
+public class AsyncFunctionLib extends FunctionValue {
     public final FunctionValue factory;
 
     public static class AsyncHelper {
-        public PromisePolyfill promise = new PromisePolyfill();
+        public PromiseLib promise = new PromiseLib();
         public CodeFrame frame;
 
         private boolean awaiting = false;
@@ -40,7 +40,7 @@ public class AsyncFunctionPolyfill extends FunctionValue {
             ctx.message.popFrame(frame);
 
             if (awaiting) {
-                PromisePolyfill.then(ctx, frame.pop(), new NativeFunction(this::fulfill), new NativeFunction(this::reject));
+                PromiseLib.then(ctx, frame.pop(), new NativeFunction(this::fulfill), new NativeFunction(this::reject));
             }
         }
 
@@ -69,7 +69,7 @@ public class AsyncFunctionPolyfill extends FunctionValue {
         return handler.promise;
     }
 
-    public AsyncFunctionPolyfill(FunctionValue factory) {
+    public AsyncFunctionLib(FunctionValue factory) {
         super(factory.name, factory.length);
         this.factory = factory;
     }

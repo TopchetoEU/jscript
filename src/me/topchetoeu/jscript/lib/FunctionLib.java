@@ -1,4 +1,4 @@
-package me.topchetoeu.jscript.polyfills;
+package me.topchetoeu.jscript.lib;
 
 import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.Environment;
@@ -11,7 +11,7 @@ import me.topchetoeu.jscript.interop.InitType;
 import me.topchetoeu.jscript.interop.Native;
 import me.topchetoeu.jscript.interop.NativeInit;
 
-public class FunctionPolyfill {
+public class FunctionLib {
     @Native(thisArg = true) public static Object apply(Context ctx, FunctionValue func, Object thisArg, ArrayValue args) throws InterruptedException {
         return func.call(ctx, thisArg, args.toArray());
     }
@@ -41,13 +41,13 @@ public class FunctionPolyfill {
     }
 
     @Native public static FunctionValue async(FunctionValue func) {
-        return new AsyncFunctionPolyfill(func);
+        return new AsyncFunctionLib(func);
     }
     @Native public static FunctionValue asyncGenerator(FunctionValue func) {
-        return new AsyncGeneratorPolyfill(func);
+        return new AsyncGeneratorLib(func);
     }
     @Native public static FunctionValue generator(FunctionValue func) {
-        return new GeneratorPolyfill(func);
+        return new GeneratorLib(func);
     }
 
     @NativeInit(InitType.PROTOTYPE) public static void init(Environment env, ObjectValue target) {

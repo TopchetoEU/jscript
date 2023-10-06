@@ -1,4 +1,4 @@
-package me.topchetoeu.jscript.polyfills;
+package me.topchetoeu.jscript.lib;
 
 import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.Environment;
@@ -9,9 +9,9 @@ import me.topchetoeu.jscript.interop.Native;
 import me.topchetoeu.jscript.interop.NativeConstructor;
 import me.topchetoeu.jscript.interop.NativeInit;
 
-public class BooleanPolyfill {
-    public static final BooleanPolyfill TRUE = new BooleanPolyfill(true);
-    public static final BooleanPolyfill FALSE = new BooleanPolyfill(false);
+public class BooleanLib {
+    public static final BooleanLib TRUE = new BooleanLib(true);
+    public static final BooleanLib FALSE = new BooleanLib(false);
 
     public final boolean value;
 
@@ -27,7 +27,7 @@ public class BooleanPolyfill {
         return Values.toBoolean(thisArg);
     }
 
-    public BooleanPolyfill(boolean val) {
+    public BooleanLib(boolean val) {
         this.value = val;
     }
     @NativeInit(InitType.PROTOTYPE) public static void init(Environment env, ObjectValue target) {

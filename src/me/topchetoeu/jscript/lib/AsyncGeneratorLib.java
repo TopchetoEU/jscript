@@ -1,4 +1,4 @@
-package me.topchetoeu.jscript.polyfills;
+package me.topchetoeu.jscript.lib;
 
 import java.util.Map;
 
@@ -12,14 +12,14 @@ import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.exceptions.EngineException;
 import me.topchetoeu.jscript.interop.Native;
 
-public class AsyncGeneratorPolyfill extends FunctionValue {
+public class AsyncGeneratorLib extends FunctionValue {
     public final FunctionValue factory;
 
     public static class AsyncGenerator {
         @Native("@@Symbol.typeName") public final String name = "AsyncGenerator";
         private int state = 0;
         private boolean done = false;
-        private PromisePolyfill currPromise;
+        private PromiseLib currPromise;
         public CodeFrame frame;
 
         private void next(Context ctx, Object inducedValue, Object inducedReturn, Object inducedError) throws InterruptedException {
@@ -58,7 +58,7 @@ public class AsyncGeneratorPolyfill extends FunctionValue {
             ctx.message.popFrame(frame);
 
             if (state == 1) {
-                PromisePolyfill.then(ctx, frame.pop(), new NativeFunction(this::fulfill), new NativeFunction(this::reject));
+                PromiseLib.then(ctx, frame.pop(), new NativeFunction(this::fulfill), new NativeFunction(this::reject));
             }
             else if (state == 2) {
                 var obj = new ObjectValue();
@@ -85,21 +85,21 @@ public class AsyncGeneratorPolyfill extends FunctionValue {
         }
 
         @Native
-        public PromisePolyfill next(Context ctx, Object ...args) throws InterruptedException {
-            this.currPromise = new PromisePolyfill();
+        public PromiseLib next(Context ctx, Object ...args) throws InterruptedException {
+            this.currPromise = new PromiseLib();
             if (args.length == 0) next(ctx, Runners.NO_RETURN, Runners.NO_RETURN, Runners.NO_RETURN);
             else next(ctx, args[0], Runners.NO_RETURN, Runners.NO_RETURN);
             return this.currPromise;
         }
         @Native("throw")
-        public PromisePolyfill _throw(Context ctx, Object error) throws InterruptedException {
-            this.currPromise = new PromisePolyfill();
+        public PromiseLib _throw(Context ctx, Object error) throws InterruptedException {
+            this.currPromise = new PromiseLib();
             next(ctx, Runners.NO_RETURN, Runners.NO_RETURN, error);
             return this.currPromise;
         }
         @Native("return")
-        public PromisePolyfill _return(Context ctx, Object value) throws InterruptedException {
-            this.currPromise = new PromisePolyfill();
+        public PromiseLib _return(Context ctx, Object value) throws InterruptedException {
+            this.currPromise = new PromiseLib();
             next(ctx, Runners.NO_RETURN, value, Runners.NO_RETURN);
             return this.currPromise;
         }
@@ -127,7 +127,7 @@ public class AsyncGeneratorPolyfill extends FunctionValue {
         return handler;
     }
 
-    public AsyncGeneratorPolyfill(FunctionValue factory) {
+    public AsyncGeneratorLib(FunctionValue factory) {
         super(factory.name, factory.length);
         this.factory = factory;
     }

@@ -1,4 +1,4 @@
-package me.topchetoeu.jscript.polyfills;
+package me.topchetoeu.jscript.lib;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,7 +18,7 @@ import me.topchetoeu.jscript.interop.InitType;
 import me.topchetoeu.jscript.interop.Native;
 import me.topchetoeu.jscript.interop.NativeInit;
 
-public class PromisePolyfill {
+public class PromiseLib {
     private static class Handle {
         public final Context ctx;
         public final FunctionValue fulfilled;
@@ -32,24 +32,24 @@ public class PromisePolyfill {
     }
 
     @Native("resolve")
-    public static PromisePolyfill ofResolved(Context ctx, Object val) throws InterruptedException {
-        var res = new PromisePolyfill();
+    public static PromiseLib ofResolved(Context ctx, Object val) throws InterruptedException {
+        var res = new PromiseLib();
         res.fulfill(ctx, val);
         return res;
     }
     @Native("reject")
-    public static PromisePolyfill ofRejected(Context ctx, Object val) throws InterruptedException {
-        var res = new PromisePolyfill();
+    public static PromiseLib ofRejected(Context ctx, Object val) throws InterruptedException {
+        var res = new PromiseLib();
         res.reject(ctx, val);
         return res;
     }
 
-    @Native public static PromisePolyfill any(Context ctx, Object _promises) throws InterruptedException {
+    @Native public static PromiseLib any(Context ctx, Object _promises) throws InterruptedException {
         if (!Values.isArray(_promises)) throw EngineException.ofType("Expected argument for any to be an array.");
         var promises = Values.array(_promises); 
         if (promises.size() == 0) return ofResolved(ctx, new ArrayValue());
         var n = new int[] { promises.size() };
-        var res = new PromisePolyfill();
+        var res = new PromiseLib();
 
         var errors = new ArrayValue();
 
@@ -69,11 +69,11 @@ public class PromisePolyfill {
 
         return res;
     }
-    @Native public static PromisePolyfill race(Context ctx, Object _promises) throws InterruptedException  {
+    @Native public static PromiseLib race(Context ctx, Object _promises) throws InterruptedException  {
         if (!Values.isArray(_promises)) throw EngineException.ofType("Expected argument for any to be an array.");
         var promises = Values.array(_promises); 
         if (promises.size() == 0) return ofResolved(ctx, new ArrayValue());
-        var res = new PromisePolyfill();
+        var res = new PromiseLib();
 
         for (var i = 0; i < promises.size(); i++) {
             var val = promises.get(i);
@@ -85,12 +85,12 @@ public class PromisePolyfill {
 
         return res;
     }
-    @Native public static PromisePolyfill all(Context ctx, Object _promises) throws InterruptedException  {
+    @Native public static PromiseLib all(Context ctx, Object _promises) throws InterruptedException  {
         if (!Values.isArray(_promises)) throw EngineException.ofType("Expected argument for any to be an array.");
         var promises = Values.array(_promises); 
         if (promises.size() == 0) return ofResolved(ctx, new ArrayValue());
         var n = new int[] { promises.size() };
-        var res = new PromisePolyfill();
+        var res = new PromiseLib();
 
         var result = new ArrayValue();
 
@@ -112,12 +112,12 @@ public class PromisePolyfill {
 
         return res;
     }
-    @Native public static PromisePolyfill allSettled(Context ctx, Object _promises) throws InterruptedException  {
+    @Native public static PromiseLib allSettled(Context ctx, Object _promises) throws InterruptedException  {
         if (!Values.isArray(_promises)) throw EngineException.ofType("Expected argument for any to be an array.");
         var promises = Values.array(_promises); 
         if (promises.size() == 0) return ofResolved(ctx, new ArrayValue());
         var n = new int[] { promises.size() };
-        var res = new PromisePolyfill();
+        var res = new PromiseLib();
 
         var result = new ArrayValue();
 
@@ -159,14 +159,14 @@ public class PromisePolyfill {
         var onFulfill = _onFulfill instanceof FunctionValue ? ((FunctionValue)_onFulfill) : null;
         var onReject = _onReject instanceof FunctionValue ? ((FunctionValue)_onReject) : null;
 
-        var res = new PromisePolyfill();
+        var res = new PromiseLib();
 
         var fulfill = onFulfill == null ? new NativeFunction((_ctx, _thisArg, _args) -> _args.length > 0 ? _args[0] : null) : (FunctionValue)onFulfill;
         var reject = onReject == null ? new NativeFunction((_ctx, _thisArg, _args) -> {
             throw new EngineException(_args.length > 0 ? _args[0] : null);
         }) : (FunctionValue)onReject;
 
-        if (thisArg instanceof NativeWrapper && ((NativeWrapper)thisArg).wrapped instanceof PromisePolyfill) {
+        if (thisArg instanceof NativeWrapper && ((NativeWrapper)thisArg).wrapped instanceof PromiseLib) {
             thisArg = ((NativeWrapper)thisArg).wrapped;
         }
 
@@ -183,7 +183,7 @@ public class PromisePolyfill {
             return null;
         });
 
-        if (thisArg instanceof PromisePolyfill) ((PromisePolyfill)thisArg).handle(ctx, fulfillHandle, rejectHandle);
+        if (thisArg instanceof PromiseLib) ((PromiseLib)thisArg).handle(ctx, fulfillHandle, rejectHandle);
         else {
             Object next;
             try {
@@ -239,7 +239,7 @@ public class PromisePolyfill {
     private void resolve(Context ctx, Object val, int state) throws InterruptedException {
         if (this.state != STATE_PENDING) return;
 
-        if (val instanceof PromisePolyfill) ((PromisePolyfill)val).handle(ctx,
+        if (val instanceof PromiseLib) ((PromiseLib)val).handle(ctx,
             new NativeFunction(null, (e, th, a) -> { this.resolve(ctx, a[0], state); return null; }),
             new NativeFunction(null, (e, th, a) -> { this.resolve(ctx, a[0], STATE_REJECTED); return null; })
         );
@@ -314,7 +314,7 @@ public class PromisePolyfill {
     /**
      * NOT THREAD SAFE - must be called from the engine executor thread
      */
-    @Native public PromisePolyfill(Context ctx, FunctionValue func) throws InterruptedException {
+    @Native public PromiseLib(Context ctx, FunctionValue func) throws InterruptedException {
         if (!(func instanceof FunctionValue)) throw EngineException.ofType("A function must be passed to the promise constructor.");
         try {
             func.call(
@@ -334,11 +334,11 @@ public class PromisePolyfill {
         }
     }
 
-    private PromisePolyfill(int state, Object val) {
+    private PromiseLib(int state, Object val) {
         this.state = state;
         this.val = val;
     }
-    public PromisePolyfill() {
+    public PromiseLib() {
         this(STATE_PENDING, null);
     }
 

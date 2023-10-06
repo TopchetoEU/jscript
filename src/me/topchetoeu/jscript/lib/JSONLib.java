@@ -1,4 +1,4 @@
-package me.topchetoeu.jscript.polyfills;
+package me.topchetoeu.jscript.lib;
 
 import java.util.HashSet;
 import java.util.stream.Collectors;
@@ -14,12 +14,12 @@ import me.topchetoeu.jscript.json.JSONElement;
 import me.topchetoeu.jscript.json.JSONList;
 import me.topchetoeu.jscript.json.JSONMap;
 
-public class JSONPolyfill {
+public class JSONLib {
     private static Object toJS(JSONElement val) {
         if (val.isBoolean()) return val.bool();
         if (val.isString()) return val.string();
         if (val.isNumber()) return val.number();
-        if (val.isList()) return ArrayValue.of(null, val.list().stream().map(JSONPolyfill::toJS).collect(Collectors.toList()));
+        if (val.isList()) return ArrayValue.of(null, val.list().stream().map(JSONLib::toJS).collect(Collectors.toList()));
         if (val.isMap()) {
             var res = new ObjectValue();
             for (var el : val.map().entrySet()) {

@@ -1,4 +1,4 @@
-package me.topchetoeu.jscript.polyfills;
+package me.topchetoeu.jscript.lib;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -12,16 +12,16 @@ import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.interop.Native;
 import me.topchetoeu.jscript.interop.NativeGetter;
 
-public class RegExpPolyfill {
+public class RegExpLib {
     // I used Regex to analyze Regex
     private static final Pattern NAMED_PATTERN = Pattern.compile("\\(\\?<([^=!].*?)>", Pattern.DOTALL);
     private static final Pattern ESCAPE_PATTERN = Pattern.compile("[/\\-\\\\^$*+?.()|\\[\\]{}]");
 
     private static String cleanupPattern(Context ctx, Object val) throws InterruptedException {
         if (val == null) return "(?:)";
-        if (val instanceof RegExpPolyfill) return ((RegExpPolyfill)val).source;
-        if (val instanceof NativeWrapper && ((NativeWrapper)val).wrapped instanceof RegExpPolyfill) {
-            return ((RegExpPolyfill)((NativeWrapper)val).wrapped).source;
+        if (val instanceof RegExpLib) return ((RegExpLib)val).source;
+        if (val instanceof NativeWrapper && ((NativeWrapper)val).wrapped instanceof RegExpLib) {
+            return ((RegExpLib)((NativeWrapper)val).wrapped).source;
         }
         var res = Values.toString(ctx, val);
         if (res.equals("")) return "(?:)";
@@ -46,11 +46,11 @@ public class RegExpPolyfill {
     }
 
     @Native
-    public static RegExpPolyfill escape(Context ctx, Object raw, Object flags) throws InterruptedException {
+    public static RegExpLib escape(Context ctx, Object raw, Object flags) throws InterruptedException {
         return escape(Values.toString(ctx, raw), cleanupFlags(ctx, flags));
     }
-    public static RegExpPolyfill escape(String raw, String flags) {
-        return new RegExpPolyfill(ESCAPE_PATTERN.matcher(raw).replaceAll("\\\\$0"), flags);
+    public static RegExpLib escape(String raw, String flags) {
+        return new RegExpLib(ESCAPE_PATTERN.matcher(raw).replaceAll("\\\\$0"), flags);
     }
 
     private Pattern pattern;
@@ -153,7 +153,7 @@ public class RegExpPolyfill {
     }
 
     @Native("@@Symvol.matchAll") public Object matchAll(Context ctx, String target) throws InterruptedException {
-        var pattern = new RegExpPolyfill(this.source, this.flags() + "g");
+        var pattern = new RegExpLib(this.source, this.flags() + "g");
 
         return Values.fromJavaIterator(ctx, new Iterator<Object>() {
             private Object val = null;
@@ -175,7 +175,7 @@ public class RegExpPolyfill {
     }
     
     @Native("@@Symvol.split") public ArrayValue split(Context ctx, String target, Object limit, boolean sensible) throws InterruptedException {
-        var pattern = new RegExpPolyfill(this.source, this.flags() + "g");
+        var pattern = new RegExpLib(this.source, this.flags() + "g");
         Object match;
         int lastEnd = 0;
         var res = new ArrayValue();
@@ -260,10 +260,10 @@ public class RegExpPolyfill {
     //         else return -1;
     //     }
     // },
-    @Native public RegExpPolyfill(Context ctx, Object pattern, Object flags) throws InterruptedException {
+    @Native public RegExpLib(Context ctx, Object pattern, Object flags) throws InterruptedException {
         this(cleanupPattern(ctx, pattern), cleanupFlags(ctx, flags));
     }
-    public RegExpPolyfill(String pattern, String flags) {
+    public RegExpLib(String pattern, String flags) {
         if (pattern == null || pattern.equals("")) pattern = "(?:)";
         if (flags == null || flags.equals("")) flags = "";
 
@@ -292,6 +292,6 @@ public class RegExpPolyfill {
         namedGroups = groups.toArray(String[]::new);
     }
 
-    public RegExpPolyfill(String pattern) { this(pattern, null); }
-    public RegExpPolyfill() { this(null, null); }
+    public RegExpLib(String pattern) { this(pattern, null); }
+    public RegExpLib() { this(null, null); }
 }

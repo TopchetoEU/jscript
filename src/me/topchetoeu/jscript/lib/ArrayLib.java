@@ -1,4 +1,4 @@
-package me.topchetoeu.jscript.polyfills;
+package me.topchetoeu.jscript.lib;
 
 import java.util.Iterator;
 import java.util.Stack;
@@ -16,7 +16,7 @@ import me.topchetoeu.jscript.interop.NativeGetter;
 import me.topchetoeu.jscript.interop.NativeInit;
 import me.topchetoeu.jscript.interop.NativeSetter;
 
-public class ArrayPolyfill {
+public class ArrayLib {
     @NativeGetter(thisArg = true) public static int length(Context ctx, ArrayValue thisArg) throws InterruptedException {
         return thisArg.size();
     }

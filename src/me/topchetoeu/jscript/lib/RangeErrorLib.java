@@ -1,4 +1,4 @@
-package me.topchetoeu.jscript.polyfills;
+package me.topchetoeu.jscript.lib;
 
 import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.Environment;
@@ -7,9 +7,9 @@ import me.topchetoeu.jscript.interop.InitType;
 import me.topchetoeu.jscript.interop.NativeConstructor;
 import me.topchetoeu.jscript.interop.NativeInit;
 
-public class RangeErrorPolyfill extends ErrorPolyfill {
+public class RangeErrorLib extends ErrorLib {
     @NativeConstructor(thisArg = true) public static ObjectValue constructor(Context ctx, Object thisArg, Object message) throws InterruptedException {
-        var target = ErrorPolyfill.constructor(ctx, thisArg, message);
+        var target = ErrorLib.constructor(ctx, thisArg, message);
         target.defineProperty(ctx, "name", "RangeError");
         return target;
     }

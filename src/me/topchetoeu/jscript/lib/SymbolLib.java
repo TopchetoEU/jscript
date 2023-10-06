@@ -1,4 +1,4 @@
-package me.topchetoeu.jscript.polyfills;
+package me.topchetoeu.jscript.lib;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -15,7 +15,7 @@ import me.topchetoeu.jscript.interop.NativeConstructor;
 import me.topchetoeu.jscript.interop.NativeGetter;
 import me.topchetoeu.jscript.interop.NativeInit;
 
-public class SymbolPolyfill {
+public class SymbolLib {
     private static final Map<String, Symbol> symbols = new HashMap<>();
 
     @NativeGetter public static Symbol typeName(Context ctx) { return ctx.env.symbol("Symbol.typeName"); }
@@ -30,7 +30,7 @@ public class SymbolPolyfill {
     public final Symbol value;
 
     private static Symbol passThis(Context ctx, String funcName, Object val) throws InterruptedException {
-        if (val instanceof SymbolPolyfill) return ((SymbolPolyfill)val).value;
+        if (val instanceof SymbolLib) return ((SymbolLib)val).value;
         else if (val instanceof Symbol) return (Symbol)val;
         else throw EngineException.ofType(String.format("'%s' may only be called upon object and primitve symbols.", funcName));
     }
@@ -59,7 +59,7 @@ public class SymbolPolyfill {
         return sym.value;
     }
 
-    public SymbolPolyfill(Symbol val) {
+    public SymbolLib(Symbol val) {
         this.value = val;
     }
 
