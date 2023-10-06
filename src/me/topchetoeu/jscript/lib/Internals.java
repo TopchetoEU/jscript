@@ -9,7 +9,6 @@ import me.topchetoeu.jscript.engine.scope.GlobalScope;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
 import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.interop.Native;
-import me.topchetoeu.jscript.interop.NativeWrapperProvider;
 
 public class Internals {
     private static final DataKey<HashMap<Integer, Thread>> THREADS = new DataKey<>();
@@ -82,10 +81,11 @@ public class Internals {
 
     public void apply(Environment env) {
         var wp = env.wrappersProvider;
-        var glob = env.global = new GlobalScope(NativeWrapperProvider.makeNamespace(env, Internals.class));
+        var glob = env.global = new GlobalScope(wp.getNamespace(Internals.class));
 
-        glob.define(null, "Math", false, NativeWrapperProvider.makeNamespace(env, MathLib.class));
-        
+        glob.define(null, "Math", false, wp.getNamespace(MathLib.class));
+        glob.define(null, "JSON", false, wp.getNamespace(JSONLib.class));
+
         glob.define(null, "Date", false, wp.getConstr(DateLib.class));
         glob.define(null, "Object", false, wp.getConstr(ObjectLib.class));
         glob.define(null, "Function", false, wp.getConstr(FunctionLib.class));

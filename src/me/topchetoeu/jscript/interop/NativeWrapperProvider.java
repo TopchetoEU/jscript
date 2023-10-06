@@ -13,6 +13,7 @@ import me.topchetoeu.jscript.exceptions.EngineException;
 public class NativeWrapperProvider implements WrappersProvider {
     private final HashMap<Class<?>, FunctionValue> constructors = new HashMap<>();
     private final HashMap<Class<?>, ObjectValue> prototypes = new HashMap<>();
+    private final HashMap<Class<?>, ObjectValue> namespaces = new HashMap<>();
     private final Environment env;
 
     private static void applyMethods(Environment env, boolean member, ObjectValue target, Class<?> clazz) {
@@ -228,6 +229,10 @@ public class NativeWrapperProvider implements WrappersProvider {
     public ObjectValue getProto(Class<?> clazz) {
         initType(clazz, constructors.get(clazz), prototypes.get(clazz));
         return prototypes.get(clazz);
+    }
+    public ObjectValue getNamespace(Class<?> clazz) {
+        if (!namespaces.containsKey(clazz)) namespaces.put(clazz, makeNamespace(env, clazz));
+        return namespaces.get(clazz);
     }
     public FunctionValue getConstr(Class<?> clazz) {
         initType(clazz, constructors.get(clazz), prototypes.get(clazz));

@@ -5,5 +5,6 @@ import me.topchetoeu.jscript.engine.values.ObjectValue;
 
 public interface WrappersProvider {
     public ObjectValue getProto(Class<?> obj);
+    public ObjectValue getNamespace(Class<?> obj);
     public FunctionValue getConstr(Class<?> obj);
 }
