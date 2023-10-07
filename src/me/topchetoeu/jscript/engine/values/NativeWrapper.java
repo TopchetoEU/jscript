@@ -8,8 +8,7 @@ public class NativeWrapper extends ObjectValue {
 
     @Override
     public ObjectValue getPrototype(Context ctx) throws InterruptedException {
-        if (prototype == NATIVE_PROTO)
-            return ctx.env.wrappersProvider.getProto(wrapped.getClass());
+        if (prototype == NATIVE_PROTO) return ctx.environment().wrappers.getProto(wrapped.getClass());
         else return super.getPrototype(ctx);
     }
 

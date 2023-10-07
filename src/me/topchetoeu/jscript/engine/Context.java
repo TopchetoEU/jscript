@@ -1,27 +1,39 @@
 package me.topchetoeu.jscript.engine;
 
+import java.util.Stack;
+
 import me.topchetoeu.jscript.engine.values.FunctionValue;
 import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.parsing.Parsing;
 
 public class Context {
-    public final Environment env;
-    public final Message message;
+    private final Stack<Environment> env = new Stack<>();
+    public final Data data;
+    public final Engine engine;
+
+    public Environment environment() {
+        return env.empty() ? null : env.peek();
+    }
+
+    public Context pushEnv(Environment env) {
+        this.env.push(env);
+        return this;
+    }
+    public void popEnv() {
+        if (!env.empty()) this.env.pop();
+    }
 
     public FunctionValue compile(String filename, String raw) throws InterruptedException {
-        var res = Values.toString(this, env.compile.call(this, null, raw, filename));
-        return Parsing.compile(message.engine.functions, env, filename, res);
+        var res = Values.toString(this, environment().compile.call(this, null, raw, filename));
+        return Parsing.compile(engine.functions, environment(), filename, res);
     }
 
-    public Context setEnv(Environment env) {
-        return new Context(env, message);
+    public Context(Engine engine, Data data) {
+        this.data = new Data(engine.data);
+        if (data != null) this.data.addAll(data);
+        this.engine = engine;
     }
-    public Context setMsg(Message msg) {
-        return new Context(env, msg);
-    }
-
-    public Context(Environment env, Message msg) {
-        this.env = env;
-        this.message = msg;
+    public Context(Engine engine) {
+        this(engine, null);
     }
 }

@@ -13,19 +13,18 @@ public class Engine {
     private class UncompiledFunction extends FunctionValue {
         public final String filename;
         public final String raw;
-        public final Environment env;
+        private FunctionValue compiled = null;
 
         @Override
         public Object call(Context ctx, Object thisArg, Object ...args) throws InterruptedException {
-            ctx = ctx.setEnv(env);
-            return ctx.compile(filename, raw).call(ctx, thisArg, args);
+            if (compiled == null) compiled = ctx.compile(filename, raw);
+            return compiled.call(ctx, thisArg, args);
         }
 
-        public UncompiledFunction(Environment env, String filename, String raw) {
+        public UncompiledFunction(String filename, String raw) {
             super(filename, 0);
             this.filename = filename;
             this.raw = raw;
-            this.env = env; 
         }
     }
 
@@ -34,10 +33,10 @@ public class Engine {
         public final Object thisArg;
         public final Object[] args;
         public final DataNotifier<Object> notifier = new DataNotifier<>();
-        public final Message msg;
+        public final Context ctx;
 
-        public Task(Message ctx, FunctionValue func, Object thisArg, Object[] args) {
-            this.msg = ctx;
+        public Task(Context ctx, FunctionValue func, Object thisArg, Object[] args) {
+            this.ctx = ctx;
             this.func = func;
             this.thisArg = thisArg;
             this.args = args;
@@ -52,10 +51,11 @@ public class Engine {
 
     public final int id = ++nextId;
     public final HashMap<Long, Instruction[]> functions = new HashMap<>();
+    public final Data data = new Data().set(StackData.MAX_FRAMES, 10000);
 
     private void runTask(Task task) throws InterruptedException {
         try {
-            task.notifier.next(task.func.call(task.msg.context(null), task.thisArg, task.args));
+            task.notifier.next(task.func.call(task.ctx, task.thisArg, task.args));
         }
         catch (InterruptedException e) {
             task.notifier.error(new RuntimeException(e));
@@ -105,17 +105,13 @@ public class Engine {
         return this.thread != null;
     }
 
-    public Awaitable<Object> pushMsg(boolean micro, Message ctx, FunctionValue func, Object thisArg, Object ...args) {
-        var msg = new Task(ctx, func, thisArg, args);
+    public Awaitable<Object> pushMsg(boolean micro, Context ctx, FunctionValue func, Object thisArg, Object ...args) {
+        var msg = new Task(ctx == null ? new Context(this) : ctx, func, thisArg, args);
         if (micro) microTasks.addLast(msg);
         else macroTasks.addLast(msg);
         return msg.notifier;
     }
     public Awaitable<Object> pushMsg(boolean micro, Context ctx, String filename, String raw, Object thisArg, Object ...args) {
-        return pushMsg(micro, ctx.message, new UncompiledFunction(ctx.env, filename, raw), thisArg, args);
+        return pushMsg(micro, ctx, new UncompiledFunction(filename, raw), thisArg, args);
     }
-
-    // public Engine() {
-    //     this.typeRegister = new NativeTypeRegister();
-    // }
 }

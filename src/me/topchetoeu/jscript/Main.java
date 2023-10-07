@@ -7,7 +7,7 @@ import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import me.topchetoeu.jscript.engine.Message;
+import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.Engine;
 import me.topchetoeu.jscript.engine.Environment;
 import me.topchetoeu.jscript.engine.values.NativeFunction;
@@ -65,7 +65,7 @@ public class Main {
         env = new Environment(null, null, null);
         var exited = new boolean[1];
 
-        engine.pushMsg(false, new Message(engine), new NativeFunction((ctx, thisArg, _a) -> {
+        engine.pushMsg(false, null, new NativeFunction((ctx, thisArg, _a) -> {
             new Internals().apply(env);
 
             env.global.define("exit", _ctx -> {
@@ -94,7 +94,7 @@ public class Main {
                         var raw = in.readLine();
 
                         if (raw == null) break;
-                        engine.pushMsg(false, env.context(new Message(engine)), "<stdio>", raw, null).toObservable().once(valuePrinter);
+                        engine.pushMsg(false, new Context(engine).pushEnv(env), "<stdio>", raw, null).toObservable().once(valuePrinter);
                     }
                     catch (EngineException e) {
                         try {

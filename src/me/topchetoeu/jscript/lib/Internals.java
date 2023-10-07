@@ -31,12 +31,12 @@ public class Internals {
             }
             catch (InterruptedException e) { return; }
 
-            ctx.message.engine.pushMsg(false, ctx.message, func, null, args);
+            ctx.engine.pushMsg(false, ctx, func, null, args);
         });
         thread.start();
 
-        int i = ctx.env.data.increase(I, 1, 0);
-        var threads = ctx.env.data.add(THREADS, new HashMap<>());
+        int i = ctx.environment().data.increase(I, 1, 0);
+        var threads = ctx.environment().data.get(THREADS, new HashMap<>());
         threads.put(++i, thread);
         return i;
     }
@@ -51,19 +51,19 @@ public class Internals {
                 }
                 catch (InterruptedException e) { return; }
     
-                ctx.message.engine.pushMsg(false, ctx.message, func, null, args);
+                ctx.engine.pushMsg(false, ctx, func, null, args);
             }
         });
         thread.start();
 
-        int i = ctx.env.data.increase(I, 1, 0);
-        var threads = ctx.env.data.add(THREADS, new HashMap<>());
+        int i = ctx.environment().data.increase(I, 1, 0);
+        var threads = ctx.environment().data.get(THREADS, new HashMap<>());
         threads.put(++i, thread);
         return i;
     }
 
     @Native public static void clearTimeout(Context ctx, int i) {
-        var threads = ctx.env.data.add(THREADS, new HashMap<>());
+        var threads = ctx.environment().data.get(THREADS, new HashMap<>());
 
         var thread = threads.remove(i);
         if (thread != null) thread.interrupt();
@@ -80,7 +80,7 @@ public class Internals {
     }
 
     public void apply(Environment env) {
-        var wp = env.wrappersProvider;
+        var wp = env.wrappers;
         var glob = env.global = new GlobalScope(wp.getNamespace(Internals.class));
 
         glob.define(null, "Math", false, wp.getNamespace(MathLib.class));

@@ -147,13 +147,13 @@ public class ObjectValue {
 
     public ObjectValue getPrototype(Context ctx) throws InterruptedException {
         try {
-            if (prototype == OBJ_PROTO) return ctx.env.proto("object");
-            if (prototype == ARR_PROTO) return ctx.env.proto("array");
-            if (prototype == FUNC_PROTO) return ctx.env.proto("function");
-            if (prototype == ERR_PROTO) return ctx.env.proto("error");
-            if (prototype == RANGE_ERR_PROTO) return ctx.env.proto("rangeErr");
-            if (prototype == SYNTAX_ERR_PROTO) return ctx.env.proto("syntaxErr");
-            if (prototype == TYPE_ERR_PROTO) return ctx.env.proto("typeErr");
+            if (prototype == OBJ_PROTO) return ctx.environment().proto("object");
+            if (prototype == ARR_PROTO) return ctx.environment().proto("array");
+            if (prototype == FUNC_PROTO) return ctx.environment().proto("function");
+            if (prototype == ERR_PROTO) return ctx.environment().proto("error");
+            if (prototype == RANGE_ERR_PROTO) return ctx.environment().proto("rangeErr");
+            if (prototype == SYNTAX_ERR_PROTO) return ctx.environment().proto("syntaxErr");
+            if (prototype == TYPE_ERR_PROTO) return ctx.environment().proto("typeErr");
         }
         catch (NullPointerException e) {
             return null;
@@ -172,14 +172,14 @@ public class ObjectValue {
         else if (Values.isObject(val)) {
             var obj = Values.object(val);
 
-            if (ctx != null && ctx.env != null) {
-                if (obj == ctx.env.proto("object")) prototype = OBJ_PROTO;
-                else if (obj == ctx.env.proto("array")) prototype = ARR_PROTO;
-                else if (obj == ctx.env.proto("function")) prototype = FUNC_PROTO;
-                else if (obj == ctx.env.proto("error")) prototype = ERR_PROTO;
-                else if (obj == ctx.env.proto("syntaxErr")) prototype = SYNTAX_ERR_PROTO;
-                else if (obj == ctx.env.proto("typeErr")) prototype = TYPE_ERR_PROTO;
-                else if (obj == ctx.env.proto("rangeErr")) prototype = RANGE_ERR_PROTO;
+            if (ctx != null && ctx.environment() != null) {
+                if (obj == ctx.environment().proto("object")) prototype = OBJ_PROTO;
+                else if (obj == ctx.environment().proto("array")) prototype = ARR_PROTO;
+                else if (obj == ctx.environment().proto("function")) prototype = FUNC_PROTO;
+                else if (obj == ctx.environment().proto("error")) prototype = ERR_PROTO;
+                else if (obj == ctx.environment().proto("syntaxErr")) prototype = SYNTAX_ERR_PROTO;
+                else if (obj == ctx.environment().proto("typeErr")) prototype = TYPE_ERR_PROTO;
+                else if (obj == ctx.environment().proto("rangeErr")) prototype = RANGE_ERR_PROTO;
                 else prototype = obj;
             }
             else prototype = obj;

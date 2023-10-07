@@ -20,7 +20,7 @@ public class Environment {
     public final HashMap<String, Symbol> symbols = new HashMap<>();
 
     public GlobalScope global;
-    public WrappersProvider wrappersProvider;
+    public WrappersProvider wrappers;
 
     @Native public FunctionValue compile;
     @Native public FunctionValue regexConstructor = new NativeFunction("RegExp", (ctx, thisArg, args) -> {
@@ -57,7 +57,7 @@ public class Environment {
     }
 
     @Native public Environment fork() {
-        var res = new Environment(compile, wrappersProvider, global);
+        var res = new Environment(compile, wrappers, global);
         res.regexConstructor = regexConstructor;
         res.prototypes = new HashMap<>(prototypes);
         return res;
@@ -68,8 +68,11 @@ public class Environment {
         return res;
     }
 
-    public Context context(Message msg) {
-        return new Context(this, msg);
+    public Context context(Engine engine, Data data) {
+        return new Context(engine, data).pushEnv(this);
+    }
+    public Context context(Engine engine) {
+        return new Context(engine).pushEnv(this);
     }
 
     public Environment(FunctionValue compile, WrappersProvider nativeConverter, GlobalScope global) {
@@ -77,7 +80,7 @@ public class Environment {
         if (nativeConverter == null) nativeConverter = new NativeWrapperProvider(this);
         if (global == null) global = new GlobalScope();
 
-        this.wrappersProvider = nativeConverter;
+        this.wrappers = nativeConverter;
         this.compile = compile;
         this.global = global;
     }

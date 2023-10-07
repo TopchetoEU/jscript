@@ -6,7 +6,6 @@ import java.util.Map;
 
 import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.Environment;
-import me.topchetoeu.jscript.engine.Message;
 import me.topchetoeu.jscript.engine.values.ArrayValue;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
 import me.topchetoeu.jscript.engine.values.NativeFunction;
@@ -263,7 +262,7 @@ public class PromiseLib {
                     else if (state == STATE_REJECTED) {
                         for (var handle : handles) handle.rejected.call(handle.ctx, null, val);
                         if (handles.size() == 0) {
-                            ctx.message.engine.pushMsg(true, ctx.message, new NativeFunction((_ctx, _thisArg, _args) -> {
+                            ctx.engine.pushMsg(true, ctx, new NativeFunction((_ctx, _thisArg, _args) -> {
                                 if (!handled) {
                                     try { Values.printError(new EngineException(val).setContext(ctx), "(in promise)"); }
                                     catch (InterruptedException ex) { }
@@ -297,9 +296,9 @@ public class PromiseLib {
     }
 
     private void handle(Context ctx, FunctionValue fulfill, FunctionValue reject) {
-        if (state == STATE_FULFILLED) ctx.message.engine.pushMsg(true, new Message(ctx.message.engine), fulfill, null, val);
+        if (state == STATE_FULFILLED) ctx.engine.pushMsg(true, ctx, fulfill, null, val);
         else if (state == STATE_REJECTED) {
-            ctx.message.engine.pushMsg(true, new Message(ctx.message.engine), reject, null, val);
+            ctx.engine.pushMsg(true, ctx, reject, null, val);
             handled = true;
         }
         else handles.add(new Handle(ctx, fulfill, reject));

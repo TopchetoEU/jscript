@@ -1,6 +1,7 @@
 package me.topchetoeu.jscript.lib;
 
 import me.topchetoeu.jscript.engine.Context;
+import me.topchetoeu.jscript.engine.StackData;
 import me.topchetoeu.jscript.engine.frame.CodeFrame;
 import me.topchetoeu.jscript.engine.frame.Runners;
 import me.topchetoeu.jscript.engine.values.CodeFunction;
@@ -30,7 +31,7 @@ public class GeneratorLib extends FunctionValue {
             }
 
             Object res = null;
-            ctx.message.pushFrame(ctx, frame);
+            StackData.pushFrame(ctx, frame);
             yielding = false;
 
             while (!yielding) {
@@ -48,7 +49,7 @@ public class GeneratorLib extends FunctionValue {
                 }
             }
 
-            ctx.message.popFrame(frame);
+            StackData.popFrame(ctx, frame);
             if (done) frame = null;
             else res = frame.pop();
 

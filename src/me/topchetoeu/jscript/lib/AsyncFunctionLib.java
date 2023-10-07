@@ -1,6 +1,7 @@
 package me.topchetoeu.jscript.lib;
 
 import me.topchetoeu.jscript.engine.Context;
+import me.topchetoeu.jscript.engine.StackData;
 import me.topchetoeu.jscript.engine.frame.CodeFrame;
 import me.topchetoeu.jscript.engine.frame.Runners;
 import me.topchetoeu.jscript.engine.values.CodeFunction;
@@ -19,7 +20,8 @@ public class AsyncFunctionLib extends FunctionValue {
 
         private void next(Context ctx, Object inducedValue, Object inducedError) throws InterruptedException {
             Object res = null;
-            ctx.message.pushFrame(ctx, frame);
+            StackData.pushFrame(ctx, frame);
+            ctx.pushEnv(frame.function.environment);
 
             awaiting = false;
             while (!awaiting) {
@@ -37,7 +39,7 @@ public class AsyncFunctionLib extends FunctionValue {
                 }
             }
 
-            ctx.message.popFrame(frame);
+            StackData.popFrame(ctx, frame);
 
             if (awaiting) {
                 PromiseLib.then(ctx, frame.pop(), new NativeFunction(this::fulfill), new NativeFunction(this::reject));

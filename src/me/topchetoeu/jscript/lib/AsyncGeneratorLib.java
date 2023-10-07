@@ -3,6 +3,7 @@ package me.topchetoeu.jscript.lib;
 import java.util.Map;
 
 import me.topchetoeu.jscript.engine.Context;
+import me.topchetoeu.jscript.engine.StackData;
 import me.topchetoeu.jscript.engine.frame.CodeFrame;
 import me.topchetoeu.jscript.engine.frame.Runners;
 import me.topchetoeu.jscript.engine.values.CodeFunction;
@@ -34,7 +35,7 @@ public class AsyncGeneratorLib extends FunctionValue {
             }
 
             Object res = null;
-            ctx.message.pushFrame(ctx, frame);
+            StackData.pushFrame(ctx, frame);
             state = 0;
 
             while (state == 0) {
@@ -55,7 +56,7 @@ public class AsyncGeneratorLib extends FunctionValue {
                 }
             }
 
-            ctx.message.popFrame(frame);
+            StackData.popFrame(ctx, frame);
 
             if (state == 1) {
                 PromiseLib.then(ctx, frame.pop(), new NativeFunction(this::fulfill), new NativeFunction(this::reject));

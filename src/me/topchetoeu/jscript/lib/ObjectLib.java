@@ -194,7 +194,7 @@ public class ObjectLib {
         return thisArg;
     }
     @Native(thisArg = true) public static String toString(Context ctx, Object thisArg) throws InterruptedException {
-        var name = Values.getMember(ctx, thisArg, ctx.env.symbol("Symbol.typeName"));
+        var name = Values.getMember(ctx, thisArg, ctx.environment().symbol("Symbol.typeName"));
         if (name == null) name = "Unknown";
         else name = Values.toString(ctx, name);
 

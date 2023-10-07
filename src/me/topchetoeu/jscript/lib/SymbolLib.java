@@ -18,14 +18,14 @@ import me.topchetoeu.jscript.interop.NativeInit;
 public class SymbolLib {
     private static final Map<String, Symbol> symbols = new HashMap<>();
 
-    @NativeGetter public static Symbol typeName(Context ctx) { return ctx.env.symbol("Symbol.typeName"); }
-    @NativeGetter public static Symbol replace(Context ctx) { return ctx.env.symbol("Symbol.replace"); }
-    @NativeGetter public static Symbol match(Context ctx) { return ctx.env.symbol("Symbol.match"); }
-    @NativeGetter public static Symbol matchAll(Context ctx) { return ctx.env.symbol("Symbol.matchAll"); }
-    @NativeGetter public static Symbol split(Context ctx) { return ctx.env.symbol("Symbol.split"); }
-    @NativeGetter public static Symbol search(Context ctx) { return ctx.env.symbol("Symbol.search"); }
-    @NativeGetter public static Symbol iterator(Context ctx) { return ctx.env.symbol("Symbol.iterator"); }
-    @NativeGetter public static Symbol asyncIterator(Context ctx) { return ctx.env.symbol("Symbol.asyncIterator"); }
+    @NativeGetter public static Symbol typeName(Context ctx) { return ctx.environment().symbol("Symbol.typeName"); }
+    @NativeGetter public static Symbol replace(Context ctx) { return ctx.environment().symbol("Symbol.replace"); }
+    @NativeGetter public static Symbol match(Context ctx) { return ctx.environment().symbol("Symbol.match"); }
+    @NativeGetter public static Symbol matchAll(Context ctx) { return ctx.environment().symbol("Symbol.matchAll"); }
+    @NativeGetter public static Symbol split(Context ctx) { return ctx.environment().symbol("Symbol.split"); }
+    @NativeGetter public static Symbol search(Context ctx) { return ctx.environment().symbol("Symbol.search"); }
+    @NativeGetter public static Symbol iterator(Context ctx) { return ctx.environment().symbol("Symbol.iterator"); }
+    @NativeGetter public static Symbol asyncIterator(Context ctx) { return ctx.environment().symbol("Symbol.asyncIterator"); }
 
     public final Symbol value;
 

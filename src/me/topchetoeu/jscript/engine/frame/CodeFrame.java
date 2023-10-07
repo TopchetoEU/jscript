@@ -95,7 +95,7 @@ public class CodeFrame {
 
     private void setCause(Context ctx, EngineException err, EngineException cause) throws InterruptedException {
         if (err.value instanceof ObjectValue) {
-            Values.setMember(ctx, err, ctx.env.symbol("Symbol.cause"), cause);
+            Values.setMember(ctx, err, ctx.environment().symbol("Symbol.cause"), cause);
         }
         err.cause = cause;
     }
@@ -225,19 +225,6 @@ public class CodeFrame {
         if (error != null) throw error.setContext(ctx);
         if (returnValue != Runners.NO_RETURN) return returnValue;
         return Runners.NO_RETURN;
-    }
-
-    public Object run(Context ctx) throws InterruptedException {
-        try {
-            ctx.message.pushFrame(ctx, this);
-            while (true) {
-                var res = next(ctx, Runners.NO_RETURN, Runners.NO_RETURN, null);
-                if (res != Runners.NO_RETURN) return res;
-            }
-        }
-        finally {
-            ctx.message.popFrame(this);
-        }
     }
 
     public CodeFrame(Context ctx, Object thisArg, Object[] args, CodeFunction func) {

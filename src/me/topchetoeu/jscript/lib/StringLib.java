@@ -76,7 +76,7 @@ public class StringLib {
         var val = passThis(ctx, "indexOf", thisArg);
 
         if (term != null && term != Values.NULL && !(term instanceof String)) {
-            var search = Values.getMember(ctx, term, ctx.env.symbol("Symbol.search"));
+            var search = Values.getMember(ctx, term, ctx.environment().symbol("Symbol.search"));
             if (search instanceof FunctionValue) {
                 return (int)Values.toNumber(ctx, ((FunctionValue)search).call(ctx, term, val, false, start));
             }
@@ -88,7 +88,7 @@ public class StringLib {
         var val = passThis(ctx, "lastIndexOf", thisArg);
 
         if (term != null && term != Values.NULL && !(term instanceof String)) {
-            var search = Values.getMember(ctx, term, ctx.env.symbol("Symbol.search"));
+            var search = Values.getMember(ctx, term, ctx.environment().symbol("Symbol.search"));
             if (search instanceof FunctionValue) {
                 return (int)Values.toNumber(ctx, ((FunctionValue)search).call(ctx, term, val, true, pos));
             }
@@ -105,7 +105,7 @@ public class StringLib {
         var val = passThis(ctx, "replace", thisArg);
 
         if (term != null && term != Values.NULL && !(term instanceof String)) {
-            var replace = Values.getMember(ctx, term, ctx.env.symbol("Symbol.replace"));
+            var replace = Values.getMember(ctx, term, ctx.environment().symbol("Symbol.replace"));
             if (replace instanceof FunctionValue) {
                 return Values.toString(ctx, ((FunctionValue)replace).call(ctx, term, val, replacement));
             }
@@ -117,7 +117,7 @@ public class StringLib {
         var val = passThis(ctx, "replaceAll", thisArg);
 
         if (term != null && term != Values.NULL && !(term instanceof String)) {
-            var replace = Values.getMember(ctx, term, ctx.env.symbol("Symbol.replace"));
+            var replace = Values.getMember(ctx, term, ctx.environment().symbol("Symbol.replace"));
             if (replace instanceof FunctionValue) {
                 return Values.toString(ctx, ((FunctionValue)replace).call(ctx, term, val, replacement));
             }
@@ -132,11 +132,11 @@ public class StringLib {
         FunctionValue match;
         
         try {
-            var _match = Values.getMember(ctx, term, ctx.env.symbol("Symbol.match"));
+            var _match = Values.getMember(ctx, term, ctx.environment().symbol("Symbol.match"));
             if (_match instanceof FunctionValue) match = (FunctionValue)_match;
-            else if (ctx.env.regexConstructor != null) {
-                var regex = Values.callNew(ctx, ctx.env.regexConstructor, Values.toString(ctx, term), "");
-                _match = Values.getMember(ctx, regex, ctx.env.symbol("Symbol.match"));
+            else if (ctx.environment().regexConstructor != null) {
+                var regex = Values.callNew(ctx, ctx.environment().regexConstructor, Values.toString(ctx, term), "");
+                _match = Values.getMember(ctx, regex, ctx.environment().symbol("Symbol.match"));
                 if (_match instanceof FunctionValue) match = (FunctionValue)_match;
                 else throw EngineException.ofError("Regular expressions don't support matching.");
             }
@@ -154,14 +154,14 @@ public class StringLib {
         FunctionValue match = null;
         
         try {
-            var _match = Values.getMember(ctx, term, ctx.env.symbol("Symbol.matchAll"));
+            var _match = Values.getMember(ctx, term, ctx.environment().symbol("Symbol.matchAll"));
             if (_match instanceof FunctionValue) match = (FunctionValue)_match;
         }
         catch (IllegalArgumentException e) { }
 
-        if (match == null && ctx.env.regexConstructor != null) {
-            var regex = Values.callNew(ctx, ctx.env.regexConstructor, Values.toString(ctx, term), "g");
-            var _match = Values.getMember(ctx, regex, ctx.env.symbol("Symbol.matchAll"));
+        if (match == null && ctx.environment().regexConstructor != null) {
+            var regex = Values.callNew(ctx, ctx.environment().regexConstructor, Values.toString(ctx, term), "g");
+            var _match = Values.getMember(ctx, regex, ctx.environment().symbol("Symbol.matchAll"));
             if (_match instanceof FunctionValue) match = (FunctionValue)_match;
             else throw EngineException.ofError("Regular expressions don't support matching.");
         }
@@ -176,7 +176,7 @@ public class StringLib {
         if (lim != null) lim = Values.toNumber(ctx, lim);
 
         if (term != null && term != Values.NULL && !(term instanceof String)) {
-            var replace = Values.getMember(ctx, term, ctx.env.symbol("Symbol.replace"));
+            var replace = Values.getMember(ctx, term, ctx.environment().symbol("Symbol.replace"));
             if (replace instanceof FunctionValue) {
                 var tmp = ((FunctionValue)replace).call(ctx, term, val, lim, sensible);
 

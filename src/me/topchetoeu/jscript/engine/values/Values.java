@@ -321,10 +321,10 @@ public class Values {
         if (isObject(obj)) return object(obj).getPrototype(ctx);
         if (ctx == null) return null;
 
-        if (obj instanceof String) return ctx.env.proto("string");
-        else if (obj instanceof Number) return ctx.env.proto("number");
-        else if (obj instanceof Boolean) return ctx.env.proto("bool");
-        else if (obj instanceof Symbol) return ctx.env.proto("symbol");
+        if (obj instanceof String) return ctx.environment().proto("string");
+        else if (obj instanceof Number) return ctx.environment().proto("number");
+        else if (obj instanceof Boolean) return ctx.environment().proto("bool");
+        else if (obj instanceof Symbol) return ctx.environment().proto("symbol");
 
         return null;
     }
@@ -446,7 +446,7 @@ public class Values {
 
         if (val instanceof Class) {
             if (ctx == null) return null;
-            else return ctx.env.wrappersProvider.getConstr((Class<?>)val);
+            else return ctx.environment().wrappers.getConstr((Class<?>)val);
         }
 
         return new NativeWrapper(val);
@@ -520,7 +520,7 @@ public class Values {
     public static Iterable<Object> toJavaIterable(Context ctx, Object obj) {
         return () -> {
             try {
-                var symbol = ctx.env.symbol("Symbol.iterator");
+                var symbol = ctx.environment().symbol("Symbol.iterator");
 
                 var iteratorFunc = getMember(ctx, obj, symbol);
                 if (!isFunction(iteratorFunc)) return Collections.emptyIterator();
@@ -590,7 +590,7 @@ public class Values {
         var res = new ObjectValue();
 
         try {
-            var key = getMember(ctx, getMember(ctx, ctx.env.proto("symbol"), "constructor"), "iterator");
+            var key = getMember(ctx, getMember(ctx, ctx.environment().proto("symbol"), "constructor"), "iterator");
             res.defineProperty(ctx, key, new NativeFunction("", (_ctx, thisArg, args) -> thisArg));
         }
         catch (IllegalArgumentException | NullPointerException e) { }
