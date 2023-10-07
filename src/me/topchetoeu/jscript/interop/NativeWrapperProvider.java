@@ -9,6 +9,7 @@ import me.topchetoeu.jscript.engine.values.FunctionValue;
 import me.topchetoeu.jscript.engine.values.NativeFunction;
 import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.exceptions.EngineException;
+import me.topchetoeu.jscript.exceptions.UncheckedException;
 
 public class NativeWrapperProvider implements WrappersProvider {
     private final HashMap<Class<?>, FunctionValue> constructors = new HashMap<>();
@@ -120,7 +121,7 @@ public class NativeWrapperProvider implements WrappersProvider {
             var init = overload.getAnnotation(NativeInit.class);
             if (init == null || init.value() != InitType.PROTOTYPE) continue;
             try { overload.invoke(null, ctx, res); }
-            catch (ReflectiveOperationException e) { e.printStackTrace(); }
+            catch (Throwable e) { throw new UncheckedException(e); }
         }
 
         applyMethods(ctx, true, res, clazz);
@@ -152,7 +153,7 @@ public class NativeWrapperProvider implements WrappersProvider {
             var init = overload.getAnnotation(NativeInit.class);
             if (init == null || init.value() != InitType.CONSTRUCTOR) continue;
             try { overload.invoke(null, ctx, func); }
-            catch (ReflectiveOperationException e) { e.printStackTrace(); }
+            catch (Throwable e) { throw new UncheckedException(e); }
         }
 
         if (((OverloadFunction)func).overloads.size() == 0) {
@@ -180,7 +181,7 @@ public class NativeWrapperProvider implements WrappersProvider {
             var init = overload.getAnnotation(NativeInit.class);
             if (init == null || init.value() != InitType.NAMESPACE) continue;
             try { overload.invoke(null, ctx, res); }
-            catch (ReflectiveOperationException e) { e.printStackTrace(); }
+            catch (Throwable e) { throw new UncheckedException(e); }
         }
 
         applyMethods(ctx, false, res, clazz);

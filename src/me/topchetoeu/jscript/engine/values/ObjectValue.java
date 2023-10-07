@@ -155,9 +155,7 @@ public class ObjectValue {
             if (prototype == SYNTAX_ERR_PROTO) return ctx.environment().proto("syntaxErr");
             if (prototype == TYPE_ERR_PROTO) return ctx.environment().proto("typeErr");
         }
-        catch (NullPointerException e) {
-            return null;
-        }
+        catch (NullPointerException e) { return null; }
 
         return (ObjectValue)prototype;
     }

@@ -97,9 +97,7 @@ public class RegExpLib {
         var groups = new ObjectValue();
 
         for (var el : namedGroups) {
-            try {
-                groups.defineProperty(null, el, matcher.group(el));
-            }
+            try { groups.defineProperty(null, el, matcher.group(el)); }
             catch (IllegalArgumentException e) { }
         }
         if (groups.values.size() == 0) groups = null;

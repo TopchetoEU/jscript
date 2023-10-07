@@ -15,8 +15,8 @@ import me.topchetoeu.jscript.engine.Operation;
 import me.topchetoeu.jscript.engine.frame.ConvertHint;
 import me.topchetoeu.jscript.exceptions.ConvertException;
 import me.topchetoeu.jscript.exceptions.EngineException;
-import me.topchetoeu.jscript.exceptions.InterruptException;
 import me.topchetoeu.jscript.exceptions.SyntaxException;
+import me.topchetoeu.jscript.exceptions.UncheckedException;
 
 public class Values {
     public static final Object NULL = new Object();
@@ -97,12 +97,8 @@ public class Values {
         var second = hint == ConvertHint.VALUEOF ? "toString" : "valueOf";
 
         if (ctx != null) {
-            try {
-                return tryCallConvertFunc(ctx, obj, first);
-            }
-            catch (EngineException unused) {
-                return tryCallConvertFunc(ctx, obj, second);
-            }
+            try { return tryCallConvertFunc(ctx, obj, first); }
+            catch (EngineException unused) { return tryCallConvertFunc(ctx, obj, second); }
         }
 
         throw EngineException.ofType("Value couldn't be converted to a primitive.");
@@ -120,10 +116,8 @@ public class Values {
         if (val instanceof Number) return number(val);
         if (val instanceof Boolean) return ((Boolean)val) ? 1 : 0;
         if (val instanceof String) {
-            try {
-                return Double.parseDouble((String)val);
-            }
-            catch (NumberFormatException e) { }
+            try { return Double.parseDouble((String)val); }
+            catch (Throwable e) { throw new UncheckedException(e); }
         }
         return Double.NaN;
     }
@@ -564,10 +558,6 @@ public class Values {
                         return res;
                     }
                 };
-            }
-            catch (InterruptException e) {
-                Thread.currentThread().interrupt();
-                return null;
             }
             catch (IllegalArgumentException | NullPointerException e) {
                 return Collections.emptyIterator();

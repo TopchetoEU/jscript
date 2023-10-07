@@ -74,9 +74,7 @@ public class JSONLib {
         try {
             return toJS(me.topchetoeu.jscript.json.JSON.parse("<value>", val));
         }
-        catch (SyntaxException e) {
-            throw EngineException.ofSyntax(e.msg);
-        }
+        catch (SyntaxException e) { throw EngineException.ofSyntax(e.msg); }
     }
     @Native
     public static String stringify(Context ctx, Object val) {

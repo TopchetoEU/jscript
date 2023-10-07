@@ -186,9 +186,7 @@ public class PromiseLib {
         if (thisArg instanceof PromiseLib) ((PromiseLib)thisArg).handle(ctx, fulfillHandle, rejectHandle);
         else {
             Object next;
-            try {
-                next = Values.getMember(ctx, thisArg, "then");
-            }
+            try { next = Values.getMember(ctx, thisArg, "then"); }
             catch (IllegalArgumentException e) { next = null; }
 
             try {

@@ -8,6 +8,7 @@ import me.topchetoeu.jscript.engine.values.FunctionValue;
 import me.topchetoeu.jscript.events.Awaitable;
 import me.topchetoeu.jscript.events.DataNotifier;
 import me.topchetoeu.jscript.exceptions.EngineException;
+import me.topchetoeu.jscript.exceptions.InterruptException;
 
 public class Engine {
     private class UncompiledFunction extends FunctionValue {
@@ -76,7 +77,7 @@ public class Engine {
             }
             catch (InterruptedException e) {
                 for (var msg : macroTasks) {
-                    msg.notifier.error(new RuntimeException(e));
+                    msg.notifier.error(new InterruptException(e));
                 }
                 break;
             }

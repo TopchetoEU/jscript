@@ -76,12 +76,8 @@ public class OverloadFunction extends FunctionValue {
             try {
                 return Values.normalize(ctx, overload.runner.run(ctx, _this, newArgs));
             }
-            catch (InstantiationException e) {
-                throw EngineException.ofError("The class may not be instantiated.");
-            }
-            catch (IllegalAccessException | IllegalArgumentException e) {
-                continue;
-            }
+            catch (InstantiationException e) { throw EngineException.ofError("The class may not be instantiated."); }
+            catch (IllegalAccessException | IllegalArgumentException e) { continue; }
             catch (InvocationTargetException e) {
                 var loc = new Location(0, 0, "<internal>");
                 if (e.getTargetException() instanceof EngineException) {

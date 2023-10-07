@@ -16,6 +16,7 @@ import me.topchetoeu.jscript.events.Observer;
 import me.topchetoeu.jscript.exceptions.EngineException;
 import me.topchetoeu.jscript.exceptions.InterruptException;
 import me.topchetoeu.jscript.exceptions.SyntaxException;
+import me.topchetoeu.jscript.exceptions.UncheckedException;
 import me.topchetoeu.jscript.lib.Internals;
 
 public class Main {
@@ -35,9 +36,7 @@ public class Main {
             br.close();
             return out.toString();
         }
-        catch (IOException e) {
-            return null;
-        }
+        catch (Throwable e) { throw new UncheckedException(e); }
     }
     public static String resourceToString(String name) {
         var str = Main.class.getResourceAsStream("/me/topchetoeu/jscript/" + name);
@@ -97,20 +96,17 @@ public class Main {
                     catch (EngineException e) { Values.printError(e, ""); }
                 }
             }
-            catch (IOException e) {
-                e.printStackTrace();
-                return;
-            }
+            catch (InterruptException e) { return; }
             catch (SyntaxException ex) {
                 if (exited[0]) return;
                 System.out.println("Syntax error:" + ex.msg);
             }
-            catch (InterruptException e) { return; }
             catch (RuntimeException ex) {
                 if (exited[0]) return;
                 System.out.println("Internal error ocurred:");
                 ex.printStackTrace();
             }
+            catch (Throwable e) { throw new UncheckedException(e); }
             if (exited[0]) return;
         });
         reader.setDaemon(true);
