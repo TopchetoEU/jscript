@@ -16,7 +16,7 @@ public class MapLib {
     private LinkedHashMap<Object, Object> map = new LinkedHashMap<>();
 
     @Native("@@Symbol.typeName") public final String name = "Map";
-    @Native("@@Symbol.iterator") public ObjectValue iterator(Context ctx) throws InterruptedException {
+    @Native("@@Symbol.iterator") public ObjectValue iterator(Context ctx) {
         return this.entries(ctx);
     }
 
@@ -31,17 +31,17 @@ public class MapLib {
         return false;
     }
 
-    @Native public ObjectValue entries(Context ctx) throws InterruptedException {
+    @Native public ObjectValue entries(Context ctx) {
         var res = map.entrySet().stream().map(v -> {
             return new ArrayValue(ctx, v.getKey(), v.getValue());
         }).collect(Collectors.toList());
         return Values.fromJavaIterator(ctx, res.iterator());
     }
-    @Native public ObjectValue keys(Context ctx) throws InterruptedException {
+    @Native public ObjectValue keys(Context ctx) {
         var res = new ArrayList<>(map.keySet());
         return Values.fromJavaIterator(ctx, res.iterator());
     }
-    @Native public ObjectValue values(Context ctx) throws InterruptedException {
+    @Native public ObjectValue values(Context ctx) {
         var res = new ArrayList<>(map.values());
         return Values.fromJavaIterator(ctx, res.iterator());
     }
@@ -61,13 +61,13 @@ public class MapLib {
         return map.size();
     }
 
-    @NativeGetter public void forEach(Context ctx, FunctionValue func, Object thisArg) throws InterruptedException {
+    @NativeGetter public void forEach(Context ctx, FunctionValue func, Object thisArg) {
         var keys = new ArrayList<>(map.keySet());
 
         for (var el : keys) func.call(ctx, thisArg, el, map.get(el), this);
     }
 
-    @Native public MapLib(Context ctx, Object iterable) throws InterruptedException {
+    @Native public MapLib(Context ctx, Object iterable) {
         for (var el : Values.toJavaIterable(ctx, iterable)) {
             try {
                 set(Values.getMember(ctx, el, 0), Values.getMember(ctx, el, 1));

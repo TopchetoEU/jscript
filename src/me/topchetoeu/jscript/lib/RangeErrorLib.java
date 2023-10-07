@@ -8,7 +8,7 @@ import me.topchetoeu.jscript.interop.NativeConstructor;
 import me.topchetoeu.jscript.interop.NativeInit;
 
 public class RangeErrorLib extends ErrorLib {
-    @NativeConstructor(thisArg = true) public static ObjectValue constructor(Context ctx, Object thisArg, Object message) throws InterruptedException {
+    @NativeConstructor(thisArg = true) public static ObjectValue constructor(Context ctx, Object thisArg, Object message) {
         var target = ErrorLib.constructor(ctx, thisArg, message);
         target.defineProperty(ctx, "name", "RangeError");
         return target;

@@ -13,7 +13,7 @@ public class StackData {
     public static final DataKey<Integer> MAX_FRAMES = new DataKey<>();
     public static final DataKey<DebugServer> DEBUGGER = new DataKey<>();
 
-    public static void pushFrame(Context ctx, CodeFrame frame) throws InterruptedException {
+    public static void pushFrame(Context ctx, CodeFrame frame) {
         var frames = ctx.data.get(FRAMES, new ArrayList<>());
         frames.add(frame);
         if (frames.size() > ctx.data.get(MAX_FRAMES, 10000)) throw EngineException.ofRange("Stack overflow!");

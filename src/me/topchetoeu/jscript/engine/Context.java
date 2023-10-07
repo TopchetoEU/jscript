@@ -23,7 +23,7 @@ public class Context {
         if (!env.empty()) this.env.pop();
     }
 
-    public FunctionValue compile(String filename, String raw) throws InterruptedException {
+    public FunctionValue compile(String filename, String raw) {
         var res = Values.toString(this, environment().compile.call(this, null, raw, filename));
         return Parsing.compile(engine.functions, environment(), filename, res);
     }

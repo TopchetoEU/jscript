@@ -29,21 +29,21 @@ public class SymbolLib {
 
     public final Symbol value;
 
-    private static Symbol passThis(Context ctx, String funcName, Object val) throws InterruptedException {
+    private static Symbol passThis(Context ctx, String funcName, Object val) {
         if (val instanceof SymbolLib) return ((SymbolLib)val).value;
         else if (val instanceof Symbol) return (Symbol)val;
         else throw EngineException.ofType(String.format("'%s' may only be called upon object and primitve symbols.", funcName));
     }
 
-    @NativeConstructor(thisArg = true) public static Object constructor(Context ctx, Object thisArg, Object val) throws InterruptedException {
+    @NativeConstructor(thisArg = true) public static Object constructor(Context ctx, Object thisArg, Object val) {
         if (thisArg instanceof ObjectValue) throw EngineException.ofType("Symbol constructor may not be called with new.");
         if (val == null) return new Symbol("");
         else return new Symbol(Values.toString(ctx, val));
     }
-    @Native(thisArg = true) public static String toString(Context ctx, Object thisArg) throws InterruptedException {
+    @Native(thisArg = true) public static String toString(Context ctx, Object thisArg) {
         return passThis(ctx, "toString", thisArg).value;
     }
-    @Native(thisArg = true) public static Symbol valueOf(Context ctx, Object thisArg) throws InterruptedException {
+    @Native(thisArg = true) public static Symbol valueOf(Context ctx, Object thisArg) {
         return passThis(ctx, "valueOf", thisArg);
     }
 

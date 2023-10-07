@@ -17,17 +17,17 @@ import me.topchetoeu.jscript.interop.NativeInit;
 import me.topchetoeu.jscript.interop.NativeSetter;
 
 public class ArrayLib {
-    @NativeGetter(thisArg = true) public static int length(Context ctx, ArrayValue thisArg) throws InterruptedException {
+    @NativeGetter(thisArg = true) public static int length(Context ctx, ArrayValue thisArg) {
         return thisArg.size();
     }
-    @NativeSetter(thisArg = true) public static void length(Context ctx, ArrayValue thisArg, int len) throws InterruptedException {
+    @NativeSetter(thisArg = true) public static void length(Context ctx, ArrayValue thisArg, int len) {
         thisArg.setSize(len);
     }
     
-    @Native(thisArg = true) public static ObjectValue values(Context ctx, ArrayValue thisArg) throws InterruptedException {
+    @Native(thisArg = true) public static ObjectValue values(Context ctx, ArrayValue thisArg) {
         return Values.fromJavaIterable(ctx, thisArg);
     }
-    @Native(thisArg = true) public static ObjectValue keys(Context ctx, ArrayValue thisArg) throws InterruptedException {
+    @Native(thisArg = true) public static ObjectValue keys(Context ctx, ArrayValue thisArg) {
         return Values.fromJavaIterable(ctx, () -> new Iterator<Object>() {
             private int i = 0;
 
@@ -42,7 +42,7 @@ public class ArrayLib {
             }
         });
     }
-    @Native(thisArg = true) public static ObjectValue entries(Context ctx, ArrayValue thisArg) throws InterruptedException {
+    @Native(thisArg = true) public static ObjectValue entries(Context ctx, ArrayValue thisArg) {
         return Values.fromJavaIterable(ctx, () -> new Iterator<Object>() {
             private int i = 0;
 
@@ -59,15 +59,15 @@ public class ArrayLib {
     }
 
     @Native(value = "@@Symbol.iterator", thisArg = true)
-    public static ObjectValue iterator(Context ctx, ArrayValue thisArg) throws InterruptedException {
+    public static ObjectValue iterator(Context ctx, ArrayValue thisArg) {
         return values(ctx, thisArg);
     }
     @Native(value = "@@Symbol.asyncIterator", thisArg = true)
-    public static ObjectValue asyncIterator(Context ctx, ArrayValue thisArg) throws InterruptedException {
+    public static ObjectValue asyncIterator(Context ctx, ArrayValue thisArg) {
         return values(ctx, thisArg);
     }
 
-    @Native(thisArg = true) public static ArrayValue concat(Context ctx, ArrayValue thisArg, Object ...others) throws InterruptedException {
+    @Native(thisArg = true) public static ArrayValue concat(Context ctx, ArrayValue thisArg, Object ...others) {
         // TODO: Fully implement with non-array spreadable objects
         var size = 0;
 
@@ -92,24 +92,13 @@ public class ArrayLib {
         return res;
     }
 
-    @Native(thisArg = true) public static void sort(Context ctx, ArrayValue arr, FunctionValue cmp) throws InterruptedException {
-        try {
-            arr.sort((a, b) -> {
-                try {
-                    var res = Values.toNumber(ctx, cmp.call(ctx, null, a, b));
-                    if (res < 0) return -1;
-                    if (res > 0) return 1;
-                    return 0;
-                }
-                catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            });
-        }
-        catch (RuntimeException e) {
-            if (e.getCause() instanceof InterruptedException) throw (InterruptedException)e.getCause();
-            else throw e;
-        }
+    @Native(thisArg = true) public static void sort(Context ctx, ArrayValue arr, FunctionValue cmp) {
+        arr.sort((a, b) -> {
+            var res = Values.toNumber(ctx, cmp.call(ctx, null, a, b));
+            if (res < 0) return -1;
+            if (res > 0) return 1;
+            return 0;
+        });
     }
 
     private static int normalizeI(int len, int i, boolean clamp) {
@@ -121,7 +110,7 @@ public class ArrayLib {
         return i;
     }
 
-    @Native(thisArg = true) public static ArrayValue fill(Context ctx, ArrayValue arr, Object val, int start, int end) throws InterruptedException {
+    @Native(thisArg = true) public static ArrayValue fill(Context ctx, ArrayValue arr, Object val, int start, int end) {
         start = normalizeI(arr.size(), start, true);
         end = normalizeI(arr.size(), end, true);
 
@@ -131,21 +120,21 @@ public class ArrayLib {
 
         return arr;
     }
-    @Native(thisArg = true) public static ArrayValue fill(Context ctx, ArrayValue arr, Object val, int start) throws InterruptedException {
+    @Native(thisArg = true) public static ArrayValue fill(Context ctx, ArrayValue arr, Object val, int start) {
         return fill(ctx, arr, val, start, arr.size());
     }
-    @Native(thisArg = true) public static ArrayValue fill(Context ctx, ArrayValue arr, Object val) throws InterruptedException {
+    @Native(thisArg = true) public static ArrayValue fill(Context ctx, ArrayValue arr, Object val) {
         return fill(ctx, arr, val, 0, arr.size());
     }
 
-    @Native(thisArg = true) public static boolean every(Context ctx, ArrayValue arr, FunctionValue func, Object thisArg) throws InterruptedException {
+    @Native(thisArg = true) public static boolean every(Context ctx, ArrayValue arr, FunctionValue func, Object thisArg) {
         for (var i = 0; i < arr.size(); i++) {
             if (!Values.toBoolean(func.call(ctx, thisArg, arr.get(i), i, arr))) return false;
         }
 
         return true;
     }
-    @Native(thisArg = true) public static boolean some(Context ctx, ArrayValue arr, FunctionValue func, Object thisArg) throws InterruptedException {
+    @Native(thisArg = true) public static boolean some(Context ctx, ArrayValue arr, FunctionValue func, Object thisArg) {
         for (var i = 0; i < arr.size(); i++) {
             if (Values.toBoolean(func.call(ctx, thisArg, arr.get(i), i, arr))) return true;
         }
@@ -153,7 +142,7 @@ public class ArrayLib {
         return false;
     }
 
-    @Native(thisArg = true) public static ArrayValue filter(Context ctx, ArrayValue arr, FunctionValue func, Object thisArg) throws InterruptedException {
+    @Native(thisArg = true) public static ArrayValue filter(Context ctx, ArrayValue arr, FunctionValue func, Object thisArg) {
         var res = new ArrayValue(arr.size());
 
         for (int i = 0, j = 0; i < arr.size(); i++) {
@@ -161,20 +150,20 @@ public class ArrayLib {
         }
         return res;
     }
-    @Native(thisArg = true) public static ArrayValue map(Context ctx, ArrayValue arr, FunctionValue func, Object thisArg) throws InterruptedException {
+    @Native(thisArg = true) public static ArrayValue map(Context ctx, ArrayValue arr, FunctionValue func, Object thisArg) {
         var res = new ArrayValue(arr.size());
         for (int i = 0, j = 0; i < arr.size(); i++) {
             if (arr.has(i)) res.set(ctx, j++, func.call(ctx, thisArg, arr.get(i), i, arr));
         }
         return res;
     }
-    @Native(thisArg = true) public static void forEach(Context ctx, ArrayValue arr, FunctionValue func, Object thisArg) throws InterruptedException {
+    @Native(thisArg = true) public static void forEach(Context ctx, ArrayValue arr, FunctionValue func, Object thisArg) {
         for (int i = 0; i < arr.size(); i++) {
             if (arr.has(i)) func.call(ctx, thisArg, arr.get(i), i, arr);
         }
     }
 
-    @Native(thisArg = true) public static ArrayValue flat(Context ctx, ArrayValue arr, int depth) throws InterruptedException {
+    @Native(thisArg = true) public static ArrayValue flat(Context ctx, ArrayValue arr, int depth) {
         var res = new ArrayValue(arr.size());
         var stack = new Stack<Object>();
         var depths = new Stack<Integer>();
@@ -197,18 +186,18 @@ public class ArrayLib {
 
         return res;
     }
-    @Native(thisArg = true) public static ArrayValue flatMap(Context ctx, ArrayValue arr, FunctionValue cmp, Object thisArg) throws InterruptedException {
+    @Native(thisArg = true) public static ArrayValue flatMap(Context ctx, ArrayValue arr, FunctionValue cmp, Object thisArg) {
         return flat(ctx, map(ctx, arr, cmp, thisArg), 1);
     }
 
-    @Native(thisArg = true) public static Object find(Context ctx, ArrayValue arr, FunctionValue cmp, Object thisArg) throws InterruptedException {
+    @Native(thisArg = true) public static Object find(Context ctx, ArrayValue arr, FunctionValue cmp, Object thisArg) {
         for (int i = 0; i < arr.size(); i++) {
             if (arr.has(i) && Values.toBoolean(cmp.call(ctx, thisArg, arr.get(i), i, arr))) return arr.get(i);
         }
 
         return null;
     }
-    @Native(thisArg = true) public static Object findLast(Context ctx, ArrayValue arr, FunctionValue cmp, Object thisArg) throws InterruptedException {
+    @Native(thisArg = true) public static Object findLast(Context ctx, ArrayValue arr, FunctionValue cmp, Object thisArg) {
         for (var i = arr.size() - 1; i >= 0; i--) {
             if (arr.has(i) && Values.toBoolean(cmp.call(ctx, thisArg, arr.get(i), i, arr))) return arr.get(i);
         }
@@ -216,14 +205,14 @@ public class ArrayLib {
         return null;
     }
 
-    @Native(thisArg = true) public static int findIndex(Context ctx, ArrayValue arr, FunctionValue cmp, Object thisArg) throws InterruptedException {
+    @Native(thisArg = true) public static int findIndex(Context ctx, ArrayValue arr, FunctionValue cmp, Object thisArg) {
         for (int i = 0; i < arr.size(); i++) {
             if (arr.has(i) && Values.toBoolean(cmp.call(ctx, thisArg, arr.get(i), i, arr))) return i;
         }
 
         return -1;
     }
-    @Native(thisArg = true) public static int findLastIndex(Context ctx, ArrayValue arr, FunctionValue cmp, Object thisArg) throws InterruptedException {
+    @Native(thisArg = true) public static int findLastIndex(Context ctx, ArrayValue arr, FunctionValue cmp, Object thisArg) {
         for (var i = arr.size() - 1; i >= 0; i--) {
             if (arr.has(i) && Values.toBoolean(cmp.call(ctx, thisArg, arr.get(i), i, arr))) return i;
         }
@@ -231,7 +220,7 @@ public class ArrayLib {
         return -1;
     }
 
-    @Native(thisArg = true) public static int indexOf(Context ctx, ArrayValue arr, Object val, int start) throws InterruptedException {
+    @Native(thisArg = true) public static int indexOf(Context ctx, ArrayValue arr, Object val, int start) {
         start = normalizeI(arr.size(), start, true);
 
         for (int i = 0; i < arr.size() && i < start; i++) {
@@ -240,7 +229,7 @@ public class ArrayLib {
 
         return -1;
     }
-    @Native(thisArg = true) public static int lastIndexOf(Context ctx, ArrayValue arr, Object val, int start) throws InterruptedException {
+    @Native(thisArg = true) public static int lastIndexOf(Context ctx, ArrayValue arr, Object val, int start) {
         start = normalizeI(arr.size(), start, true);
 
         for (int i = arr.size(); i >= start; i--) {
@@ -250,29 +239,29 @@ public class ArrayLib {
         return -1;
     }
 
-    @Native(thisArg = true) public static boolean includes(Context ctx, ArrayValue arr, Object el, int start) throws InterruptedException {
+    @Native(thisArg = true) public static boolean includes(Context ctx, ArrayValue arr, Object el, int start) {
         return indexOf(ctx, arr, el, start) >= 0;
     }
 
-    @Native(thisArg = true) public static Object pop(Context ctx, ArrayValue arr) throws InterruptedException {
+    @Native(thisArg = true) public static Object pop(Context ctx, ArrayValue arr) {
         if (arr.size() == 0) return null;
         var val = arr.get(arr.size() - 1);
         arr.shrink(1);
         return val;
     }
-    @Native(thisArg = true) public static int push(Context ctx, ArrayValue arr, Object ...values) throws InterruptedException {
+    @Native(thisArg = true) public static int push(Context ctx, ArrayValue arr, Object ...values) {
         arr.copyFrom(ctx, values, 0, arr.size(), values.length);
         return arr.size();
     }
 
-    @Native(thisArg = true) public static Object shift(Context ctx, ArrayValue arr) throws InterruptedException {
+    @Native(thisArg = true) public static Object shift(Context ctx, ArrayValue arr) {
         if (arr.size() == 0) return null;
         var val = arr.get(0);
         arr.move(1, 0, arr.size());
         arr.shrink(1);
         return val;
     }
-    @Native(thisArg = true) public static int unshift(Context ctx, ArrayValue arr, Object ...values) throws InterruptedException {
+    @Native(thisArg = true) public static int unshift(Context ctx, ArrayValue arr, Object ...values) {
         arr.move(0, values.length, arr.size());
         arr.copyFrom(ctx, values, 0, 0, values.length);
         return arr.size();
@@ -290,7 +279,7 @@ public class ArrayLib {
         return slice(ctx, arr, start, arr.size());
     }
 
-    @Native(thisArg = true) public static ArrayValue splice(Context ctx, ArrayValue arr, int start, int deleteCount, Object ...items) throws InterruptedException {
+    @Native(thisArg = true) public static ArrayValue splice(Context ctx, ArrayValue arr, int start, int deleteCount, Object ...items) {
         start = normalizeI(arr.size(), start, true);
         deleteCount = normalizeI(arr.size(), deleteCount, true);
         if (start + deleteCount >= arr.size()) deleteCount = arr.size() - start;
@@ -304,14 +293,14 @@ public class ArrayLib {
 
         return res;
     }
-    @Native(thisArg = true) public static ArrayValue splice(Context ctx, ArrayValue arr, int start) throws InterruptedException {
+    @Native(thisArg = true) public static ArrayValue splice(Context ctx, ArrayValue arr, int start) {
         return splice(ctx, arr, start, arr.size() - start);
     }
-    @Native(thisArg = true) public static String toString(Context ctx, ArrayValue arr) throws InterruptedException {
+    @Native(thisArg = true) public static String toString(Context ctx, ArrayValue arr) {
         return join(ctx, arr, ",");
     }
 
-    @Native(thisArg = true) public static String join(Context ctx, ArrayValue arr, String sep) throws InterruptedException {
+    @Native(thisArg = true) public static String join(Context ctx, ArrayValue arr, String sep) {
         var res = new StringBuilder();
         var comma = true;
 

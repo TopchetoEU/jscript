@@ -13,6 +13,7 @@ import me.topchetoeu.jscript.engine.values.NativeWrapper;
 import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.exceptions.EngineException;
+import me.topchetoeu.jscript.exceptions.InterruptException;
 import me.topchetoeu.jscript.interop.InitType;
 import me.topchetoeu.jscript.interop.Native;
 import me.topchetoeu.jscript.interop.NativeInit;
@@ -31,19 +32,19 @@ public class PromiseLib {
     }
 
     @Native("resolve")
-    public static PromiseLib ofResolved(Context ctx, Object val) throws InterruptedException {
+    public static PromiseLib ofResolved(Context ctx, Object val) {
         var res = new PromiseLib();
         res.fulfill(ctx, val);
         return res;
     }
     @Native("reject")
-    public static PromiseLib ofRejected(Context ctx, Object val) throws InterruptedException {
+    public static PromiseLib ofRejected(Context ctx, Object val) {
         var res = new PromiseLib();
         res.reject(ctx, val);
         return res;
     }
 
-    @Native public static PromiseLib any(Context ctx, Object _promises) throws InterruptedException {
+    @Native public static PromiseLib any(Context ctx, Object _promises) {
         if (!Values.isArray(_promises)) throw EngineException.ofType("Expected argument for any to be an array.");
         var promises = Values.array(_promises); 
         if (promises.size() == 0) return ofResolved(ctx, new ArrayValue());
@@ -68,7 +69,7 @@ public class PromiseLib {
 
         return res;
     }
-    @Native public static PromiseLib race(Context ctx, Object _promises) throws InterruptedException  {
+    @Native public static PromiseLib race(Context ctx, Object _promises)  {
         if (!Values.isArray(_promises)) throw EngineException.ofType("Expected argument for any to be an array.");
         var promises = Values.array(_promises); 
         if (promises.size() == 0) return ofResolved(ctx, new ArrayValue());
@@ -84,7 +85,7 @@ public class PromiseLib {
 
         return res;
     }
-    @Native public static PromiseLib all(Context ctx, Object _promises) throws InterruptedException  {
+    @Native public static PromiseLib all(Context ctx, Object _promises)  {
         if (!Values.isArray(_promises)) throw EngineException.ofType("Expected argument for any to be an array.");
         var promises = Values.array(_promises); 
         if (promises.size() == 0) return ofResolved(ctx, new ArrayValue());
@@ -111,7 +112,7 @@ public class PromiseLib {
 
         return res;
     }
-    @Native public static PromiseLib allSettled(Context ctx, Object _promises) throws InterruptedException  {
+    @Native public static PromiseLib allSettled(Context ctx, Object _promises)  {
         if (!Values.isArray(_promises)) throw EngineException.ofType("Expected argument for any to be an array.");
         var promises = Values.array(_promises); 
         if (promises.size() == 0) return ofResolved(ctx, new ArrayValue());
@@ -154,7 +155,7 @@ public class PromiseLib {
      * Thread safe - you can call this from anywhere
      * HOWEVER, it's strongly recommended to use this only in javascript
      */
-    @Native(thisArg=true) public static Object then(Context ctx, Object thisArg, Object _onFulfill, Object _onReject) throws InterruptedException {
+    @Native(thisArg=true) public static Object then(Context ctx, Object thisArg, Object _onFulfill, Object _onReject) {
         var onFulfill = _onFulfill instanceof FunctionValue ? ((FunctionValue)_onFulfill) : null;
         var onReject = _onReject instanceof FunctionValue ? ((FunctionValue)_onReject) : null;
 
@@ -205,14 +206,14 @@ public class PromiseLib {
      * Thread safe - you can call this from anywhere
      * HOWEVER, it's strongly recommended to use this only in javascript
      */
-    @Native(value="catch", thisArg=true) public static Object _catch(Context ctx, Object thisArg, Object _onReject) throws InterruptedException {
+    @Native(value="catch", thisArg=true) public static Object _catch(Context ctx, Object thisArg, Object _onReject) {
         return then(ctx, thisArg, null, _onReject);
     }
     /**
      * Thread safe - you can call this from anywhere
      * HOWEVER, it's strongly recommended to use this only in javascript
      */
-    @Native(value="finally", thisArg=true) public static Object _finally(Context ctx, Object thisArg, Object _handle) throws InterruptedException {
+    @Native(value="finally", thisArg=true) public static Object _finally(Context ctx, Object thisArg, Object _handle) {
         return then(ctx, thisArg,
             new NativeFunction(null, (e, th, _args) -> {
                 if (_handle instanceof FunctionValue) ((FunctionValue)_handle).call(ctx);
@@ -235,7 +236,7 @@ public class PromiseLib {
     private boolean handled = false;
     private Object val;
 
-    private void resolve(Context ctx, Object val, int state) throws InterruptedException {
+    private void resolve(Context ctx, Object val, int state) {
         if (this.state != STATE_PENDING) return;
 
         if (val instanceof PromiseLib) ((PromiseLib)val).handle(ctx,
@@ -264,8 +265,8 @@ public class PromiseLib {
                         if (handles.size() == 0) {
                             ctx.engine.pushMsg(true, ctx, new NativeFunction((_ctx, _thisArg, _args) -> {
                                 if (!handled) {
-                                    try { Values.printError(new EngineException(val).setContext(ctx), "(in promise)"); }
-                                    catch (InterruptedException ex) { }
+                                    Values.printError(new EngineException(val).setContext(ctx), "(in promise)");
+                                    throw new InterruptException();
                                 }
 
                                 return null;
@@ -285,13 +286,13 @@ public class PromiseLib {
     /**
      * Thread safe - call from any thread
      */
-    public void fulfill(Context ctx, Object val) throws InterruptedException {
+    public void fulfill(Context ctx, Object val) {
         resolve(ctx, val, STATE_FULFILLED);
     }
     /**
      * Thread safe - call from any thread
      */
-    public void reject(Context ctx, Object val) throws InterruptedException {
+    public void reject(Context ctx, Object val) {
         resolve(ctx, val, STATE_REJECTED);
     }
 
@@ -313,7 +314,7 @@ public class PromiseLib {
     /**
      * NOT THREAD SAFE - must be called from the engine executor thread
      */
-    @Native public PromiseLib(Context ctx, FunctionValue func) throws InterruptedException {
+    @Native public PromiseLib(Context ctx, FunctionValue func) {
         if (!(func instanceof FunctionValue)) throw EngineException.ofType("A function must be passed to the promise constructor.");
         try {
             func.call(

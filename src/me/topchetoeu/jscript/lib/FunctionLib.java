@@ -12,10 +12,10 @@ import me.topchetoeu.jscript.interop.Native;
 import me.topchetoeu.jscript.interop.NativeInit;
 
 public class FunctionLib {
-    @Native(thisArg = true) public static Object apply(Context ctx, FunctionValue func, Object thisArg, ArrayValue args) throws InterruptedException {
+    @Native(thisArg = true) public static Object apply(Context ctx, FunctionValue func, Object thisArg, ArrayValue args) {
         return func.call(ctx, thisArg, args.toArray());
     }
-    @Native(thisArg = true) public static Object call(Context ctx, FunctionValue func, Object thisArg, Object... args) throws InterruptedException {
+    @Native(thisArg = true) public static Object call(Context ctx, FunctionValue func, Object thisArg, Object... args) {
         if (!(func instanceof FunctionValue)) throw EngineException.ofError("Expected this to be a function.");
 
         return func.call(ctx, thisArg, args);

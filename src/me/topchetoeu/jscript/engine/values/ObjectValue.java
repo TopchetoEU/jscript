@@ -145,7 +145,7 @@ public class ObjectValue {
         return true;
     }
 
-    public ObjectValue getPrototype(Context ctx) throws InterruptedException {
+    public ObjectValue getPrototype(Context ctx) {
         try {
             if (prototype == OBJ_PROTO) return ctx.environment().proto("object");
             if (prototype == ARR_PROTO) return ctx.environment().proto("array");
@@ -203,19 +203,19 @@ public class ObjectValue {
         return true;
     }
 
-    protected Property getProperty(Context ctx, Object key) throws InterruptedException {
+    protected Property getProperty(Context ctx, Object key) {
         if (properties.containsKey(key)) return properties.get(key);
         var proto = getPrototype(ctx);
         if (proto != null) return proto.getProperty(ctx, key);
         else return null;
     }
-    protected Object getField(Context ctx, Object key) throws InterruptedException {
+    protected Object getField(Context ctx, Object key) {
         if (values.containsKey(key)) return values.get(key);
         var proto = getPrototype(ctx);
         if (proto != null) return proto.getField(ctx, key);
         else return null;
     }
-    protected boolean setField(Context ctx, Object key, Object val) throws InterruptedException {
+    protected boolean setField(Context ctx, Object key, Object val) {
         if (val instanceof FunctionValue && ((FunctionValue)val).name.equals("")) {
             ((FunctionValue)val).name = Values.toString(ctx, key);
         }
@@ -223,14 +223,14 @@ public class ObjectValue {
         values.put(key, val);
         return true;
     }
-    protected void deleteField(Context ctx, Object key) throws InterruptedException {
+    protected void deleteField(Context ctx, Object key) {
         values.remove(key);
     }
-    protected boolean hasField(Context ctx, Object key) throws InterruptedException {
+    protected boolean hasField(Context ctx, Object key) {
         return values.containsKey(key);
     }
 
-    public final Object getMember(Context ctx, Object key, Object thisArg) throws InterruptedException {
+    public final Object getMember(Context ctx, Object key, Object thisArg) {
         key = Values.normalize(ctx, key);
 
         if ("__proto__".equals(key)) {
@@ -246,11 +246,11 @@ public class ObjectValue {
         }
         else return getField(ctx, key);
     }
-    public final Object getMember(Context ctx, Object key) throws InterruptedException {
+    public final Object getMember(Context ctx, Object key) {
         return getMember(ctx, key, this);
     }
 
-    public final boolean setMember(Context ctx, Object key, Object val, Object thisArg, boolean onlyProps) throws InterruptedException {
+    public final boolean setMember(Context ctx, Object key, Object val, Object thisArg, boolean onlyProps) {
         key = Values.normalize(ctx, key); val = Values.normalize(ctx, val);
 
         var prop = getProperty(ctx, key);
@@ -269,11 +269,11 @@ public class ObjectValue {
         else if (nonWritableSet.contains(key)) return false;
         else return setField(ctx, key, val);
     }
-    public final boolean setMember(Context ctx, Object key, Object val, boolean onlyProps) throws InterruptedException {
+    public final boolean setMember(Context ctx, Object key, Object val, boolean onlyProps) {
         return setMember(ctx, Values.normalize(ctx, key), Values.normalize(ctx, val), this, onlyProps);
     }
 
-    public final boolean hasMember(Context ctx, Object key, boolean own) throws InterruptedException {
+    public final boolean hasMember(Context ctx, Object key, boolean own) {
         key = Values.normalize(ctx, key);
 
         if (key != null && key.equals("__proto__")) return true;
@@ -283,7 +283,7 @@ public class ObjectValue {
         var proto = getPrototype(ctx);
         return proto != null && proto.hasMember(ctx, key, own);
     }
-    public final boolean deleteMember(Context ctx, Object key) throws InterruptedException {
+    public final boolean deleteMember(Context ctx, Object key) {
         key = Values.normalize(ctx, key);
 
         if (!memberConfigurable(key)) return false;
@@ -294,7 +294,7 @@ public class ObjectValue {
         return true;
     }
 
-    public final ObjectValue getMemberDescriptor(Context ctx, Object key) throws InterruptedException {
+    public final ObjectValue getMemberDescriptor(Context ctx, Object key) {
         key = Values.normalize(ctx, key);
 
         var prop = properties.get(key);

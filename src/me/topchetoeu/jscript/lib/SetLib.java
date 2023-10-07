@@ -16,19 +16,19 @@ public class SetLib {
     private LinkedHashSet<Object> set = new LinkedHashSet<>();
 
     @Native("@@Symbol.typeName") public final String name = "Set";
-    @Native("@@Symbol.iterator") public ObjectValue iterator(Context ctx) throws InterruptedException {
+    @Native("@@Symbol.iterator") public ObjectValue iterator(Context ctx) {
         return this.values(ctx);
     }
 
-    @Native public ObjectValue entries(Context ctx) throws InterruptedException {
+    @Native public ObjectValue entries(Context ctx) {
         var res = set.stream().map(v -> new ArrayValue(ctx, v, v)).collect(Collectors.toList());
         return Values.fromJavaIterator(ctx, res.iterator());
     }
-    @Native public ObjectValue keys(Context ctx) throws InterruptedException {
+    @Native public ObjectValue keys(Context ctx) {
         var res = new ArrayList<>(set);
         return Values.fromJavaIterator(ctx, res.iterator());
     }
-    @Native public ObjectValue values(Context ctx) throws InterruptedException {
+    @Native public ObjectValue values(Context ctx) {
         var res = new ArrayList<>(set);
         return Values.fromJavaIterator(ctx, res.iterator());
     }
@@ -51,13 +51,13 @@ public class SetLib {
         return set.size();
     }
 
-    @NativeGetter public void forEach(Context ctx, FunctionValue func, Object thisArg) throws InterruptedException {
+    @NativeGetter public void forEach(Context ctx, FunctionValue func, Object thisArg) {
         var keys = new ArrayList<>(set);
 
         for (var el : keys) func.call(ctx, thisArg, el, el, this);
     }
 
-    @Native public SetLib(Context ctx, Object iterable) throws InterruptedException {
+    @Native public SetLib(Context ctx, Object iterable) {
         for (var el : Values.toJavaIterable(ctx, iterable)) add(el);
     }
 }

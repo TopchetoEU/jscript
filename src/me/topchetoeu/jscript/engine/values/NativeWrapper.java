@@ -7,7 +7,7 @@ public class NativeWrapper extends ObjectValue {
     public final Object wrapped;
 
     @Override
-    public ObjectValue getPrototype(Context ctx) throws InterruptedException {
+    public ObjectValue getPrototype(Context ctx) {
         if (prototype == NATIVE_PROTO) return ctx.environment().wrappers.getProto(wrapped.getClass());
         else return super.getPrototype(ctx);
     }

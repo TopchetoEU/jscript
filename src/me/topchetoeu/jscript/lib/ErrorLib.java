@@ -12,7 +12,7 @@ import me.topchetoeu.jscript.interop.NativeConstructor;
 import me.topchetoeu.jscript.interop.NativeInit;
 
 public class ErrorLib {
-    private static String toString(Context ctx, Object cause, Object name, Object message, ArrayValue stack) throws InterruptedException {
+    private static String toString(Context ctx, Object cause, Object name, Object message, ArrayValue stack) {
         if (name == null) name = "";
         else name = Values.toString(ctx, name).trim();
         if (message == null) message = "";
@@ -35,7 +35,7 @@ public class ErrorLib {
         return res.toString();
     }
 
-    @Native(thisArg = true) public static String toString(Context ctx, Object thisArg) throws InterruptedException {
+    @Native(thisArg = true) public static String toString(Context ctx, Object thisArg) {
         if (thisArg instanceof ObjectValue) {
             var stack = Values.getMember(ctx, thisArg, "stack");
             if (!(stack instanceof ArrayValue)) stack = null;
@@ -49,7 +49,7 @@ public class ErrorLib {
         else return "[Invalid error]";
     }
 
-    @NativeConstructor(thisArg = true) public static ObjectValue constructor(Context ctx, Object thisArg, Object message) throws InterruptedException {
+    @NativeConstructor(thisArg = true) public static ObjectValue constructor(Context ctx, Object thisArg, Object message) {
         var target = new ObjectValue();
         if (thisArg instanceof ObjectValue) target = (ObjectValue)thisArg;
 

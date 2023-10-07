@@ -59,7 +59,7 @@ public class LocalScopeRecord implements ScopeRecord {
 
         return name;
     }
-    public boolean has(Context ctx, String name) throws InterruptedException {
+    public boolean has(Context ctx, String name) {
         return
             global.has(ctx, name) ||
             locals.contains(name) ||

@@ -23,7 +23,7 @@ public class AsyncGeneratorLib extends FunctionValue {
         private PromiseLib currPromise;
         public CodeFrame frame;
 
-        private void next(Context ctx, Object inducedValue, Object inducedReturn, Object inducedError) throws InterruptedException {
+        private void next(Context ctx, Object inducedValue, Object inducedReturn, Object inducedError) {
             if (done) {
                 if (inducedError != Runners.NO_RETURN)
                     throw new EngineException(inducedError);
@@ -76,30 +76,30 @@ public class AsyncGeneratorLib extends FunctionValue {
             return "Generator [running]";
         }
 
-        public Object fulfill(Context ctx, Object thisArg, Object ...args) throws InterruptedException {
+        public Object fulfill(Context ctx, Object thisArg, Object ...args) {
             next(ctx, args.length > 0 ? args[0] : null, Runners.NO_RETURN, Runners.NO_RETURN);
             return null;
         }
-        public Object reject(Context ctx, Object thisArg, Object ...args) throws InterruptedException {
+        public Object reject(Context ctx, Object thisArg, Object ...args) {
             next(ctx, Runners.NO_RETURN, args.length > 0 ? args[0] : null, Runners.NO_RETURN);
             return null;
         }
 
         @Native
-        public PromiseLib next(Context ctx, Object ...args) throws InterruptedException {
+        public PromiseLib next(Context ctx, Object ...args) {
             this.currPromise = new PromiseLib();
             if (args.length == 0) next(ctx, Runners.NO_RETURN, Runners.NO_RETURN, Runners.NO_RETURN);
             else next(ctx, args[0], Runners.NO_RETURN, Runners.NO_RETURN);
             return this.currPromise;
         }
         @Native("throw")
-        public PromiseLib _throw(Context ctx, Object error) throws InterruptedException {
+        public PromiseLib _throw(Context ctx, Object error) {
             this.currPromise = new PromiseLib();
             next(ctx, Runners.NO_RETURN, Runners.NO_RETURN, error);
             return this.currPromise;
         }
         @Native("return")
-        public PromiseLib _return(Context ctx, Object value) throws InterruptedException {
+        public PromiseLib _return(Context ctx, Object value) {
             this.currPromise = new PromiseLib();
             next(ctx, Runners.NO_RETURN, value, Runners.NO_RETURN);
             return this.currPromise;
@@ -117,7 +117,7 @@ public class AsyncGeneratorLib extends FunctionValue {
     }
 
     @Override
-    public Object call(Context ctx, Object thisArg, Object ...args) throws InterruptedException {
+    public Object call(Context ctx, Object thisArg, Object ...args) {
         var handler = new AsyncGenerator();
         var func = factory.call(ctx, thisArg,
             new NativeFunction("await", handler::await),

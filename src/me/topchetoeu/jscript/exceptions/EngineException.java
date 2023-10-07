@@ -33,7 +33,7 @@ public class EngineException extends RuntimeException {
         return this;
     }
 
-    public String toString(Context ctx) throws InterruptedException {
+    public String toString(Context ctx) {
         var ss = new StringBuilder();
         try {
             ss.append(Values.toString(ctx, value)).append('\n');

@@ -16,7 +16,7 @@ public class Engine {
         private FunctionValue compiled = null;
 
         @Override
-        public Object call(Context ctx, Object thisArg, Object ...args) throws InterruptedException {
+        public Object call(Context ctx, Object thisArg, Object ...args) {
             if (compiled == null) compiled = ctx.compile(filename, raw);
             return compiled.call(ctx, thisArg, args);
         }
@@ -53,13 +53,9 @@ public class Engine {
     public final HashMap<Long, Instruction[]> functions = new HashMap<>();
     public final Data data = new Data().set(StackData.MAX_FRAMES, 10000);
 
-    private void runTask(Task task) throws InterruptedException {
+    private void runTask(Task task) {
         try {
             task.notifier.next(task.func.call(task.ctx, task.thisArg, task.args));
-        }
-        catch (InterruptedException e) {
-            task.notifier.error(new RuntimeException(e));
-            throw e;
         }
         catch (EngineException e) {
             task.notifier.error(e);

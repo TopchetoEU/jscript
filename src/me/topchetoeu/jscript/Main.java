@@ -14,6 +14,7 @@ import me.topchetoeu.jscript.engine.values.NativeFunction;
 import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.events.Observer;
 import me.topchetoeu.jscript.exceptions.EngineException;
+import me.topchetoeu.jscript.exceptions.InterruptException;
 import me.topchetoeu.jscript.exceptions.SyntaxException;
 import me.topchetoeu.jscript.lib.Internals;
 
@@ -46,14 +47,12 @@ public class Main {
 
     private static Observer<Object> valuePrinter = new Observer<Object>() {
         public void next(Object data) {
-            try { Values.printValue(null, data); }
-            catch (InterruptedException e) { }
+            Values.printValue(null, data);
             System.out.println();
         }
 
         public void error(RuntimeException err) {
-            try { Values.printError(err, null); }
-            catch (InterruptedException ex) { return; }
+            Values.printError(err, null);
         }
     };
 
@@ -70,8 +69,7 @@ public class Main {
 
             env.global.define("exit", _ctx -> {
                 exited[0] = true;
-                task.interrupt();
-                throw new InterruptedException();
+                throw new InterruptException();
             });
             env.global.define("go", _ctx -> {
                 try {
@@ -96,14 +94,7 @@ public class Main {
                         if (raw == null) break;
                         engine.pushMsg(false, new Context(engine).pushEnv(env), "<stdio>", raw, null).toObservable().once(valuePrinter);
                     }
-                    catch (EngineException e) {
-                        try {
-                            System.out.println("Uncaught " + e.toString(null));
-                        }
-                        catch (EngineException ex) {
-                            System.out.println("Uncaught [error while converting to string]");
-                        }
-                    }
+                    catch (EngineException e) { Values.printError(e, ""); }
                 }
             }
             catch (IOException e) {
@@ -114,12 +105,12 @@ public class Main {
                 if (exited[0]) return;
                 System.out.println("Syntax error:" + ex.msg);
             }
+            catch (InterruptException e) { return; }
             catch (RuntimeException ex) {
                 if (exited[0]) return;
                 System.out.println("Internal error ocurred:");
                 ex.printStackTrace();
             }
-            catch (InterruptedException e) { return; }
             if (exited[0]) return;
         });
         reader.setDaemon(true);

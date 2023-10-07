@@ -15,7 +15,7 @@ import me.topchetoeu.jscript.exceptions.EngineException;
 public class OverloadFunction extends FunctionValue {
     public final List<Overload> overloads = new ArrayList<>();
 
-    public Object call(Context ctx, Object thisArg, Object ...args) throws InterruptedException {
+    public Object call(Context ctx, Object thisArg, Object ...args) {
         loop: for (var overload : overloads) {
             Object[] newArgs = new Object[overload.params.length];
 
@@ -96,9 +96,6 @@ public class OverloadFunction extends FunctionValue {
             }
             catch (ReflectiveOperationException e) {
                 throw EngineException.ofError(e.getMessage()).add(name, new Location(0, 0, "<internal>"));
-            }
-            catch (Exception e) {
-                throw e;
             }
         }
 

@@ -14,7 +14,7 @@ public class Internals {
     private static final DataKey<HashMap<Integer, Thread>> THREADS = new DataKey<>();
     private static final DataKey<Integer> I = new DataKey<>();
 
-    @Native public static void log(Context ctx, Object ...args) throws InterruptedException {
+    @Native public static void log(Context ctx, Object ...args) {
         for (var arg : args) {
             Values.printValue(ctx, arg);
         }
@@ -72,10 +72,10 @@ public class Internals {
         clearTimeout(ctx, i);
     }
 
-    @Native public static double parseInt(Context ctx, String val) throws InterruptedException {
+    @Native public static double parseInt(Context ctx, String val) {
         return NumberLib.parseInt(ctx, val);
     }
-    @Native public static double parseFloat(Context ctx, String val) throws InterruptedException {
+    @Native public static double parseFloat(Context ctx, String val) {
         return NumberLib.parseFloat(ctx, val);
     }
 

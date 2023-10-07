@@ -30,7 +30,7 @@ public class JSONLib {
         if (val.isNull()) return Values.NULL;
         return null;
     }
-    private static JSONElement toJSON(Context ctx, Object val, HashSet<Object> prev) throws InterruptedException {
+    private static JSONElement toJSON(Context ctx, Object val, HashSet<Object> prev) {
         if (val instanceof Boolean) return JSONElement.bool((boolean)val);
         if (val instanceof Number) return JSONElement.number(((Number)val).doubleValue());
         if (val instanceof String) return JSONElement.string((String)val);
@@ -70,7 +70,7 @@ public class JSONLib {
     }
 
     @Native
-    public static Object parse(Context ctx, String val) throws InterruptedException {
+    public static Object parse(Context ctx, String val) {
         try {
             return toJS(me.topchetoeu.jscript.json.JSON.parse("<value>", val));
         }
@@ -79,7 +79,7 @@ public class JSONLib {
         }
     }
     @Native
-    public static String stringify(Context ctx, Object val) throws InterruptedException {
+    public static String stringify(Context ctx, Object val) {
         return me.topchetoeu.jscript.json.JSON.stringify(toJSON(ctx, val, new HashSet<>()));
     }
 }

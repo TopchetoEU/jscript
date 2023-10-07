@@ -30,7 +30,7 @@ public class CodeFunction extends FunctionValue {
     }
 
     @Override
-    public Object call(Context ctx, Object thisArg, Object ...args) throws InterruptedException {
+    public Object call(Context ctx, Object thisArg, Object ...args) {
         var frame = new CodeFrame(ctx, thisArg, args, this);
         try {
             StackData.pushFrame(ctx, frame);

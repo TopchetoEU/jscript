@@ -122,7 +122,7 @@ public class ArrayValue extends ObjectValue implements Iterable<Object> {
     }
 
     @Override
-    protected Object getField(Context ctx, Object key) throws InterruptedException {
+    protected Object getField(Context ctx, Object key) {
         if (key instanceof Number) {
             var i = ((Number)key).doubleValue();
             if (i >= 0 && i - Math.floor(i) == 0) {
@@ -133,7 +133,7 @@ public class ArrayValue extends ObjectValue implements Iterable<Object> {
         return super.getField(ctx, key);
     }
     @Override
-    protected boolean setField(Context ctx, Object key, Object val) throws InterruptedException {
+    protected boolean setField(Context ctx, Object key, Object val) {
         if (key instanceof Number) {
             var i = Values.number(key);
             if (i >= 0 && i - Math.floor(i) == 0) {
@@ -145,7 +145,7 @@ public class ArrayValue extends ObjectValue implements Iterable<Object> {
         return super.setField(ctx, key, val);
     }
     @Override
-    protected boolean hasField(Context ctx, Object key) throws InterruptedException {
+    protected boolean hasField(Context ctx, Object key) {
         if (key instanceof Number) {
             var i = Values.number(key);
             if (i >= 0 && i - Math.floor(i) == 0) {
@@ -156,7 +156,7 @@ public class ArrayValue extends ObjectValue implements Iterable<Object> {
         return super.hasField(ctx, key);
     }
     @Override
-    protected void deleteField(Context ctx, Object key) throws InterruptedException {
+    protected void deleteField(Context ctx, Object key) {
         if (key instanceof Number) {
             var i = Values.number(key);
             if (i >= 0 && i - Math.floor(i) == 0) {

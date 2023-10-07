@@ -11,6 +11,7 @@ import me.topchetoeu.jscript.engine.values.CodeFunction;
 import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.exceptions.EngineException;
+import me.topchetoeu.jscript.exceptions.InterruptException;
 
 public class CodeFrame {
     private class TryCtx {
@@ -93,14 +94,14 @@ public class CodeFrame {
         stack[stackPtr++] = Values.normalize(ctx, val);
     }
 
-    private void setCause(Context ctx, EngineException err, EngineException cause) throws InterruptedException {
+    private void setCause(Context ctx, EngineException err, EngineException cause) {
         if (err.value instanceof ObjectValue) {
             Values.setMember(ctx, err, ctx.environment().symbol("Symbol.cause"), cause);
         }
         err.cause = cause;
     }
-    private Object nextNoTry(Context ctx) throws InterruptedException {
-        if (Thread.currentThread().isInterrupted()) throw new InterruptedException();
+    private Object nextNoTry(Context ctx) {
+        if (Thread.currentThread().isInterrupted()) throw new InterruptException();
         if (codePtr < 0 || codePtr >= function.body.length) return null;
 
         var instr = function.body[codePtr];
@@ -117,7 +118,7 @@ public class CodeFrame {
         }
     }
 
-    public Object next(Context ctx, Object value, Object returnValue, EngineException error) throws InterruptedException {
+    public Object next(Context ctx, Object value, Object returnValue, EngineException error) {
         if (value != Runners.NO_RETURN) push(ctx, value);
 
         if (returnValue == Runners.NO_RETURN && error == null) {
