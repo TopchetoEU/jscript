@@ -7,7 +7,6 @@ import me.topchetoeu.jscript.compilation.Instruction;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
 import me.topchetoeu.jscript.events.Awaitable;
 import me.topchetoeu.jscript.events.DataNotifier;
-import me.topchetoeu.jscript.exceptions.EngineException;
 import me.topchetoeu.jscript.exceptions.InterruptException;
 
 public class Engine {
@@ -58,12 +57,8 @@ public class Engine {
         try {
             task.notifier.next(task.func.call(task.ctx, task.thisArg, task.args));
         }
-        catch (EngineException e) {
-            task.notifier.error(e);
-        }
         catch (RuntimeException e) {
             task.notifier.error(e);
-            e.printStackTrace();
         }
     }
     private void run() {
