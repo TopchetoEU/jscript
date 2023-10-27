@@ -3,6 +3,7 @@ package me.topchetoeu.jscript.engine;
 import java.util.HashMap;
 import java.util.concurrent.LinkedBlockingDeque;
 
+import me.topchetoeu.jscript.Filename;
 import me.topchetoeu.jscript.compilation.Instruction;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
 import me.topchetoeu.jscript.events.Awaitable;
@@ -11,7 +12,7 @@ import me.topchetoeu.jscript.exceptions.InterruptException;
 
 public class Engine {
     private class UncompiledFunction extends FunctionValue {
-        public final String filename;
+        public final Filename filename;
         public final String raw;
         private FunctionValue compiled = null;
 
@@ -21,8 +22,8 @@ public class Engine {
             return compiled.call(ctx, thisArg, args);
         }
 
-        public UncompiledFunction(String filename, String raw) {
-            super(filename, 0);
+        public UncompiledFunction(Filename filename, String raw) {
+            super(filename + "", 0);
             this.filename = filename;
             this.raw = raw;
         }
@@ -58,6 +59,7 @@ public class Engine {
             task.notifier.next(task.func.call(task.ctx, task.thisArg, task.args));
         }
         catch (RuntimeException e) {
+            if (e instanceof InterruptException) throw e;
             task.notifier.error(e);
         }
     }
@@ -70,7 +72,7 @@ public class Engine {
                     runTask(microTasks.take());
                 }
             }
-            catch (InterruptedException e) {
+            catch (InterruptedException | InterruptException e) {
                 for (var msg : macroTasks) {
                     msg.notifier.error(new InterruptException(e));
                 }
@@ -103,7 +105,7 @@ public class Engine {
         else macroTasks.addLast(msg);
         return msg.notifier;
     }
-    public Awaitable<Object> pushMsg(boolean micro, Context ctx, String filename, String raw, Object thisArg, Object ...args) {
+    public Awaitable<Object> pushMsg(boolean micro, Context ctx, Filename filename, String raw, Object thisArg, Object ...args) {
         return pushMsg(micro, ctx, new UncompiledFunction(filename, raw), thisArg, args);
     }
 }

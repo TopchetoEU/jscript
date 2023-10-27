@@ -24,7 +24,7 @@ public class Environment {
 
     @Native public FunctionValue compile;
     @Native public FunctionValue regexConstructor = new NativeFunction("RegExp", (ctx, thisArg, args) -> {
-        throw EngineException.ofError("Regular expressions not supported.").setContext(ctx);
+        throw EngineException.ofError("Regular expressions not supported.").setCtx(ctx.environment(), ctx.engine);
     });
 
     public Environment addData(Data data) {

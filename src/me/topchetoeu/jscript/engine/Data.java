@@ -35,8 +35,7 @@ public class Data {
     public <T> T get(DataKey<T> key, T val) {
         for (var it = this; it != null; it = it.parent) {
             if (it.data.containsKey(key)) {
-                this.set(key, val);
-                return (T)data.get((DataKey<Object>)key);
+                return (T)it.data.get((DataKey<Object>)key);
             }
         }
 
@@ -45,7 +44,7 @@ public class Data {
     }
     public <T> T get(DataKey<T> key) {
         for (var it = this; it != null; it = it.parent) {
-            if (it.data.containsKey(key)) return (T)data.get((DataKey<Object>)key);
+            if (it.data.containsKey(key)) return (T)it.data.get((DataKey<Object>)key);
         }
         return null;
     }

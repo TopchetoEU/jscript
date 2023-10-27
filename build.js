@@ -10,6 +10,8 @@ const conf = {
     version: argv[3]
 };
 
+console.log(conf)
+
 if (conf.version.startsWith('refs/tags/')) conf.version = conf.version.substring(10);
 if (conf.version.startsWith('v')) conf.version = conf.version.substring(1);
 

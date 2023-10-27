@@ -26,6 +26,7 @@ public class SymbolLib {
     @NativeGetter public static Symbol search(Context ctx) { return ctx.environment().symbol("Symbol.search"); }
     @NativeGetter public static Symbol iterator(Context ctx) { return ctx.environment().symbol("Symbol.iterator"); }
     @NativeGetter public static Symbol asyncIterator(Context ctx) { return ctx.environment().symbol("Symbol.asyncIterator"); }
+    @NativeGetter public static Symbol cause(Context ctx) { return ctx.environment().symbol("Symbol.cause"); }
 
     public final Symbol value;
 

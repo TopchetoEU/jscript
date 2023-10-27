@@ -6,7 +6,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.TreeSet;
 
+import me.topchetoeu.jscript.Filename;
 import me.topchetoeu.jscript.Location;
 import me.topchetoeu.jscript.compilation.*;
 import me.topchetoeu.jscript.compilation.Instruction.Type;
@@ -25,7 +27,7 @@ import me.topchetoeu.jscript.parsing.ParseRes.State;
 // TODO: this has to be rewritten
 public class Parsing {
     public static interface Parser<T> {
-        ParseRes<T> parse(String filename, List<Token> tokens, int i);
+        ParseRes<T> parse(Filename filename, List<Token> tokens, int i);
     }
 
     private static class ObjProp {
@@ -69,7 +71,7 @@ public class Parsing {
         reserved.add("delete");
         reserved.add("break");
         reserved.add("continue");
-        reserved.add("debug");
+        reserved.add("debugger");
         reserved.add("implements");
         reserved.add("interface");
         reserved.add("package");
@@ -122,7 +124,7 @@ public class Parsing {
     private static final int CURR_MULTI_COMMENT = 8;
     private static final int CURR_SINGLE_COMMENT = 9;
 
-    private static void addToken(StringBuilder currToken, int currStage, int line, int lastStart, String filename, List<RawToken> tokens) {
+    private static void addToken(StringBuilder currToken, int currStage, int line, int lastStart, Filename filename, List<RawToken> tokens) {
         var res = currToken.toString();
 
         switch (currStage) {
@@ -143,7 +145,7 @@ public class Parsing {
 
     // This method is so long because we're tokenizing the string using an iterative approach
     // instead of a recursive descent parser. This is mainly done for performance reasons.
-    private static ArrayList<RawToken> splitTokens(String filename, String raw) {
+    private static ArrayList<RawToken> splitTokens(Filename filename, String raw) {
         var tokens = new ArrayList<RawToken>();
         var currToken = new StringBuilder(64);
 
@@ -572,7 +574,7 @@ public class Parsing {
         else return res;
     }
 
-    private static List<Token> parseTokens(String filename, Collection<RawToken> tokens) {
+    private static List<Token> parseTokens(Filename filename, Collection<RawToken> tokens) {
         var res = new ArrayList<Token>();
 
         for (var el : tokens) {
@@ -593,11 +595,11 @@ public class Parsing {
         return res;
     }
 
-    public static List<Token> tokenize(String filename, String raw) {
+    public static List<Token> tokenize(Filename filename, String raw) {
         return parseTokens(filename, splitTokens(filename, raw));
     }
 
-    public static Location getLoc(String filename, List<Token> tokens, int i) {
+    public static Location getLoc(Filename filename, List<Token> tokens, int i) {
         if (tokens.size() == 0 || tokens.size() == 0) return new Location(1, 1, filename);
         if (i >= tokens.size()) i = tokens.size() - 1;
         return new Location(tokens.get(i).line, tokens.get(i).start, filename);
@@ -663,7 +665,7 @@ public class Parsing {
         return !reserved.contains(name);
     }
 
-    public static ParseRes<ConstantStatement> parseString(String filename, List<Token> tokens, int i) {
+    public static ParseRes<ConstantStatement> parseString(Filename filename, List<Token> tokens, int i) {
         var loc = getLoc(filename, tokens, i);
         try {
             if (tokens.get(i).isString()) {
@@ -675,7 +677,7 @@ public class Parsing {
             return ParseRes.failed();
         }
     }
-    public static ParseRes<ConstantStatement> parseNumber(String filename, List<Token> tokens, int i) {
+    public static ParseRes<ConstantStatement> parseNumber(Filename filename, List<Token> tokens, int i) {
         var loc = getLoc(filename, tokens, i);
         try {
             if (tokens.get(i).isNumber()) {
@@ -688,7 +690,7 @@ public class Parsing {
         }
 
     }
-    public static ParseRes<RegexStatement> parseRegex(String filename, List<Token> tokens, int i) {
+    public static ParseRes<RegexStatement> parseRegex(Filename filename, List<Token> tokens, int i) {
         var loc = getLoc(filename, tokens, i);
         try {
             if (tokens.get(i).isRegex()) {
@@ -705,7 +707,7 @@ public class Parsing {
         }
     }
 
-    public static ParseRes<ArrayStatement> parseArray(String filename, List<Token> tokens, int i) {
+    public static ParseRes<ArrayStatement> parseArray(Filename filename, List<Token> tokens, int i) {
         var loc = getLoc(filename, tokens, i);
         int n = 0;
         if (!isOperator(tokens, i + n++, Operator.BRACKET_OPEN)) return ParseRes.failed();
@@ -744,7 +746,7 @@ public class Parsing {
         return ParseRes.res(new ArrayStatement(loc, values.toArray(Statement[]::new)), n);
     }
 
-    public static ParseRes<List<String>> parseParamList(String filename, List<Token> tokens, int i) {
+    public static ParseRes<List<String>> parseParamList(Filename filename, List<Token> tokens, int i) {
         var loc = getLoc(filename, tokens, i);
         int n = 0;
 
@@ -776,7 +778,7 @@ public class Parsing {
         return ParseRes.res(args, n);
     }
 
-    public static ParseRes<? extends Object> parsePropName(String filename, List<Token> tokens, int i) {
+    public static ParseRes<? extends Object> parsePropName(Filename filename, List<Token> tokens, int i) {
         var idRes = parseIdentifier(tokens, i);
         if (idRes.isSuccess()) return ParseRes.res(idRes.result, 1);
         var strRes = parseString(null, tokens, i);
@@ -786,7 +788,7 @@ public class Parsing {
 
         return ParseRes.failed();
     }
-    public static ParseRes<ObjProp> parseObjectProp(String filename, List<Token> tokens, int i) {
+    public static ParseRes<ObjProp> parseObjectProp(Filename filename, List<Token> tokens, int i) {
         var loc = getLoc(filename, tokens, i);
         int n = 0;
 
@@ -813,7 +815,7 @@ public class Parsing {
             new FunctionStatement(loc, access + " " + name.toString(), argsRes.result.toArray(String[]::new), res.result)
         ), n);
     }
-    public static ParseRes<ObjectStatement> parseObject(String filename, List<Token> tokens, int i) {
+    public static ParseRes<ObjectStatement> parseObject(Filename filename, List<Token> tokens, int i) {
         var loc = getLoc(filename, tokens, i);
         int n = 0;
         if (!isOperator(tokens, i + n++, Operator.BRACE_OPEN)) return ParseRes.failed();
@@ -870,7 +872,7 @@ public class Parsing {
 
         return ParseRes.res(new ObjectStatement(loc, values, getters, setters), n);
     }
-    public static ParseRes<NewStatement> parseNew(String filename, List<Token> tokens, int i) {
+    public static ParseRes<NewStatement> parseNew(Filename filename, List<Token> tokens, int i) {
         var loc = getLoc(filename, tokens, i);
         var n = 0;
         if (!isIdentifier(tokens, i + n++, "new")) return ParseRes.failed();
@@ -886,7 +888,7 @@ public class Parsing {
 
         return ParseRes.res(new NewStatement(loc, call.func, call.args), n);
     }
-    public static ParseRes<TypeofStatement> parseTypeof(String filename, List<Token> tokens, int i) {
+    public static ParseRes<TypeofStatement> parseTypeof(Filename filename, List<Token> tokens, int i) {
         var loc = getLoc(filename, tokens, i);
         var n = 0;
         if (!isIdentifier(tokens, i + n++, "typeof")) return ParseRes.failed();
@@ -897,7 +899,7 @@ public class Parsing {
 
         return ParseRes.res(new TypeofStatement(loc, valRes.result), n);
     }
-    public static ParseRes<VoidStatement> parseVoid(String filename, List<Token> tokens, int i) {
+    public static ParseRes<VoidStatement> parseVoid(Filename filename, List<Token> tokens, int i) {
         var loc = getLoc(filename, tokens, i);
         var n = 0;
         if (!isIdentifier(tokens, i + n++, "void")) return ParseRes.failed();
@@ -908,7 +910,7 @@ public class Parsing {
 
         return ParseRes.res(new VoidStatement(loc, valRes.result), n);
     }
-    public static ParseRes<? extends Statement> parseDelete(String filename, List<Token> tokens, int i) {
+    public static ParseRes<? extends Statement> parseDelete(Filename filename, List<Token> tokens, int i) {
         var loc = getLoc(filename, tokens, i);
         int n = 0;
         if (!isIdentifier(tokens, i + n++, "delete")) return ParseRes.failed();
@@ -929,7 +931,7 @@ public class Parsing {
         }
     }
 
-    public static ParseRes<FunctionStatement> parseFunction(String filename, List<Token> tokens, int i, boolean statement) {
+    public static ParseRes<FunctionStatement> parseFunction(Filename filename, List<Token> tokens, int i, boolean statement) {
         var loc = getLoc(filename, tokens, i);
         int n = 0;
 
@@ -972,7 +974,7 @@ public class Parsing {
         else return ParseRes.error(loc, "Expected a compound statement for function.", res);
     }
 
-    public static ParseRes<OperationStatement> parseUnary(String filename, List<Token> tokens, int i) {
+    public static ParseRes<OperationStatement> parseUnary(Filename filename, List<Token> tokens, int i) {
         var loc = getLoc(filename, tokens, i);
         int n = 0;
 
@@ -993,7 +995,7 @@ public class Parsing {
         if (res.isSuccess()) return ParseRes.res(new OperationStatement(loc, operation, res.result), n + res.n);
         else return ParseRes.error(loc, String.format("Expected a value after the unary operator '%s'.", op.value), res);
     }
-    public static ParseRes<ChangeStatement> parsePrefixChange(String filename, List<Token> tokens, int i) {
+    public static ParseRes<ChangeStatement> parsePrefixChange(Filename filename, List<Token> tokens, int i) {
         var loc = getLoc(filename, tokens, i);
         int n = 0;
 
@@ -1010,7 +1012,7 @@ public class Parsing {
         if (!(res.result instanceof AssignableStatement)) return ParseRes.error(loc, "Expected assignable value after prefix operator.");
         return ParseRes.res(new ChangeStatement(loc, (AssignableStatement)res.result, change, false), n + res.n);
     }
-    public static ParseRes<? extends Statement> parseParens(String filename, List<Token> tokens, int i) {
+    public static ParseRes<? extends Statement> parseParens(Filename filename, List<Token> tokens, int i) {
         int n = 0;
         if (!isOperator(tokens, i + n++, Operator.PAREN_OPEN)) return ParseRes.failed();
 
@@ -1023,7 +1025,7 @@ public class Parsing {
         return ParseRes.res(res.result, n);
     }
     @SuppressWarnings("all")
-    public static ParseRes<? extends Statement> parseSimple(String filename, List<Token> tokens, int i, boolean statement) {
+    public static ParseRes<? extends Statement> parseSimple(Filename filename, List<Token> tokens, int i, boolean statement) {
         var res = new ArrayList<>();
 
         if (!statement) {
@@ -1050,7 +1052,7 @@ public class Parsing {
         return ParseRes.any(res.toArray(ParseRes[]::new));
     }
 
-    public static ParseRes<VariableStatement> parseVariable(String filename, List<Token> tokens, int i) {
+    public static ParseRes<VariableStatement> parseVariable(Filename filename, List<Token> tokens, int i) {
         var loc = getLoc(filename, tokens, i);
         var literal = parseIdentifier(tokens, i);
 
@@ -1066,7 +1068,7 @@ public class Parsing {
 
         return ParseRes.res(new VariableStatement(loc, literal.result), 1);
     }
-    public static ParseRes<? extends Statement> parseLiteral(String filename, List<Token> tokens, int i) {
+    public static ParseRes<? extends Statement> parseLiteral(Filename filename, List<Token> tokens, int i) {
         var loc = getLoc(filename, tokens, i);
         var id = parseIdentifier(tokens, i);
         if (!id.isSuccess()) return id.transform();
@@ -1094,7 +1096,7 @@ public class Parsing {
         }
         return ParseRes.failed();
     }
-    public static ParseRes<IndexStatement> parseMember(String filename, List<Token> tokens, int i, Statement prev, int precedence) {
+    public static ParseRes<IndexStatement> parseMember(Filename filename, List<Token> tokens, int i, Statement prev, int precedence) {
         var loc = getLoc(filename, tokens, i);
         var n = 0;
 
@@ -1107,7 +1109,7 @@ public class Parsing {
 
         return ParseRes.res(new IndexStatement(loc, prev, new ConstantStatement(loc, literal.result)), n);
     }
-    public static ParseRes<IndexStatement> parseIndex(String filename, List<Token> tokens, int i, Statement prev, int precedence) {
+    public static ParseRes<IndexStatement> parseIndex(Filename filename, List<Token> tokens, int i, Statement prev, int precedence) {
         var loc = getLoc(filename, tokens, i);
         var n = 0;
 
@@ -1123,7 +1125,7 @@ public class Parsing {
 
         return ParseRes.res(new IndexStatement(loc, prev, valRes.result), n);
     }
-    public static ParseRes<? extends Statement> parseAssign(String filename, List<Token> tokens, int i, Statement prev, int precedence) {
+    public static ParseRes<? extends Statement> parseAssign(Filename filename, List<Token> tokens, int i, Statement prev, int precedence) {
         var loc = getLoc(filename, tokens, i);
         int n = 0 ;
 
@@ -1157,7 +1159,7 @@ public class Parsing {
 
         return ParseRes.res(((AssignableStatement)prev).toAssign(res.result, operation), n);
     }
-    public static ParseRes<CallStatement> parseCall(String filename, List<Token> tokens, int i, Statement prev, int precedence) {
+    public static ParseRes<CallStatement> parseCall(Filename filename, List<Token> tokens, int i, Statement prev, int precedence) {
         var loc = getLoc(filename, tokens, i);
         var n = 0;
 
@@ -1189,7 +1191,7 @@ public class Parsing {
 
         return ParseRes.res(new CallStatement(loc, prev, args.toArray(Statement[]::new)), n);
     }
-    public static ParseRes<ChangeStatement> parsePostfixChange(String filename, List<Token> tokens, int i, Statement prev, int precedence) {
+    public static ParseRes<ChangeStatement> parsePostfixChange(Filename filename, List<Token> tokens, int i, Statement prev, int precedence) {
         var loc = getLoc(filename, tokens, i);
         int n = 0;
 
@@ -1207,7 +1209,7 @@ public class Parsing {
         if (!(prev instanceof AssignableStatement)) return ParseRes.error(loc, "Expected assignable value before suffix operator.");
         return ParseRes.res(new ChangeStatement(loc, (AssignableStatement)prev, change, true), n);
     }
-    public static ParseRes<OperationStatement> parseInstanceof(String filename, List<Token> tokens, int i, Statement prev, int precedence) {
+    public static ParseRes<OperationStatement> parseInstanceof(Filename filename, List<Token> tokens, int i, Statement prev, int precedence) {
         var loc = getLoc(filename, tokens, i);
         int n = 0;
 
@@ -1220,7 +1222,7 @@ public class Parsing {
 
         return ParseRes.res(new OperationStatement(loc, Operation.INSTANCEOF, prev, valRes.result), n);
     }
-    public static ParseRes<OperationStatement> parseIn(String filename, List<Token> tokens, int i, Statement prev, int precedence) {
+    public static ParseRes<OperationStatement> parseIn(Filename filename, List<Token> tokens, int i, Statement prev, int precedence) {
         var loc = getLoc(filename, tokens, i);
         int n = 0;
 
@@ -1233,7 +1235,7 @@ public class Parsing {
 
         return ParseRes.res(new OperationStatement(loc, Operation.IN, prev, valRes.result), n);
     }
-    public static ParseRes<CompoundStatement> parseComma(String filename, List<Token> tokens, int i, Statement prev, int precedence) {
+    public static ParseRes<CompoundStatement> parseComma(Filename filename, List<Token> tokens, int i, Statement prev, int precedence) {
         var loc = getLoc(filename, tokens, i);
         var n = 0;
 
@@ -1246,7 +1248,7 @@ public class Parsing {
 
         return ParseRes.res(new CompoundStatement(loc, prev, res.result), n);
     }
-    public static ParseRes<IfStatement> parseTernary(String filename, List<Token> tokens, int i, Statement prev, int precedence) {
+    public static ParseRes<IfStatement> parseTernary(Filename filename, List<Token> tokens, int i, Statement prev, int precedence) {
         var loc = getLoc(filename, tokens, i);
         var n = 0;
 
@@ -1265,7 +1267,7 @@ public class Parsing {
 
         return ParseRes.res(new IfStatement(loc, prev, a.result, b.result), n);
     }
-    public static ParseRes<? extends Statement> parseOperator(String filename, List<Token> tokens, int i, Statement prev, int precedence) {
+    public static ParseRes<? extends Statement> parseOperator(Filename filename, List<Token> tokens, int i, Statement prev, int precedence) {
         var loc = getLoc(filename, tokens, i);
         var n = 0;
 
@@ -1290,7 +1292,7 @@ public class Parsing {
         return ParseRes.res(new OperationStatement(loc, op.operation, prev, res.result), n);
     }
 
-    public static ParseRes<? extends Statement> parseValue(String filename, List<Token> tokens, int i, int precedence, boolean statement) {
+    public static ParseRes<? extends Statement> parseValue(Filename filename, List<Token> tokens, int i, int precedence, boolean statement) {
         Statement prev = null;
         int n = 0;
 
@@ -1331,11 +1333,11 @@ public class Parsing {
         if (prev == null) return ParseRes.failed();
         else return ParseRes.res(prev, n);
     }
-    public static ParseRes<? extends Statement> parseValue(String filename, List<Token> tokens, int i, int precedence) {
+    public static ParseRes<? extends Statement> parseValue(Filename filename, List<Token> tokens, int i, int precedence) {
         return parseValue(filename, tokens, i, precedence, false);
     }
 
-    public static ParseRes<? extends Statement> parseValueStatement(String filename, List<Token> tokens, int i) {
+    public static ParseRes<? extends Statement> parseValueStatement(Filename filename, List<Token> tokens, int i) {
         var loc = getLoc(filename, tokens, i);
         var valRes = parseValue(filename, tokens, i, 0, true);
         if (!valRes.isSuccess()) return valRes.transform();
@@ -1352,7 +1354,7 @@ public class Parsing {
         }
         else return ParseRes.error(getLoc(filename, tokens, i), "Expected an end of statement.", res);
     }
-    public static ParseRes<VariableDeclareStatement> parseVariableDeclare(String filename, List<Token> tokens, int i) {
+    public static ParseRes<VariableDeclareStatement> parseVariableDeclare(Filename filename, List<Token> tokens, int i) {
         var loc = getLoc(filename, tokens, i);
         int n = 0;
         if (!isIdentifier(tokens, i + n++, "var")) return ParseRes.failed();
@@ -1396,7 +1398,7 @@ public class Parsing {
         }
     }
 
-    public static ParseRes<ReturnStatement> parseReturn(String filename, List<Token> tokens, int i) {
+    public static ParseRes<ReturnStatement> parseReturn(Filename filename, List<Token> tokens, int i) {
         var loc = getLoc(filename, tokens, i);
         int n = 0;
         if (!isIdentifier(tokens, i + n++, "return")) return ParseRes.failed();
@@ -1420,7 +1422,7 @@ public class Parsing {
         else
             return ParseRes.error(getLoc(filename, tokens, i), "Expected an end of statement.", valRes);
     }
-    public static ParseRes<ThrowStatement> parseThrow(String filename, List<Token> tokens, int i) {
+    public static ParseRes<ThrowStatement> parseThrow(Filename filename, List<Token> tokens, int i) {
         var loc = getLoc(filename, tokens, i);
         int n = 0;
         if (!isIdentifier(tokens, i + n++, "throw")) return ParseRes.failed();
@@ -1438,7 +1440,7 @@ public class Parsing {
         else return ParseRes.error(getLoc(filename, tokens, i), "Expected an end of statement.", valRes);
     }
 
-    public static ParseRes<BreakStatement> parseBreak(String filename, List<Token> tokens, int i) {
+    public static ParseRes<BreakStatement> parseBreak(Filename filename, List<Token> tokens, int i) {
         if (!isIdentifier(tokens, i, "break")) return ParseRes.failed();
 
         if (isStatementEnd(tokens, i + 1)) {
@@ -1456,7 +1458,7 @@ public class Parsing {
         }
         else return ParseRes.error(getLoc(filename, tokens, i), "Expected an end of statement.");
     }
-    public static ParseRes<ContinueStatement> parseContinue(String filename, List<Token> tokens, int i) {
+    public static ParseRes<ContinueStatement> parseContinue(Filename filename, List<Token> tokens, int i) {
         if (!isIdentifier(tokens, i, "continue")) return ParseRes.failed();
 
         if (isStatementEnd(tokens, i + 1)) {
@@ -1474,8 +1476,8 @@ public class Parsing {
         }
         else return ParseRes.error(getLoc(filename, tokens, i), "Expected an end of statement.");
     }
-    public static ParseRes<DebugStatement> parseDebug(String filename, List<Token> tokens, int i) {
-        if (!isIdentifier(tokens, i, "debug")) return ParseRes.failed();
+    public static ParseRes<DebugStatement> parseDebug(Filename filename, List<Token> tokens, int i) {
+        if (!isIdentifier(tokens, i, "debugger")) return ParseRes.failed();
 
         if (isStatementEnd(tokens, i + 1)) {
             if (isOperator(tokens, i + 1, Operator.SEMICOLON)) return ParseRes.res(new DebugStatement(getLoc(filename, tokens, i)), 2);
@@ -1484,7 +1486,7 @@ public class Parsing {
         else return ParseRes.error(getLoc(filename, tokens, i), "Expected an end of statement.");
     }
 
-    public static ParseRes<CompoundStatement> parseCompound(String filename, List<Token> tokens, int i) {
+    public static ParseRes<CompoundStatement> parseCompound(Filename filename, List<Token> tokens, int i) {
         var loc = getLoc(filename, tokens, i);
         int n = 0;
         if (!isOperator(tokens, i + n++, Operator.BRACE_OPEN)) return ParseRes.failed();
@@ -1520,7 +1522,7 @@ public class Parsing {
 
         return ParseRes.res(nameRes.result, n);
     }
-    public static ParseRes<IfStatement> parseIf(String filename, List<Token> tokens, int i) {
+    public static ParseRes<IfStatement> parseIf(Filename filename, List<Token> tokens, int i) {
         var loc = getLoc(filename, tokens, i);
         int n = 0;
 
@@ -1547,7 +1549,7 @@ public class Parsing {
     
         return ParseRes.res(new IfStatement(loc, condRes.result, res.result, elseRes.result), n);
     }
-    public static ParseRes<WhileStatement> parseWhile(String filename, List<Token> tokens, int i) {
+    public static ParseRes<WhileStatement> parseWhile(Filename filename, List<Token> tokens, int i) {
         var loc = getLoc(filename, tokens, i);
         int n = 0;
 
@@ -1569,7 +1571,7 @@ public class Parsing {
 
         return ParseRes.res(new WhileStatement(loc, labelRes.result, condRes.result, res.result), n);
     }
-    public static ParseRes<Statement> parseSwitchCase(String filename, List<Token> tokens, int i) {
+    public static ParseRes<Statement> parseSwitchCase(Filename filename, List<Token> tokens, int i) {
         var loc = getLoc(filename, tokens, i);
         int n = 0;
 
@@ -1589,7 +1591,7 @@ public class Parsing {
 
         return ParseRes.res(null, 2);
     }
-    public static ParseRes<SwitchStatement> parseSwitch(String filename, List<Token> tokens, int i) {
+    public static ParseRes<SwitchStatement> parseSwitch(Filename filename, List<Token> tokens, int i) {
         var loc = getLoc(filename, tokens, i);
         int n = 0;
 
@@ -1649,7 +1651,7 @@ public class Parsing {
             statements.toArray(Statement[]::new)
         ), n);
     }
-    public static ParseRes<DoWhileStatement> parseDoWhile(String filename, List<Token> tokens, int i) {
+    public static ParseRes<DoWhileStatement> parseDoWhile(Filename filename, List<Token> tokens, int i) {
         var loc = getLoc(filename, tokens, i);
         int n = 0;
 
@@ -1678,7 +1680,7 @@ public class Parsing {
         }
         else return ParseRes.error(getLoc(filename, tokens, i), "Expected a semicolon.");
     }
-    public static ParseRes<Statement> parseFor(String filename, List<Token> tokens, int i) {
+    public static ParseRes<Statement> parseFor(Filename filename, List<Token> tokens, int i) {
         var loc = getLoc(filename, tokens, i);
         int n = 0;
 
@@ -1736,7 +1738,7 @@ public class Parsing {
 
         return ParseRes.res(new ForStatement(loc, labelRes.result, decl, cond, inc, res.result), n);
     }
-    public static ParseRes<ForInStatement> parseForIn(String filename, List<Token> tokens, int i) {
+    public static ParseRes<ForInStatement> parseForIn(Filename filename, List<Token> tokens, int i) {
         var loc = getLoc(filename, tokens, i);
         int n = 0;
 
@@ -1789,7 +1791,7 @@ public class Parsing {
 
         return ParseRes.res(new ForInStatement(loc, labelRes.result, isDecl, nameRes.result, varVal, objRes.result, bodyRes.result), n);
     }
-    public static ParseRes<TryStatement> parseCatch(String filename, List<Token> tokens, int i) {
+    public static ParseRes<TryStatement> parseCatch(Filename filename, List<Token> tokens, int i) {
         var loc = getLoc(filename, tokens, i);
         int n = 0;
 
@@ -1830,7 +1832,7 @@ public class Parsing {
         return ParseRes.res(new TryStatement(loc, res.result, catchBody, finallyBody, name), n);
     }
 
-    public static ParseRes<? extends Statement> parseStatement(String filename, List<Token> tokens, int i) {
+    public static ParseRes<? extends Statement> parseStatement(Filename filename, List<Token> tokens, int i) {
         if (isOperator(tokens, i, Operator.SEMICOLON)) return ParseRes.res(new CompoundStatement(getLoc(filename, tokens, i)), 1);
         if (isIdentifier(tokens, i, "with")) return ParseRes.error(getLoc(filename, tokens, i), "'with' statements are not allowed.");
         return ParseRes.any(
@@ -1853,7 +1855,7 @@ public class Parsing {
         );
     }
 
-    public static Statement[] parse(String filename, String raw) {
+    public static Statement[] parse(Filename filename, String raw) {
         var tokens = tokenize(filename, raw);
         var list = new ArrayList<Statement>();
         int i = 0;
@@ -1874,10 +1876,10 @@ public class Parsing {
         return list.toArray(Statement[]::new);
     }
 
-    public static CodeFunction compile(HashMap<Long, Instruction[]> funcs, Environment environment, Statement ...statements) {
+    public static CodeFunction compile(HashMap<Long, Instruction[]> funcs, TreeSet<Location> breakpoints, Environment environment, Statement ...statements) {
         var target = environment.global.globalChild();
         var subscope = target.child();
-        var res = new CompileTarget(funcs);
+        var res = new CompileTarget(funcs, breakpoints);
         var body = new CompoundStatement(null, statements);
         if (body instanceof CompoundStatement) body = (CompoundStatement)body;
         else body = new CompoundStatement(null, new Statement[] { body });
@@ -1903,9 +1905,9 @@ public class Parsing {
 
         return new CodeFunction(environment, "", subscope.localsCount(), 0, new ValueVariable[0], res.array());
     }
-    public static CodeFunction compile(HashMap<Long, Instruction[]> funcs, Environment environment, String filename, String raw) {
+    public static CodeFunction compile(HashMap<Long, Instruction[]> funcs, TreeSet<Location> breakpoints, Environment environment, Filename filename, String raw) {
         try {
-            return compile(funcs, environment, parse(filename, raw));
+            return compile(funcs, breakpoints, environment, parse(filename, raw));
         }
         catch (SyntaxException e) {
             return new CodeFunction(environment, null, 2, 0, new ValueVariable[0], new Instruction[] { Instruction.throwSyntax(e) });

@@ -25,7 +25,7 @@ public class CompoundStatement extends Statement {
             if (stm instanceof FunctionStatement) {
                 int start = target.size();
                 ((FunctionStatement)stm).compile(target, scope, null, true);
-                target.get(start).setDebug(true);
+                target.setDebug(start);
                 target.add(Instruction.discard());
             }
         }

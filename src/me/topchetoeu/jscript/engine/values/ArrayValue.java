@@ -212,7 +212,7 @@ public class ArrayValue extends ObjectValue implements Iterable<Object> {
         for (var i = 0; i < size; i++) this.values[i] = Values.normalize(ctx, values[i]);
     }
 
-    public static ArrayValue of(Context ctx, Collection<Object> values) {
+    public static ArrayValue of(Context ctx, Collection<?> values) {
         return new ArrayValue(ctx, values.toArray(Object[]::new));
     }
 }

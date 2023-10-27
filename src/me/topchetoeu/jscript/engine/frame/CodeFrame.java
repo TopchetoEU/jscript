@@ -3,12 +3,13 @@ package me.topchetoeu.jscript.engine.frame;
 import java.util.Stack;
 
 import me.topchetoeu.jscript.Location;
+import me.topchetoeu.jscript.compilation.Instruction;
 import me.topchetoeu.jscript.engine.Context;
+import me.topchetoeu.jscript.engine.StackData;
 import me.topchetoeu.jscript.engine.scope.LocalScope;
 import me.topchetoeu.jscript.engine.scope.ValueVariable;
 import me.topchetoeu.jscript.engine.values.ArrayValue;
 import me.topchetoeu.jscript.engine.values.CodeFunction;
-import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.exceptions.EngineException;
 import me.topchetoeu.jscript.exceptions.InterruptException;
@@ -95,34 +96,32 @@ public class CodeFrame {
     }
 
     private void setCause(Context ctx, EngineException err, EngineException cause) {
-        if (err.value instanceof ObjectValue) {
-            Values.setMember(ctx, err, ctx.environment().symbol("Symbol.cause"), cause);
-        }
         err.cause = cause;
     }
-    private Object nextNoTry(Context ctx) {
+    private Object nextNoTry(Context ctx, Instruction instr) {
         if (Thread.currentThread().isInterrupted()) throw new InterruptException();
         if (codePtr < 0 || codePtr >= function.body.length) return null;
-
-        var instr = function.body[codePtr];
-
-        var loc = instr.location;
-        if (loc != null) prevLoc = loc;
 
         try {
             this.jumpFlag = false;
             return Runners.exec(ctx, instr, this);
         }
         catch (EngineException e) {
-            throw e.add(function.name, prevLoc).setContext(ctx);
+            throw e.add(function.name, prevLoc).setCtx(function.environment, ctx.engine);
         }
     }
 
     public Object next(Context ctx, Object value, Object returnValue, EngineException error) {
         if (value != Runners.NO_RETURN) push(ctx, value);
+        var debugger = StackData.getDebugger(ctx);
 
         if (returnValue == Runners.NO_RETURN && error == null) {
-            try { returnValue = nextNoTry(ctx); }
+            try {
+                var instr = function.body[codePtr];
+
+                if (debugger != null) debugger.onInstruction(ctx, this, instr, Runners.NO_RETURN, null, false);
+                returnValue = nextNoTry(ctx, instr);
+            }
             catch (EngineException e) { error = e; }
         }
 
@@ -165,6 +164,7 @@ public class CodeFrame {
                             tryCtx.err = error;
                             newState = TryCtx.STATE_FINALLY_THREW;
                         }
+                        setCause(ctx, error, tryCtx.err);
                         break;
                     }
                     else if (returnValue != Runners.NO_RETURN) {
@@ -223,8 +223,15 @@ public class CodeFrame {
             return Runners.NO_RETURN;
         }
     
-        if (error != null) throw error.setContext(ctx);
-        if (returnValue != Runners.NO_RETURN) return returnValue;
+        if (error != null) {
+            if (debugger != null) debugger.onInstruction(ctx, this, function.body[codePtr], null, error, false);
+            throw error;
+        }
+        if (returnValue != Runners.NO_RETURN) {
+            if (debugger != null) debugger.onInstruction(ctx, this, function.body[codePtr], returnValue, null, false);
+            return returnValue;
+        }
+
         return Runners.NO_RETURN;
     }
 

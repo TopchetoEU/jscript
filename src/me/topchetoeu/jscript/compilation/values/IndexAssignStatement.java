@@ -24,14 +24,16 @@ public class IndexAssignStatement extends Statement {
             value.compile(target, scope, true);
             target.add(Instruction.operation(operation).locate(loc()));
 
-            target.add(Instruction.storeMember(pollute).locate(loc()).setDebug(true));
+            target.add(Instruction.storeMember(pollute).locate(loc()));
+            target.setDebug();
         }
         else {
             object.compile(target, scope, true);
             index.compile(target, scope, true);
             value.compile(target, scope, true);
 
-            target.add(Instruction.storeMember(pollute).locate(loc()).setDebug(true));
+            target.add(Instruction.storeMember(pollute).locate(loc()));
+            target.setDebug();
         }
     }
 

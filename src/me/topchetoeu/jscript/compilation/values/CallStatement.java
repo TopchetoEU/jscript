@@ -22,7 +22,8 @@ public class CallStatement extends Statement {
 
         for (var arg : args) arg.compile(target, scope, true);
 
-        target.add(Instruction.call(args.length).locate(loc()).setDebug(true));
+        target.add(Instruction.call(args.length).locate(loc()));
+        target.setDebug();
         if (!pollute) target.add(Instruction.discard().locate(loc()));
     }
 

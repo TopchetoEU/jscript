@@ -234,12 +234,12 @@ public class PromiseLib {
     private boolean handled = false;
     private Object val;
 
-    private void resolve(Context ctx, Object val, int state) {
+    public void fulfill(Context ctx, Object val) {
         if (this.state != STATE_PENDING) return;
 
         if (val instanceof PromiseLib) ((PromiseLib)val).handle(ctx,
-            new NativeFunction(null, (e, th, a) -> { this.resolve(ctx, a[0], state); return null; }),
-            new NativeFunction(null, (e, th, a) -> { this.resolve(ctx, a[0], STATE_REJECTED); return null; })
+            new NativeFunction(null, (e, th, a) -> { this.fulfill(ctx, a[0]); return null; }),
+            new NativeFunction(null, (e, th, a) -> { this.reject(ctx, a[0]); return null; })
         );
         else {
             Object next;
@@ -248,29 +248,14 @@ public class PromiseLib {
 
             try {
                 if (next instanceof FunctionValue) ((FunctionValue)next).call(ctx, val,
-                    new NativeFunction((e, _thisArg, a) -> { this.resolve(ctx, a.length > 0 ? a[0] : null, state); return null; }),
-                    new NativeFunction((e, _thisArg, a) -> { this.resolve(ctx, a.length > 0 ? a[0] : null, STATE_REJECTED); return null; })
+                    new NativeFunction((e, _thisArg, a) -> { this.fulfill(ctx, a.length > 0 ? a[0] : null); return null; }),
+                    new NativeFunction((e, _thisArg, a) -> { this.reject(ctx, a.length > 0 ? a[0] : null); return null; })
                 );
                 else {
                     this.val = val;
-                    this.state = state;
+                    this.state = STATE_FULFILLED;
 
-                    if (state == STATE_FULFILLED) {
-                        for (var handle : handles) handle.fulfilled.call(handle.ctx, null, val);
-                    }
-                    else if (state == STATE_REJECTED) {
-                        for (var handle : handles) handle.rejected.call(handle.ctx, null, val);
-                        if (handles.size() == 0) {
-                            ctx.engine.pushMsg(true, ctx, new NativeFunction((_ctx, _thisArg, _args) -> {
-                                if (!handled) {
-                                    Values.printError(new EngineException(val).setContext(ctx), "(in promise)");
-                                    throw new InterruptException();
-                                }
-
-                                return null;
-                            }), null);
-                        }
-                    }
+                    for (var handle : handles) handle.fulfilled.call(handle.ctx, null, val);
 
                     handles = null;
                 }
@@ -280,18 +265,46 @@ public class PromiseLib {
             }
         }
     }
-
-    /**
-     * Thread safe - call from any thread
-     */
-    public void fulfill(Context ctx, Object val) {
-        resolve(ctx, val, STATE_FULFILLED);
-    }
-    /**
-     * Thread safe - call from any thread
-     */
     public void reject(Context ctx, Object val) {
-        resolve(ctx, val, STATE_REJECTED);
+        if (this.state != STATE_PENDING) return;
+
+        if (val instanceof PromiseLib) ((PromiseLib)val).handle(ctx,
+            new NativeFunction(null, (e, th, a) -> { this.reject(ctx, a[0]); return null; }),
+            new NativeFunction(null, (e, th, a) -> { this.reject(ctx, a[0]); return null; })
+        );
+        else {
+            Object next;
+            try { next = Values.getMember(ctx, val, "next"); }
+            catch (IllegalArgumentException e) { next = null; }
+
+            try {
+                if (next instanceof FunctionValue) ((FunctionValue)next).call(ctx, val,
+                    new NativeFunction((e, _thisArg, a) -> { this.reject(ctx, a.length > 0 ? a[0] : null); return null; }),
+                    new NativeFunction((e, _thisArg, a) -> { this.reject(ctx, a.length > 0 ? a[0] : null); return null; })
+                );
+                else {
+                    this.val = val;
+                    this.state = STATE_REJECTED;
+
+                    for (var handle : handles) handle.rejected.call(handle.ctx, null, val);
+                    if (handles.size() == 0) {
+                        ctx.engine.pushMsg(true, ctx, new NativeFunction((_ctx, _thisArg, _args) -> {
+                            if (!handled) {
+                                Values.printError(new EngineException(val).setCtx(ctx.environment(), ctx.engine), "(in promise)");
+                                throw new InterruptException();
+                            }
+
+                            return null;
+                        }), null);
+                    }
+
+                    handles = null;
+                }
+            }
+            catch (EngineException err) {
+                this.reject(ctx, err.value);
+            }
+        }
     }
 
     private void handle(Context ctx, FunctionValue fulfill, FunctionValue reject) {

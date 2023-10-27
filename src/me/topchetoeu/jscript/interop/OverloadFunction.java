@@ -79,7 +79,7 @@ public class OverloadFunction extends FunctionValue {
             catch (InstantiationException e) { throw EngineException.ofError("The class may not be instantiated."); }
             catch (IllegalAccessException | IllegalArgumentException e) { continue; }
             catch (InvocationTargetException e) {
-                var loc = new Location(0, 0, "<internal>");
+                var loc = Location.INTERNAL;
                 if (e.getTargetException() instanceof EngineException) {
                     throw ((EngineException)e.getTargetException()).add(name, loc);
                 }
@@ -91,7 +91,7 @@ public class OverloadFunction extends FunctionValue {
                 }
             }
             catch (ReflectiveOperationException e) {
-                throw EngineException.ofError(e.getMessage()).add(name, new Location(0, 0, "<internal>"));
+                throw EngineException.ofError(e.getMessage()).add(name, Location.INTERNAL);
             }
         }
 

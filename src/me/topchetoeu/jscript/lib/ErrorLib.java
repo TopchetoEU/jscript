@@ -12,7 +12,7 @@ import me.topchetoeu.jscript.interop.NativeConstructor;
 import me.topchetoeu.jscript.interop.NativeInit;
 
 public class ErrorLib {
-    private static String toString(Context ctx, Object cause, Object name, Object message, ArrayValue stack) {
+    private static String toString(Context ctx, boolean rethrown, Object cause, Object name, Object message, ArrayValue stack) {
         if (name == null) name = "";
         else name = Values.toString(ctx, name).trim();
         if (message == null) message = "";
@@ -30,7 +30,10 @@ public class ErrorLib {
             }
         }
 
-        if (cause instanceof ObjectValue) res.append(toString(ctx, cause));
+        if (cause instanceof ObjectValue) {
+            if (rethrown) res.append("\n    (rethrown)");
+            else res.append("\nCaused by ").append(toString(ctx, cause));
+        }
 
         return res.toString();
     }
@@ -39,8 +42,10 @@ public class ErrorLib {
         if (thisArg instanceof ObjectValue) {
             var stack = Values.getMember(ctx, thisArg, "stack");
             if (!(stack instanceof ArrayValue)) stack = null;
+            var cause = Values.getMember(ctx, thisArg, ctx.environment().symbol("Symbol.cause"));
             return toString(ctx,
-                Values.getMember(ctx, thisArg, "cause"),
+                thisArg == cause,
+                cause,
                 Values.getMember(ctx, thisArg, "name"),
                 Values.getMember(ctx, thisArg, "message"),
                 (ArrayValue)stack
@@ -53,7 +58,7 @@ public class ErrorLib {
         var target = new ObjectValue();
         if (thisArg instanceof ObjectValue) target = (ObjectValue)thisArg;
 
-        target.defineProperty(ctx, "stack", new ArrayValue(ctx, StackData.stackTrace(ctx)));
+        target.defineProperty(ctx, "stack", ArrayValue.of(ctx, StackData.stackTrace(ctx)));
         target.defineProperty(ctx, "name", "Error");
         if (message == null) target.defineProperty(ctx, "message", "");
         else target.defineProperty(ctx, "message", Values.toString(ctx, message));

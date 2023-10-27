@@ -4,14 +4,14 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import me.topchetoeu.jscript.engine.debug.DebugServer;
+import me.topchetoeu.jscript.engine.debug.Debugger;
 import me.topchetoeu.jscript.engine.frame.CodeFrame;
 import me.topchetoeu.jscript.exceptions.EngineException;
 
 public class StackData {
     public static final DataKey<ArrayList<CodeFrame>> FRAMES = new DataKey<>();
     public static final DataKey<Integer> MAX_FRAMES = new DataKey<>();
-    public static final DataKey<DebugServer> DEBUGGER = new DataKey<>();
+    public static final DataKey<Debugger> DEBUGGER = new DataKey<>();
 
     public static void pushFrame(Context ctx, CodeFrame frame) {
         var frames = ctx.data.get(FRAMES, new ArrayList<>());
@@ -25,7 +25,14 @@ public class StackData {
         if (frames.get(frames.size() - 1) != frame) return false;
         frames.remove(frames.size() - 1);
         ctx.popEnv();
+        var dbg = getDebugger(ctx);
+        if (dbg != null) dbg.onFramePop(ctx, frame);
         return true;
+    }
+    public static CodeFrame peekFrame(Context ctx) {
+        var frames = ctx.data.get(FRAMES, new ArrayList<>());
+        if (frames.size() == 0) return null;
+        return frames.get(frames.size() - 1);
     }
 
     public static List<CodeFrame> frames(Context ctx) {
@@ -33,8 +40,10 @@ public class StackData {
     }
     public static List<String> stackTrace(Context ctx) {
         var res = new ArrayList<String>();
+        var frames = frames(ctx);
 
-        for (var el : frames(ctx)) {
+        for (var i = frames.size() - 1; i >= 0; i--) {
+            var el = frames.get(i);
             var name = el.function.name;
             var loc = el.function.loc();
             var trace = "";
@@ -48,5 +57,9 @@ public class StackData {
         }
 
         return res;
+    }
+
+    public static Debugger getDebugger(Context ctx) {
+        return ctx.data.get(DEBUGGER);
     }
 }

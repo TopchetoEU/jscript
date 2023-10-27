@@ -1,18 +1,18 @@
 package me.topchetoeu.jscript;
 
-public class Location {
-    public static final Location INTERNAL = new Location(0, 0, "<internal>");
+public class Location implements Comparable<Location> {
+    public static final Location INTERNAL = new Location(0, 0, new Filename("jscript", "internal"));
     private int line;
     private int start;
-    private String filename;
+    private Filename filename;
 
     public int line() { return line; }
     public int start() { return start; }
-    public String filename() { return filename; }
+    public Filename filename() { return filename; }
 
     @Override
     public String toString() {
-        return filename + ":" + line + ":" + start;
+        return filename.toString() + ":" + line + ":" + start;
     }
 
     public Location add(int n, boolean clone) {
@@ -55,7 +55,18 @@ public class Location {
         return true;
     }
 
-    public Location(int line, int start, String filename) {
+    @Override
+    public int compareTo(Location other) {
+        int a = filename.toString().compareTo(other.filename.toString());
+        int b = Integer.compare(line, other.line);
+        int c = Integer.compare(start, other.start);
+
+        if (a != 0) return a;
+        if (b != 0) return b;
+        return c;
+    }
+
+    public Location(int line, int start, Filename filename) {
         this.line = line;
         this.start = start;
         this.filename = filename;

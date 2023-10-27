@@ -3,6 +3,7 @@ package me.topchetoeu.jscript.lib;
 import java.util.HashSet;
 import java.util.stream.Collectors;
 
+import me.topchetoeu.jscript.Filename;
 import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.values.ArrayValue;
 import me.topchetoeu.jscript.engine.values.ObjectValue;
@@ -72,7 +73,7 @@ public class JSONLib {
     @Native
     public static Object parse(Context ctx, String val) {
         try {
-            return toJS(me.topchetoeu.jscript.json.JSON.parse("<value>", val));
+            return toJS(me.topchetoeu.jscript.json.JSON.parse(new Filename("jscript", "json"), val));
         }
         catch (SyntaxException e) { throw EngineException.ofSyntax(e.msg); }
     }

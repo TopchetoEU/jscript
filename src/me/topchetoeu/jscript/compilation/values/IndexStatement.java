@@ -30,7 +30,7 @@ public class IndexStatement extends AssignableStatement {
 
         index.compile(target, scope, true);
         target.add(Instruction.loadMember().locate(loc()));
-        target.get(start).setDebug(true);
+        target.setDebug(start);
         if (!pollute) target.add(Instruction.discard().locate(loc()));
     }
     @Override

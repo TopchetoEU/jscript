@@ -51,7 +51,7 @@ public class FunctionStatement extends Statement {
         var subscope = scope.child();
 
         int start = target.size();
-        var funcTarget = new CompileTarget(target.functions);
+        var funcTarget = new CompileTarget(target.functions, target.breakpoints);
 
         subscope.define("this");
         var argsVar = subscope.define("arguments");

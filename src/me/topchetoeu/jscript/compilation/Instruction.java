@@ -90,14 +90,9 @@ public class Instruction {
     public final Type type;
     public final Object[] params;
     public Location location;
-    public boolean debugged;
 
     public Instruction locate(Location loc) {
         this.location = loc;
-        return this;
-    }
-    public Instruction setDebug(boolean debug) {
-        debugged = debug;
         return this;
     }
 

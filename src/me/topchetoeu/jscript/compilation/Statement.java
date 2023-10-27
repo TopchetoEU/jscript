@@ -14,7 +14,7 @@ public abstract class Statement {
     public void compileWithDebug(CompileTarget target, ScopeRecord scope, boolean pollute) {
         int start = target.size();
         compile(target, scope, pollute);
-        if (target.size() != start) target.get(start).setDebug(true);
+        if (target.size() != start) target.setDebug(start);
     }
 
     public Location loc() { return _loc; }

@@ -1,7 +1,9 @@
 package me.topchetoeu.jscript.lib;
 
+import java.io.IOException;
 import java.util.HashMap;
 
+import me.topchetoeu.jscript.Reading;
 import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.DataKey;
 import me.topchetoeu.jscript.engine.Environment;
@@ -14,11 +16,21 @@ public class Internals {
     private static final DataKey<HashMap<Integer, Thread>> THREADS = new DataKey<>();
     private static final DataKey<Integer> I = new DataKey<>();
 
+
     @Native public static void log(Context ctx, Object ...args) {
         for (var arg : args) {
             Values.printValue(ctx, arg);
         }
         System.out.println();
+    }
+    @Native public static String readline(Context ctx) {
+        try {
+            return Reading.read();
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     @Native public static int setTimeout(Context ctx, FunctionValue func, int delay, Object ...args) {

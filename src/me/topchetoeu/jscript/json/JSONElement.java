@@ -65,8 +65,20 @@ public class JSONElement {
         return (double)value;
     }
     public boolean bool() {
-        if (!isNumber()) throw new IllegalStateException("Element is not a boolean.");
+        if (!isBoolean()) throw new IllegalStateException("Element is not a boolean.");
         return (boolean)value;
+    }
+
+    @Override
+    public String toString() {
+        if (isMap()) return "{...}";
+        if (isList()) return "[...]";
+        if (isString()) return (String)value;
+        if (isString()) return (String)value;
+        if (isNumber()) return (double)value + "";
+        if (isBoolean()) return (boolean)value + "";
+        if (isNull()) return "null";
+        return "";
     }
 
     private JSONElement(Type type, Object val) {

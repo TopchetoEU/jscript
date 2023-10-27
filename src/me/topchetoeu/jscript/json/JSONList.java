@@ -17,5 +17,7 @@ public class JSONList extends ArrayList<JSONElement> {
     public JSONList add(boolean val) { this.add(JSONElement.of(val)); return this; }
     public JSONList add(Map<String, JSONElement> val) { this.add(JSONElement.of(val)); return this; }
     public JSONList add(Collection<JSONElement> val) { this.add(JSONElement.of(val)); return this; }
+    public JSONList add(JSONMap val) { this.add(JSONElement.of(val)); return this; }
+    public JSONList add(JSONList val) { this.add(JSONElement.of(val)); return this; }
 
 }

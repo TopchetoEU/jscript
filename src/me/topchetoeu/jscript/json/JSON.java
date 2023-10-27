@@ -3,6 +3,7 @@ package me.topchetoeu.jscript.json;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import me.topchetoeu.jscript.Filename;
 import me.topchetoeu.jscript.exceptions.SyntaxException;
 import me.topchetoeu.jscript.parsing.Operator;
 import me.topchetoeu.jscript.parsing.ParseRes;
@@ -13,17 +14,17 @@ public class JSON {
     public static ParseRes<String> parseIdentifier(List<Token> tokens, int i) {
         return Parsing.parseIdentifier(tokens, i);
     }
-    public static ParseRes<String> parseString(String filename, List<Token> tokens, int i) {
+    public static ParseRes<String> parseString(Filename filename, List<Token> tokens, int i) {
         var res = Parsing.parseString(filename, tokens, i);
         if (res.isSuccess()) return ParseRes.res((String)res.result.value, res.n);
         else return res.transform();
     }
-    public static ParseRes<Double> parseNumber(String filename, List<Token> tokens, int i) {
+    public static ParseRes<Double> parseNumber(Filename filename, List<Token> tokens, int i) {
         var res = Parsing.parseNumber(filename, tokens, i);
         if (res.isSuccess()) return ParseRes.res((Double)res.result.value, res.n);
         else return res.transform();
     }
-    public static ParseRes<Boolean> parseBool(String filename, List<Token> tokens, int i) {
+    public static ParseRes<Boolean> parseBool(Filename filename, List<Token> tokens, int i) {
         var id = parseIdentifier(tokens, i);
 
         if (!id.isSuccess()) return ParseRes.failed();
@@ -32,7 +33,7 @@ public class JSON {
         else return ParseRes.failed();
     }
 
-    public static ParseRes<?> parseValue(String filename, List<Token> tokens, int i) {
+    public static ParseRes<?> parseValue(Filename filename, List<Token> tokens, int i) {
         return ParseRes.any(
             parseString(filename, tokens, i),
             parseNumber(filename, tokens, i),
@@ -42,7 +43,7 @@ public class JSON {
         );
     }
 
-    public static ParseRes<JSONMap> parseMap(String filename, List<Token> tokens, int i) {
+    public static ParseRes<JSONMap> parseMap(Filename filename, List<Token> tokens, int i) {
         int n = 0;
         if (!Parsing.isOperator(tokens, i + n++, Operator.BRACE_OPEN)) return ParseRes.failed();
 
@@ -82,7 +83,7 @@ public class JSON {
 
         return ParseRes.res(values, n);
     }
-    public static ParseRes<JSONList> parseList(String filename, List<Token> tokens, int i) {
+    public static ParseRes<JSONList> parseList(Filename filename, List<Token> tokens, int i) {
         int n = 0;
         if (!Parsing.isOperator(tokens, i + n++, Operator.BRACKET_OPEN)) return ParseRes.failed();
 
@@ -109,7 +110,7 @@ public class JSON {
 
         return ParseRes.res(values, n);
     }
-    public static JSONElement parse(String filename, String raw) {
+    public static JSONElement parse(Filename filename, String raw) {
         var res = parseValue(filename, Parsing.tokenize(filename, raw), 0);
         if (res.isFailed()) throw new SyntaxException(null, "Invalid JSON given.");
         else if (res.isError()) throw new SyntaxException(null, res.error);
@@ -120,7 +121,12 @@ public class JSON {
         if (el.isNumber()) return Double.toString(el.number());
         if (el.isBoolean()) return el.bool() ? "true" : "false";
         if (el.isNull()) return "null";
-        if (el.isString()) return "\"" + el.string().replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
+        if (el.isString()) return "\"" + el.string()
+            .replace("\\", "\\\\")
+            .replace("\n", "\\n")
+            .replace("\r", "\\r")
+            .replace("\"", "\\\"")
+        + "\"";
         if (el.isList()) {
             var res = new StringBuilder().append("[");
             for (int i = 0; i < el.list().size(); i++) {

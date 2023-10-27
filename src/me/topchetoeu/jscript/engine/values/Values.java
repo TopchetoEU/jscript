@@ -665,7 +665,8 @@ public class Values {
         prefix = prefix == null ? "Uncaught" : "Uncaught " + prefix;
         try {
             if (err instanceof EngineException) {
-                System.out.println(prefix + " " + ((EngineException)err).toString(((EngineException)err).ctx));
+                var ee = ((EngineException)err);
+                System.out.println(prefix + " " + ee.toString(new Context(ee.engine).pushEnv(ee.env)));
             }
             else if (err instanceof SyntaxException) {
                 System.out.println("Syntax error:" + ((SyntaxException)err).msg);
