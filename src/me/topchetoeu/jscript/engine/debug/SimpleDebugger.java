@@ -344,6 +344,25 @@ public class SimpleDebugger implements Debugger {
         return JSON.toJs(val.get("value"));
     }
 
+    private JSONMap serializeException(Context ctx, EngineException err) {
+        String text = null;
+
+        try {
+            text = Values.toString(ctx, err.value);
+        }
+        catch (EngineException e) {
+            text = "[error while stringifying]";
+        }
+
+        var res = new JSONMap()
+            .set("exceptionId", nextId())
+            .set("exception", serializeObj(ctx, err.value))
+            .set("exception", serializeObj(ctx, err.value))
+            .set("text", text);
+
+        return res;
+    }
+
     private void resume(State state) {
         this.state = state;
         ws.send(new V8Event("Debugger.resumed", new JSONMap()));
@@ -557,6 +576,8 @@ public class SimpleDebugger implements Debugger {
         var res = run(cf, expr);
 
         if (group != null) setObjectGroup(group, res.result);
+
+        if (res.error != null) ws.send(msg.respond(new JSONMap().set("exceptionDetails", serializeObj(res.ctx, res.result))));
 
         ws.send(msg.respond(new JSONMap().set("result", serializeObj(res.ctx, res.result))));
     }
