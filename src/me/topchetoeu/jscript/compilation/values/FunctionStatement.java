@@ -5,6 +5,7 @@ import java.util.Random;
 import me.topchetoeu.jscript.Location;
 import me.topchetoeu.jscript.compilation.CompileTarget;
 import me.topchetoeu.jscript.compilation.CompoundStatement;
+import me.topchetoeu.jscript.compilation.FunctionBody;
 import me.topchetoeu.jscript.compilation.Instruction;
 import me.topchetoeu.jscript.compilation.Statement;
 import me.topchetoeu.jscript.compilation.Instruction.Type;
@@ -51,7 +52,7 @@ public class FunctionStatement extends Statement {
         var subscope = scope.child();
 
         int start = target.size();
-        var funcTarget = new CompileTarget(target.functions);
+        var funcTarget = new CompileTarget(target.functions, target.breakpoints);
 
         subscope.define("this");
         var argsVar = subscope.define("arguments");
@@ -69,7 +70,6 @@ public class FunctionStatement extends Statement {
         }
 
         body.declare(subscope);
-        funcTarget.add(Instruction.debugVarNames(subscope.locals()));
         body.compile(funcTarget, subscope, false);
         funcTarget.add(Instruction.ret().locate(loc()));
         checkBreakAndCont(funcTarget, start);
@@ -77,7 +77,7 @@ public class FunctionStatement extends Statement {
         var id = rand.nextLong();
 
         target.add(Instruction.loadFunc(id, subscope.localsCount(), args.length, subscope.getCaptures()).locate(loc()));
-        target.functions.put(id, funcTarget.array());
+        target.functions.put(id, new FunctionBody(funcTarget.array(), subscope.captures(), subscope.locals()));
 
         if (name == null) name = this.name;
 

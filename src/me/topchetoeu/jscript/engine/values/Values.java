@@ -16,6 +16,7 @@ import me.topchetoeu.jscript.engine.frame.ConvertHint;
 import me.topchetoeu.jscript.exceptions.ConvertException;
 import me.topchetoeu.jscript.exceptions.EngineException;
 import me.topchetoeu.jscript.exceptions.SyntaxException;
+import me.topchetoeu.jscript.exceptions.UncheckedException;
 
 public class Values {
     public static final Object NULL = new Object();
@@ -67,7 +68,7 @@ public class Values {
         return "object";
     }
 
-    private static Object tryCallConvertFunc(Context ctx, Object obj, String name) throws InterruptedException {
+    private static Object tryCallConvertFunc(Context ctx, Object obj, String name) {
         var func = getMember(ctx, obj, name);
 
         if (func != null) {
@@ -88,7 +89,7 @@ public class Values {
             obj == NULL;
     }
 
-    public static Object toPrimitive(Context ctx, Object obj, ConvertHint hint) throws InterruptedException {
+    public static Object toPrimitive(Context ctx, Object obj, ConvertHint hint) {
         obj = normalize(ctx, obj);
         if (isPrimitive(obj)) return obj;
 
@@ -96,12 +97,8 @@ public class Values {
         var second = hint == ConvertHint.VALUEOF ? "toString" : "valueOf";
 
         if (ctx != null) {
-            try {
-                return tryCallConvertFunc(ctx, obj, first);
-            }
-            catch (EngineException unused) {
-                return tryCallConvertFunc(ctx, obj, second);
-            }
+            try { return tryCallConvertFunc(ctx, obj, first); }
+            catch (EngineException unused) { return tryCallConvertFunc(ctx, obj, second); }
         }
 
         throw EngineException.ofType("Value couldn't be converted to a primitive.");
@@ -113,20 +110,18 @@ public class Values {
         if (obj instanceof Boolean) return (Boolean)obj;
         return true;
     }
-    public static double toNumber(Context ctx, Object obj) throws InterruptedException {
+    public static double toNumber(Context ctx, Object obj) {
         var val = toPrimitive(ctx, obj, ConvertHint.VALUEOF);
 
         if (val instanceof Number) return number(val);
         if (val instanceof Boolean) return ((Boolean)val) ? 1 : 0;
         if (val instanceof String) {
-            try {
-                return Double.parseDouble((String)val);
-            }
-            catch (NumberFormatException e) { }
+            try { return Double.parseDouble((String)val); }
+            catch (Throwable e) { throw new UncheckedException(e); }
         }
         return Double.NaN;
     }
-    public static String toString(Context ctx, Object obj) throws InterruptedException {
+    public static String toString(Context ctx, Object obj) {
         var val = toPrimitive(ctx, obj, ConvertHint.VALUEOF);
 
         if (val == null) return "undefined";
@@ -146,47 +141,47 @@ public class Values {
         return "Unknown value";
     }
 
-    public static Object add(Context ctx, Object a, Object b) throws InterruptedException {
+    public static Object add(Context ctx, Object a, Object b) {
         if (a instanceof String || b instanceof String) return toString(ctx, a) + toString(ctx, b);
         else return toNumber(ctx, a) + toNumber(ctx, b);
     }
-    public static double subtract(Context ctx, Object a, Object b) throws InterruptedException {
+    public static double subtract(Context ctx, Object a, Object b) {
         return toNumber(ctx, a) - toNumber(ctx, b);
     }
-    public static double multiply(Context ctx, Object a, Object b) throws InterruptedException {
+    public static double multiply(Context ctx, Object a, Object b) {
         return toNumber(ctx, a) * toNumber(ctx, b);
     }
-    public static double divide(Context ctx, Object a, Object b) throws InterruptedException {
+    public static double divide(Context ctx, Object a, Object b) {
         return toNumber(ctx, a) / toNumber(ctx, b);
     }
-    public static double modulo(Context ctx, Object a, Object b) throws InterruptedException {
+    public static double modulo(Context ctx, Object a, Object b) {
         return toNumber(ctx, a) % toNumber(ctx, b);
     }
     
-    public static double negative(Context ctx, Object obj) throws InterruptedException {
+    public static double negative(Context ctx, Object obj) {
         return -toNumber(ctx, obj);
     }
 
-    public static int and(Context ctx, Object a, Object b) throws InterruptedException {
+    public static int and(Context ctx, Object a, Object b) {
         return (int)toNumber(ctx, a) & (int)toNumber(ctx, b);
     }
-    public static int or(Context ctx, Object a, Object b) throws InterruptedException {
+    public static int or(Context ctx, Object a, Object b) {
         return (int)toNumber(ctx, a) | (int)toNumber(ctx, b);
     }
-    public static int xor(Context ctx, Object a, Object b) throws InterruptedException {
+    public static int xor(Context ctx, Object a, Object b) {
         return (int)toNumber(ctx, a) ^ (int)toNumber(ctx, b);
     }
-    public static int bitwiseNot(Context ctx, Object obj) throws InterruptedException {
+    public static int bitwiseNot(Context ctx, Object obj) {
         return ~(int)toNumber(ctx, obj);
     }
 
-    public static int shiftLeft(Context ctx, Object a, Object b) throws InterruptedException {
+    public static int shiftLeft(Context ctx, Object a, Object b) {
         return (int)toNumber(ctx, a) << (int)toNumber(ctx, b);
     }
-    public static int shiftRight(Context ctx, Object a, Object b) throws InterruptedException {
+    public static int shiftRight(Context ctx, Object a, Object b) {
         return (int)toNumber(ctx, a) >> (int)toNumber(ctx, b);
     }
-    public static long unsignedShiftRight(Context ctx, Object a, Object b) throws InterruptedException {
+    public static long unsignedShiftRight(Context ctx, Object a, Object b) {
         long _a = (long)toNumber(ctx, a);
         long _b = (long)toNumber(ctx, b);
 
@@ -195,7 +190,7 @@ public class Values {
         return _a >>> _b;
     }
 
-    public static int compare(Context ctx, Object a, Object b) throws InterruptedException {
+    public static int compare(Context ctx, Object a, Object b) {
         a = toPrimitive(ctx, a, ConvertHint.VALUEOF);
         b = toPrimitive(ctx, b, ConvertHint.VALUEOF);
 
@@ -207,7 +202,7 @@ public class Values {
         return !toBoolean(obj);
     }
 
-    public static boolean isInstanceOf(Context ctx, Object obj, Object proto) throws InterruptedException {
+    public static boolean isInstanceOf(Context ctx, Object obj, Object proto) {
         if (obj == null || obj == NULL || proto == null || proto == NULL) return false;
         var val = getPrototype(ctx, obj);
 
@@ -219,7 +214,7 @@ public class Values {
         return false;
     }
 
-    public static Object operation(Context ctx, Operation op, Object ...args) throws InterruptedException {
+    public static Object operation(Context ctx, Operation op, Object ...args) {
         switch (op) {
             case ADD: return add(ctx, args[0], args[1]);
             case SUBTRACT: return subtract(ctx, args[0], args[1]);
@@ -260,7 +255,7 @@ public class Values {
         }
     }
 
-    public static Object getMember(Context ctx, Object obj, Object key) throws InterruptedException {
+    public static Object getMember(Context ctx, Object obj, Object key) {
         obj = normalize(ctx, obj); key = normalize(ctx, key);
         if (obj == null) throw new IllegalArgumentException("Tried to access member of undefined.");
         if (obj == NULL) throw new IllegalArgumentException("Tried to access member of null.");
@@ -280,7 +275,7 @@ public class Values {
         else if (key != null && key.equals("__proto__")) return proto;
         else return proto.getMember(ctx, key, obj);
     }
-    public static boolean setMember(Context ctx, Object obj, Object key, Object val) throws InterruptedException {
+    public static boolean setMember(Context ctx, Object obj, Object key, Object val) {
         obj = normalize(ctx, obj); key = normalize(ctx, key); val = normalize(ctx, val);
         if (obj == null) throw EngineException.ofType("Tried to access member of undefined.");
         if (obj == NULL) throw EngineException.ofType("Tried to access member of null.");
@@ -290,7 +285,7 @@ public class Values {
         var proto = getPrototype(ctx, obj);
         return proto.setMember(ctx, key, val, obj, true);
     }
-    public static boolean hasMember(Context ctx, Object obj, Object key, boolean own) throws InterruptedException {
+    public static boolean hasMember(Context ctx, Object obj, Object key, boolean own) {
         if (obj == null || obj == NULL) return false;
         obj = normalize(ctx, obj); key = normalize(ctx, key);
 
@@ -308,31 +303,31 @@ public class Values {
         var proto = getPrototype(ctx, obj);
         return proto != null && proto.hasMember(ctx, key, own);
     }
-    public static boolean deleteMember(Context ctx, Object obj, Object key) throws InterruptedException {
+    public static boolean deleteMember(Context ctx, Object obj, Object key) {
         if (obj == null || obj == NULL) return false;
         obj = normalize(ctx, obj); key = normalize(ctx, key);
 
         if (isObject(obj)) return object(obj).deleteMember(ctx, key);
         else return false;
     }
-    public static ObjectValue getPrototype(Context ctx, Object obj) throws InterruptedException {
+    public static ObjectValue getPrototype(Context ctx, Object obj) {
         if (obj == null || obj == NULL) return null;
         obj = normalize(ctx, obj);
         if (isObject(obj)) return object(obj).getPrototype(ctx);
         if (ctx == null) return null;
 
-        if (obj instanceof String) return ctx.env.proto("string");
-        else if (obj instanceof Number) return ctx.env.proto("number");
-        else if (obj instanceof Boolean) return ctx.env.proto("bool");
-        else if (obj instanceof Symbol) return ctx.env.proto("symbol");
+        if (obj instanceof String) return ctx.environment().proto("string");
+        else if (obj instanceof Number) return ctx.environment().proto("number");
+        else if (obj instanceof Boolean) return ctx.environment().proto("bool");
+        else if (obj instanceof Symbol) return ctx.environment().proto("symbol");
 
         return null;
     }
-    public static boolean setPrototype(Context ctx, Object obj, Object proto) throws InterruptedException {
+    public static boolean setPrototype(Context ctx, Object obj, Object proto) {
         obj = normalize(ctx, obj);
         return isObject(obj) && object(obj).setPrototype(ctx, proto);
     }
-    public static List<Object> getMembers(Context ctx, Object obj, boolean own, boolean includeNonEnumerable) throws InterruptedException {  
+    public static List<Object> getMembers(Context ctx, Object obj, boolean own, boolean includeNonEnumerable) {  
         List<Object> res = new ArrayList<>();
 
         if (isObject(obj)) res = object(obj).keys(includeNonEnumerable);
@@ -352,7 +347,7 @@ public class Values {
 
         return res;
     }
-    public static ObjectValue getMemberDescriptor(Context ctx, Object obj, Object key) throws InterruptedException {
+    public static ObjectValue getMemberDescriptor(Context ctx, Object obj, Object key) {
         if (obj instanceof ObjectValue) return ((ObjectValue)obj).getMemberDescriptor(ctx, key);
         else if (obj instanceof String && key instanceof Number) {
             var i = ((Number)key).intValue();
@@ -370,11 +365,11 @@ public class Values {
         else return null;
     }
 
-    public static Object call(Context ctx, Object func, Object thisArg, Object ...args) throws InterruptedException {
+    public static Object call(Context ctx, Object func, Object thisArg, Object ...args) {
         if (!isFunction(func)) throw EngineException.ofType("Tried to call a non-function value.");
         return function(func).call(ctx, thisArg, args);
     }
-    public static Object callNew(Context ctx, Object func, Object ...args) throws InterruptedException {
+    public static Object callNew(Context ctx, Object func, Object ...args) {
         var res = new ObjectValue();
         var proto = Values.getMember(ctx, func, "prototype");
         res.setPrototype(ctx, proto);
@@ -395,7 +390,7 @@ public class Values {
 
         return a == b || a.equals(b);
     }
-    public static boolean looseEqual(Context ctx, Object a, Object b) throws InterruptedException {
+    public static boolean looseEqual(Context ctx, Object a, Object b) {
         a = normalize(ctx, a); b = normalize(ctx, b);
 
         // In loose equality, null is equivalent to undefined
@@ -446,14 +441,14 @@ public class Values {
 
         if (val instanceof Class) {
             if (ctx == null) return null;
-            else return ctx.env.wrappersProvider.getConstr((Class<?>)val);
+            else return ctx.environment().wrappers.getConstr((Class<?>)val);
         }
 
         return new NativeWrapper(val);
     }
 
     @SuppressWarnings("unchecked")
-    public static <T> T convert(Context ctx, Object obj, Class<T> clazz) throws InterruptedException {
+    public static <T> T convert(Context ctx, Object obj, Class<T> clazz) {
         if (clazz == Void.class) return null;
 
         if (obj instanceof NativeWrapper) {
@@ -520,7 +515,7 @@ public class Values {
     public static Iterable<Object> toJavaIterable(Context ctx, Object obj) {
         return () -> {
             try {
-                var symbol = ctx.env.symbol("Symbol.iterator");
+                var symbol = ctx.environment().symbol("Symbol.iterator");
 
                 var iteratorFunc = getMember(ctx, obj, symbol);
                 if (!isFunction(iteratorFunc)) return Collections.emptyIterator();
@@ -536,7 +531,7 @@ public class Values {
                     public boolean consumed = true;
                     private FunctionValue next = (FunctionValue)nextFunc;
 
-                    private void loadNext() throws InterruptedException {
+                    private void loadNext() {
                         if (next == null) value = null;
                         else if (consumed) {
                             var curr = object(next.call(ctx, iterator));
@@ -551,34 +546,18 @@ public class Values {
 
                     @Override
                     public boolean hasNext() {
-                        try {
-                            loadNext();
-                            return next != null;
-                        }
-                        catch (InterruptedException e) {
-                            Thread.currentThread().interrupt();
-                            return false;
-                        }
+                        loadNext();
+                        return next != null;
                     }
                     @Override
                     public Object next() {
-                        try {
-                            loadNext();
-                            var res = value;
-                            value = null;
-                            consumed = true;
-                            return res;
-                        }
-                        catch (InterruptedException e) {
-                            Thread.currentThread().interrupt();
-                            return null;
-                        }
+                        loadNext();
+                        var res = value;
+                        value = null;
+                        consumed = true;
+                        return res;
                     }
                 };
-            }
-            catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                return null;
             }
             catch (IllegalArgumentException | NullPointerException e) {
                 return Collections.emptyIterator();
@@ -586,11 +565,11 @@ public class Values {
         };
     }
 
-    public static ObjectValue fromJavaIterator(Context ctx, Iterator<?> it) throws InterruptedException {
+    public static ObjectValue fromJavaIterator(Context ctx, Iterator<?> it) {
         var res = new ObjectValue();
 
         try {
-            var key = getMember(ctx, getMember(ctx, ctx.env.proto("symbol"), "constructor"), "iterator");
+            var key = getMember(ctx, getMember(ctx, ctx.environment().proto("symbol"), "constructor"), "iterator");
             res.defineProperty(ctx, key, new NativeFunction("", (_ctx, thisArg, args) -> thisArg));
         }
         catch (IllegalArgumentException | NullPointerException e) { }
@@ -603,11 +582,11 @@ public class Values {
         return res;
     }
 
-    public static ObjectValue fromJavaIterable(Context ctx, Iterable<?> it) throws InterruptedException {
+    public static ObjectValue fromJavaIterable(Context ctx, Iterable<?> it) {
         return fromJavaIterator(ctx, it.iterator());
     }
 
-    private static void printValue(Context ctx, Object val, HashSet<Object> passed, int tab) throws InterruptedException {
+    private static void printValue(Context ctx, Object val, HashSet<Object> passed, int tab) {
         if (passed.contains(val)) {
             System.out.print("[circular]");
             return;
@@ -679,14 +658,15 @@ public class Values {
         else if (val instanceof String) System.out.print("'" + val + "'");
         else System.out.print(Values.toString(ctx, val));
     }
-    public static void printValue(Context ctx, Object val) throws InterruptedException {
+    public static void printValue(Context ctx, Object val) {
         printValue(ctx, val, new HashSet<>(), 0);
     }
-    public static void printError(RuntimeException err, String prefix) throws InterruptedException {
+    public static void printError(RuntimeException err, String prefix) {
         prefix = prefix == null ? "Uncaught" : "Uncaught " + prefix;
         try {
             if (err instanceof EngineException) {
-                System.out.println(prefix + " " + ((EngineException)err).toString(((EngineException)err).ctx));
+                var ee = ((EngineException)err);
+                System.out.println(prefix + " " + ee.toString(new Context(ee.engine).pushEnv(ee.env)));
             }
             else if (err instanceof SyntaxException) {
                 System.out.println("Syntax error:" + ((SyntaxException)err).msg);

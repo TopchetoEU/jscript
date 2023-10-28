@@ -29,22 +29,22 @@ public class NumberLib {
         return val > MIN_SAFE_INTEGER && val < MAX_SAFE_INTEGER;
     }
 
-    @Native public static double parseFloat(Context ctx, String val) throws InterruptedException {
+    @Native public static double parseFloat(Context ctx, String val) {
         return Values.toNumber(ctx, val);
     }
-    @Native public static double parseInt(Context ctx, String val) throws InterruptedException {
+    @Native public static double parseInt(Context ctx, String val) {
         return (long)Values.toNumber(ctx, val);
     }
 
-    @NativeConstructor(thisArg = true) public static Object constructor(Context ctx, Object thisArg, Object val) throws InterruptedException {
+    @NativeConstructor(thisArg = true) public static Object constructor(Context ctx, Object thisArg, Object val) {
         val = Values.toNumber(ctx, val);
         if (thisArg instanceof ObjectValue) return new NumberLib((double)val);
         else return val;
     }
-    @Native(thisArg = true) public static String toString(Context ctx, Object thisArg) throws InterruptedException {
+    @Native(thisArg = true) public static String toString(Context ctx, Object thisArg) {
         return Values.toString(ctx, Values.toNumber(ctx, thisArg));
     }
-    @Native(thisArg = true) public static double valueOf(Context ctx, Object thisArg) throws InterruptedException {
+    @Native(thisArg = true) public static double valueOf(Context ctx, Object thisArg) {
         if (thisArg instanceof NumberLib) return ((NumberLib)thisArg).value;
         else return Values.toNumber(ctx, thisArg);
     }

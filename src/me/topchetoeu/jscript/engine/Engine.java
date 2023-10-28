@@ -3,29 +3,29 @@ package me.topchetoeu.jscript.engine;
 import java.util.HashMap;
 import java.util.concurrent.LinkedBlockingDeque;
 
-import me.topchetoeu.jscript.compilation.Instruction;
+import me.topchetoeu.jscript.Filename;
+import me.topchetoeu.jscript.compilation.FunctionBody;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
 import me.topchetoeu.jscript.events.Awaitable;
 import me.topchetoeu.jscript.events.DataNotifier;
-import me.topchetoeu.jscript.exceptions.EngineException;
+import me.topchetoeu.jscript.exceptions.InterruptException;
 
 public class Engine {
     private class UncompiledFunction extends FunctionValue {
-        public final String filename;
+        public final Filename filename;
         public final String raw;
-        public final Environment env;
+        private FunctionValue compiled = null;
 
         @Override
-        public Object call(Context ctx, Object thisArg, Object ...args) throws InterruptedException {
-            ctx = ctx.setEnv(env);
-            return ctx.compile(filename, raw).call(ctx, thisArg, args);
+        public Object call(Context ctx, Object thisArg, Object ...args) {
+            if (compiled == null) compiled = ctx.compile(filename, raw);
+            return compiled.call(ctx, thisArg, args);
         }
 
-        public UncompiledFunction(Environment env, String filename, String raw) {
-            super(filename, 0);
+        public UncompiledFunction(Filename filename, String raw) {
+            super(filename + "", 0);
             this.filename = filename;
             this.raw = raw;
-            this.env = env; 
         }
     }
 
@@ -34,10 +34,10 @@ public class Engine {
         public final Object thisArg;
         public final Object[] args;
         public final DataNotifier<Object> notifier = new DataNotifier<>();
-        public final Message msg;
+        public final Context ctx;
 
-        public Task(Message ctx, FunctionValue func, Object thisArg, Object[] args) {
-            this.msg = ctx;
+        public Task(Context ctx, FunctionValue func, Object thisArg, Object[] args) {
+            this.ctx = ctx;
             this.func = func;
             this.thisArg = thisArg;
             this.args = args;
@@ -51,26 +51,20 @@ public class Engine {
     private LinkedBlockingDeque<Task> microTasks = new LinkedBlockingDeque<>();
 
     public final int id = ++nextId;
-    public final HashMap<Long, Instruction[]> functions = new HashMap<>();
+    public final HashMap<Long, FunctionBody> functions = new HashMap<>();
+    public final Data data = new Data().set(StackData.MAX_FRAMES, 10000);
 
-    private void runTask(Task task) throws InterruptedException {
+    private void runTask(Task task) {
         try {
-            task.notifier.next(task.func.call(task.msg.context(null), task.thisArg, task.args));
-        }
-        catch (InterruptedException e) {
-            task.notifier.error(new RuntimeException(e));
-            throw e;
-        }
-        catch (EngineException e) {
-            task.notifier.error(e);
+            task.notifier.next(task.func.call(task.ctx, task.thisArg, task.args));
         }
         catch (RuntimeException e) {
+            if (e instanceof InterruptException) throw e;
             task.notifier.error(e);
-            e.printStackTrace();
         }
     }
-    private void run() {
-        while (true) {
+    public void run(boolean untilEmpty) {
+        while (!untilEmpty || !macroTasks.isEmpty()) {
             try {
                 runTask(macroTasks.take());
 
@@ -78,9 +72,9 @@ public class Engine {
                     runTask(microTasks.take());
                 }
             }
-            catch (InterruptedException e) {
+            catch (InterruptedException | InterruptException e) {
                 for (var msg : macroTasks) {
-                    msg.notifier.error(new RuntimeException(e));
+                    msg.notifier.error(new InterruptException(e));
                 }
                 break;
             }
@@ -89,7 +83,7 @@ public class Engine {
 
     public Thread start() {
         if (this.thread == null) {
-            this.thread = new Thread(this::run, "JavaScript Runner #" + id);
+            this.thread = new Thread(() -> run(false), "JavaScript Runner #" + id);
             this.thread.start();
         }
         return this.thread;
@@ -105,17 +99,13 @@ public class Engine {
         return this.thread != null;
     }
 
-    public Awaitable<Object> pushMsg(boolean micro, Message ctx, FunctionValue func, Object thisArg, Object ...args) {
-        var msg = new Task(ctx, func, thisArg, args);
+    public Awaitable<Object> pushMsg(boolean micro, Context ctx, FunctionValue func, Object thisArg, Object ...args) {
+        var msg = new Task(ctx == null ? new Context(this) : ctx, func, thisArg, args);
         if (micro) microTasks.addLast(msg);
         else macroTasks.addLast(msg);
         return msg.notifier;
     }
-    public Awaitable<Object> pushMsg(boolean micro, Context ctx, String filename, String raw, Object thisArg, Object ...args) {
-        return pushMsg(micro, ctx.message, new UncompiledFunction(ctx.env, filename, raw), thisArg, args);
+    public Awaitable<Object> pushMsg(boolean micro, Context ctx, Filename filename, String raw, Object thisArg, Object ...args) {
+        return pushMsg(micro, ctx, new UncompiledFunction(filename, raw), thisArg, args);
     }
-
-    // public Engine() {
-    //     this.typeRegister = new NativeTypeRegister();
-    // }
 }

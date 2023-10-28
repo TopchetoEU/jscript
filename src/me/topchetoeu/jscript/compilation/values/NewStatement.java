@@ -16,7 +16,8 @@ public class NewStatement extends Statement {
 
         for (var arg : args) arg.compile(target, scope, true);
 
-        target.add(Instruction.callNew(args.length).locate(loc()).setDebug(true));
+        target.add(Instruction.callNew(args.length).locate(loc()));
+        target.setDebug();
     }
 
     public NewStatement(Location loc, Statement func, Statement ...args) {

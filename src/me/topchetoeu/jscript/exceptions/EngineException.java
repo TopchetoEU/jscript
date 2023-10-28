@@ -5,6 +5,8 @@ import java.util.List;
 
 import me.topchetoeu.jscript.Location;
 import me.topchetoeu.jscript.engine.Context;
+import me.topchetoeu.jscript.engine.Engine;
+import me.topchetoeu.jscript.engine.Environment;
 import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.engine.values.ObjectValue.PlaceholderProto;
@@ -12,7 +14,8 @@ import me.topchetoeu.jscript.engine.values.ObjectValue.PlaceholderProto;
 public class EngineException extends RuntimeException {
     public final Object value;
     public EngineException cause;
-    public Context ctx = null;
+    public Environment env = null;
+    public Engine engine = null;
     public final List<String> stackTrace = new ArrayList<>();
 
     public EngineException add(String name, Location location) {
@@ -28,12 +31,13 @@ public class EngineException extends RuntimeException {
         this.cause = cause;
         return this;
     }
-    public EngineException setContext(Context ctx) {
-        this.ctx = ctx;
+    public EngineException setCtx(Environment env, Engine engine) {
+        if (this.env == null) this.env = env;
+        if (this.engine == null) this.engine = engine;
         return this;
     }
 
-    public String toString(Context ctx) throws InterruptedException {
+    public String toString(Context ctx) {
         var ss = new StringBuilder();
         try {
             ss.append(Values.toString(ctx, value)).append('\n');

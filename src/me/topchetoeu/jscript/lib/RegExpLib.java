@@ -17,7 +17,7 @@ public class RegExpLib {
     private static final Pattern NAMED_PATTERN = Pattern.compile("\\(\\?<([^=!].*?)>", Pattern.DOTALL);
     private static final Pattern ESCAPE_PATTERN = Pattern.compile("[/\\-\\\\^$*+?.()|\\[\\]{}]");
 
-    private static String cleanupPattern(Context ctx, Object val) throws InterruptedException {
+    private static String cleanupPattern(Context ctx, Object val) {
         if (val == null) return "(?:)";
         if (val instanceof RegExpLib) return ((RegExpLib)val).source;
         if (val instanceof NativeWrapper && ((NativeWrapper)val).wrapped instanceof RegExpLib) {
@@ -27,7 +27,7 @@ public class RegExpLib {
         if (res.equals("")) return "(?:)";
         return res;
     }
-    private static String cleanupFlags(Context ctx, Object val) throws InterruptedException {
+    private static String cleanupFlags(Context ctx, Object val) {
         if (val == null) return "";
         return Values.toString(ctx, val);
     }
@@ -46,7 +46,7 @@ public class RegExpLib {
     }
 
     @Native
-    public static RegExpLib escape(Context ctx, Object raw, Object flags) throws InterruptedException {
+    public static RegExpLib escape(Context ctx, Object raw, Object flags) {
         return escape(Values.toString(ctx, raw), cleanupFlags(ctx, flags));
     }
     public static RegExpLib escape(String raw, String flags) {
@@ -97,9 +97,7 @@ public class RegExpLib {
         var groups = new ObjectValue();
 
         for (var el : namedGroups) {
-            try {
-                groups.defineProperty(null, el, matcher.group(el));
-            }
+            try { groups.defineProperty(null, el, matcher.group(el)); }
             catch (IllegalArgumentException e) { }
         }
         if (groups.values.size() == 0) groups = null;
@@ -135,7 +133,7 @@ public class RegExpLib {
         return "/" + source + "/" + flags();
     }
 
-    @Native("@@Symvol.match") public Object match(Context ctx, String target) throws InterruptedException {
+    @Native("@@Symvol.match") public Object match(Context ctx, String target) {
         if (this.global) {
             var res = new ArrayValue();
             Object val;
@@ -152,7 +150,7 @@ public class RegExpLib {
         }
     }
 
-    @Native("@@Symvol.matchAll") public Object matchAll(Context ctx, String target) throws InterruptedException {
+    @Native("@@Symvol.matchAll") public Object matchAll(Context ctx, String target) {
         var pattern = new RegExpLib(this.source, this.flags() + "g");
 
         return Values.fromJavaIterator(ctx, new Iterator<Object>() {
@@ -174,7 +172,7 @@ public class RegExpLib {
         });
     }
     
-    @Native("@@Symvol.split") public ArrayValue split(Context ctx, String target, Object limit, boolean sensible) throws InterruptedException {
+    @Native("@@Symvol.split") public ArrayValue split(Context ctx, String target, Object limit, boolean sensible) {
         var pattern = new RegExpLib(this.source, this.flags() + "g");
         Object match;
         int lastEnd = 0;
@@ -260,7 +258,7 @@ public class RegExpLib {
     //         else return -1;
     //     }
     // },
-    @Native public RegExpLib(Context ctx, Object pattern, Object flags) throws InterruptedException {
+    @Native public RegExpLib(Context ctx, Object pattern, Object flags) {
         this(cleanupPattern(ctx, pattern), cleanupFlags(ctx, flags));
     }
     public RegExpLib(String pattern, String flags) {

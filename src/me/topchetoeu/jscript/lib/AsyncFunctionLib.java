@@ -1,6 +1,7 @@
 package me.topchetoeu.jscript.lib;
 
 import me.topchetoeu.jscript.engine.Context;
+import me.topchetoeu.jscript.engine.StackData;
 import me.topchetoeu.jscript.engine.frame.CodeFrame;
 import me.topchetoeu.jscript.engine.frame.Runners;
 import me.topchetoeu.jscript.engine.values.CodeFunction;
@@ -17,9 +18,10 @@ public class AsyncFunctionLib extends FunctionValue {
 
         private boolean awaiting = false;
 
-        private void next(Context ctx, Object inducedValue, Object inducedError) throws InterruptedException {
+        private void next(Context ctx, Object inducedValue, Object inducedError) {
             Object res = null;
-            ctx.message.pushFrame(ctx, frame);
+            StackData.pushFrame(ctx, frame);
+            ctx.pushEnv(frame.function.environment);
 
             awaiting = false;
             while (!awaiting) {
@@ -37,18 +39,18 @@ public class AsyncFunctionLib extends FunctionValue {
                 }
             }
 
-            ctx.message.popFrame(frame);
+            StackData.popFrame(ctx, frame);
 
             if (awaiting) {
                 PromiseLib.then(ctx, frame.pop(), new NativeFunction(this::fulfill), new NativeFunction(this::reject));
             }
         }
 
-        public Object fulfill(Context ctx, Object thisArg, Object ...args) throws InterruptedException {
+        public Object fulfill(Context ctx, Object thisArg, Object ...args) {
             next(ctx, args.length > 0 ? args[0] : null, Runners.NO_RETURN);
             return null;
         }
-        public Object reject(Context ctx, Object thisArg, Object ...args) throws InterruptedException {
+        public Object reject(Context ctx, Object thisArg, Object ...args) {
             next(ctx, Runners.NO_RETURN, args.length > 0 ? args[0] : null);
             return null;
         }
@@ -60,7 +62,7 @@ public class AsyncFunctionLib extends FunctionValue {
     }
 
     @Override
-    public Object call(Context ctx, Object thisArg, Object ...args) throws InterruptedException {
+    public Object call(Context ctx, Object thisArg, Object ...args) {
         var handler = new AsyncHelper();
         var func = factory.call(ctx, thisArg, new NativeFunction("await", handler::await));
         if (!(func instanceof CodeFunction)) throw EngineException.ofType("Return value of argument must be a js function.");

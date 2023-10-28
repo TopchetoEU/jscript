@@ -15,7 +15,7 @@ import me.topchetoeu.jscript.exceptions.EngineException;
 public class OverloadFunction extends FunctionValue {
     public final List<Overload> overloads = new ArrayList<>();
 
-    public Object call(Context ctx, Object thisArg, Object ...args) throws InterruptedException {
+    public Object call(Context ctx, Object thisArg, Object ...args) {
         loop: for (var overload : overloads) {
             Object[] newArgs = new Object[overload.params.length];
 
@@ -76,14 +76,10 @@ public class OverloadFunction extends FunctionValue {
             try {
                 return Values.normalize(ctx, overload.runner.run(ctx, _this, newArgs));
             }
-            catch (InstantiationException e) {
-                throw EngineException.ofError("The class may not be instantiated.");
-            }
-            catch (IllegalAccessException | IllegalArgumentException e) {
-                continue;
-            }
+            catch (InstantiationException e) { throw EngineException.ofError("The class may not be instantiated."); }
+            catch (IllegalAccessException | IllegalArgumentException e) { continue; }
             catch (InvocationTargetException e) {
-                var loc = new Location(0, 0, "<internal>");
+                var loc = Location.INTERNAL;
                 if (e.getTargetException() instanceof EngineException) {
                     throw ((EngineException)e.getTargetException()).add(name, loc);
                 }
@@ -95,10 +91,7 @@ public class OverloadFunction extends FunctionValue {
                 }
             }
             catch (ReflectiveOperationException e) {
-                throw EngineException.ofError(e.getMessage()).add(name, new Location(0, 0, "<internal>"));
-            }
-            catch (Exception e) {
-                throw e;
+                throw EngineException.ofError(e.getMessage()).add(name, Location.INTERNAL);
             }
         }
 

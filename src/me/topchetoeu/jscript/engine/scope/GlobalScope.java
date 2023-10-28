@@ -15,7 +15,7 @@ public class GlobalScope implements ScopeRecord {
     @Override
     public GlobalScope parent() { return null; }
 
-    public boolean has(Context ctx, String name) throws InterruptedException {
+    public boolean has(Context ctx, String name) {
         return obj.hasMember(ctx, name, false);
     }
     public Object getKey(String name) {
@@ -32,13 +32,7 @@ public class GlobalScope implements ScopeRecord {
     }
 
     public Object define(String name) {
-        try {
-            if (obj.hasMember(null, name, true)) return name;
-        }
-        catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return name;
-        }
+        if (obj.hasMember(null, name, true)) return name;
         obj.defineProperty(null, name, null);
         return name;
     }
@@ -59,11 +53,11 @@ public class GlobalScope implements ScopeRecord {
         define(null, val.name, readonly, val);
     }
 
-    public Object get(Context ctx, String name) throws InterruptedException {
+    public Object get(Context ctx, String name) {
         if (!obj.hasMember(ctx, name, false)) throw EngineException.ofSyntax("The variable '" + name + "' doesn't exist.");
         else return obj.getMember(ctx, name);
     }
-    public void set(Context ctx, String name, Object val) throws InterruptedException {
+    public void set(Context ctx, String name, Object val) {
         if (!obj.hasMember(ctx, name, false)) throw EngineException.ofSyntax("The variable '" + name + "' doesn't exist.");
         if (!obj.setMember(ctx, name, val, false)) throw EngineException.ofSyntax("The global '" + name + "' is readonly.");
     }

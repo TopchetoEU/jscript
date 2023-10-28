@@ -1,43 +1,52 @@
 package me.topchetoeu.jscript.engine;
 
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map.Entry;
+import java.util.Map;
 
 @SuppressWarnings("unchecked")
-public class Data implements Iterable<Entry<DataKey<?>, ?>> {
+public class Data {
+    public final Data parent;
     private HashMap<DataKey<Object>, Object> data = new HashMap<>();
 
     public Data copy() {
         return new Data().addAll(this);
     }
 
-    public Data addAll(Iterable<Entry<DataKey<?>, ?>> data) {
-        for (var el : data) {
-            add((DataKey<Object>)el.getKey(), (Object)el.getValue());
+    public Data addAll(Map<DataKey<?>, ?> data) {
+        for (var el : data.entrySet()) {
+            get((DataKey<Object>)el.getKey(), (Object)el.getValue());
+        }
+        return this;
+    }
+    public Data addAll(Data data) {
+        for (var el : data.data.entrySet()) {
+            get((DataKey<Object>)el.getKey(), (Object)el.getValue());
         }
         return this;
     }
 
+    public <T> T remove(DataKey<T> key) {
+        return (T)data.remove(key);
+    }
     public <T> Data set(DataKey<T> key, T val) {
-        if (val == null) data.remove(key);
-        else data.put((DataKey<Object>)key, (Object)val);
+        data.put((DataKey<Object>)key, (Object)val);
         return this;
     }
-    public <T> T add(DataKey<T> key, T val) {
-        if (data.containsKey(key)) return (T)data.get(key);
-        else {
-            if (val == null) data.remove(key);
-            else data.put((DataKey<Object>)key, (Object)val);
-            return val;
+    public <T> T get(DataKey<T> key, T val) {
+        for (var it = this; it != null; it = it.parent) {
+            if (it.data.containsKey(key)) {
+                return (T)it.data.get((DataKey<Object>)key);
+            }
         }
+
+        set(key, val);
+        return val;
     }
     public <T> T get(DataKey<T> key) {
-        return get(key, null);
-    }
-    public <T> T get(DataKey<T> key, T defaultVal) {
-        if (!has(key)) return defaultVal;
-        else return (T)data.get(key);
+        for (var it = this; it != null; it = it.parent) {
+            if (it.data.containsKey(key)) return (T)it.data.get((DataKey<Object>)key);
+        }
+        return null;
     }
     public boolean has(DataKey<?> key) { return data.containsKey(key); }
 
@@ -53,8 +62,10 @@ public class Data implements Iterable<Entry<DataKey<?>, ?>> {
         return increase(key, 1, 0);
     }
 
-    @Override
-    public Iterator<Entry<DataKey<?>, ?>> iterator() {
-        return (Iterator<Entry<DataKey<?>, ?>>)data.entrySet();
+    public Data() {
+        this.parent = null;
+    }
+    public Data(Data parent) {
+        this.parent = parent;
     }
 }

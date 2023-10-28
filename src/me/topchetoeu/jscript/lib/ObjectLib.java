@@ -14,7 +14,7 @@ import me.topchetoeu.jscript.interop.NativeConstructor;
 import me.topchetoeu.jscript.interop.NativeInit;
 
 public class ObjectLib {
-    @Native public static ObjectValue assign(Context ctx, ObjectValue dst, Object... src) throws InterruptedException {
+    @Native public static ObjectValue assign(Context ctx, ObjectValue dst, Object... src) {
         for (var obj : src) {
             for (var key : Values.getMembers(ctx, obj, true, true)) {
                 Values.setMember(ctx, dst, key, Values.getMember(ctx, obj, key));
@@ -22,13 +22,13 @@ public class ObjectLib {
         }
         return dst;
     }
-    @Native public static ObjectValue create(Context ctx, ObjectValue proto, ObjectValue props) throws InterruptedException {
+    @Native public static ObjectValue create(Context ctx, ObjectValue proto, ObjectValue props) {
         var obj = new ObjectValue();
         obj.setPrototype(ctx, proto);
         return defineProperties(ctx, obj, props);
     }
 
-    @Native public static ObjectValue defineProperty(Context ctx, ObjectValue obj, Object key, ObjectValue attrib) throws InterruptedException {
+    @Native public static ObjectValue defineProperty(Context ctx, ObjectValue obj, Object key, ObjectValue attrib) {
         var hasVal = attrib.hasMember(ctx, "value", false);
         var hasGet = attrib.hasMember(ctx, "get", false);
         var hasSet = attrib.hasMember(ctx, "set", false);
@@ -59,7 +59,7 @@ public class ObjectLib {
 
         return obj;
     }
-    @Native public static ObjectValue defineProperties(Context ctx, ObjectValue obj, ObjectValue attrib) throws InterruptedException {
+    @Native public static ObjectValue defineProperties(Context ctx, ObjectValue obj, ObjectValue attrib) {
         for (var key : Values.getMembers(null, obj, false, false)) {
             obj.defineProperty(ctx, key, attrib.getMember(ctx, key));
         }
@@ -67,7 +67,7 @@ public class ObjectLib {
         return obj;
     }
 
-    @Native public static ArrayValue keys(Context ctx, Object obj, Object all) throws InterruptedException {
+    @Native public static ArrayValue keys(Context ctx, Object obj, Object all) {
         var res = new ArrayValue();
         var _all = Values.toBoolean(all);
 
@@ -77,7 +77,7 @@ public class ObjectLib {
 
         return res;
     }
-    @Native public static ArrayValue entries(Context ctx, Object obj, Object all) throws InterruptedException {
+    @Native public static ArrayValue entries(Context ctx, Object obj, Object all) {
         var res = new ArrayValue();
         var _all = Values.toBoolean(all);
 
@@ -87,7 +87,7 @@ public class ObjectLib {
 
         return res;
     }
-    @Native public static ArrayValue values(Context ctx, Object obj, Object all) throws InterruptedException {
+    @Native public static ArrayValue values(Context ctx, Object obj, Object all) {
         var res = new ArrayValue();
         var _all = Values.toBoolean(all);
 
@@ -98,10 +98,10 @@ public class ObjectLib {
         return res;
     }
 
-    @Native public static ObjectValue getOwnPropertyDescriptor(Context ctx, Object obj, Object key) throws InterruptedException {
+    @Native public static ObjectValue getOwnPropertyDescriptor(Context ctx, Object obj, Object key) {
         return Values.getMemberDescriptor(ctx, obj, key);
     }
-    @Native public static ObjectValue getOwnPropertyDescriptors(Context ctx, Object obj) throws InterruptedException {
+    @Native public static ObjectValue getOwnPropertyDescriptors(Context ctx, Object obj) {
         var res = new ObjectValue();
         for (var key : Values.getMembers(ctx, obj, true, true)) {
             res.defineProperty(ctx, key, getOwnPropertyDescriptor(ctx, obj, key));
@@ -109,7 +109,7 @@ public class ObjectLib {
         return res;
     }
 
-    @Native public static ArrayValue getOwnPropertyNames(Context ctx, Object obj, Object all) throws InterruptedException {
+    @Native public static ArrayValue getOwnPropertyNames(Context ctx, Object obj, Object all) {
         var res = new ArrayValue();
         var _all = Values.toBoolean(all);
 
@@ -119,7 +119,7 @@ public class ObjectLib {
 
         return res;
     }
-    @Native public static ArrayValue getOwnPropertySymbols(Context ctx, Object obj) throws InterruptedException {
+    @Native public static ArrayValue getOwnPropertySymbols(Context ctx, Object obj) {
         var res = new ArrayValue();
 
         for (var key : Values.getMembers(ctx, obj, true, true)) {
@@ -128,19 +128,19 @@ public class ObjectLib {
 
         return res;
     }
-    @Native public static boolean hasOwn(Context ctx, Object obj, Object key) throws InterruptedException {
+    @Native public static boolean hasOwn(Context ctx, Object obj, Object key) {
         return Values.hasMember(ctx, obj, key, true);
     }
 
-    @Native public static ObjectValue getPrototypeOf(Context ctx, Object obj) throws InterruptedException {
+    @Native public static ObjectValue getPrototypeOf(Context ctx, Object obj) {
         return Values.getPrototype(ctx, obj);
     }
-    @Native public static Object setPrototypeOf(Context ctx, Object obj, Object proto) throws InterruptedException {
+    @Native public static Object setPrototypeOf(Context ctx, Object obj, Object proto) {
         Values.setPrototype(ctx, obj, proto);
         return obj;
     }
 
-    @Native public static ObjectValue fromEntries(Context ctx, Object iterable) throws InterruptedException {
+    @Native public static ObjectValue fromEntries(Context ctx, Object iterable) {
         var res = new ObjectValue();
 
         for (var el : Values.toJavaIterable(ctx, iterable)) {
@@ -152,23 +152,23 @@ public class ObjectLib {
         return res;
     }
 
-    @Native public static Object preventExtensions(Context ctx, Object obj) throws InterruptedException {
+    @Native public static Object preventExtensions(Context ctx, Object obj) {
         if (obj instanceof ObjectValue) ((ObjectValue)obj).preventExtensions();
         return obj;
     }
-    @Native public static Object seal(Context ctx, Object obj) throws InterruptedException {
+    @Native public static Object seal(Context ctx, Object obj) {
         if (obj instanceof ObjectValue) ((ObjectValue)obj).seal();
         return obj;
     }
-    @Native public static Object freeze(Context ctx, Object obj) throws InterruptedException {
+    @Native public static Object freeze(Context ctx, Object obj) {
         if (obj instanceof ObjectValue) ((ObjectValue)obj).freeze();
         return obj;
     }
 
-    @Native public static boolean isExtensible(Context ctx, Object obj) throws InterruptedException {
+    @Native public static boolean isExtensible(Context ctx, Object obj) {
         return obj instanceof ObjectValue && ((ObjectValue)obj).extensible();
     }
-    @Native public static boolean isSealed(Context ctx, Object obj) throws InterruptedException {
+    @Native public static boolean isSealed(Context ctx, Object obj) {
         if (obj instanceof ObjectValue && ((ObjectValue)obj).extensible()) {
             var _obj = (ObjectValue)obj;
             for (var key : _obj.keys(true)) {
@@ -178,7 +178,7 @@ public class ObjectLib {
 
         return true;
     }
-    @Native public static boolean isFrozen(Context ctx, Object obj) throws InterruptedException {
+    @Native public static boolean isFrozen(Context ctx, Object obj) {
         if (obj instanceof ObjectValue && ((ObjectValue)obj).extensible()) {
             var _obj = (ObjectValue)obj;
             for (var key : _obj.keys(true)) {
@@ -193,18 +193,18 @@ public class ObjectLib {
     @Native(thisArg = true) public static Object valueOf(Context ctx, Object thisArg) {
         return thisArg;
     }
-    @Native(thisArg = true) public static String toString(Context ctx, Object thisArg) throws InterruptedException {
-        var name = Values.getMember(ctx, thisArg, ctx.env.symbol("Symbol.typeName"));
+    @Native(thisArg = true) public static String toString(Context ctx, Object thisArg) {
+        var name = Values.getMember(ctx, thisArg, ctx.environment().symbol("Symbol.typeName"));
         if (name == null) name = "Unknown";
         else name = Values.toString(ctx, name);
 
         return "[object " + name + "]";
     }
-    @Native(thisArg = true) public static boolean hasOwnProperty(Context ctx, Object thisArg, Object key) throws InterruptedException {
+    @Native(thisArg = true) public static boolean hasOwnProperty(Context ctx, Object thisArg, Object key) {
         return ObjectLib.hasOwn(ctx, thisArg, Values.convert(ctx, key, String.class));
     }
 
-    @NativeConstructor(thisArg = true) public static Object constructor(Context ctx, Object thisArg, Object arg) throws InterruptedException {
+    @NativeConstructor(thisArg = true) public static Object constructor(Context ctx, Object thisArg, Object arg) {
         if (arg == null || arg == Values.NULL) return new ObjectValue();
         else if (arg instanceof Boolean) return BooleanLib.constructor(ctx, thisArg, arg);
         else if (arg instanceof Number) return NumberLib.constructor(ctx, thisArg, arg);

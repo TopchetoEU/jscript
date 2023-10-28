@@ -4,13 +4,13 @@ import me.topchetoeu.jscript.engine.Context;
 
 public class NativeFunction extends FunctionValue {
     public static interface NativeFunctionRunner {
-        Object run(Context ctx, Object thisArg, Object[] args) throws InterruptedException;
+        Object run(Context ctx, Object thisArg, Object[] args);
     }
 
     public final NativeFunctionRunner action;
 
     @Override
-    public Object call(Context ctx, Object thisArg, Object ...args) throws InterruptedException {
+    public Object call(Context ctx, Object thisArg, Object ...args) {
         return action.run(ctx, thisArg, args);
     }
 

@@ -11,6 +11,7 @@ import me.topchetoeu.jscript.engine.scope.ScopeRecord;
 
 public class CompoundStatement extends Statement {
     public final Statement[] statements;
+    public Location end;
 
     @Override
     public void declare(ScopeRecord varsScope) {
@@ -25,17 +26,22 @@ public class CompoundStatement extends Statement {
             if (stm instanceof FunctionStatement) {
                 int start = target.size();
                 ((FunctionStatement)stm).compile(target, scope, null, true);
-                target.get(start).setDebug(true);
+                target.setDebug(start);
                 target.add(Instruction.discard());
             }
         }
 
         for (var i = 0; i < statements.length; i++) {
             var stm = statements[i];
-            
+
             if (stm instanceof FunctionStatement) continue;
             if (i != statements.length - 1) stm.compileWithDebug(target, scope, false);
             else stm.compileWithDebug(target, scope, pollute);
+        }
+
+        if (end != null) {
+            target.add(Instruction.nop().locate(end));
+            target.setDebug();
         }
     }
 
@@ -57,6 +63,11 @@ public class CompoundStatement extends Statement {
 
         if (res.size() == 1) return res.get(0);
         else return new CompoundStatement(loc(), res.toArray(Statement[]::new));
+    }
+
+    public CompoundStatement setEnd(Location loc) {
+        this.end = loc;
+        return this;
     }
 
     public CompoundStatement(Location loc, Statement ...statements) {

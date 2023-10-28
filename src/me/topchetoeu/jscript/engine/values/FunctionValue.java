@@ -14,26 +14,26 @@ public abstract class FunctionValue extends ObjectValue {
         return "function(...) {  ...}";
     }
 
-    public abstract Object call(Context ctx, Object thisArg, Object ...args) throws InterruptedException;
-    public Object call(Context ctx) throws InterruptedException {
+    public abstract Object call(Context ctx, Object thisArg, Object ...args);
+    public Object call(Context ctx) {
         return call(ctx, null);
     }
 
     @Override
-    protected Object getField(Context ctx, Object key) throws InterruptedException {
+    protected Object getField(Context ctx, Object key) {
         if (key.equals("name")) return name;
         if (key.equals("length")) return length;
         return super.getField(ctx, key);
     }
     @Override
-    protected boolean setField(Context ctx, Object key, Object val) throws InterruptedException {
+    protected boolean setField(Context ctx, Object key, Object val) {
         if (key.equals("name")) name = Values.toString(ctx, val);
         else if (key.equals("length")) length = (int)Values.toNumber(ctx, val);
         else return super.setField(ctx, key, val);
         return true;
     }
     @Override
-    protected boolean hasField(Context ctx, Object key) throws InterruptedException {
+    protected boolean hasField(Context ctx, Object key) {
         if (key.equals("name")) return true;
         if (key.equals("length")) return true;
         return super.hasField(ctx, key);

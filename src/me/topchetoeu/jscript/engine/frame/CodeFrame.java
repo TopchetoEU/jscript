@@ -3,14 +3,18 @@ package me.topchetoeu.jscript.engine.frame;
 import java.util.Stack;
 
 import me.topchetoeu.jscript.Location;
+import me.topchetoeu.jscript.compilation.Instruction;
 import me.topchetoeu.jscript.engine.Context;
+import me.topchetoeu.jscript.engine.StackData;
 import me.topchetoeu.jscript.engine.scope.LocalScope;
 import me.topchetoeu.jscript.engine.scope.ValueVariable;
 import me.topchetoeu.jscript.engine.values.ArrayValue;
 import me.topchetoeu.jscript.engine.values.CodeFunction;
 import me.topchetoeu.jscript.engine.values.ObjectValue;
+import me.topchetoeu.jscript.engine.values.ScopeValue;
 import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.exceptions.EngineException;
+import me.topchetoeu.jscript.exceptions.InterruptException;
 
 public class CodeFrame {
     private class TryCtx {
@@ -54,6 +58,33 @@ public class CodeFrame {
     public boolean jumpFlag = false;
     private Location prevLoc = null;
 
+    public ObjectValue getLocalScope(Context ctx, boolean props) {
+        var names = new String[scope.locals.length];
+
+        for (int i = 0; i < scope.locals.length; i++) {
+            var name = "local_" + (i - 2);
+
+            if (i == 0) name = "this";
+            else if (i == 1) name = "arguments";
+            else if (i < function.localNames.length) name = function.localNames[i];
+
+            names[i] = name;
+        }
+
+        return new ScopeValue(scope.locals, names);
+    }
+    public ObjectValue getCaptureScope(Context ctx, boolean props) {
+        var names = new String[scope.captures.length];
+
+        for (int i = 0; i < scope.captures.length; i++) {
+            var name = "capture_" + (i - 2);
+            if (i < function.captureNames.length) name = function.captureNames[i];
+            names[i] = name;
+        }
+
+        return new ScopeValue(scope.captures, names);
+    }
+
     public void addTry(int n, int catchN, int finallyN) {
         var res = new TryCtx(codePtr + 1, n, catchN, finallyN);
 
@@ -93,35 +124,33 @@ public class CodeFrame {
         stack[stackPtr++] = Values.normalize(ctx, val);
     }
 
-    private void setCause(Context ctx, EngineException err, EngineException cause) throws InterruptedException {
-        if (err.value instanceof ObjectValue) {
-            Values.setMember(ctx, err, ctx.env.symbol("Symbol.cause"), cause);
-        }
+    private void setCause(Context ctx, EngineException err, EngineException cause) {
         err.cause = cause;
     }
-    private Object nextNoTry(Context ctx) throws InterruptedException {
-        if (Thread.currentThread().isInterrupted()) throw new InterruptedException();
+    private Object nextNoTry(Context ctx, Instruction instr) {
+        if (Thread.currentThread().isInterrupted()) throw new InterruptException();
         if (codePtr < 0 || codePtr >= function.body.length) return null;
-
-        var instr = function.body[codePtr];
-
-        var loc = instr.location;
-        if (loc != null) prevLoc = loc;
 
         try {
             this.jumpFlag = false;
             return Runners.exec(ctx, instr, this);
         }
         catch (EngineException e) {
-            throw e.add(function.name, prevLoc).setContext(ctx);
+            throw e.add(function.name, prevLoc).setCtx(function.environment, ctx.engine);
         }
     }
 
-    public Object next(Context ctx, Object value, Object returnValue, EngineException error) throws InterruptedException {
+    public Object next(Context ctx, Object value, Object returnValue, EngineException error) {
         if (value != Runners.NO_RETURN) push(ctx, value);
+        var debugger = StackData.getDebugger(ctx);
 
         if (returnValue == Runners.NO_RETURN && error == null) {
-            try { returnValue = nextNoTry(ctx); }
+            try {
+                var instr = function.body[codePtr];
+
+                if (debugger != null) debugger.onInstruction(ctx, this, instr, Runners.NO_RETURN, null, false);
+                returnValue = nextNoTry(ctx, instr);
+            }
             catch (EngineException e) { error = e; }
         }
 
@@ -144,7 +173,7 @@ public class CodeFrame {
                     }
                     else if (returnValue != Runners.NO_RETURN) {
                         if (tryCtx.hasFinally) {
-                            tryCtx.retVal = error;
+                            tryCtx.retVal = returnValue;
                             newState = TryCtx.STATE_FINALLY_RETURNED;
                         }
                         break;
@@ -164,6 +193,7 @@ public class CodeFrame {
                             tryCtx.err = error;
                             newState = TryCtx.STATE_FINALLY_THREW;
                         }
+                        setCause(ctx, error, tryCtx.err);
                         break;
                     }
                     else if (returnValue != Runners.NO_RETURN) {
@@ -214,6 +244,7 @@ public class CodeFrame {
                 case TryCtx.STATE_CATCH:
                     scope.catchVars.add(new ValueVariable(false, tryCtx.err.value));
                     codePtr = tryCtx.catchStart;
+                    if (debugger != null) debugger.onInstruction(ctx, this, function.body[codePtr], null, error, true);
                     break;
                 default:
                     codePtr = tryCtx.finallyStart;
@@ -222,22 +253,16 @@ public class CodeFrame {
             return Runners.NO_RETURN;
         }
     
-        if (error != null) throw error.setContext(ctx);
-        if (returnValue != Runners.NO_RETURN) return returnValue;
-        return Runners.NO_RETURN;
-    }
+        if (error != null) {
+            if (debugger != null) debugger.onInstruction(ctx, this, function.body[codePtr], null, error, false);
+            throw error;
+        }
+        if (returnValue != Runners.NO_RETURN) {
+            if (debugger != null) debugger.onInstruction(ctx, this, function.body[codePtr], returnValue, null, false);
+            return returnValue;
+        }
 
-    public Object run(Context ctx) throws InterruptedException {
-        try {
-            ctx.message.pushFrame(ctx, this);
-            while (true) {
-                var res = next(ctx, Runners.NO_RETURN, Runners.NO_RETURN, null);
-                if (res != Runners.NO_RETURN) return res;
-            }
-        }
-        finally {
-            ctx.message.popFrame(this);
-        }
+        return Runners.NO_RETURN;
     }
 
     public CodeFrame(Context ctx, Object thisArg, Object[] args, CodeFunction func) {

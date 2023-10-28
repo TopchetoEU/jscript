@@ -20,17 +20,17 @@ public class IndexStatement extends AssignableStatement {
         return new IndexAssignStatement(loc(), object, index, val, operation);
     }
     public void compile(CompileTarget target, ScopeRecord scope, boolean dupObj, boolean pollute) {
-        int start = 0;
         object.compile(target, scope, true);
         if (dupObj) target.add(Instruction.dup().locate(loc()));
         if (index instanceof ConstantStatement) {
             target.add(Instruction.loadMember(((ConstantStatement)index).value).locate(loc()));
+            target.setDebug();
             return;
         }
 
         index.compile(target, scope, true);
         target.add(Instruction.loadMember().locate(loc()));
-        target.get(start).setDebug(true);
+        target.setDebug();
         if (!pollute) target.add(Instruction.discard().locate(loc()));
     }
     @Override

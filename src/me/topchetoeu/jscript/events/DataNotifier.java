@@ -19,7 +19,7 @@ public class DataNotifier<T> implements Awaitable<T> {
         isErr = false;
         notifier.next();
     }
-    public T await() throws InterruptedException {
+    public T await() {
         notifier.await();
 
         try {

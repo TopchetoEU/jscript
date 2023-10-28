@@ -49,13 +49,8 @@ public class OperationStatement extends Statement {
                 vals[i] = ((ConstantStatement)args[i]).value;
             }
 
-            try {
-                return new ConstantStatement(loc(), Values.operation(null, operation, vals));
-            }
-            catch (EngineException e) {
-                return new ThrowStatement(loc(), new ConstantStatement(loc(), e.value));
-            }
-            catch (InterruptedException e) { return null; }
+            try { return new ConstantStatement(loc(), Values.operation(null, operation, vals)); }
+            catch (EngineException e) { return new ThrowStatement(loc(), new ConstantStatement(loc(), e.value)); }
         }
 
         return new OperationStatement(loc(), operation, args);

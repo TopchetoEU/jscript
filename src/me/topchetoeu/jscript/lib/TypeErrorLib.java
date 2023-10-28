@@ -8,7 +8,7 @@ import me.topchetoeu.jscript.interop.NativeConstructor;
 import me.topchetoeu.jscript.interop.NativeInit;
 
 public class TypeErrorLib extends ErrorLib {
-    @NativeConstructor(thisArg = true) public static ObjectValue constructor(Context ctx, Object thisArg, Object message) throws InterruptedException {
+    @NativeConstructor(thisArg = true) public static ObjectValue constructor(Context ctx, Object thisArg, Object message) {
         var target = ErrorLib.constructor(ctx, thisArg, message);
         target.defineProperty(ctx, "name", "TypeError");
         return target;

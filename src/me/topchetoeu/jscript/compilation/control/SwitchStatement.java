@@ -68,7 +68,8 @@ public class SwitchStatement extends Statement {
             var loc = target.get(el.getKey()).location;
             var i = stmIndexMap.get(el.getValue());
             if (i == null) i = target.size();
-            target.set(el.getKey(), Instruction.jmpIf(i - el.getKey()).locate(loc).setDebug(true));
+            target.set(el.getKey(), Instruction.jmpIf(i - el.getKey()).locate(loc));
+            target.setDebug(el.getKey());
         }
 
         target.add(Instruction.discard().locate(loc()));

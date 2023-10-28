@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JScript Debugger</title>
+</head>
+<body>
+    <p>
+        This is the debugger of JScript. It implement the <a href="https://chromedevtools.github.io/devtools-protocol/1-2/">V8 Debugging protocol</a>,
+        so you can use the devtools in chrome. <br>
+        The debugger is still in early development, so please report any issues to
+        <a href="https://github.com/TopchetoEU/java-jscript/issues">the github repo</a>.
+    </p>
+
+    <p>
+        Here are the available entrypoints:
+        <ul>
+            <li><a href="json/version">/json/version</a> - version and other stuff about the JScript engine</li>
+            <li><a href="json/list">/json/list</a> - a list of all entrypoints</li>
+            <li><a href="json/protocol">/json/protocol</a> - documentation of the implemented V8 protocol</li>
+            <li>/(any target) - websocket entrypoints for debugging</li>
+        </ul>
+    </p>
+
+    <p>
+        Running ${NAME} v${VERSION} by ${AUTHOR}
+    </p>
+</body>
+</html>

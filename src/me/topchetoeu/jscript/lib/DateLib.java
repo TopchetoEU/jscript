@@ -33,7 +33,7 @@ public class DateLib {
         return normal.get(Calendar.YEAR) - 1900;
     }
     @Native
-    public double setYear(Context ctx, double real) throws InterruptedException {
+    public double setYear(Context ctx, double real) {
         if (real >= 0 && real <= 99) real = real + 1900;
         if (Double.isNaN(real)) invalidate();
         else normal.set(Calendar.YEAR, (int)real);
@@ -124,56 +124,56 @@ public class DateLib {
     }
 
     @Native
-    public double setFullYear(Context ctx, double real) throws InterruptedException {
+    public double setFullYear(Context ctx, double real) {
         if (Double.isNaN(real)) invalidate();
         else normal.set(Calendar.YEAR, (int)real);
         updateUTC();
         return getTime();
     }
     @Native
-    public double setMonth(Context ctx, double real) throws InterruptedException {
+    public double setMonth(Context ctx, double real) {
         if (Double.isNaN(real)) invalidate();
         else normal.set(Calendar.MONTH, (int)real);
         updateUTC();
         return getTime();
     }
     @Native
-    public double setDate(Context ctx, double real) throws InterruptedException {
+    public double setDate(Context ctx, double real) {
         if (Double.isNaN(real)) invalidate();
         else normal.set(Calendar.DAY_OF_MONTH, (int)real);
         updateUTC();
         return getTime();
     }
     @Native
-    public double setDay(Context ctx, double real) throws InterruptedException {
+    public double setDay(Context ctx, double real) {
         if (Double.isNaN(real)) invalidate();
         else normal.set(Calendar.DAY_OF_WEEK, (int)real);
         updateUTC();
         return getTime();
     }
     @Native
-    public double setHours(Context ctx, double real) throws InterruptedException {
+    public double setHours(Context ctx, double real) {
         if (Double.isNaN(real)) invalidate();
         else normal.set(Calendar.HOUR_OF_DAY, (int)real);
         updateUTC();
         return getTime();
     }
     @Native
-    public double setMinutes(Context ctx, double real) throws InterruptedException {
+    public double setMinutes(Context ctx, double real) {
         if (Double.isNaN(real)) invalidate();
         else normal.set(Calendar.MINUTE, (int)real);
         updateUTC();
         return getTime();
     }
     @Native
-    public double setSeconds(Context ctx, double real) throws InterruptedException {
+    public double setSeconds(Context ctx, double real) {
         if (Double.isNaN(real)) invalidate();
         else normal.set(Calendar.SECOND, (int)real);
         updateUTC();
         return getTime();
     }
     @Native
-    public double setMilliseconds(Context ctx, double real) throws InterruptedException {
+    public double setMilliseconds(Context ctx, double real) {
         if (Double.isNaN(real)) invalidate();
         else normal.set(Calendar.MILLISECOND, (int)real);
         updateUTC();
@@ -181,56 +181,56 @@ public class DateLib {
     }
 
     @Native
-    public double setUTCFullYear(Context ctx, double real) throws InterruptedException {
+    public double setUTCFullYear(Context ctx, double real) {
         if (Double.isNaN(real)) invalidate();
         else utc.set(Calendar.YEAR, (int)real);
         updateNormal();
         return getTime();
     }
     @Native
-    public double setUTCMonth(Context ctx, double real) throws InterruptedException {
+    public double setUTCMonth(Context ctx, double real) {
         if (Double.isNaN(real)) invalidate();
         else utc.set(Calendar.MONTH, (int)real);
         updateNormal();
         return getTime();
     }
     @Native
-    public double setUTCDate(Context ctx, double real) throws InterruptedException {
+    public double setUTCDate(Context ctx, double real) {
         if (Double.isNaN(real)) invalidate();
         else utc.set(Calendar.DAY_OF_MONTH, (int)real);
         updateNormal();
         return getTime();
     }
     @Native
-    public double setUTCDay(Context ctx, double real) throws InterruptedException {
+    public double setUTCDay(Context ctx, double real) {
         if (Double.isNaN(real)) invalidate();
         else utc.set(Calendar.DAY_OF_WEEK, (int)real);
         updateNormal();
         return getTime();
     }
     @Native
-    public double setUTCHours(Context ctx, double real) throws InterruptedException {
+    public double setUTCHours(Context ctx, double real) {
         if (Double.isNaN(real)) invalidate();
         else utc.set(Calendar.HOUR_OF_DAY, (int)real);
         updateNormal();
         return getTime();
     }
     @Native
-    public double setUTCMinutes(Context ctx, double real) throws InterruptedException {
+    public double setUTCMinutes(Context ctx, double real) {
         if (Double.isNaN(real)) invalidate();
         else utc.set(Calendar.MINUTE, (int)real);
         updateNormal();
         return getTime();
     }
     @Native
-    public double setUTCSeconds(Context ctx, double real) throws InterruptedException {
+    public double setUTCSeconds(Context ctx, double real) {
         if (Double.isNaN(real)) invalidate();
         else utc.set(Calendar.SECOND, (int)real);
         updateNormal();
         return getTime();
     }
     @Native
-    public double setUTCMilliseconds(Context ctx, double real) throws InterruptedException {
+    public double setUTCMilliseconds(Context ctx, double real) {
         if (Double.isNaN(real)) invalidate();
         else utc.set(Calendar.MILLISECOND, (int)real);
         updateNormal();

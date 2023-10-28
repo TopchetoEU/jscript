@@ -1,7 +1,9 @@
 package me.topchetoeu.jscript.lib;
 
+import java.io.IOException;
 import java.util.HashMap;
 
+import me.topchetoeu.jscript.Reading;
 import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.DataKey;
 import me.topchetoeu.jscript.engine.Environment;
@@ -14,11 +16,21 @@ public class Internals {
     private static final DataKey<HashMap<Integer, Thread>> THREADS = new DataKey<>();
     private static final DataKey<Integer> I = new DataKey<>();
 
-    @Native public static void log(Context ctx, Object ...args) throws InterruptedException {
+
+    @Native public static void log(Context ctx, Object ...args) {
         for (var arg : args) {
             Values.printValue(ctx, arg);
         }
         System.out.println();
+    }
+    @Native public static String readline(Context ctx) {
+        try {
+            return Reading.read();
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     @Native public static int setTimeout(Context ctx, FunctionValue func, int delay, Object ...args) {
@@ -31,12 +43,12 @@ public class Internals {
             }
             catch (InterruptedException e) { return; }
 
-            ctx.message.engine.pushMsg(false, ctx.message, func, null, args);
+            ctx.engine.pushMsg(false, ctx, func, null, args);
         });
         thread.start();
 
-        int i = ctx.env.data.increase(I, 1, 0);
-        var threads = ctx.env.data.add(THREADS, new HashMap<>());
+        int i = ctx.environment().data.increase(I, 1, 0);
+        var threads = ctx.environment().data.get(THREADS, new HashMap<>());
         threads.put(++i, thread);
         return i;
     }
@@ -51,19 +63,19 @@ public class Internals {
                 }
                 catch (InterruptedException e) { return; }
     
-                ctx.message.engine.pushMsg(false, ctx.message, func, null, args);
+                ctx.engine.pushMsg(false, ctx, func, null, args);
             }
         });
         thread.start();
 
-        int i = ctx.env.data.increase(I, 1, 0);
-        var threads = ctx.env.data.add(THREADS, new HashMap<>());
+        int i = ctx.environment().data.increase(I, 1, 0);
+        var threads = ctx.environment().data.get(THREADS, new HashMap<>());
         threads.put(++i, thread);
         return i;
     }
 
     @Native public static void clearTimeout(Context ctx, int i) {
-        var threads = ctx.env.data.add(THREADS, new HashMap<>());
+        var threads = ctx.environment().data.get(THREADS, new HashMap<>());
 
         var thread = threads.remove(i);
         if (thread != null) thread.interrupt();
@@ -72,15 +84,15 @@ public class Internals {
         clearTimeout(ctx, i);
     }
 
-    @Native public static double parseInt(Context ctx, String val) throws InterruptedException {
+    @Native public static double parseInt(Context ctx, String val) {
         return NumberLib.parseInt(ctx, val);
     }
-    @Native public static double parseFloat(Context ctx, String val) throws InterruptedException {
+    @Native public static double parseFloat(Context ctx, String val) {
         return NumberLib.parseFloat(ctx, val);
     }
 
     public void apply(Environment env) {
-        var wp = env.wrappersProvider;
+        var wp = env.wrappers;
         var glob = env.global = new GlobalScope(wp.getNamespace(Internals.class));
 
         glob.define(null, "Math", false, wp.getNamespace(MathLib.class));

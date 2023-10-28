@@ -9,10 +9,7 @@ import me.topchetoeu.jscript.engine.Context;
 
 public class Overload {
     public static interface OverloadRunner {
-        Object run(Context ctx, Object thisArg, Object[] args) throws
-            InterruptedException,
-            ReflectiveOperationException,
-            IllegalArgumentException;
+        Object run(Context ctx, Object thisArg, Object[] args) throws ReflectiveOperationException, IllegalArgumentException;
     }
 
     public final OverloadRunner runner;
