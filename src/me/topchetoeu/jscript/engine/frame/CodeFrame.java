@@ -10,6 +10,8 @@ import me.topchetoeu.jscript.engine.scope.LocalScope;
 import me.topchetoeu.jscript.engine.scope.ValueVariable;
 import me.topchetoeu.jscript.engine.values.ArrayValue;
 import me.topchetoeu.jscript.engine.values.CodeFunction;
+import me.topchetoeu.jscript.engine.values.ObjectValue;
+import me.topchetoeu.jscript.engine.values.ScopeValue;
 import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.exceptions.EngineException;
 import me.topchetoeu.jscript.exceptions.InterruptException;
@@ -55,6 +57,33 @@ public class CodeFrame {
     public int codePtr = 0;
     public boolean jumpFlag = false;
     private Location prevLoc = null;
+
+    public ObjectValue getLocalScope(Context ctx, boolean props) {
+        var names = new String[scope.locals.length];
+
+        for (int i = 0; i < scope.locals.length; i++) {
+            var name = "local_" + (i - 2);
+
+            if (i == 0) name = "this";
+            else if (i == 1) name = "arguments";
+            else if (i < function.localNames.length) name = function.localNames[i];
+
+            names[i] = name;
+        }
+
+        return new ScopeValue(scope.locals, names);
+    }
+    public ObjectValue getCaptureScope(Context ctx, boolean props) {
+        var names = new String[scope.captures.length];
+
+        for (int i = 0; i < scope.captures.length; i++) {
+            var name = "capture_" + (i - 2);
+            if (i < function.captureNames.length) name = function.captureNames[i];
+            names[i] = name;
+        }
+
+        return new ScopeValue(scope.captures, names);
+    }
 
     public void addTry(int n, int catchN, int finallyN) {
         var res = new TryCtx(codePtr + 1, n, catchN, finallyN);
@@ -144,7 +173,7 @@ public class CodeFrame {
                     }
                     else if (returnValue != Runners.NO_RETURN) {
                         if (tryCtx.hasFinally) {
-                            tryCtx.retVal = error;
+                            tryCtx.retVal = returnValue;
                             newState = TryCtx.STATE_FINALLY_RETURNED;
                         }
                         break;
@@ -215,6 +244,7 @@ public class CodeFrame {
                 case TryCtx.STATE_CATCH:
                     scope.catchVars.add(new ValueVariable(false, tryCtx.err.value));
                     codePtr = tryCtx.catchStart;
+                    if (debugger != null) debugger.onInstruction(ctx, this, function.body[codePtr], null, error, true);
                     break;
                 default:
                     codePtr = tryCtx.finallyStart;

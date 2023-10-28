@@ -1957,6 +1957,51 @@
                     ]
                 }
             ]
+        },
+        {
+            "domain": "NodeWorker",
+            "description": "Implemented partly just because of pesky vscode.",
+            "deprecated": true,
+            "commands": [
+                {
+                    "name": "enable",
+                    "description": "Used to get the attachedToWorker event",
+                    "parameters": [ ]
+                }
+            ],
+            "events": [
+                {
+                    "name": "attachedToWorker",
+                    "description": "Issued when attached to a worker.",
+                    "parameters": [
+                        { "name": "sessionId",
+                            "description": "Identifier assigned to the session used to send/receive messages.",
+                            "$ref": "string"
+                        },
+                        {
+                            "name": "workerInfo",
+                            "type": "object",
+                            "properties": [
+                                { "name": "workerId",
+                                    "$ref": "string"
+                                },
+                                { "name": "type",
+                                    "type": "string"
+                                },
+                                { "name": "title",
+                                    "type": "string"
+                                },
+                                { "name": "url",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        { "name": "waitingForDebugger",
+                            "type": "boolean"
+                        }
+                    ]
+                }
+            ]
         }
     ]
 }

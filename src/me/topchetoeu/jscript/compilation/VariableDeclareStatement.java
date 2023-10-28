@@ -10,10 +10,12 @@ public class VariableDeclareStatement extends Statement {
     public static class Pair {
         public final String name;
         public final Statement value;
+        public final Location location;
 
-        public Pair(String name, Statement value) {
+        public Pair(String name, Statement value, Location location) {
             this.name = name;
             this.value = value;
+            this.location = location;
         }
     }
 
@@ -30,16 +32,20 @@ public class VariableDeclareStatement extends Statement {
         for (var entry : values) {
             if (entry.name == null) continue;
             var key = scope.getKey(entry.name);
-            if (key instanceof String) target.add(Instruction.makeVar((String)key).locate(loc()));
+            int start = target.size();
+
+            if (key instanceof String) target.add(Instruction.makeVar((String)key).locate(entry.location));
 
             if (entry.value instanceof FunctionStatement) {
                 ((FunctionStatement)entry.value).compile(target, scope, entry.name, false);
-                target.add(Instruction.storeVar(key).locate(loc()));
+                target.add(Instruction.storeVar(key).locate(entry.location));
             }
             else if (entry.value != null) {
                 entry.value.compile(target, scope, true);
-                target.add(Instruction.storeVar(key).locate(loc()));
+                target.add(Instruction.storeVar(key).locate(entry.location));
             }
+
+            if (target.size() != start) target.setDebug(start);
         }
 
         if (pollute) target.add(Instruction.loadValue(null).locate(loc()));

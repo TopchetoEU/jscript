@@ -8,7 +8,7 @@ import me.topchetoeu.jscript.Location;
 
 public class CompileTarget {
     public final Vector<Instruction> target = new Vector<>();
-    public final Map<Long, Instruction[]> functions;
+    public final Map<Long, FunctionBody> functions;
     public final TreeSet<Location> breakpoints;
 
     public Instruction add(Instruction instr) {
@@ -31,7 +31,7 @@ public class CompileTarget {
 
     public Instruction[] array() { return target.toArray(Instruction[]::new); }
 
-    public CompileTarget(Map<Long, Instruction[]> functions, TreeSet<Location> breakpoints) {
+    public CompileTarget(Map<Long, FunctionBody> functions, TreeSet<Location> breakpoints) {
         this.functions = functions;
         this.breakpoints = breakpoints;
     }

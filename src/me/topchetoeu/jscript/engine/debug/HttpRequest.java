@@ -10,8 +10,6 @@ import java.util.HashMap;
 import java.util.IllegalFormatException;
 import java.util.Map;
 
-import me.topchetoeu.jscript.exceptions.UncheckedIOException;
-
 public class HttpRequest {
     public final String method;
     public final String path;
@@ -21,19 +19,19 @@ public class HttpRequest {
 
     public void writeCode(int code, String name) {
         try { out.write(("HTTP/1.1 " + code + " " + name + "\r\n").getBytes()); }
-        catch (IOException e) { throw new UncheckedIOException(e); }
+        catch (IOException e) { }
     }
     public void writeHeader(String name, String value) {
         try { out.write((name + ": " + value + "\r\n").getBytes()); }
-        catch (IOException e) { throw new UncheckedIOException(e); }
+        catch (IOException e) { }
     }
     public void writeLastHeader(String name, String value) {
         try { out.write((name + ": " + value + "\r\n\r\n").getBytes()); }
-        catch (IOException e) { throw new UncheckedIOException(e); }
+        catch (IOException e) { }
     }
     public void writeHeadersEnd() {
         try { out.write("\n".getBytes()); }
-        catch (IOException e) { throw new UncheckedIOException(e); }
+        catch (IOException e) { }
     }
 
     public void writeResponse(int code, String name, String type, byte[] data) {
@@ -44,13 +42,13 @@ public class HttpRequest {
             out.write(data);
             out.close();
         }
-        catch (IOException e) { throw new UncheckedIOException(e); }
+        catch (IOException e) { }
     }
     public void writeResponse(int code, String name, String type, InputStream data) {
         try {
             writeResponse(code, name, type, data.readAllBytes());
         }
-        catch (IOException e) { throw new UncheckedIOException(e); }
+        catch (IOException e) { }
     }
 
     public HttpRequest(String method, String path, Map<String, String> headers, OutputStream out) {
@@ -98,7 +96,7 @@ public class HttpRequest {
 
             return new HttpRequest(method, path, headers, socket.getOutputStream());
         }
-        catch (IOException e) { throw new UncheckedIOException(e); }
+        catch (IOException | NullPointerException e) { return null; }
     }
 }
 

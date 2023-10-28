@@ -7,7 +7,6 @@ import java.io.OutputStream;
 import java.net.Socket;
 
 import me.topchetoeu.jscript.engine.debug.WebSocketMessage.Type;
-import me.topchetoeu.jscript.exceptions.UncheckedException;
 import me.topchetoeu.jscript.exceptions.UncheckedIOException;
 
 public class WebSocket implements AutoCloseable {

@@ -1,6 +1,7 @@
 package me.topchetoeu.jscript.engine.values;
 
 import me.topchetoeu.jscript.Location;
+import me.topchetoeu.jscript.compilation.FunctionBody;
 import me.topchetoeu.jscript.compilation.Instruction;
 import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.Environment;
@@ -13,6 +14,7 @@ public class CodeFunction extends FunctionValue {
     public final int localsN;
     public final int length;
     public final Instruction[] body;
+    public final String[] captureNames, localNames;
     public final ValueVariable[] captures;
     public Environment environment;
 
@@ -45,12 +47,14 @@ public class CodeFunction extends FunctionValue {
         }
     }
 
-    public CodeFunction(Environment environment, String name, int localsN, int length, ValueVariable[] captures, Instruction[] body) {
+    public CodeFunction(Environment environment, String name, int localsN, int length, ValueVariable[] captures, FunctionBody body) {
         super(name, length);
         this.captures = captures;
+        this.captureNames = body.captureNames;
+        this.localNames = body.localNames;
         this.environment = environment;
         this.localsN = localsN;
         this.length = length;
-        this.body = body;
+        this.body = body.instructions;
     }
 }

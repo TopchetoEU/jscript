@@ -1367,6 +1367,7 @@ public class Parsing {
         }
 
         while (true) {
+            var nameLoc = getLoc(filename, tokens, i + n);
             var nameRes = parseIdentifier(tokens, i + n++);
             if (!nameRes.isSuccess()) return ParseRes.error(loc, "Expected a variable name.");
 
@@ -1384,7 +1385,7 @@ public class Parsing {
                 val = valRes.result;
             }
 
-            res.add(new Pair(nameRes.result, val));
+            res.add(new Pair(nameRes.result, val, nameLoc));
             
             if (isOperator(tokens, i + n, Operator.COMMA)) {
                 n++;
@@ -1512,7 +1513,7 @@ public class Parsing {
             statements.add(res.result);
         }
 
-        return ParseRes.res(new CompoundStatement(loc, statements.toArray(Statement[]::new)), n);
+        return ParseRes.res(new CompoundStatement(loc, statements.toArray(Statement[]::new)).setEnd(getLoc(filename, tokens, i + n - 1)), n);
     }
     public static ParseRes<String> parseLabel(List<Token> tokens, int i) {
         int n = 0;
@@ -1876,7 +1877,7 @@ public class Parsing {
         return list.toArray(Statement[]::new);
     }
 
-    public static CodeFunction compile(HashMap<Long, Instruction[]> funcs, TreeSet<Location> breakpoints, Environment environment, Statement ...statements) {
+    public static CodeFunction compile(HashMap<Long, FunctionBody> funcs, TreeSet<Location> breakpoints, Environment environment, Statement ...statements) {
         var target = environment.global.globalChild();
         var subscope = target.child();
         var res = new CompileTarget(funcs, breakpoints);
@@ -1903,14 +1904,14 @@ public class Parsing {
         }
         else res.add(Instruction.ret());
 
-        return new CodeFunction(environment, "", subscope.localsCount(), 0, new ValueVariable[0], res.array());
+        return new CodeFunction(environment, "", subscope.localsCount(), 0, new ValueVariable[0], new FunctionBody(res.array(), subscope.captures(), subscope.locals()));
     }
-    public static CodeFunction compile(HashMap<Long, Instruction[]> funcs, TreeSet<Location> breakpoints, Environment environment, Filename filename, String raw) {
+    public static CodeFunction compile(HashMap<Long, FunctionBody> funcs, TreeSet<Location> breakpoints, Environment environment, Filename filename, String raw) {
         try {
             return compile(funcs, breakpoints, environment, parse(filename, raw));
         }
         catch (SyntaxException e) {
-            return new CodeFunction(environment, null, 2, 0, new ValueVariable[0], new Instruction[] { Instruction.throwSyntax(e) });
+            return new CodeFunction(environment, null, 2, 0, new ValueVariable[0], new FunctionBody(new Instruction[] { Instruction.throwSyntax(e).locate(e.loc) }));
         }
     }
 }

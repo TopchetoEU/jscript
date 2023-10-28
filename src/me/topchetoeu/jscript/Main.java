@@ -23,6 +23,7 @@ public class Main {
     static Thread engineTask, debugTask;
     static Engine engine;
     static Environment env;
+    static int j = 0;
 
     private static Observer<Object> valuePrinter = new Observer<Object>() {
         public void next(Object data) {
@@ -59,7 +60,7 @@ public class Main {
             env.global.define("go", _ctx -> {
                 try {
                     var f = Path.of("do.js");
-                    var func = _ctx.compile(Filename.fromFile(f.toFile()), new String(Files.readAllBytes(f)));
+                    var func = _ctx.compile(new Filename("do", "do/" + j++ + ".js"), new String(Files.readAllBytes(f)));
                     return func.call(_ctx);
                 }
                 catch (IOException e) {

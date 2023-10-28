@@ -3,9 +3,11 @@ package me.topchetoeu.jscript.engine.debug;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Random;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import me.topchetoeu.jscript.Filename;
 import me.topchetoeu.jscript.Location;
@@ -16,6 +18,7 @@ import me.topchetoeu.jscript.engine.Engine;
 import me.topchetoeu.jscript.engine.StackData;
 import me.topchetoeu.jscript.engine.frame.CodeFrame;
 import me.topchetoeu.jscript.engine.frame.Runners;
+import me.topchetoeu.jscript.engine.scope.GlobalScope;
 import me.topchetoeu.jscript.engine.values.ArrayValue;
 import me.topchetoeu.jscript.engine.values.CodeFunction;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
@@ -24,6 +27,7 @@ import me.topchetoeu.jscript.engine.values.Symbol;
 import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.events.Notifier;
 import me.topchetoeu.jscript.exceptions.EngineException;
+import me.topchetoeu.jscript.json.JSON;
 import me.topchetoeu.jscript.json.JSONElement;
 import me.topchetoeu.jscript.json.JSONList;
 import me.topchetoeu.jscript.json.JSONMap;
@@ -35,6 +39,8 @@ import me.topchetoeu.jscript.lib.SetLib;
 import me.topchetoeu.jscript.lib.GeneratorLib.Generator;
 
 public class SimpleDebugger implements Debugger {
+    public static final String CHROME_GET_PROP_FUNC = "function s(e){let t=this;const n=JSON.parse(e);for(let e=0,i=n.length;e<i;++e)t=t[n[e]];return t}";
+
     private static enum State {
         RESUMED,
         STEPPING_IN,
@@ -84,6 +90,7 @@ public class SimpleDebugger implements Debugger {
             this.pattern = pattern;
             this.line = line;
             this.start = start;
+            if (condition != null && condition.trim().equals("")) condition = null;
             this.condition = condition;
         }
     }
@@ -91,9 +98,10 @@ public class SimpleDebugger implements Debugger {
         public CodeFrame frame;
         public CodeFunction func;
         public int id;
-        public ObjectValue local = new ObjectValue(), capture = new ObjectValue(), global;
+        public ObjectValue local, capture, global;
         public JSONMap serialized;
         public Location location;
+        public boolean debugData = false;
 
         public void updateLoc(Location loc) {
             serialized.set("location", serializeLocation(loc));
@@ -108,22 +116,40 @@ public class SimpleDebugger implements Debugger {
             this.location = frame.function.loc();
 
             this.global = frame.function.environment.global.obj;
-            frame.scope.applyToObject(ctx, this.local, this.capture, true);
+            this.local = frame.getLocalScope(ctx, true);
+            this.capture = frame.getCaptureScope(ctx, true);
+            this.local.setPrototype(ctx, capture);
+            this.capture.setPrototype(ctx, global);
 
-            this.serialized = new JSONMap()
-                .set("callFrameId", id + "")
-                .set("functionName", func.name)
-                .set("location", serializeLocation(func.loc()))
-                .set("scopeChain", new JSONList()
-                    .add(new JSONMap().set("type", "local").set("name", "Local Scope").set("object", serializeObj(ctx, local)))
-                    .add(new JSONMap().set("type", "closure").set("name", "Closure").set("object", serializeObj(ctx, capture)))
-                    .add(new JSONMap().set("type", "global").set("name", "Global Scope").set("object", serializeObj(ctx, global)))
-                )
-                .setNull("this");
+            if (location != null) {
+                debugData = true;
+                this.serialized = new JSONMap()
+                    .set("callFrameId", id + "")
+                    .set("functionName", func.name)
+                    .set("location", serializeLocation(location))
+                    .set("scopeChain", new JSONList()
+                        .add(new JSONMap().set("type", "local").set("name", "Local Scope").set("object", serializeObj(ctx, local)))
+                        .add(new JSONMap().set("type", "closure").set("name", "Closure").set("object", serializeObj(ctx, capture)))
+                        .add(new JSONMap().set("type", "global").set("name", "Global Scope").set("object", serializeObj(ctx, global)))
+                    )
+                    .setNull("this");
+            }
         }
     }
 
-    public boolean enabled = false;
+    private class RunResult {
+        public final Context ctx;
+        public final Object result;
+        public final EngineException error;
+
+        public RunResult(Context ctx, Object result, EngineException error) {
+            this.ctx = ctx;
+            this.result = result;
+            this.error = error;
+        }
+    }
+
+    public boolean enabled = true;
     public CatchType execptionType = CatchType.ALL; 
     public State state = State.RESUMED;
 
@@ -145,6 +171,8 @@ public class SimpleDebugger implements Debugger {
 
     private HashMap<Integer, ObjectValue> idToObject = new HashMap<>();
     private HashMap<ObjectValue, Integer> objectToId = new HashMap<>();
+    private HashMap<ObjectValue, Context> objectToCtx = new HashMap<>();
+    private HashMap<String, ArrayList<ObjectValue>> objectGroups = new HashMap<>();
 
     private Notifier updateNotifier = new Notifier(); 
 
@@ -191,19 +219,19 @@ public class SimpleDebugger implements Debugger {
 
         return tail.first();
     }
-    public Location deserializeLocation(JSONElement el, boolean correct) {
+    private Location deserializeLocation(JSONElement el, boolean correct) {
         if (!el.isMap()) throw new RuntimeException("Expected location to be a map.");
         var id = Integer.parseInt(el.map().string("scriptId"));
         var line = (int)el.map().number("lineNumber") + 1;
         var column = (int)el.map().number("columnNumber") + 1;
 
-        if (!idToSource.containsKey(id)) throw new RuntimeException("The specified source %s doesn't exist.".formatted(id));
+        if (!idToSource.containsKey(id)) throw new RuntimeException(String.format("The specified source %s doesn't exist.", id));
 
         var res = new Location(line, column, idToSource.get(id).filename);
         if (correct) res = correctLocation(idToSource.get(id), res);
         return res;
     }
-    public JSONMap serializeLocation(Location loc) {
+    private JSONMap serializeLocation(Location loc) {
         var source = filenameToId.get(loc.filename());
         return new JSONMap()
             .set("scriptId", source + "")
@@ -211,21 +239,21 @@ public class SimpleDebugger implements Debugger {
             .set("columnNumber", loc.start() - 1);
     }
 
-    private Integer objectId(ObjectValue obj) {
+    private Integer objectId(Context ctx, ObjectValue obj) {
         if (objectToId.containsKey(obj)) return objectToId.get(obj);
         else {
             int id = nextId();
             objectToId.put(obj, id);
+            if (ctx != null) objectToCtx.put(obj, ctx);
             idToObject.put(id, obj);
             return id;
         }
     }
-    private JSONMap serializeObj(Context ctx, Object val) {
+    private JSONMap serializeObj(Context ctx, Object val, boolean recurse) {
         val = Values.normalize(null, val);
 
         if (val == Values.NULL) {
             return new JSONMap()
-                .set("objectId", objectId(null) + "")
                 .set("type", "object")
                 .set("subtype", "null")
                 .setNull("value")
@@ -234,13 +262,14 @@ public class SimpleDebugger implements Debugger {
 
         if (val instanceof ObjectValue) {
             var obj = (ObjectValue)val;
-            var id = objectId(obj);
+            var id = objectId(ctx, obj);
             var type = "object";
             String subtype = null;
             String className = null;
 
             if (obj instanceof FunctionValue) type = "function";
             if (obj instanceof ArrayValue) subtype = "array";
+
             if (Values.isWrapper(val, RegExpLib.class)) subtype = "regexp";
             if (Values.isWrapper(val, DateLib.class)) subtype = "date";
             if (Values.isWrapper(val, MapLib.class)) subtype = "map";
@@ -253,10 +282,13 @@ public class SimpleDebugger implements Debugger {
 
             var res = new JSONMap()
                 .set("type", type)
-                .set("objetId", id + "");
+                .set("objectId", id + "");
 
             if (subtype != null) res.set("subtype", subtype);
-            if (className != null) res.set("className", className);
+            if (className != null) {
+                res.set("className", className);
+                res.set("description", "{ " + className + " }");
+            }
 
             return res;
         }
@@ -271,7 +303,7 @@ public class SimpleDebugger implements Debugger {
 
             if (Double.POSITIVE_INFINITY == num) res.set("unserializableValue", "Infinity");
             else if (Double.NEGATIVE_INFINITY == num) res.set("unserializableValue", "-Infinity");
-            else if (num == -0.) res.set("unserializableValue", "-0");
+            else if (Double.doubleToRawLongBits(num) == Double.doubleToRawLongBits(-0d)) res.set("unserializableValue", "-0");
             else if (Double.isNaN(num)) res.set("unserializableValue", "NaN");
             else res.set("value", num);
 
@@ -279,6 +311,37 @@ public class SimpleDebugger implements Debugger {
         }
 
         throw new IllegalArgumentException("Unexpected JS object.");
+    }
+    private JSONMap serializeObj(Context ctx, Object val) {
+        return serializeObj(ctx, val, true);
+    }
+    private void setObjectGroup(String name, Object val) {
+        if (val instanceof ObjectValue) {
+            var obj = (ObjectValue)val;
+
+            if (objectGroups.containsKey(name)) objectGroups.get(name).add(obj);
+            else objectGroups.put(name, new ArrayList<>(List.of(obj)));
+        }
+    }
+    private void releaseGroup(String name) {
+        var objs = objectGroups.remove(name);
+
+        if (objs != null) {
+            for (var obj : objs) {
+                var id = objectToId.remove(obj);
+                if (id != null) idToObject.remove(id);
+            }
+        }
+    }
+    private Object deserializeArgument(JSONMap val) {
+        if (val.isString("objectId")) return idToObject.get(Integer.parseInt(val.string("objectId")));
+        else if (val.isString("unserializableValue")) switch (val.string("unserializableValue")) {
+            case "NaN": return Double.NaN;
+            case "-Infinity": return Double.NEGATIVE_INFINITY;
+            case "Infinity": return Double.POSITIVE_INFINITY;
+            case "-0": return -0.;
+        }
+        return JSON.toJs(val.get("value"));
     }
 
     private void resume(State state) {
@@ -296,7 +359,7 @@ public class SimpleDebugger implements Debugger {
         ws.send(new V8Event("Debugger.paused", map));
     }
     private void pauseException(Context ctx) {
-        state = State.PAUSED_NORMAL;
+        state = State.PAUSED_EXCEPTION;
         var map = new JSONMap()
             .set("callFrames", serializeFrames(ctx))
             .set("reason", "exception");
@@ -322,6 +385,27 @@ public class SimpleDebugger implements Debugger {
         ));
     }
 
+    private RunResult run(Frame codeFrame, String code) {
+        var engine = new Engine();
+        var env = codeFrame.func.environment.fork();
+
+        ObjectValue global = env.global.obj,
+            capture = codeFrame.frame.getCaptureScope(null, enabled),
+            local = codeFrame.frame.getLocalScope(null, enabled);
+
+        capture.setPrototype(null, global);
+        local.setPrototype(null, capture);
+        env.global = new GlobalScope(local);
+
+        var ctx = new Context(engine).pushEnv(env);
+        var awaiter = engine.pushMsg(false, ctx, new Filename("temp", "exec"), code, codeFrame.frame.thisArg, codeFrame.frame.args);
+
+        engine.run(true);
+
+        try { return new RunResult(ctx, awaiter.await(), null); }
+        catch (EngineException e) { return new RunResult(ctx, null, e); }
+    }
+
     @Override public void enable(V8Message msg) {
         enabled = true;
         ws.send(msg.respond());
@@ -342,9 +426,9 @@ public class SimpleDebugger implements Debugger {
         ws.send(msg.respond(new JSONMap().set("scriptSource", idToSource.get(id).source)));
     }
     @Override public void getPossibleBreakpoints(V8Message msg) {
+        var src = idToSource.get(Integer.parseInt(msg.params.map("start").string("scriptId")));
         var start = deserializeLocation(msg.params.get("start"), false);
         var end = msg.params.isMap("end") ? deserializeLocation(msg.params.get("end"), false) : null;
-        var src = idToSource.get(filenameToId.get(start.filename()));
 
         var res = new JSONList();
 
@@ -464,6 +548,101 @@ public class SimpleDebugger implements Debugger {
         }
     }
 
+    @Override public void evaluateOnCallFrame(V8Message msg) {
+        var cfId = Integer.parseInt(msg.params.string("callFrameId"));
+        var expr = msg.params.string("expression");
+        var group = msg.params.string("objectGroup", null);
+
+        var cf = idToFrame.get(cfId);
+        var res = run(cf, expr);
+
+        if (group != null) setObjectGroup(group, res.result);
+
+        ws.send(msg.respond(new JSONMap().set("result", serializeObj(res.ctx, res.result))));
+    }
+
+    @Override public void releaseObjectGroup(V8Message msg) {
+        var group = msg.params.string("objectGroup");
+        releaseGroup(group);
+        ws.send(msg.respond());
+    }
+    @Override public void getProperties(V8Message msg) {
+        var obj = idToObject.get(Integer.parseInt(msg.params.string("objectId")));
+        var own = msg.params.bool("ownProperties") || true;
+        var currOwn = true;
+
+        var res = new JSONList();
+
+        while (obj != null) {
+            var ctx = objectToCtx.get(obj);
+
+            for (var key : obj.keys(true)) {
+                var propDesc = new JSONMap();
+
+                if (obj.properties.containsKey(key)) {
+                    var prop = obj.properties.get(key);
+
+                    propDesc.set("name", Values.toString(ctx, key));
+                    if (prop.getter != null) propDesc.set("get", serializeObj(ctx, prop.getter));
+                    if (prop.setter != null) propDesc.set("set", serializeObj(ctx, prop.setter));
+                    propDesc.set("enumerable", obj.memberEnumerable(key));
+                    propDesc.set("configurable", obj.memberConfigurable(key));
+                    propDesc.set("isOwn", currOwn);
+                    res.add(propDesc);
+                }
+                else {
+                    propDesc.set("name", Values.toString(ctx, key));
+                    propDesc.set("value", serializeObj(ctx, obj.getMember(ctx, key)));
+                    propDesc.set("writable", obj.memberWritable(key));
+                    propDesc.set("enumerable", obj.memberEnumerable(key));
+                    propDesc.set("configurable", obj.memberConfigurable(key));
+                    propDesc.set("isOwn", currOwn);
+                    res.add(propDesc);
+                }
+            }
+
+            obj = obj.getPrototype(ctx);
+
+            var protoDesc = new JSONMap();
+            protoDesc.set("name", "__proto__");
+            protoDesc.set("value", serializeObj(ctx, obj == null ? Values.NULL : obj));
+            protoDesc.set("writable", true);
+            protoDesc.set("enumerable", false);
+            protoDesc.set("configurable", false);
+            protoDesc.set("isOwn", currOwn);
+            res.add(protoDesc);
+
+            currOwn = false;
+            if (own) break;
+        }
+
+        ws.send(msg.respond(new JSONMap().set("result", res)));
+    }
+    @Override public void callFunctionOn(V8Message msg) {
+        var src = msg.params.string("functionDeclaration");
+        var args = msg.params.list("arguments", new JSONList()).stream().map(v -> v.map()).map(this::deserializeArgument).collect(Collectors.toList());
+        var thisArg = idToObject.get(Integer.parseInt(msg.params.string("objectId")));
+        var ctx = objectToCtx.get(thisArg);
+
+        switch (src) {
+            case CHROME_GET_PROP_FUNC: {
+                var path = JSON.parse(new Filename("tmp", "json"), (String)args.get(0)).list();
+                Object res = thisArg;
+                for (var el : path) res = Values.getMember(ctx, res, JSON.toJs(el));
+                ws.send(msg.respond(new JSONMap().set("result", serializeObj(ctx, res))));
+                return;
+            }
+            default:
+                ws.send(new V8Error("A non well-known function was used with callFunctionOn."));
+                break;
+        }
+    }
+
+    @Override
+    public void runtimeEnable(V8Message msg) {
+        ws.send(msg.respond());
+    }
+
     @Override public void onSource(Filename filename, String source, TreeSet<Location> locations) {
         int id = nextId();
         var src = new Source(id, filename, source, locations);
@@ -488,6 +667,9 @@ public class SimpleDebugger implements Debugger {
 
         updateFrames(ctx);
         var frame = codeFrameToFrame.get(cf);
+
+        if (!frame.debugData) return false;
+
         if (instruction.location != null) frame.updateLoc(instruction.location);
         var loc = frame.location;
         var isBreakpointable = loc != null && (
@@ -501,15 +683,12 @@ public class SimpleDebugger implements Debugger {
             pauseException(ctx);
         }
         else if (isBreakpointable && locToBreakpoint.containsKey(loc)) {
-            pauseDebug(ctx, locToBreakpoint.get(loc));
+            var bp = locToBreakpoint.get(loc);
+            var ok = bp.condition == null ? true : Values.toBoolean(run(currFrame, bp.condition));
+            if (ok) pauseDebug(ctx, locToBreakpoint.get(loc));
         }
-        else if (isBreakpointable && tmpBreakpts.contains(loc)) {
-            pauseDebug(ctx, null);
-            tmpBreakpts.remove(loc);
-        }
-        else if (instruction.type == Type.NOP && instruction.match("debug")) {
-            pauseDebug(ctx, null);
-        }
+        else if (isBreakpointable && tmpBreakpts.remove(loc)) pauseDebug(ctx, null);
+        else if (instruction.type == Type.NOP && instruction.match("debug")) pauseDebug(ctx, null);
 
         while (enabled) {
             switch (state) {
@@ -527,12 +706,17 @@ public class SimpleDebugger implements Debugger {
                     else return false;
                     break;
                 case STEPPING_OVER:
-                    if (
-                        stepOutFrame == frame && (
+                    if (stepOutFrame.frame == frame.frame) {
+                        if (returnVal != Runners.NO_RETURN) {
+                            state = State.STEPPING_OUT;
+                            return false;
+                        }
+                        else if (isBreakpointable && (
                             !loc.filename().equals(prevLocation.filename()) ||
                             loc.line() != prevLocation.line()
-                        )
-                    ) pauseDebug(ctx, null);
+                        )) pauseDebug(ctx, null);
+                        else return false;
+                    }
                     else return false;
                     break;
             }
@@ -544,14 +728,12 @@ public class SimpleDebugger implements Debugger {
     @Override public void onFramePop(Context ctx, CodeFrame frame) {
         updateFrames(ctx);
 
-        try {
-            idToFrame.remove(codeFrameToFrame.remove(frame).id);
-        }
+        try { idToFrame.remove(codeFrameToFrame.remove(frame).id); }
         catch (NullPointerException e) { }
 
         if (StackData.frames(ctx).size() == 0) resume(State.RESUMED);
         else if (stepOutFrame != null && stepOutFrame.frame == frame &&
-            (state == State.STEPPING_OUT || state == State.STEPPING_IN || state == State.STEPPING_OVER)
+            (state == State.STEPPING_OUT || state == State.STEPPING_IN)
         ) {
             pauseDebug(ctx, null);
             updateNotifier.await();

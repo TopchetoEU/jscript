@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.concurrent.LinkedBlockingDeque;
 
 import me.topchetoeu.jscript.Filename;
-import me.topchetoeu.jscript.compilation.Instruction;
+import me.topchetoeu.jscript.compilation.FunctionBody;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
 import me.topchetoeu.jscript.events.Awaitable;
 import me.topchetoeu.jscript.events.DataNotifier;
@@ -51,7 +51,7 @@ public class Engine {
     private LinkedBlockingDeque<Task> microTasks = new LinkedBlockingDeque<>();
 
     public final int id = ++nextId;
-    public final HashMap<Long, Instruction[]> functions = new HashMap<>();
+    public final HashMap<Long, FunctionBody> functions = new HashMap<>();
     public final Data data = new Data().set(StackData.MAX_FRAMES, 10000);
 
     private void runTask(Task task) {
@@ -63,8 +63,8 @@ public class Engine {
             task.notifier.error(e);
         }
     }
-    private void run() {
-        while (true) {
+    public void run(boolean untilEmpty) {
+        while (!untilEmpty || !macroTasks.isEmpty()) {
             try {
                 runTask(macroTasks.take());
 
@@ -83,7 +83,7 @@ public class Engine {
 
     public Thread start() {
         if (this.thread == null) {
-            this.thread = new Thread(this::run, "JavaScript Runner #" + id);
+            this.thread = new Thread(() -> run(false), "JavaScript Runner #" + id);
             this.thread.start();
         }
         return this.thread;

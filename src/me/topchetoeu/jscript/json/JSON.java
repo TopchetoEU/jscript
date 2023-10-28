@@ -1,9 +1,15 @@
 package me.topchetoeu.jscript.json;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import me.topchetoeu.jscript.Filename;
+import me.topchetoeu.jscript.engine.Context;
+import me.topchetoeu.jscript.engine.values.ArrayValue;
+import me.topchetoeu.jscript.engine.values.ObjectValue;
+import me.topchetoeu.jscript.engine.values.Values;
+import me.topchetoeu.jscript.exceptions.EngineException;
 import me.topchetoeu.jscript.exceptions.SyntaxException;
 import me.topchetoeu.jscript.parsing.Operator;
 import me.topchetoeu.jscript.parsing.ParseRes;
@@ -11,6 +17,63 @@ import me.topchetoeu.jscript.parsing.Parsing;
 import me.topchetoeu.jscript.parsing.Token;
 
 public class JSON {
+    public static Object toJs(JSONElement val) {
+        if (val.isBoolean()) return val.bool();
+        if (val.isString()) return val.string();
+        if (val.isNumber()) return val.number();
+        if (val.isList()) return ArrayValue.of(null, val.list().stream().map(JSON::toJs).collect(Collectors.toList()));
+        if (val.isMap()) {
+            var res = new ObjectValue();
+            for (var el : val.map().entrySet()) {
+                res.defineProperty(null, el.getKey(), toJs(el.getValue()));
+            }
+            return res;
+        }
+        if (val.isNull()) return Values.NULL;
+        return null;
+    }
+    private static JSONElement fromJs(Context ctx, Object val, HashSet<Object> prev) {
+        if (val instanceof Boolean) return JSONElement.bool((boolean)val);
+        if (val instanceof Number) return JSONElement.number(((Number)val).doubleValue());
+        if (val instanceof String) return JSONElement.string((String)val);
+        if (val == Values.NULL) return JSONElement.NULL;
+        if (val instanceof ObjectValue) {
+            if (prev.contains(val)) throw new EngineException("Circular dependency in JSON.");
+            prev.add(val);
+
+            var res = new JSONMap();
+
+            for (var el : ((ObjectValue)val).keys(false)) {
+                var jsonEl = fromJs(ctx, ((ObjectValue)val).getMember(ctx, el), prev);
+                if (jsonEl == null) continue;
+                if (el instanceof String || el instanceof Number) res.put(el.toString(), jsonEl);
+            }
+
+            prev.remove(val);
+            return JSONElement.of(res);
+        }
+        if (val instanceof ArrayValue) {
+            if (prev.contains(val)) throw new EngineException("Circular dependency in JSON.");
+            prev.add(val);
+
+            var res = new JSONList();
+
+            for (var el : ((ArrayValue)val).toArray()) {
+                var jsonEl = fromJs(ctx, el, prev);
+                if (jsonEl == null) jsonEl = JSONElement.NULL;
+                res.add(jsonEl);
+            }
+
+            prev.remove(val);
+            return JSONElement.of(res);
+        }
+        if (val == null) return null;
+        return null;
+    }
+    public static JSONElement fromJs(Context ctx, Object val) {
+        return fromJs(ctx, val, new HashSet<>());
+    }
+
     public static ParseRes<String> parseIdentifier(List<Token> tokens, int i) {
         return Parsing.parseIdentifier(tokens, i);
     }

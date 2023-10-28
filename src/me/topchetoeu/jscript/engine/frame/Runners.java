@@ -301,15 +301,6 @@ public class Runners {
         return NO_RETURN;
     }
     public static Object execNop(Context ctx, Instruction instr, CodeFrame frame) {
-        if (instr.is(0, "dbg_names")) {
-            var names = new String[instr.params.length - 1];
-            for (var i = 0; i < instr.params.length - 1; i++) {
-                if (!(instr.params[i + 1] instanceof String)) throw EngineException.ofSyntax("NOP dbg_names instruction must specify only string parameters.");
-                names[i] = (String)instr.params[i + 1];
-            }
-            frame.scope.setNames(names);
-        }
-
         frame.codePtr++;
         return NO_RETURN;
     }

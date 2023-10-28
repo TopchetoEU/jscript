@@ -11,6 +11,9 @@ public class LocalScopeRecord implements ScopeRecord {
     private final ArrayList<String> captures = new ArrayList<>();
     private final ArrayList<String> locals = new ArrayList<>();
 
+    public String[] captures() {
+        return captures.toArray(String[]::new);
+    }
     public String[] locals() {
         return locals.toArray(String[]::new);
     }

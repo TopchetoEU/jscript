@@ -147,14 +147,6 @@ public class Instruction {
     public static Instruction debug() {
         return new Instruction(null, Type.NOP, "debug");
     }
-    public static Instruction debugVarNames(String[] names) {
-        var args = new Object[names.length + 1];
-        args[0] = "dbg_vars";
-
-        System.arraycopy(names, 0, args, 1, names.length);
-
-        return new Instruction(null, Type.NOP, args);
-    }
 
     public static Instruction nop(Object ...params) {
         for (var param : params) {

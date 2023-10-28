@@ -8,6 +8,7 @@ import java.security.MessageDigest;
 import java.util.Base64;
 import java.util.HashMap;
 
+import me.topchetoeu.jscript.Metadata;
 import me.topchetoeu.jscript.engine.debug.WebSocketMessage.Type;
 import me.topchetoeu.jscript.exceptions.SyntaxException;
 import me.topchetoeu.jscript.exceptions.UncheckedException;
@@ -17,11 +18,11 @@ import me.topchetoeu.jscript.json.JSONList;
 import me.topchetoeu.jscript.json.JSONMap;
 
 public class DebugServer {
-    public static String browserDisplayName = "jscript";
+    public static String browserDisplayName = Metadata.NAME + "/" + Metadata.VERSION;
 
     public final HashMap<String, DebuggerProvider> targets = new HashMap<>();
 
-    private final byte[] favicon, index;
+    private final byte[] favicon, index, protocol;
 
     private static void send(HttpRequest req, String val) throws IOException {
         req.writeResponse(200, "OK", "application/json", val.getBytes());
@@ -58,7 +59,7 @@ public class DebugServer {
 
             try {
                 msg = new V8Message(raw.textData());
-                System.out.println(msg.name + ": " + JSON.stringify(msg.params));
+                // System.out.println(msg.name + ": " + JSON.stringify(msg.params));
             }
             catch (SyntaxException e) {
                 ws.send(new V8Error(e.getMessage()));
@@ -86,6 +87,13 @@ public class DebugServer {
                     case "Debugger.stepOver": debugger.stepOver(msg); continue;
 
                     case "Debugger.setPauseOnExceptions": debugger.setPauseOnExceptions(msg); continue;
+                    case "Debugger.evaluateOnCallFrame": debugger.evaluateOnCallFrame(msg); continue;
+
+                    case "Runtime.releaseObjectGroup": debugger.releaseObjectGroup(msg); continue;
+                    case "Runtime.getProperties": debugger.getProperties(msg); continue;
+                    case "Runtime.callFunctionOn": debugger.callFunctionOn(msg); continue;
+                    // case "NodeWorker.enable": debugger.nodeWorkerEnable(msg); continue;
+                    case "Runtime.enable": debugger.runtimeEnable(msg); continue;
                 }
 
                 if (
@@ -96,8 +104,7 @@ public class DebugServer {
                     msg.name.startsWith("Network.") ||
                     msg.name.startsWith("Page.")
                 ) ws.send(new V8Error("This isn't a browser..."));
-
-                if (msg.name.startsWith("Runtime.") || msg.name.startsWith("Profiler.")) ws.send(new V8Error("This API is not supported yet."));
+                else ws.send(new V8Error("This API is not supported yet."));
             }
             catch (Throwable e) {
                 e.printStackTrace();
@@ -158,7 +165,7 @@ public class DebugServer {
     
                     switch (req.path) {
                         case "/json/version":
-                            send(req, "{\"Browser\":\"" + browserDisplayName + "\",\"Protocol-Version\":\"1.2\"}");
+                            send(req, "{\"Browser\":\"" + browserDisplayName + "\",\"Protocol-Version\":\"1.1\"}");
                             break;
                         case "/json/list":
                         case "/json": {
@@ -176,9 +183,11 @@ public class DebugServer {
                             send(req, JSON.stringify(res));
                             break;
                         }
+                        case "/json/protocol":
+                            req.writeResponse(200, "OK", "application/json", protocol);
+                            break;
                         case "/json/new":
                         case "/json/activate":
-                        case "/json/protocol":
                         case "/json/close":
                         case "/devtools/inspector.html":
                             req.writeResponse(
@@ -216,7 +225,13 @@ public class DebugServer {
     public DebugServer() {
         try {
             this.favicon = getClass().getClassLoader().getResourceAsStream("assets/favicon.png").readAllBytes();
-            this.index = getClass().getClassLoader().getResourceAsStream("assets/index.html").readAllBytes();
+            this.protocol = getClass().getClassLoader().getResourceAsStream("assets/protocol.json").readAllBytes();
+            var index = new String(getClass().getClassLoader().getResourceAsStream("assets/index.html").readAllBytes());
+            this.index = index
+                .replace("${NAME}", Metadata.NAME)
+                .replace("${VERSION}", Metadata.VERSION)
+                .replace("${AUTHOR}", Metadata.AUTHOR)
+                .getBytes();
         }
         catch (IOException e) { throw new UncheckedIOException(e); }
     }
