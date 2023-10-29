@@ -20,15 +20,13 @@ public class VariableAssignStatement extends Statement {
             if (value instanceof FunctionStatement) ((FunctionStatement)value).compile(target, scope, name, false);
             else value.compile(target, scope, true);
             target.add(Instruction.operation(operation).locate(loc()));
-            target.add(Instruction.storeVar(i, false).locate(loc()));
+            target.add(Instruction.storeVar(i, pollute).locate(loc()));
         }
         else {
             if (value instanceof FunctionStatement) ((FunctionStatement)value).compile(target, scope, name, false);
             else value.compile(target, scope, true);
-            target.add(Instruction.storeVar(i, false).locate(loc()));
+            target.add(Instruction.storeVar(i, pollute).locate(loc()));
         }
-
-        if (pollute) target.add(Instruction.loadValue(null).locate(loc()));
     }
 
     public VariableAssignStatement(Location loc, String name, Statement val, Operation operation) {

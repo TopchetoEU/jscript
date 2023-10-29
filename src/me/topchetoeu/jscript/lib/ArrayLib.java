@@ -69,7 +69,7 @@ public class ArrayLib {
 
     @Native(thisArg = true) public static ArrayValue concat(Context ctx, ArrayValue thisArg, Object ...others) {
         // TODO: Fully implement with non-array spreadable objects
-        var size = 0;
+        var size = thisArg.size();
 
         for (int i = 0; i < others.length; i++) {
             if (others[i] instanceof ArrayValue) size += ((ArrayValue)others[i]).size();
@@ -77,8 +77,9 @@ public class ArrayLib {
         }
 
         var res = new ArrayValue(size);
+        thisArg.copyTo(ctx, res, 0, 0, thisArg.size());
 
-        for (int i = 0, j = 0; i < others.length; i++) {
+        for (int i = 0, j = thisArg.size(); i < others.length; i++) {
             if (others[i] instanceof ArrayValue) {
                 int n = ((ArrayValue)others[i]).size();
                 ((ArrayValue)others[i]).copyTo(ctx, res, 0, j, n);

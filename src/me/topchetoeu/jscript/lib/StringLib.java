@@ -60,8 +60,18 @@ public class StringLib {
     @Native(thisArg = true) public static String charAt(Context ctx, Object thisArg, int i) {
         return passThis(ctx, "charAt", thisArg).charAt(i) + "";
     }
-    @Native(thisArg = true) public static int charCodeAt(Context ctx, Object thisArg, int i) {
-        return passThis(ctx, "charCodeAt", thisArg).charAt(i);
+    // @Native(thisArg = true) public static int charCodeAt(Context ctx, Object thisArg, int i) {
+    //     return passThis(ctx, "charCodeAt", thisArg).charAt(i);
+    // }
+    // @Native(thisArg = true) public static String charAt(Context ctx, Object thisArg, int i) {
+    //     var str = passThis(ctx, "charAt", thisArg);
+    //     if (i < 0 || i >= str.length()) return "";
+    //     else return str.charAt(i) + "";
+    // }
+    @Native(thisArg = true) public static double charCodeAt(Context ctx, Object thisArg, int i) {
+        var str = passThis(ctx, "charCodeAt", thisArg);
+        if (i < 0 || i >= str.length()) return Double.NaN;
+        else return str.charAt(i);
     }
 
     @Native(thisArg = true) public static boolean startsWith(Context ctx, Object thisArg, String term, int pos) {

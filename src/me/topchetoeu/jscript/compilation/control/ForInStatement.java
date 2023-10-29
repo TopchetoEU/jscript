@@ -12,6 +12,7 @@ public class ForInStatement extends Statement {
     public final boolean isDeclaration;
     public final Statement varValue, object, body;
     public final String label;
+    public final Location varLocation;
 
     @Override
     public void declare(ScopeRecord globScope) {
@@ -22,6 +23,8 @@ public class ForInStatement extends Statement {
     @Override
     public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {
         var key = scope.getKey(varName);
+
+        int first = target.size();
         if (key instanceof String) target.add(Instruction.makeVar((String)key));
 
         if (varValue != null) {
@@ -29,30 +32,19 @@ public class ForInStatement extends Statement {
             target.add(Instruction.storeVar(scope.getKey(varName)));
         }
 
-        object.compile(target, scope, true);
-        target.add(Instruction.keys());
-        
+        object.compileWithDebug(target, scope, true);
+        target.add(Instruction.keys(true));
+
         int start = target.size();
         target.add(Instruction.dup());
-        target.add(Instruction.loadMember("length"));
-        target.add(Instruction.loadValue(0));
-        target.add(Instruction.operation(Operation.LESS_EQUALS));
+        target.add(Instruction.loadValue(null));
+        target.add(Instruction.operation(Operation.EQUALS));
         int mid = target.size();
         target.add(Instruction.nop());
 
-        target.add(Instruction.dup());
-        target.add(Instruction.dup());
-        target.add(Instruction.loadMember("length"));
-        target.add(Instruction.loadValue(1));
-        target.add(Instruction.operation(Operation.SUBTRACT));
-        target.add(Instruction.dup(1, 2));
-        target.add(Instruction.loadValue("length"));
-        target.add(Instruction.dup(1, 2));
-        target.add(Instruction.storeMember());
-        target.add(Instruction.loadMember());
+        target.add(Instruction.loadMember("value").locate(varLocation));
+        target.setDebug();
         target.add(Instruction.storeVar(key));
-
-        for (var i = start; i < target.size(); i++) target.get(i).locate(loc());
 
         body.compileWithDebug(target, scope, false);
 
@@ -60,14 +52,17 @@ public class ForInStatement extends Statement {
 
         WhileStatement.replaceBreaks(target, label, mid + 1, end, start, end + 1);
 
-        target.add(Instruction.jmp(start - end).locate(loc()));
-        target.add(Instruction.discard().locate(loc()));
-        target.set(mid, Instruction.jmpIf(end - mid + 1).locate(loc()));
-        if (pollute) target.add(Instruction.loadValue(null).locate(loc()));
+        target.add(Instruction.jmp(start - end));
+        target.add(Instruction.discard());
+        target.set(mid, Instruction.jmpIf(end - mid + 1));
+        if (pollute) target.add(Instruction.loadValue(null));
+        target.get(first).locate(loc());
+        target.setDebug(first);
     }
 
-    public ForInStatement(Location loc, String label, boolean isDecl, String varName, Statement varValue, Statement object, Statement body) {
+    public ForInStatement(Location loc, Location varLocation, String label, boolean isDecl, String varName, Statement varValue, Statement object, Statement body) {
         super(loc);
+        this.varLocation = varLocation;
         this.label = label;
         this.isDeclaration = isDecl;
         this.varName = varName;

@@ -251,8 +251,8 @@ public class Instruction {
         return new Instruction(null, Type.TYPEOF, varName);
     }
 
-    public static Instruction keys() {
-        return new Instruction(null, Type.KEYS);
+    public static Instruction keys(boolean forInFormat) {
+        return new Instruction(null, Type.KEYS, forInFormat);
     }
 
     public static Instruction defProp() {

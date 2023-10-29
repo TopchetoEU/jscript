@@ -10,6 +10,7 @@ import java.util.HashMap;
 
 import me.topchetoeu.jscript.Metadata;
 import me.topchetoeu.jscript.engine.debug.WebSocketMessage.Type;
+import me.topchetoeu.jscript.events.Notifier;
 import me.topchetoeu.jscript.exceptions.SyntaxException;
 import me.topchetoeu.jscript.exceptions.UncheckedException;
 import me.topchetoeu.jscript.exceptions.UncheckedIOException;
@@ -23,6 +24,7 @@ public class DebugServer {
     public final HashMap<String, DebuggerProvider> targets = new HashMap<>();
 
     private final byte[] favicon, index, protocol;
+    private final Notifier connNotifier = new Notifier();
 
     private static void send(HttpRequest req, String val) throws IOException {
         req.writeResponse(200, "OK", "application/json", val.getBytes());
@@ -67,7 +69,9 @@ public class DebugServer {
 
             try {
                 switch (msg.name) {
-                    case "Debugger.enable": debugger.enable(msg); continue;
+                    case "Debugger.enable":
+                        connNotifier.next();
+                        debugger.enable(msg); continue;
                     case "Debugger.disable": debugger.disable(msg); continue;
 
                     case "Debugger.setBreakpoint": debugger.setBreakpoint(msg); continue;
@@ -149,6 +153,10 @@ public class DebugServer {
             }
             finally { ws.close(); debugger.disconnect(); }
         }, "Debug Handler");
+    }
+
+    public void awaitConnection() {
+        connNotifier.await();
     }
 
     public void run(InetSocketAddress address) {

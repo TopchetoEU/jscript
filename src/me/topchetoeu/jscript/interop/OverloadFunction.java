@@ -84,6 +84,7 @@ public class OverloadFunction extends FunctionValue {
                     throw ((EngineException)e.getTargetException()).add(name, loc);
                 }
                 else if (e.getTargetException() instanceof NullPointerException) {
+                    e.printStackTrace();
                     throw EngineException.ofType("Unexpected value of 'undefined'.").add(name, loc);
                 }
                 else {

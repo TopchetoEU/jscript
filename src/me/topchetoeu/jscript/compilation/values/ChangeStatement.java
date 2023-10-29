@@ -15,7 +15,7 @@ public class ChangeStatement extends Statement {
 
     @Override
     public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {
-        value.toAssign(new ConstantStatement(loc(), -addAmount), Operation.SUBTRACT).compile(target, scope, postfix);
+        value.toAssign(new ConstantStatement(loc(), -addAmount), Operation.SUBTRACT).compile(target, scope, true);
         if (!pollute) target.add(Instruction.discard().locate(loc()));
     }
 

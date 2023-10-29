@@ -61,7 +61,7 @@ public class MapLib {
         return map.size();
     }
 
-    @NativeGetter public void forEach(Context ctx, FunctionValue func, Object thisArg) {
+    @Native public void forEach(Context ctx, FunctionValue func, Object thisArg) {
         var keys = new ArrayList<>(map.keySet());
 
         for (var el : keys) func.call(ctx, thisArg, el, map.get(el), this);

@@ -7,4 +7,6 @@ public interface WrappersProvider {
     public ObjectValue getProto(Class<?> obj);
     public ObjectValue getNamespace(Class<?> obj);
     public FunctionValue getConstr(Class<?> obj);
+
+    public WrappersProvider fork(Environment env);
 }

@@ -17,7 +17,7 @@ public class Environment {
     private HashMap<String, ObjectValue> prototypes = new HashMap<>();
 
     public final Data data = new Data();
-    public final HashMap<String, Symbol> symbols = new HashMap<>();
+    public static final HashMap<String, Symbol> symbols = new HashMap<>();
 
     public GlobalScope global;
     public WrappersProvider wrappers;
@@ -57,7 +57,8 @@ public class Environment {
     }
 
     @Native public Environment fork() {
-        var res = new Environment(compile, wrappers, global);
+        var res = new Environment(compile, null, global);
+        res.wrappers = wrappers.fork(res);
         res.regexConstructor = regexConstructor;
         res.prototypes = new HashMap<>(prototypes);
         return res;

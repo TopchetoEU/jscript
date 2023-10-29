@@ -33,7 +33,7 @@ public class NativeWrapperProvider implements WrappersProvider {
 
                 var val = target.values.get(name);
 
-                if (!(val instanceof OverloadFunction)) target.defineProperty(null, name, val = new OverloadFunction(name.toString()));
+                if (!(val instanceof OverloadFunction)) target.defineProperty(null, name, val = new OverloadFunction(name.toString()), true, true, false);
 
                 ((OverloadFunction)val).add(Overload.fromMethod(method, nat.thisArg()));
             }
@@ -53,7 +53,7 @@ public class NativeWrapperProvider implements WrappersProvider {
                     else getter = new OverloadFunction("get " + name);
 
                     getter.add(Overload.fromMethod(method, get.thisArg()));
-                    target.defineProperty(null, name, getter, setter, true, true);
+                    target.defineProperty(null, name, getter, setter, true, false);
                 }
                 if (set != null) {
                     if (set.thisArg() && !member || !set.thisArg() && !memberMatch) continue;
@@ -70,7 +70,7 @@ public class NativeWrapperProvider implements WrappersProvider {
                     else setter = new OverloadFunction("set " + name);
 
                     setter.add(Overload.fromMethod(method, set.thisArg()));
-                    target.defineProperty(null, name, getter, setter, true, true);
+                    target.defineProperty(null, name, getter, setter, true, false);
                 }
             }
         }
@@ -211,8 +211,8 @@ public class NativeWrapperProvider implements WrappersProvider {
         if (constr == null) constr = makeConstructor(env, clazz);
         if (proto == null) proto = makeProto(env, clazz);
 
-        proto.values.put("constructor", constr);
-        constr.values.put("prototype", proto);
+        proto.defineProperty(null, "constructor", constr, true, false, false);
+        constr.defineProperty(null, "prototype", proto, true, false, false);
 
         prototypes.put(clazz, proto);
         constructors.put(clazz, constr);
@@ -238,6 +238,11 @@ public class NativeWrapperProvider implements WrappersProvider {
     public FunctionValue getConstr(Class<?> clazz) {
         initType(clazz, constructors.get(clazz), prototypes.get(clazz));
         return constructors.get(clazz);
+    }
+
+    @Override
+    public WrappersProvider fork(Environment env) {
+        return new NativeWrapperProvider(env);
     }
 
     public void setProto(Class<?> clazz, ObjectValue value) {

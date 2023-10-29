@@ -10,7 +10,7 @@ import me.topchetoeu.jscript.engine.debug.WebSocketMessage.Type;
 import me.topchetoeu.jscript.exceptions.UncheckedIOException;
 
 public class WebSocket implements AutoCloseable {
-    public long maxLength = 2000000;
+    public long maxLength = 1 << 20;
 
     private Socket socket;
     private boolean closed = false;
@@ -61,39 +61,45 @@ public class WebSocket implements AutoCloseable {
         else return new byte[4];
     }
 
-    private void writeLength(long len) {
+    private void writeLength(int len) {
         try {
             if (len < 126) {
                 out().write((int)len);
             }
-            else if (len < 0xFFFF) {
+            else if (len <= 0xFFFF) {
                 out().write(126);
                 out().write((int)(len >> 8) & 0xFF);
                 out().write((int)len & 0xFF);
             }
             else {
                 out().write(127);
-                out().write((int)(len >> 56) & 0xFF);
-                out().write((int)(len >> 48) & 0xFF);
-                out().write((int)(len >> 40) & 0xFF);
-                out().write((int)(len >> 32) & 0xFF);
-                out().write((int)(len >> 24) & 0xFF);
-                out().write((int)(len >> 16) & 0xFF);
-                out().write((int)(len >> 8) & 0xFF);
-                out().write((int)len & 0xFF);
+                out().write((len >> 56) & 0xFF);
+                out().write((len >> 48) & 0xFF);
+                out().write((len >> 40) & 0xFF);
+                out().write((len >> 32) & 0xFF);
+                out().write((len >> 24) & 0xFF);
+                out().write((len >> 16) & 0xFF);
+                out().write((len >> 8) & 0xFF);
+                out().write(len & 0xFF);
             }
         }
         catch (IOException e) { throw new UncheckedIOException(e); }
     }
     private synchronized void write(int type, byte[] data) {
         try {
-            out().write(type | 0x80);
-            writeLength(data.length);
-            for (int i = 0; i < data.length; i++) {
-                out().write(data[i]);
+            for (int i = 0; i < (data.length >> 16); i++) {
+                out().write(type);
+                writeLength(0xFFFF);
+                out().write(data, i << 16, 0xFFFF);
             }
+
+            out().write(type | 0x80);
+            writeLength(data.length & 0xFFFF);
+            out().write(data, data.length & 0xFFFF0000, data.length & 0xFFFF);
         }
-        catch (IOException e) { throw new UncheckedIOException(e); }
+        catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     public void send(String data) {

@@ -14,13 +14,14 @@ public class ArrayValue extends ObjectValue implements Iterable<Object> {
     private Object[] values;
     private int size;
 
-    private void alloc(int index) {
-        if (index < values.length) return;
+    private Object[] alloc(int index) {
+        index++;
+        if (index < values.length) return values;
         if (index < values.length * 2) index = values.length * 2;
 
         var arr = new Object[index];
         System.arraycopy(values, 0, arr, 0, values.length);
-        values = arr;
+        return arr;
     }
 
     public int size() { return size; }
@@ -28,7 +29,7 @@ public class ArrayValue extends ObjectValue implements Iterable<Object> {
         if (val < 0) return false;
         if (size > val) shrink(size - val);
         else {
-            alloc(val);
+            values = alloc(val);
             size = val;
         }
         return true;
@@ -43,7 +44,7 @@ public class ArrayValue extends ObjectValue implements Iterable<Object> {
     public void set(Context ctx, int i, Object val) {
         if (i < 0) return;
 
-        alloc(i);
+        values = alloc(i);
 
         val = Values.normalize(ctx, val);
         if (val == null) val = UNDEFINED;
@@ -97,7 +98,7 @@ public class ArrayValue extends ObjectValue implements Iterable<Object> {
     }
 
     public void move(int srcI, int dstI, int n) {
-        alloc(dstI + n);
+        values = alloc(dstI + n);
 
         System.arraycopy(values, srcI, values, dstI, n);
 

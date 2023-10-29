@@ -125,11 +125,14 @@ public class CodeFrame {
     }
 
     private void setCause(Context ctx, EngineException err, EngineException cause) {
-        err.cause = cause;
+        // err.cause = cause;
+        err.setCause(cause);
     }
     private Object nextNoTry(Context ctx, Instruction instr) {
         if (Thread.currentThread().isInterrupted()) throw new InterruptException();
         if (codePtr < 0 || codePtr >= function.body.length) return null;
+
+        if (instr.location != null) prevLoc = instr.location;
 
         try {
             this.jumpFlag = false;

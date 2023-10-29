@@ -51,7 +51,7 @@ public class SetLib {
         return set.size();
     }
 
-    @NativeGetter public void forEach(Context ctx, FunctionValue func, Object thisArg) {
+    @Native public void forEach(Context ctx, FunctionValue func, Object thisArg) {
         var keys = new ArrayList<>(set);
 
         for (var el : keys) func.call(ctx, thisArg, el, el, this);

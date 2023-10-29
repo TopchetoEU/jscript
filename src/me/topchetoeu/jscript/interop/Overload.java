@@ -44,9 +44,11 @@ public class Overload {
     public static Overload setterFromField(Field field) {
         if (Modifier.isFinal(field.getModifiers())) return null;
         return new Overload(
-            (ctx, th, args) -> { field.set(th, args[0]); return null; }, false, false,
+            (ctx, th, args) -> {
+                field.set(th, args[0]); return null;
+            }, false, false,
             Modifier.isStatic(field.getModifiers()) ? null : field.getDeclaringClass(),
-            new Class[0]
+            new Class[] { field.getType() }
         );
     }
 

@@ -45,10 +45,10 @@ public class EngineException extends RuntimeException {
         catch (EngineException e) {
             ss.append("[Error while stringifying]\n");
         }
-        // for (var line : stackTrace) {
-        //     ss.append("    ").append(line).append('\n');
-        // }
-        // if (cause != null) ss.append("Caused by ").append(cause.toString(ctx)).append('\n');
+        for (var line : stackTrace) {
+            ss.append("    ").append(line).append('\n');
+        }
+        if (cause != null) ss.append("Caused by ").append(cause.toString(ctx)).append('\n');
         ss.deleteCharAt(ss.length() - 1);
         return ss.toString();
     }

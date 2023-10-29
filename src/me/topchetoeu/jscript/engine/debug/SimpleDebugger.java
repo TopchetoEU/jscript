@@ -256,7 +256,7 @@ public class SimpleDebugger implements Debugger {
             return id;
         }
     }
-    private JSONMap serializeObj(Context ctx, Object val, boolean recurse) {
+    private JSONMap serializeObj(Context ctx, Object val) {
         val = Values.normalize(null, val);
 
         if (val == Values.NULL) {
@@ -276,13 +276,6 @@ public class SimpleDebugger implements Debugger {
 
             if (obj instanceof FunctionValue) type = "function";
             if (obj instanceof ArrayValue) subtype = "array";
-
-            if (Values.isWrapper(val, RegExpLib.class)) subtype = "regexp";
-            if (Values.isWrapper(val, DateLib.class)) subtype = "date";
-            if (Values.isWrapper(val, MapLib.class)) subtype = "map";
-            if (Values.isWrapper(val, SetLib.class)) subtype = "set";
-            if (Values.isWrapper(val, Generator.class)) subtype = "generator";
-            if (Values.isWrapper(val, PromiseLib.class)) subtype = "promise";
 
             try { className = Values.toString(ctx, Values.getMember(ctx, obj.getMember(ctx, "constructor"), "name")); }
             catch (Exception e) { }
@@ -311,6 +304,7 @@ public class SimpleDebugger implements Debugger {
             if (Double.POSITIVE_INFINITY == num) res.set("unserializableValue", "Infinity");
             else if (Double.NEGATIVE_INFINITY == num) res.set("unserializableValue", "-Infinity");
             else if (Double.doubleToRawLongBits(num) == Double.doubleToRawLongBits(-0d)) res.set("unserializableValue", "-0");
+            else if (Double.doubleToRawLongBits(num) == Double.doubleToRawLongBits(0d)) res.set("unserializableValue", "0");
             else if (Double.isNaN(num)) res.set("unserializableValue", "NaN");
             else res.set("value", num);
 
@@ -318,9 +312,6 @@ public class SimpleDebugger implements Debugger {
         }
 
         throw new IllegalArgumentException("Unexpected JS object.");
-    }
-    private JSONMap serializeObj(Context ctx, Object val) {
-        return serializeObj(ctx, val, true);
     }
     private void setObjectGroup(String name, Object val) {
         if (val instanceof ObjectValue) {
@@ -626,7 +617,7 @@ public class SimpleDebugger implements Debugger {
                     propDesc.set("isOwn", currOwn);
                     res.add(propDesc);
                 }
-                else if (!accessorPropertiesOnly) {
+                else {
                     propDesc.set("name", Values.toString(ctx, key));
                     propDesc.set("value", serializeObj(ctx, obj.getMember(ctx, key)));
                     propDesc.set("writable", obj.memberWritable(key));
@@ -651,7 +642,7 @@ public class SimpleDebugger implements Debugger {
             }
 
             currOwn = false;
-            if (own) break;
+            if (true) break;
         }
 
         ws.send(msg.respond(new JSONMap().set("result", res)));

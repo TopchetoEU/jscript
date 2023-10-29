@@ -10,6 +10,7 @@ import me.topchetoeu.jscript.engine.Engine;
 import me.topchetoeu.jscript.engine.Environment;
 import me.topchetoeu.jscript.engine.debug.DebugServer;
 import me.topchetoeu.jscript.engine.debug.SimpleDebugger;
+import me.topchetoeu.jscript.engine.values.ArrayValue;
 import me.topchetoeu.jscript.engine.values.NativeFunction;
 import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.events.Observer;
@@ -50,6 +51,10 @@ public class Main {
         var server = new DebugServer();
         server.targets.put("target", (ws, req) -> SimpleDebugger.get(ws, engine));
 
+        engineTask = engine.start();
+        debugTask = server.start(new InetSocketAddress("127.0.0.1", 9229), true);
+        // server.awaitConnection();
+
         engine.pushMsg(false, null, new NativeFunction((ctx, thisArg, _a) -> {
             new Internals().apply(env);
 
@@ -69,10 +74,29 @@ public class Main {
             });
 
             return null;
-        }), null);
+        }), null).await();
 
-        engineTask = engine.start();
-        debugTask = server.start(new InetSocketAddress("127.0.0.1", 9229), true);
+        try {
+            var ts = engine.pushMsg(
+                false, new Context(engine).pushEnv(env), 
+                new Filename("file", "/mnt/data/repos/java-jscript/src/me/topchetoeu/jscript/js/ts.js"),
+                Reading.resourceToString("js/ts.js"), null
+            ).await();
+            System.out.println("Loaded typescript!");
+            engine.pushMsg(
+                false, new Context(engine).pushEnv(env.child()),
+                new Filename("jscript", "internals/bootstrap.js"), Reading.resourceToString("js/bootstrap.js"), null,
+                ts, env, new ArrayValue(null, Reading.resourceToString("js/lib.d.ts"))
+            ).await();
+        }
+        catch (EngineException e) {
+            Values.printError(e, "(while initializing TS)");
+            System.out.println("engine reported stack trace:");
+            for (var el : e.stackTrace) {
+                System.out.println(el);
+            }
+        }
+
 
         var reader = new Thread(() -> {
             try {

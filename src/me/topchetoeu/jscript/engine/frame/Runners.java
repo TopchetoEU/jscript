@@ -100,19 +100,29 @@ public class Runners {
     public static Object execKeys(Context ctx, Instruction instr, CodeFrame frame) {
         var val = frame.pop();
 
-        var arr = new ObjectValue();
-        var i = 0;
-
         var members = Values.getMembers(ctx, val, false, false);
         Collections.reverse(members);
+
+        frame.push(ctx, null);
+
         for (var el : members) {
             if (el instanceof Symbol) continue;
-            arr.defineProperty(ctx, i++, el);
+            var obj = new ObjectValue();
+            obj.defineProperty(ctx, "value", el);
+            frame.push(ctx, obj);
         }
+        // var arr = new ObjectValue();
 
-        arr.defineProperty(ctx, "length", i);
+        // var members = Values.getMembers(ctx, val, false, false);
+        // Collections.reverse(members);
+        // for (var el : members) {
+        //     if (el instanceof Symbol) continue;
+        //     arr.defineProperty(ctx, i++, el);
+        // }
 
-        frame.push(ctx, arr);
+        // arr.defineProperty(ctx, "length", i);
+
+        // frame.push(ctx, arr);
         frame.codePtr++;
         return NO_RETURN;
     }

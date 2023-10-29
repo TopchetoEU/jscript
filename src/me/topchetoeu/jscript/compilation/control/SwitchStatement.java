@@ -43,7 +43,7 @@ public class SwitchStatement extends Statement {
             ccase.value.compile(target, scope, true);
             target.add(Instruction.operation(Operation.EQUALS).locate(loc()));
             caseMap.put(target.size(), ccase.statementI);
-            target.add(Instruction.nop());
+            target.add(Instruction.nop().locate(ccase.value.loc()));
         }
 
         int start = target.size();

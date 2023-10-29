@@ -91,6 +91,16 @@ public class Internals {
         return NumberLib.parseFloat(ctx, val);
     }
 
+    @Native public static boolean isNaN(Context ctx, double val) {
+        return NumberLib.isNaN(ctx, val);
+    }
+    @Native public static boolean isFinite(Context ctx, double val) {
+        return NumberLib.isFinite(ctx, val);
+    }
+    @Native public static boolean isInfinite(Context ctx, double val) {
+        return NumberLib.isInfinite(ctx, val);
+    }
+
     public void apply(Environment env) {
         var wp = env.wrappers;
         var glob = env.global = new GlobalScope(wp.getNamespace(Internals.class));
@@ -133,6 +143,7 @@ public class Internals {
         env.setProto("rangeErr", wp.getProto(RangeErrorLib.class));
 
         wp.getProto(ObjectLib.class).setPrototype(null, null);
+        env.regexConstructor = wp.getConstr(RegExpLib.class);
 
         System.out.println("Loaded polyfills!");
     }

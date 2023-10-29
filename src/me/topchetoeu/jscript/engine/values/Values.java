@@ -117,6 +117,7 @@ public class Values {
         if (val instanceof Boolean) return ((Boolean)val) ? 1 : 0;
         if (val instanceof String) {
             try { return Double.parseDouble((String)val); }
+            catch (NumberFormatException e) { return Double.NaN; }
             catch (Throwable e) { throw new UncheckedException(e); }
         }
         return Double.NaN;
@@ -257,7 +258,8 @@ public class Values {
 
     public static Object getMember(Context ctx, Object obj, Object key) {
         obj = normalize(ctx, obj); key = normalize(ctx, key);
-        if (obj == null) throw new IllegalArgumentException("Tried to access member of undefined.");
+        if (obj == null)
+            throw new IllegalArgumentException("Tried to access member of undefined.");
         if (obj == NULL) throw new IllegalArgumentException("Tried to access member of null.");
         if (isObject(obj)) return object(obj).getMember(ctx, key);
 
@@ -277,7 +279,8 @@ public class Values {
     }
     public static boolean setMember(Context ctx, Object obj, Object key, Object val) {
         obj = normalize(ctx, obj); key = normalize(ctx, key); val = normalize(ctx, val);
-        if (obj == null) throw EngineException.ofType("Tried to access member of undefined.");
+        if (obj == null)
+            throw EngineException.ofType("Tried to access member of undefined.");
         if (obj == NULL) throw EngineException.ofType("Tried to access member of null.");
         if (key.equals("__proto__")) return setPrototype(ctx, obj, val);
         if (isObject(obj)) return object(obj).setMember(ctx, key, val, false);
@@ -366,18 +369,24 @@ public class Values {
     }
 
     public static Object call(Context ctx, Object func, Object thisArg, Object ...args) {
-        if (!isFunction(func)) throw EngineException.ofType("Tried to call a non-function value.");
+        if (!isFunction(func))
+            throw EngineException.ofType("Tried to call a non-function value.");
         return function(func).call(ctx, thisArg, args);
     }
     public static Object callNew(Context ctx, Object func, Object ...args) {
         var res = new ObjectValue();
-        var proto = Values.getMember(ctx, func, "prototype");
-        res.setPrototype(ctx, proto);
-
-        var ret = call(ctx, func, res, args);
-
-        if (ret != null && func instanceof FunctionValue && ((FunctionValue)func).special) return ret;
-        return res;
+        try {
+            var proto = Values.getMember(ctx, func, "prototype");
+            res.setPrototype(ctx, proto);
+    
+            var ret = call(ctx, func, res, args);
+    
+            if (ret != null && func instanceof FunctionValue && ((FunctionValue)func).special) return ret;
+            return res;
+        }
+        catch (IllegalArgumentException e) {
+            throw EngineException.ofType("Tried to call new on an invalid constructor.");
+        }
     }
 
     public static boolean strictEquals(Context ctx, Object a, Object b) {
@@ -515,6 +524,8 @@ public class Values {
     public static Iterable<Object> toJavaIterable(Context ctx, Object obj) {
         return () -> {
             try {
+                var _ctx = ctx;
+                var _obj = obj;
                 var symbol = ctx.environment().symbol("Symbol.iterator");
 
                 var iteratorFunc = getMember(ctx, obj, symbol);

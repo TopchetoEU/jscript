@@ -1235,7 +1235,7 @@ public class Parsing {
 
         return ParseRes.res(new OperationStatement(loc, Operation.IN, prev, valRes.result), n);
     }
-    public static ParseRes<CompoundStatement> parseComma(Filename filename, List<Token> tokens, int i, Statement prev, int precedence) {
+    public static ParseRes<CommaStatement> parseComma(Filename filename, List<Token> tokens, int i, Statement prev, int precedence) {
         var loc = getLoc(filename, tokens, i);
         var n = 0;
 
@@ -1246,7 +1246,7 @@ public class Parsing {
         if (!res.isSuccess()) return ParseRes.error(loc, "Expected a value after the comma.", res);
         n += res.n;
 
-        return ParseRes.res(new CompoundStatement(loc, prev, res.result), n);
+        return ParseRes.res(new CommaStatement(loc, prev, res.result), n);
     }
     public static ParseRes<IfStatement> parseTernary(Filename filename, List<Token> tokens, int i, Statement prev, int precedence) {
         var loc = getLoc(filename, tokens, i);
@@ -1757,6 +1757,7 @@ public class Parsing {
 
         var nameRes = parseIdentifier(tokens, i + n);
         if (!nameRes.isSuccess()) return ParseRes.error(loc, "Expected a variable name for 'for' loop.");
+        var nameLoc = getLoc(filename, tokens, i + n);
         n += nameRes.n;
 
         Statement varVal = null;
@@ -1790,7 +1791,7 @@ public class Parsing {
         if (!bodyRes.isSuccess()) return ParseRes.error(loc, "Expected a for body.", bodyRes);
         n += bodyRes.n;
 
-        return ParseRes.res(new ForInStatement(loc, labelRes.result, isDecl, nameRes.result, varVal, objRes.result, bodyRes.result), n);
+        return ParseRes.res(new ForInStatement(loc, nameLoc, labelRes.result, isDecl, nameRes.result, varVal, objRes.result, bodyRes.result), n);
     }
     public static ParseRes<TryStatement> parseCatch(Filename filename, List<Token> tokens, int i) {
         var loc = getLoc(filename, tokens, i);
