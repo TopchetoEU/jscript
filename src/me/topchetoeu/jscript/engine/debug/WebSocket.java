@@ -109,6 +109,8 @@ public class WebSocket implements AutoCloseable {
         else send(msg.textData());
     }
     public void send(Object data) {
+        // TODO: Remove
+        System.out.println("SEND: " + data);
         if (closed) throw new IllegalStateException("Object is closed.");
         write(1, data.toString().getBytes());
     }
@@ -189,6 +191,10 @@ public class WebSocket implements AutoCloseable {
 
                 if (!fin) continue;
                 var raw = data.toByteArray();
+
+                // TODO: Remove
+                System.out.println("RECEIVED: " + new String(raw));
+
 
                 if (type == 1) return new WebSocketMessage(new String(raw));
                 else return new WebSocketMessage(raw);

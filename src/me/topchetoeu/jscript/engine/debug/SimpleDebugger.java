@@ -40,7 +40,13 @@ import me.topchetoeu.jscript.lib.GeneratorLib.Generator;
 
 public class SimpleDebugger implements Debugger {
     public static final String CHROME_GET_PROP_FUNC = "function s(e){let t=this;const n=JSON.parse(e);for(let e=0,i=n.length;e<i;++e)t=t[n[e]];return t}";
-
+    public static final String VSCODE_STRINGIFY_VAL = "function(...runtimeArgs){\n    let t = 1024; let e = null;\n    if(e)try{let r=\"<<default preview>>\",i=e.call(this,r);if(i!==r)return String(i)}catch(r){return`<<indescribable>>${JSON.stringify([String(r),\"object\"])}`}if(typeof this==\"object\"&&this){let r;for(let i of[Symbol.for(\"debug.description\"),Symbol.for(\"nodejs.util.inspect.custom\")])try{r=this[i]();break}catch{}if(!r&&!String(this.toString).includes(\"[native code]\")&&(r=String(this)),r&&!r.startsWith(\"[object \"))return r.length>=t?r.slice(0,t)+\"\\u2026\":r}\n  ;\n\n}";
+    public static final String VSCODE_STRINGIFY_PROPS = "function(...runtimeArgs){\n    let t = 1024; let e = null;\n    let r={},i=\"<<default preview>>\";if(typeof this!=\"object\"||!this)return r;for(let[n,s]of Object.entries(this)){if(e)try{let o=e.call(s,i);if(o!==i){r[n]=String(o);continue}}catch(o){r[n]=`<<indescribable>>${JSON.stringify([String(o),n])}`;continue}if(typeof s==\"object\"&&s){let o;for(let a of runtimeArgs[0])try{o=s[a]();break}catch{}!o&&!String(s.toString).includes(\"[native code]\")&&(o=String(s)),o&&!o.startsWith(\"[object \")&&(r[n]=o.length>=t?o.slice(0,t)+\"\\u2026\":o)}}return r\n  ;\n\n}";
+    public static final String VSCODE_SYMBOL_REQUEST = "function(){return[Symbol.for(\"debug.description\"),Symbol.for(\"nodejs.util.inspect.custom\")]\n}";
+    public static final String VSCODE_SHALLOW_COPY = "function(){let t={__proto__:this.__proto__\n},e=Object.getOwnPropertyNames(this);for(let r=0;r<e.length;++r){let i=e[r],n=i>>>0;if(String(n>>>0)===i&&n>>>0!==4294967295)continue;let s=Object.getOwnPropertyDescriptor(this,i);s&&Object.defineProperty(t,i,s)}return t}";
+    public static final String VSCODE_FLATTEN_ARRAY = "function(t,e){let r={\n},i=t===-1?0:t,n=e===-1?this.length:t+e;for(let s=i;s<n&&s<this.length;++s){let o=Object.getOwnPropertyDescriptor(this,s);o&&Object.defineProperty(r,s,o)}return r}";
+    public static final String VSCODE_CALL = "function(t){return t.call(this)\n}";
+    
     private static enum State {
         RESUMED,
         STEPPING_IN,
@@ -131,8 +137,7 @@ public class SimpleDebugger implements Debugger {
                         .add(new JSONMap().set("type", "local").set("name", "Local Scope").set("object", serializeObj(ctx, local)))
                         .add(new JSONMap().set("type", "closure").set("name", "Closure").set("object", serializeObj(ctx, capture)))
                         .add(new JSONMap().set("type", "global").set("name", "Global Scope").set("object", serializeObj(ctx, global)))
-                    )
-                    .setNull("this");
+                    );
             }
         }
     }
@@ -155,6 +160,8 @@ public class SimpleDebugger implements Debugger {
 
     public final WebSocket ws;
     public final Engine target;
+
+    private ObjectValue emptyObject = new ObjectValue();
 
     private HashMap<Integer, BreakpointCandidate> idToBptCand = new HashMap<>();
 
@@ -417,7 +424,7 @@ public class SimpleDebugger implements Debugger {
         env.global = new GlobalScope(local);
 
         var ctx = new Context(engine).pushEnv(env);
-        var awaiter = engine.pushMsg(false, ctx, new Filename("temp", "exec"), code, codeFrame.frame.thisArg, codeFrame.frame.args);
+        var awaiter = engine.pushMsg(false, ctx, new Filename("temp", "exec"), "(" + code + ")", codeFrame.frame.thisArg, codeFrame.frame.args);
 
         engine.run(true);
 
@@ -587,14 +594,22 @@ public class SimpleDebugger implements Debugger {
         releaseGroup(group);
         ws.send(msg.respond());
     }
+    @Override
+    public void releaseObject(V8Message msg) {
+        var id = Integer.parseInt(msg.params.string("objectId"));
+        var obj = idToObject.remove(id);
+        if (obj != null) objectToId.remove(obj);
+        ws.send(msg.respond());
+    }
     @Override public void getProperties(V8Message msg) {
         var obj = idToObject.get(Integer.parseInt(msg.params.string("objectId")));
-        var own = msg.params.bool("ownProperties") || true;
+        var own = msg.params.bool("ownProperties");
+        var accessorPropertiesOnly = msg.params.bool("accessorPropertiesOnly", false);
         var currOwn = true;
 
         var res = new JSONList();
 
-        while (obj != null) {
+        while (obj != emptyObject && obj != null) {
             var ctx = objectToCtx.get(obj);
 
             for (var key : obj.keys(true)) {
@@ -611,7 +626,7 @@ public class SimpleDebugger implements Debugger {
                     propDesc.set("isOwn", currOwn);
                     res.add(propDesc);
                 }
-                else {
+                else if (!accessorPropertiesOnly) {
                     propDesc.set("name", Values.toString(ctx, key));
                     propDesc.set("value", serializeObj(ctx, obj.getMember(ctx, key)));
                     propDesc.set("writable", obj.memberWritable(key));
@@ -624,14 +639,16 @@ public class SimpleDebugger implements Debugger {
 
             obj = obj.getPrototype(ctx);
 
-            var protoDesc = new JSONMap();
-            protoDesc.set("name", "__proto__");
-            protoDesc.set("value", serializeObj(ctx, obj == null ? Values.NULL : obj));
-            protoDesc.set("writable", true);
-            protoDesc.set("enumerable", false);
-            protoDesc.set("configurable", false);
-            protoDesc.set("isOwn", currOwn);
-            res.add(protoDesc);
+            if (currOwn) {
+                var protoDesc = new JSONMap();
+                protoDesc.set("name", "__proto__");
+                protoDesc.set("value", serializeObj(ctx, obj == null ? Values.NULL : obj));
+                protoDesc.set("writable", true);
+                protoDesc.set("enumerable", false);
+                protoDesc.set("configurable", false);
+                protoDesc.set("isOwn", currOwn);
+                res.add(protoDesc);
+            }
 
             currOwn = false;
             if (own) break;
@@ -641,9 +658,23 @@ public class SimpleDebugger implements Debugger {
     }
     @Override public void callFunctionOn(V8Message msg) {
         var src = msg.params.string("functionDeclaration");
-        var args = msg.params.list("arguments", new JSONList()).stream().map(v -> v.map()).map(this::deserializeArgument).collect(Collectors.toList());
+        var args = msg.params
+            .list("arguments", new JSONList())
+            .stream()
+            .map(v -> v.map())
+            .map(this::deserializeArgument)
+            .collect(Collectors.toList());
+
         var thisArg = idToObject.get(Integer.parseInt(msg.params.string("objectId")));
         var ctx = objectToCtx.get(thisArg);
+
+        while (true) {
+            var start = src.lastIndexOf("//# sourceURL=");
+            if (start < 0) break;
+            var end = src.indexOf("\n", start);
+            if (end < 0) src = src.substring(0, start);
+            else src = src.substring(0, start) + src.substring(end + 1);
+        }
 
         switch (src) {
             case CHROME_GET_PROP_FUNC: {
@@ -652,6 +683,23 @@ public class SimpleDebugger implements Debugger {
                 for (var el : path) res = Values.getMember(ctx, res, JSON.toJs(el));
                 ws.send(msg.respond(new JSONMap().set("result", serializeObj(ctx, res))));
                 return;
+            }
+            case VSCODE_STRINGIFY_VAL:
+            case VSCODE_STRINGIFY_PROPS:
+            case VSCODE_SHALLOW_COPY:
+                ws.send(msg.respond(new JSONMap().set("result", serializeObj(ctx, emptyObject))));
+                break;
+            case VSCODE_FLATTEN_ARRAY: {
+                ws.send(msg.respond(new JSONMap().set("result", serializeObj(ctx, thisArg))));
+                break;
+            }
+            case VSCODE_SYMBOL_REQUEST:
+                ws.send(msg.respond(new JSONMap().set("result", serializeObj(ctx, new ArrayValue(ctx)))));
+                break;
+            case VSCODE_CALL: {
+                var func = (FunctionValue)(args.size() < 1 ? null : args.get(0));
+                ws.send(msg.respond(new JSONMap().set("result", serializeObj(ctx, func.call(ctx, thisArg)))));
+                break;
             }
             default:
                 ws.send(new V8Error("A non well-known function was used with callFunctionOn."));
@@ -728,11 +776,7 @@ public class SimpleDebugger implements Debugger {
                     break;
                 case STEPPING_OVER:
                     if (stepOutFrame.frame == frame.frame) {
-                        if (returnVal != Runners.NO_RETURN) {
-                            state = State.STEPPING_OUT;
-                            return false;
-                        }
-                        else if (isBreakpointable && (
+                        if (isBreakpointable && (
                             !loc.filename().equals(prevLocation.filename()) ||
                             loc.line() != prevLocation.line()
                         )) pauseDebug(ctx, null);
@@ -754,10 +798,13 @@ public class SimpleDebugger implements Debugger {
 
         if (StackData.frames(ctx).size() == 0) resume(State.RESUMED);
         else if (stepOutFrame != null && stepOutFrame.frame == frame &&
-            (state == State.STEPPING_OUT || state == State.STEPPING_IN)
+            (state == State.STEPPING_OUT || state == State.STEPPING_IN || state == State.STEPPING_OVER)
         ) {
-            pauseDebug(ctx, null);
-            updateNotifier.await();
+            // if (state == State.STEPPING_OVER) state = State.STEPPING_IN;
+            // else {
+                pauseDebug(ctx, null);
+                updateNotifier.await();
+            // }
         }
     }
 

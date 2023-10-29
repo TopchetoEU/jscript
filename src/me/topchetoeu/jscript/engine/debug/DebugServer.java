@@ -59,7 +59,6 @@ public class DebugServer {
 
             try {
                 msg = new V8Message(raw.textData());
-                // System.out.println(msg.name + ": " + JSON.stringify(msg.params));
             }
             catch (SyntaxException e) {
                 ws.send(new V8Error(e.getMessage()));
@@ -90,6 +89,7 @@ public class DebugServer {
                     case "Debugger.evaluateOnCallFrame": debugger.evaluateOnCallFrame(msg); continue;
 
                     case "Runtime.releaseObjectGroup": debugger.releaseObjectGroup(msg); continue;
+                    case "Runtime.releaseObject": debugger.releaseObject(msg); continue;
                     case "Runtime.getProperties": debugger.getProperties(msg); continue;
                     case "Runtime.callFunctionOn": debugger.callFunctionOn(msg); continue;
                     // case "NodeWorker.enable": debugger.nodeWorkerEnable(msg); continue;
