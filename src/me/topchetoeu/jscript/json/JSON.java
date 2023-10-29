@@ -83,8 +83,11 @@ public class JSON {
         else return res.transform();
     }
     public static ParseRes<Double> parseNumber(Filename filename, List<Token> tokens, int i) {
+        var minus = Parsing.isOperator(tokens, i, Operator.SUBTRACT);
+        if (minus) i++;
+
         var res = Parsing.parseNumber(filename, tokens, i);
-        if (res.isSuccess()) return ParseRes.res((Double)res.result.value, res.n);
+        if (res.isSuccess()) return ParseRes.res((minus ? -1 : 1) * (Double)res.result.value, res.n + (minus ? 1 : 0));
         else return res.transform();
     }
     public static ParseRes<Boolean> parseBool(Filename filename, List<Token> tokens, int i) {
