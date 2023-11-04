@@ -1,0 +1,5 @@
+return new UnitTest('sparse', function() { return !(0 in [,,]) })
+    .add('empty in start', function() { var a = [,1]; return !(0 in a) && (1 in a); })
+    .add('empty in middle', function() { var a = [1,,2]; return !(1 in a) && (2 in a) && (0 in a); })
+    .add('empty in end', function() { var a = [1,,]; return !(1 in a) && (0 in a); })
+    .add('trailing comma', function() { var a = [1,]; return a.length === 1; })
