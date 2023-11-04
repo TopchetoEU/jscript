@@ -82,8 +82,6 @@ public class Parsing {
         // Although ES5 allow these, we will comply to ES6 here
         reserved.add("const");
         reserved.add("let");
-        reserved.add("async");
-        reserved.add("super");
         // These are allowed too, however our parser considers them keywords
         reserved.add("undefined");
         reserved.add("arguments");
@@ -1060,7 +1058,6 @@ public class Parsing {
 
         if (!checkVarName(literal.result)) {
             if (literal.result.equals("await")) return ParseRes.error(loc, "'await' expressions are not supported.");
-            if (literal.result.equals("async")) return ParseRes.error(loc, "'async' is not supported.");
             if (literal.result.equals("const")) return ParseRes.error(loc, "'const' declarations are not supported.");
             if (literal.result.equals("let")) return ParseRes.error(loc, "'let' declarations are not supported.");
             return ParseRes.error(loc, String.format("Unexpected identifier '%s'.", literal.result));
@@ -1137,7 +1134,9 @@ public class Parsing {
         var op = opRes.result;
         if (!op.isAssign()) return ParseRes.failed();
 
-        if (!(prev instanceof AssignableStatement)) return ParseRes.error(loc, "Invalid expression on left hand side of assign operator.");
+        if (!(prev instanceof AssignableStatement)) {
+            return ParseRes.error(loc, "Invalid expression on left hand side of assign operator.");
+        }
 
         var res = parseValue(filename, tokens, i + n, 2);
         if (!res.isSuccess()) return ParseRes.error(loc, String.format("Expected value after assignment operator '%s'.", op.value), res);
@@ -1411,8 +1410,7 @@ public class Parsing {
 
         var valRes = parseValue(filename, tokens, i + n, 0);
         n += valRes.n;
-        if (valRes.isError())
-            return ParseRes.error(loc, "Expected a return value.", valRes);
+        if (valRes.isError()) return ParseRes.error(loc, "Expected a return value.", valRes);
 
         var res = ParseRes.res(new ReturnStatement(loc, valRes.result), n);
 
@@ -1534,8 +1532,7 @@ public class Parsing {
         if (!condRes.isSuccess()) return ParseRes.error(loc, "Expected an if condition.", condRes);
         n += condRes.n;
 
-        if (!isOperator(tokens, i + n++, Operator.PAREN_CLOSE))
-            return ParseRes.error(loc, "Expected a closing paren after if condition.");
+        if (!isOperator(tokens, i + n++, Operator.PAREN_CLOSE)) return ParseRes.error(loc, "Expected a closing paren after if condition.");
 
         var res = parseStatement(filename, tokens, i + n);
         if (!res.isSuccess()) return ParseRes.error(loc, "Expected an if body.", res);
@@ -1702,8 +1699,7 @@ public class Parsing {
                 parseVariableDeclare(filename, tokens, i + n),
                 parseValueStatement(filename, tokens, i + n)
             );
-            if (!declRes.isSuccess())
-                return ParseRes.error(loc, "Expected a declaration or an expression.", declRes);
+            if (!declRes.isSuccess()) return ParseRes.error(loc, "Expected a declaration or an expression.", declRes);
             n += declRes.n;
             decl = declRes.result;
         }

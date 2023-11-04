@@ -17,6 +17,10 @@ public class ChangeStatement extends Statement {
     public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {
         value.toAssign(new ConstantStatement(loc(), -addAmount), Operation.SUBTRACT).compile(target, scope, true);
         if (!pollute) target.add(Instruction.discard().locate(loc()));
+        else if (postfix) {
+            target.add(Instruction.loadValue(addAmount));
+            target.add(Instruction.operation(Operation.SUBTRACT));
+        }
     }
 
     public ChangeStatement(Location loc, AssignableStatement value, double addAmount, boolean postfix) {

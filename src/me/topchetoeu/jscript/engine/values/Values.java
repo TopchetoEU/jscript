@@ -258,8 +258,7 @@ public class Values {
 
     public static Object getMember(Context ctx, Object obj, Object key) {
         obj = normalize(ctx, obj); key = normalize(ctx, key);
-        if (obj == null)
-            throw new IllegalArgumentException("Tried to access member of undefined.");
+        if (obj == null) throw new IllegalArgumentException("Tried to access member of undefined.");
         if (obj == NULL) throw new IllegalArgumentException("Tried to access member of null.");
         if (isObject(obj)) return object(obj).getMember(ctx, key);
 
@@ -279,8 +278,7 @@ public class Values {
     }
     public static boolean setMember(Context ctx, Object obj, Object key, Object val) {
         obj = normalize(ctx, obj); key = normalize(ctx, key); val = normalize(ctx, val);
-        if (obj == null)
-            throw EngineException.ofType("Tried to access member of undefined.");
+        if (obj == null) throw EngineException.ofType("Tried to access member of undefined.");
         if (obj == NULL) throw EngineException.ofType("Tried to access member of null.");
         if (key.equals("__proto__")) return setPrototype(ctx, obj, val);
         if (isObject(obj)) return object(obj).setMember(ctx, key, val, false);
@@ -369,8 +367,7 @@ public class Values {
     }
 
     public static Object call(Context ctx, Object func, Object thisArg, Object ...args) {
-        if (!isFunction(func))
-            throw EngineException.ofType("Tried to call a non-function value.");
+        if (!isFunction(func)) throw EngineException.ofType("Tried to call a non-function value.");
         return function(func).call(ctx, thisArg, args);
     }
     public static Object callNew(Context ctx, Object func, Object ...args) {
@@ -524,8 +521,6 @@ public class Values {
     public static Iterable<Object> toJavaIterable(Context ctx, Object obj) {
         return () -> {
             try {
-                var _ctx = ctx;
-                var _obj = obj;
                 var symbol = ctx.environment().symbol("Symbol.iterator");
 
                 var iteratorFunc = getMember(ctx, obj, symbol);
@@ -587,7 +582,11 @@ public class Values {
 
         res.defineProperty(ctx, "next", new NativeFunction("", (_ctx, _th, _args) -> {
             if (!it.hasNext()) return new ObjectValue(ctx, Map.of("done", true));
-            else return new ObjectValue(ctx, Map.of("value", it.next()));
+            else {
+                var obj = new ObjectValue();
+                obj.defineProperty(_ctx, "value", it.next());
+                return obj;
+            }
         }));
 
         return res;
@@ -598,6 +597,11 @@ public class Values {
     }
 
     private static void printValue(Context ctx, Object val, HashSet<Object> passed, int tab) {
+        if (tab == 0 && val instanceof String) {
+            System.out.print(val);
+            return;
+        }
+
         if (passed.contains(val)) {
             System.out.print("[circular]");
             return;
