@@ -16,7 +16,7 @@ import me.topchetoeu.jscript.interop.NativeGetter;
 import me.topchetoeu.jscript.interop.NativeInit;
 import me.topchetoeu.jscript.interop.NativeSetter;
 
-public class ArrayLib {
+@Native("Array") public class ArrayLib {
     @NativeGetter(thisArg = true) public static int length(Context ctx, ArrayValue thisArg) {
         return thisArg.size();
     }
@@ -164,6 +164,37 @@ public class ArrayLib {
         }
     }
 
+    @Native(thisArg = true) public static Object reduce(Context ctx, ArrayValue arr, FunctionValue func, Object... args) {
+        var i = 0;
+        var res = arr.get(0);
+
+        if (args.length > 0) res = args[0];
+        else for (; !arr.has(i) && i < arr.size(); i++) res = arr.get(i);
+
+        for (; i < arr.size(); i++) {
+            if (arr.has(i)) {
+                res = func.call(ctx, null, res, arr.get(i), i, arr);
+            }
+        }
+
+        return res;
+    }
+    @Native(thisArg = true) public static Object reduceRight(Context ctx, ArrayValue arr, FunctionValue func, Object... args) {
+        var i = arr.size();
+        var res = arr.get(0);
+
+        if (args.length > 0) res = args[0];
+        else while (!arr.has(i--) && i >= 0) res = arr.get(i);
+
+        for (; i >= 0; i--) {
+            if (arr.has(i)) {
+                res = func.call(ctx, null, res, arr.get(i), i, arr);
+            }
+        }
+
+        return res;
+    }
+
     @Native(thisArg = true) public static ArrayValue flat(Context ctx, ArrayValue arr, int depth) {
         var res = new ArrayValue(arr.size());
         var stack = new Stack<Object>();
@@ -224,7 +255,7 @@ public class ArrayLib {
     @Native(thisArg = true) public static int indexOf(Context ctx, ArrayValue arr, Object val, int start) {
         start = normalizeI(arr.size(), start, true);
 
-        for (int i = 0; i < arr.size() && i < start; i++) {
+        for (int i = start; i < arr.size(); i++) {
             if (Values.strictEquals(ctx, arr.get(i), val)) return i;
         }
 
@@ -303,12 +334,14 @@ public class ArrayLib {
 
     @Native(thisArg = true) public static String join(Context ctx, ArrayValue arr, String sep) {
         var res = new StringBuilder();
-        var comma = true;
+        var comma = false;
 
         for (int i = 0; i < arr.size(); i++) {
             if (!arr.has(i)) continue;
+
             if (comma) res.append(sep);
-            comma = false;
+            comma = true;
+
             var el = arr.get(i);
             if (el == null || el == Values.NULL) continue;
 

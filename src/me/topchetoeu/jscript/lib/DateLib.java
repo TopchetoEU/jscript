@@ -6,7 +6,7 @@ import java.util.TimeZone;
 import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.interop.Native;
 
-public class DateLib {
+@Native("Date") public class DateLib {
     private Calendar normal;
     private Calendar utc;
 

@@ -18,7 +18,7 @@ import me.topchetoeu.jscript.interop.InitType;
 import me.topchetoeu.jscript.interop.Native;
 import me.topchetoeu.jscript.interop.NativeInit;
 
-public class PromiseLib {
+@Native("Promise") public class PromiseLib {
     private static class Handle {
         public final Context ctx;
         public final FunctionValue fulfilled;

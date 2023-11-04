@@ -16,7 +16,7 @@ import me.topchetoeu.jscript.interop.NativeGetter;
 import me.topchetoeu.jscript.interop.NativeInit;
 
 // TODO: implement index wrapping properly
-public class StringLib {
+@Native("String") public class StringLib {
     public final String value;
 
     private static String passThis(Context ctx, String funcName, Object val) {

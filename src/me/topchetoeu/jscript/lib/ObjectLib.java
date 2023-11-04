@@ -13,7 +13,7 @@ import me.topchetoeu.jscript.interop.Native;
 import me.topchetoeu.jscript.interop.NativeConstructor;
 import me.topchetoeu.jscript.interop.NativeInit;
 
-public class ObjectLib {
+@Native("Object") public class ObjectLib {
     @Native public static ObjectValue assign(Context ctx, ObjectValue dst, Object... src) {
         for (var obj : src) {
             for (var key : Values.getMembers(ctx, obj, true, true)) {

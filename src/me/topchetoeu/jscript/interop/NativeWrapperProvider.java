@@ -137,7 +137,11 @@ public class NativeWrapperProvider implements WrappersProvider {
      * @param clazz The class for which a constructor should be generated
      */
     public static FunctionValue makeConstructor(Environment ctx, Class<?> clazz) {
-        FunctionValue func = new OverloadFunction(clazz.getName());
+        var name = clazz.getName();
+        var classNat = clazz.getAnnotation(Native.class);
+        if (classNat != null && !classNat.value().trim().equals("")) name = classNat.value().trim();
+
+        FunctionValue func = new OverloadFunction(name);
 
         for (var overload : clazz.getDeclaredConstructors()) {
             var nat = overload.getAnnotation(Native.class);
