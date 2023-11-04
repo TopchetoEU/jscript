@@ -2,7 +2,6 @@ package me.topchetoeu.jscript.engine.debug;
 
 import java.util.Map;
 
-import me.topchetoeu.jscript.Filename;
 import me.topchetoeu.jscript.json.JSON;
 import me.topchetoeu.jscript.json.JSONElement;
 import me.topchetoeu.jscript.json.JSONMap;
@@ -33,7 +32,7 @@ public class V8Message {
         this.params = raw.contains("params") ? raw.map("params") : new JSONMap();
     }
     public V8Message(String raw) {
-        this(JSON.parse(new Filename("jscript", "json-msg"), raw).map());
+        this(JSON.parse(null, raw).map());
     }
 
     public JSONMap toMap() {

@@ -1,7 +1,7 @@
 package me.topchetoeu.jscript;
 
 public class Location implements Comparable<Location> {
-    public static final Location INTERNAL = new Location(0, 0, new Filename("jscript", "internal"));
+    public static final Location INTERNAL = new Location(0, 0, new Filename("jscript", "native"));
     private int line;
     private int start;
     private Filename filename;

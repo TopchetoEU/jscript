@@ -177,6 +177,7 @@ public class JSON {
         return ParseRes.res(values, n);
     }
     public static JSONElement parse(Filename filename, String raw) {
+        if (filename == null) filename = new Filename("jscript", "json");
         var res = parseValue(filename, Parsing.tokenize(filename, raw), 0);
         if (res.isFailed()) throw new SyntaxException(null, "Invalid JSON given.");
         else if (res.isError()) throw new SyntaxException(null, res.error);
@@ -191,6 +192,7 @@ public class JSON {
             .replace("\\", "\\\\")
             .replace("\n", "\\n")
             .replace("\r", "\\r")
+            .replace("\t", "\\t")
             .replace("\"", "\\\"")
         + "\"";
         if (el.isList()) {
