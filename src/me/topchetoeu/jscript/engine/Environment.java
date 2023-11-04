@@ -40,8 +40,7 @@ public class Environment {
     }
 
     @Native public Symbol symbol(String name) {
-        if (symbols.containsKey(name))
-            return symbols.get(name);
+        if (symbols.containsKey(name)) return symbols.get(name);
         else {
             var res = new Symbol(name);
             symbols.put(name, res);

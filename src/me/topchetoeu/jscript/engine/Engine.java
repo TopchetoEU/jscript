@@ -1,16 +1,22 @@
 package me.topchetoeu.jscript.engine;
 
 import java.util.HashMap;
+import java.util.TreeSet;
 import java.util.concurrent.LinkedBlockingDeque;
 
 import me.topchetoeu.jscript.Filename;
+import me.topchetoeu.jscript.Location;
 import me.topchetoeu.jscript.compilation.FunctionBody;
+import me.topchetoeu.jscript.compilation.Instruction;
+import me.topchetoeu.jscript.engine.debug.DebugController;
+import me.topchetoeu.jscript.engine.frame.CodeFrame;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
 import me.topchetoeu.jscript.events.Awaitable;
 import me.topchetoeu.jscript.events.DataNotifier;
+import me.topchetoeu.jscript.exceptions.EngineException;
 import me.topchetoeu.jscript.exceptions.InterruptException;
 
-public class Engine {
+public class Engine implements DebugController {
     private class UncompiledFunction extends FunctionValue {
         public final Filename filename;
         public final String raw;
@@ -51,8 +57,42 @@ public class Engine {
     private LinkedBlockingDeque<Task> microTasks = new LinkedBlockingDeque<>();
 
     public final int id = ++nextId;
+    public final Data data = new Data().set(StackData.MAX_FRAMES, 200);
     public final HashMap<Long, FunctionBody> functions = new HashMap<>();
-    public final Data data = new Data().set(StackData.MAX_FRAMES, 10000);
+    public final boolean debugging;
+    private final HashMap<Filename, String> sources = new HashMap<>();
+    private final HashMap<Filename, TreeSet<Location>> bpts = new HashMap<>();
+    private DebugController debugger;
+
+    public boolean attachDebugger(DebugController debugger) {
+        if (!debugging || this.debugger != null) return false;
+
+        for (var source : sources.entrySet()) {
+            debugger.onSource(source.getKey(), source.getValue(), bpts.get(source.getKey()));
+        }
+
+        this.debugger = debugger;
+        return true;
+    }
+    public boolean detachDebugger() {
+        if (!debugging || this.debugger == null) return false;
+        this.debugger = null;
+        return true;
+    }
+
+    @Override public void onFramePop(Context ctx, CodeFrame frame) {
+        if (debugging && debugger != null) debugger.onFramePop(ctx, frame);
+    }
+    @Override public boolean onInstruction(Context ctx, CodeFrame frame, Instruction instruction, Object returnVal, EngineException error, boolean caught) {
+        if (debugging && debugger != null) return debugger.onInstruction(ctx, frame, instruction, returnVal, error, caught);
+        else return false;
+    }
+    @Override public void onSource(Filename filename, String source, TreeSet<Location> breakpoints) {
+        if (!debugging) return;
+        if (debugger != null) debugger.onSource(filename, source, breakpoints);
+        sources.put(filename, source);
+        bpts.put(filename, breakpoints);
+    }
 
     private void runTask(Task task) {
         try {
@@ -107,5 +147,9 @@ public class Engine {
     }
     public Awaitable<Object> pushMsg(boolean micro, Context ctx, Filename filename, String raw, Object thisArg, Object ...args) {
         return pushMsg(micro, ctx, new UncompiledFunction(filename, raw), thisArg, args);
+    }
+
+    public Engine(boolean debugging) {
+        this.debugging = debugging;
     }
 }
