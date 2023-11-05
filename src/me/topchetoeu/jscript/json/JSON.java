@@ -188,13 +188,28 @@ public class JSON {
         if (el.isNumber()) return Double.toString(el.number());
         if (el.isBoolean()) return el.bool() ? "true" : "false";
         if (el.isNull()) return "null";
-        if (el.isString()) return "\"" + el.string()
-            .replace("\\", "\\\\")
-            .replace("\n", "\\n")
-            .replace("\r", "\\r")
-            .replace("\t", "\\t")
-            .replace("\"", "\\\"")
-        + "\"";
+        if (el.isString()) {
+            var res = new StringBuilder("\"");
+            var alphabet = "0123456789ABCDEF".toCharArray();
+
+            for (var c : el.string().toCharArray()) {
+                if (c < 32 || c >= 127) {
+                    res
+                        .append("\\u")
+                        .append(alphabet[(c >> 12) & 0xF])
+                        .append(alphabet[(c >> 8) & 0xF])
+                        .append(alphabet[(c >> 4) & 0xF])
+                        .append(alphabet[(c >> 0) & 0xF]);
+                }
+                else if (c == '\\')
+                    res.append("\\\\");
+                else if (c == '"')
+                    res.append("\\\"");
+                else res.append(c);
+            }
+
+            return res.append('"').toString();
+        }
         if (el.isList()) {
             var res = new StringBuilder().append("[");
             for (int i = 0; i < el.list().size(); i++) {

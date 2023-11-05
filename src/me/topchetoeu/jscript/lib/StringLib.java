@@ -111,7 +111,7 @@ import me.topchetoeu.jscript.interop.NativeInit;
         return lastIndexOf(ctx, passThis(ctx, "includes", thisArg), term, pos) >= 0;
     }
 
-    @Native(thisArg = true) public static String replace(Context ctx, Object thisArg, Object term, String replacement) {
+    @Native(thisArg = true) public static String replace(Context ctx, Object thisArg, Object term, Object replacement) {
         var val = passThis(ctx, "replace", thisArg);
 
         if (term != null && term != Values.NULL && !(term instanceof String)) {
@@ -121,9 +121,9 @@ import me.topchetoeu.jscript.interop.NativeInit;
             }
         }
 
-        return val.replaceFirst(Pattern.quote(Values.toString(ctx, term)), replacement);
+        return val.replaceFirst(Pattern.quote(Values.toString(ctx, term)), Values.toString(ctx, replacement));
     }
-    @Native(thisArg = true) public static String replaceAll(Context ctx, Object thisArg, Object term, String replacement) {
+    @Native(thisArg = true) public static String replaceAll(Context ctx, Object thisArg, Object term, Object replacement) {
         var val = passThis(ctx, "replaceAll", thisArg);
 
         if (term != null && term != Values.NULL && !(term instanceof String)) {
@@ -133,7 +133,7 @@ import me.topchetoeu.jscript.interop.NativeInit;
             }
         }
 
-        return val.replaceFirst(Pattern.quote(Values.toString(ctx, term)), replacement);
+        return val.replaceFirst(Pattern.quote(Values.toString(ctx, term)), Values.toString(ctx, replacement));
     }
 
     @Native(thisArg = true) public static ArrayValue match(Context ctx, Object thisArg, Object term, String replacement) {

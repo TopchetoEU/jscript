@@ -93,13 +93,14 @@ import me.topchetoeu.jscript.interop.NativeSetter;
         return res;
     }
 
-    @Native(thisArg = true) public static void sort(Context ctx, ArrayValue arr, FunctionValue cmp) {
+    @Native(thisArg = true) public static ArrayValue sort(Context ctx, ArrayValue arr, FunctionValue cmp) {
         arr.sort((a, b) -> {
             var res = Values.toNumber(ctx, cmp.call(ctx, null, a, b));
             if (res < 0) return -1;
             if (res > 0) return 1;
             return 0;
         });
+        return arr;
     }
 
     private static int normalizeI(int len, int i, boolean clamp) {
@@ -299,16 +300,13 @@ import me.topchetoeu.jscript.interop.NativeSetter;
         return arr.size();
     }
 
-    @Native(thisArg = true) public static ArrayValue slice(Context ctx, ArrayValue arr, int start, int end) {
+    @Native(thisArg = true) public static ArrayValue slice(Context ctx, ArrayValue arr, int start, Object _end) {
         start = normalizeI(arr.size(), start, true);
-        end = normalizeI(arr.size(), end, true);
+        int end = normalizeI(arr.size(), (int)(_end == null ? arr.size() : Values.toNumber(ctx, _end)), true);
 
         var res = new ArrayValue(end - start);
         arr.copyTo(ctx, res, start, 0, end - start);
         return res;
-    }
-    @Native(thisArg = true) public static ArrayValue slice(Context ctx, ArrayValue arr, int start) {
-        return slice(ctx, arr, start, arr.size());
     }
 
     @Native(thisArg = true) public static ArrayValue splice(Context ctx, ArrayValue arr, int start, int deleteCount, Object ...items) {

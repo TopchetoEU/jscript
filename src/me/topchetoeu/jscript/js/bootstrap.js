@@ -42,7 +42,7 @@
     service.getEmitOutput('/lib.d.ts');
     log('Loaded libraries!');
 
-    function compile(filename, code) {
+    function compile(code, filename) {
         src = code, version++;
 
         var emit = service.getEmitOutput("/src.ts");

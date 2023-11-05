@@ -473,13 +473,16 @@ public class SimpleDebugger implements Debugger {
     @Override public void setBreakpointByUrl(V8Message msg) {
         var line = (int)msg.params.number("lineNumber") + 1;
         var col = (int)msg.params.number("columnNumber", 0) + 1;
+        var cond = msg.params.string("condition", null);
+
+        if (cond != null) cond  = "(" + cond + ")";
 
         Pattern regex;
 
         if (msg.params.isString("url")) regex = Pattern.compile(Pattern.quote(msg.params.string("url")));
         else regex = Pattern.compile(msg.params.string("urlRegex"));
 
-        var bpcd = new BreakpointCandidate(nextId(), regex, line, col, null);
+        var bpcd = new BreakpointCandidate(nextId(), regex, line, col, cond);
         idToBptCand.put(bpcd.id, bpcd);
 
         var locs = new JSONList();
@@ -592,41 +595,43 @@ public class SimpleDebugger implements Debugger {
         var res = new JSONList();
         var ctx = objectToCtx.get(obj);
 
-        for (var key : obj.keys(true)) {
-            var propDesc = new JSONMap();
-
-            if (obj.properties.containsKey(key)) {
-                var prop = obj.properties.get(key);
-
-                propDesc.set("name", Values.toString(ctx, key));
-                if (prop.getter != null) propDesc.set("get", serializeObj(ctx, prop.getter));
-                if (prop.setter != null) propDesc.set("set", serializeObj(ctx, prop.setter));
-                propDesc.set("enumerable", obj.memberEnumerable(key));
-                propDesc.set("configurable", obj.memberConfigurable(key));
-                propDesc.set("isOwn", true);
-                res.add(propDesc);
+        if (obj != emptyObject) {
+            for (var key : obj.keys(true)) {
+                var propDesc = new JSONMap();
+    
+                if (obj.properties.containsKey(key)) {
+                    var prop = obj.properties.get(key);
+    
+                    propDesc.set("name", Values.toString(ctx, key));
+                    if (prop.getter != null) propDesc.set("get", serializeObj(ctx, prop.getter));
+                    if (prop.setter != null) propDesc.set("set", serializeObj(ctx, prop.setter));
+                    propDesc.set("enumerable", obj.memberEnumerable(key));
+                    propDesc.set("configurable", obj.memberConfigurable(key));
+                    propDesc.set("isOwn", true);
+                    res.add(propDesc);
+                }
+                else {
+                    propDesc.set("name", Values.toString(ctx, key));
+                    propDesc.set("value", serializeObj(ctx, obj.getMember(ctx, key)));
+                    propDesc.set("writable", obj.memberWritable(key));
+                    propDesc.set("enumerable", obj.memberEnumerable(key));
+                    propDesc.set("configurable", obj.memberConfigurable(key));
+                    propDesc.set("isOwn", true);
+                    res.add(propDesc);
+                }
             }
-            else {
-                propDesc.set("name", Values.toString(ctx, key));
-                propDesc.set("value", serializeObj(ctx, obj.getMember(ctx, key)));
-                propDesc.set("writable", obj.memberWritable(key));
-                propDesc.set("enumerable", obj.memberEnumerable(key));
-                propDesc.set("configurable", obj.memberConfigurable(key));
-                propDesc.set("isOwn", true);
-                res.add(propDesc);
-            }
+    
+            var proto = obj.getPrototype(ctx);
+    
+            var protoDesc = new JSONMap();
+            protoDesc.set("name", "__proto__");
+            protoDesc.set("value", serializeObj(ctx, proto == null ? Values.NULL : proto));
+            protoDesc.set("writable", true);
+            protoDesc.set("enumerable", false);
+            protoDesc.set("configurable", false);
+            protoDesc.set("isOwn", true);
+            res.add(protoDesc);
         }
-
-        var proto = obj.getPrototype(ctx);
-
-        var protoDesc = new JSONMap();
-        protoDesc.set("name", "__proto__");
-        protoDesc.set("value", serializeObj(ctx, proto == null ? Values.NULL : proto));
-        protoDesc.set("writable", true);
-        protoDesc.set("enumerable", false);
-        protoDesc.set("configurable", false);
-        protoDesc.set("isOwn", true);
-        res.add(protoDesc);
 
         ws.send(msg.respond(new JSONMap().set("result", res)));
     }
@@ -662,25 +667,25 @@ public class SimpleDebugger implements Debugger {
                 case VSCODE_STRINGIFY_VAL:
                 case VSCODE_STRINGIFY_PROPS:
                 case VSCODE_SHALLOW_COPY:
+                case VSCODE_SYMBOL_REQUEST:
                     ws.send(msg.respond(new JSONMap().set("result", serializeObj(ctx, emptyObject))));
                     break;
-                case VSCODE_FLATTEN_ARRAY: {
+                case VSCODE_FLATTEN_ARRAY:
                     ws.send(msg.respond(new JSONMap().set("result", serializeObj(ctx, thisArg))));
-                    break;
-                }
-                case VSCODE_SYMBOL_REQUEST:
-                    ws.send(msg.respond(new JSONMap().set("result", serializeObj(ctx, new ArrayValue(ctx)))));
                     break;
                 case VSCODE_CALL: {
                     var func = (FunctionValue)(args.size() < 1 ? null : args.get(0));
                     ws.send(msg.respond(new JSONMap().set("result", serializeObj(ctx, func.call(ctx, thisArg)))));
                     break;
                 }
-                default: {
-                    var res = ctx.compile(new Filename("jscript", "eval"), src).call(ctx);
-                    if (res instanceof FunctionValue) ((FunctionValue)res).call(ctx, thisArg, args);
-                    ws.send(msg.respond(new JSONMap().set("result", serializeObj(ctx, res))));
-                }
+                default:
+                    ws.send(new V8Error("Please use well-known functions with callFunctionOn"));
+                    break;
+                // default: {
+                //     var res = ctx.compile(new Filename("jscript", "eval"), src).call(ctx);
+                //     if (res instanceof FunctionValue) ((FunctionValue)res).call(ctx, thisArg, args);
+                //     ws.send(msg.respond(new JSONMap().set("result", serializeObj(ctx, res))));
+                // }
             }
         }
         catch (EngineException e) { ws.send(msg.respond(new JSONMap().set("exceptionDetails", serializeException(ctx, e)))); }
@@ -725,14 +730,15 @@ public class SimpleDebugger implements Debugger {
             returnVal != Runners.NO_RETURN
         );
 
-        if (error != null && !caught && StackData.frames(ctx).size() > 1) error = null;
+        // TODO: FIXXXX
+        // if (error != null && !caught && StackData.frames(ctx).size() > 1) error = null;
 
         if (error != null && (execptionType == CatchType.ALL || execptionType == CatchType.UNCAUGHT && !caught)) {
             pauseException(ctx);
         }
         else if (isBreakpointable && locToBreakpoint.containsKey(loc)) {
             var bp = locToBreakpoint.get(loc);
-            var ok = bp.condition == null ? true : Values.toBoolean(run(currFrame, bp.condition));
+            var ok = bp.condition == null ? true : Values.toBoolean(run(currFrame, bp.condition).result);
             if (ok) pauseDebug(ctx, locToBreakpoint.get(loc));
         }
         else if (isBreakpointable && tmpBreakpts.remove(loc)) pauseDebug(ctx, null);

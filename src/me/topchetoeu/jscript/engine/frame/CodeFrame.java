@@ -15,7 +15,7 @@ import me.topchetoeu.jscript.exceptions.EngineException;
 import me.topchetoeu.jscript.exceptions.InterruptException;
 
 public class CodeFrame {
-    private class TryCtx {
+    public static class TryCtx {
         public static final int STATE_TRY = 0;
         public static final int STATE_CATCH = 1;
         public static final int STATE_FINALLY_THREW = 2;
