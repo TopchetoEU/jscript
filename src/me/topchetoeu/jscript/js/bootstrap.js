@@ -1,6 +1,6 @@
 (function (_arguments) {
     var ts = _arguments[0];
-    var src = '', lib = _arguments[2].concat([ 'declare const exit: never;' ]).join(''), decls = '', version = 0;
+    var src = '', lib = _arguments[2].concat([ 'declare const exit: never; declare const go: any;' ]).join(''), decls = '', version = 0;
     var libSnapshot = ts.ScriptSnapshot.fromString(lib);
 
     var settings = {
@@ -20,11 +20,11 @@
     var reg = ts.createDocumentRegistry();
     var service = ts.createLanguageService({
         getCurrentDirectory: function() { return "/"; },
-        getDefaultLibFileName: function() { return "/lib_.d.ts"; },
+        getDefaultLibFileName: function() { return "/lib.d.ts"; },
         getScriptFileNames: function() { return [ "/src.ts", "/lib.d.ts", "/glob.d.ts" ]; },
         getCompilationSettings: function () { return settings; },
         fileExists: function(filename) { return filename === "/lib.d.ts" || filename === "/src.ts" || filename === "/glob.d.ts"; },
-    
+
         getScriptSnapshot: function(filename) {
             if (filename === "/lib.d.ts") return libSnapshot;
             if (filename === "/src.ts") return ts.ScriptSnapshot.fromString(src);
@@ -37,11 +37,12 @@
         },
     }, reg);
 
-    service.getEmitOutput('/lib.d.ts');
-    log('Loaded libraries!');
+    service.getEmitOutput("/lib.d.ts");
+    log("Loaded libraries!");
 
     function compile(code, filename) {
-        src = code, version++;
+        src = code;
+        version++;
 
         var emit = service.getEmitOutput("/src.ts");
 
@@ -61,7 +62,7 @@
             });
 
         if (diagnostics.length > 0) {
-            throw new SyntaxError(diagnostics.join('\n'));
+            throw new SyntaxError(diagnostics.join("\n"));
         }
 
         return {

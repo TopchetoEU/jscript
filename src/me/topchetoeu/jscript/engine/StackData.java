@@ -17,7 +17,8 @@ public class StackData {
     public static void pushFrame(Context ctx, CodeFrame frame) {
         var frames = ctx.data.get(FRAMES, new ArrayList<>());
         frames.add(frame);
-        if (frames.size() > ctx.data.get(MAX_FRAMES, 10000)) throw EngineException.ofRange("Stack overflow!");
+        if (frames.size() > ctx.data.get(MAX_FRAMES, 10000))
+            throw EngineException.ofRange("Stack overflow!");
         ctx.pushEnv(frame.function.environment);
     }
     public static boolean popFrame(Context ctx, CodeFrame frame) {

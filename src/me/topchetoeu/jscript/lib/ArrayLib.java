@@ -309,8 +309,9 @@ import me.topchetoeu.jscript.interop.NativeSetter;
         return res;
     }
 
-    @Native(thisArg = true) public static ArrayValue splice(Context ctx, ArrayValue arr, int start, int deleteCount, Object ...items) {
+    @Native(thisArg = true) public static ArrayValue splice(Context ctx, ArrayValue arr, int start, Object _deleteCount, Object ...items) {
         start = normalizeI(arr.size(), start, true);
+        int deleteCount = _deleteCount == null ? arr.size() - 1 : (int)Values.toNumber(ctx, _deleteCount);
         deleteCount = normalizeI(arr.size(), deleteCount, true);
         if (start + deleteCount >= arr.size()) deleteCount = arr.size() - start;
 
@@ -322,9 +323,6 @@ import me.topchetoeu.jscript.interop.NativeSetter;
         arr.setSize(size);
 
         return res;
-    }
-    @Native(thisArg = true) public static ArrayValue splice(Context ctx, ArrayValue arr, int start) {
-        return splice(ctx, arr, start, arr.size() - start);
     }
     @Native(thisArg = true) public static String toString(Context ctx, ArrayValue arr) {
         return join(ctx, arr, ",");

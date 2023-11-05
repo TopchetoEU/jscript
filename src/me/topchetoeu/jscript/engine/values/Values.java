@@ -596,6 +596,16 @@ public class Values {
         return fromJavaIterator(ctx, it.iterator());
     }
 
+    private static boolean isEmptyFunc(ObjectValue val) {
+        if (!(val instanceof FunctionValue)) return false;
+        if (!val.values.containsKey("prototype") || val.values.size() + val.properties.size() > 1) return false;
+        var proto = val.values.get("prototype");
+        if (!(proto instanceof ObjectValue)) return false;
+        var protoObj = (ObjectValue)proto;
+        if (protoObj.values.get("constructor") != val) return false;
+        if (protoObj.values.size() + protoObj.properties.size() != 1) return false;
+        return true;
+    }
     private static void printValue(Context ctx, Object val, HashSet<Object> passed, int tab) {
         if (tab == 0 && val instanceof String) {
             System.out.print(val);
@@ -643,7 +653,7 @@ public class Values {
             passed.add(val);
 
             var obj = (ObjectValue)val;
-            if (obj.values.size() + obj.properties.size() == 0) {
+            if (obj.values.size() + obj.properties.size() == 0 || isEmptyFunc(obj)) {
                 if (!printed) System.out.println("{}");
             }
             else {
@@ -661,12 +671,13 @@ public class Values {
                     printValue(ctx, el.getKey(), passed, tab + 1);
                     System.out.println(": [prop],");
                 }
-    
+
                 for (int i = 0; i < tab; i++) System.out.print("    ");
                 System.out.print("}");
-    
-                passed.remove(val);
+
             }
+
+            passed.remove(val);
         }
         else if (val == null) System.out.print("undefined");
         else if (val == Values.NULL) System.out.print("null");

@@ -18,12 +18,15 @@ public class Internals {
     private static final DataKey<Integer> I = new DataKey<>();
 
 
-    @Native public static void log(Context ctx, Object ...args) {
+    @Native public static Object log(Context ctx, Object ...args) {
         for (var arg : args) {
             Values.printValue(ctx, arg);
             System.out.print(" ");
         }
         System.out.println();
+
+        if (args.length == 0) return null;
+        else return args[0];
     }
     @Native public static String readline(Context ctx) {
         try {
