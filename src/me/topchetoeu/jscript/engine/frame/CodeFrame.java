@@ -1,5 +1,6 @@
 package me.topchetoeu.jscript.engine.frame;
 
+import java.util.List;
 import java.util.Stack;
 
 import me.topchetoeu.jscript.Location;
@@ -81,6 +82,26 @@ public class CodeFrame {
         }
 
         return new ScopeValue(scope.captures, names);
+    }
+    public ObjectValue getValStackScope(Context ctx) {
+        return new ObjectValue() {
+            @Override
+            protected Object getField(Context ctx, Object key) {
+                var i = (int)Values.toNumber(ctx, key);
+                if (i < 0 || i >= stackPtr) return null;
+                else return stack[i];
+            }
+            @Override
+            protected boolean hasField(Context ctx, Object key) {
+                return true;
+            }
+            @Override
+            public List<Object> keys(boolean includeNonEnumerable) {
+                var res = super.keys(includeNonEnumerable);
+                for (var i = 0; i < stackPtr; i++) res.add(i);
+                return res;
+            }
+        };
     }
 
     public void addTry(int n, int catchN, int finallyN) {

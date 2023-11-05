@@ -40,7 +40,7 @@ public class SimpleDebugger implements Debugger {
     public static final String VSCODE_SHALLOW_COPY = "function(){let t={__proto__:this.__proto__\n},e=Object.getOwnPropertyNames(this);for(let r=0;r<e.length;++r){let i=e[r],n=i>>>0;if(String(n>>>0)===i&&n>>>0!==4294967295)continue;let s=Object.getOwnPropertyDescriptor(this,i);s&&Object.defineProperty(t,i,s)}return t}";
     public static final String VSCODE_FLATTEN_ARRAY = "function(t,e){let r={\n},i=t===-1?0:t,n=e===-1?this.length:t+e;for(let s=i;s<n&&s<this.length;++s){let o=Object.getOwnPropertyDescriptor(this,s);o&&Object.defineProperty(r,s,o)}return r}";
     public static final String VSCODE_CALL = "function(t){return t.call(this)\n}";
-    
+
     private static enum State {
         RESUMED,
         STEPPING_IN,
@@ -98,7 +98,7 @@ public class SimpleDebugger implements Debugger {
         public CodeFrame frame;
         public CodeFunction func;
         public int id;
-        public ObjectValue local, capture, global;
+        public ObjectValue local, capture, global, valstack;
         public JSONMap serialized;
         public Location location;
         public boolean debugData = false;
@@ -120,6 +120,7 @@ public class SimpleDebugger implements Debugger {
             this.capture = frame.getCaptureScope(ctx, true);
             this.local.setPrototype(ctx, capture);
             this.capture.setPrototype(ctx, global);
+            this.valstack = frame.getValStackScope(ctx);
 
             if (location != null) {
                 debugData = true;
@@ -131,6 +132,7 @@ public class SimpleDebugger implements Debugger {
                         .add(new JSONMap().set("type", "local").set("name", "Local Scope").set("object", serializeObj(ctx, local)))
                         .add(new JSONMap().set("type", "closure").set("name", "Closure").set("object", serializeObj(ctx, capture)))
                         .add(new JSONMap().set("type", "global").set("name", "Global Scope").set("object", serializeObj(ctx, global)))
+                        .add(new JSONMap().set("type", "other").set("name", "Value Stack").set("object", serializeObj(ctx, valstack)))
                     );
             }
         }
