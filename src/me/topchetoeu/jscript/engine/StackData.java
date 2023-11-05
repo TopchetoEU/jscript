@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import me.topchetoeu.jscript.Location;
 import me.topchetoeu.jscript.engine.debug.Debugger;
 import me.topchetoeu.jscript.engine.frame.CodeFrame;
 import me.topchetoeu.jscript.exceptions.EngineException;
@@ -25,8 +26,7 @@ public class StackData {
         if (frames.get(frames.size() - 1) != frame) return false;
         frames.remove(frames.size() - 1);
         ctx.popEnv();
-        var dbg = getDebugger(ctx);
-        if (dbg != null) dbg.onFramePop(ctx, frame);
+        ctx.engine.onFramePop(ctx, frame);
         return true;
     }
     public static CodeFrame peekFrame(Context ctx) {
@@ -45,7 +45,11 @@ public class StackData {
         for (var i = frames.size() - 1; i >= 0; i--) {
             var el = frames.get(i);
             var name = el.function.name;
-            var loc = el.function.loc();
+            Location loc = null;
+
+            for (var j = el.codePtr; j >= 0 && loc == null; j--) loc = el.function.body[j].location;
+            if (loc == null) loc = el.function.loc();
+
             var trace = "";
 
             if (loc != null) trace += "at " + loc.toString() + " ";
@@ -57,9 +61,5 @@ public class StackData {
         }
 
         return res;
-    }
-
-    public static Debugger getDebugger(Context ctx) {
-        return ctx.data.get(DEBUGGER);
     }
 }

@@ -16,7 +16,7 @@ import me.topchetoeu.jscript.interop.NativeGetter;
 import me.topchetoeu.jscript.interop.NativeInit;
 
 // TODO: implement index wrapping properly
-public class StringLib {
+@Native("String") public class StringLib {
     public final String value;
 
     private static String passThis(Context ctx, String funcName, Object val) {
@@ -111,7 +111,7 @@ public class StringLib {
         return lastIndexOf(ctx, passThis(ctx, "includes", thisArg), term, pos) >= 0;
     }
 
-    @Native(thisArg = true) public static String replace(Context ctx, Object thisArg, Object term, String replacement) {
+    @Native(thisArg = true) public static String replace(Context ctx, Object thisArg, Object term, Object replacement) {
         var val = passThis(ctx, "replace", thisArg);
 
         if (term != null && term != Values.NULL && !(term instanceof String)) {
@@ -121,9 +121,9 @@ public class StringLib {
             }
         }
 
-        return val.replaceFirst(Pattern.quote(Values.toString(ctx, term)), replacement);
+        return val.replaceFirst(Pattern.quote(Values.toString(ctx, term)), Values.toString(ctx, replacement));
     }
-    @Native(thisArg = true) public static String replaceAll(Context ctx, Object thisArg, Object term, String replacement) {
+    @Native(thisArg = true) public static String replaceAll(Context ctx, Object thisArg, Object term, Object replacement) {
         var val = passThis(ctx, "replaceAll", thisArg);
 
         if (term != null && term != Values.NULL && !(term instanceof String)) {
@@ -133,7 +133,7 @@ public class StringLib {
             }
         }
 
-        return val.replaceFirst(Pattern.quote(Values.toString(ctx, term)), replacement);
+        return val.replaceFirst(Pattern.quote(Values.toString(ctx, term)), Values.toString(ctx, replacement));
     }
 
     @Native(thisArg = true) public static ArrayValue match(Context ctx, Object thisArg, Object term, String replacement) {

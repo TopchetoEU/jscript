@@ -31,12 +31,6 @@ import me.topchetoeu.jscript.json.JSON;
 import me.topchetoeu.jscript.json.JSONElement;
 import me.topchetoeu.jscript.json.JSONList;
 import me.topchetoeu.jscript.json.JSONMap;
-import me.topchetoeu.jscript.lib.DateLib;
-import me.topchetoeu.jscript.lib.MapLib;
-import me.topchetoeu.jscript.lib.PromiseLib;
-import me.topchetoeu.jscript.lib.RegExpLib;
-import me.topchetoeu.jscript.lib.SetLib;
-import me.topchetoeu.jscript.lib.GeneratorLib.Generator;
 
 public class SimpleDebugger implements Debugger {
     public static final String CHROME_GET_PROP_FUNC = "function s(e){let t=this;const n=JSON.parse(e);for(let e=0,i=n.length;e<i;++e)t=t[n[e]];return t}";
@@ -46,7 +40,7 @@ public class SimpleDebugger implements Debugger {
     public static final String VSCODE_SHALLOW_COPY = "function(){let t={__proto__:this.__proto__\n},e=Object.getOwnPropertyNames(this);for(let r=0;r<e.length;++r){let i=e[r],n=i>>>0;if(String(n>>>0)===i&&n>>>0!==4294967295)continue;let s=Object.getOwnPropertyDescriptor(this,i);s&&Object.defineProperty(t,i,s)}return t}";
     public static final String VSCODE_FLATTEN_ARRAY = "function(t,e){let r={\n},i=t===-1?0:t,n=e===-1?this.length:t+e;for(let s=i;s<n&&s<this.length;++s){let o=Object.getOwnPropertyDescriptor(this,s);o&&Object.defineProperty(r,s,o)}return r}";
     public static final String VSCODE_CALL = "function(t){return t.call(this)\n}";
-    
+
     private static enum State {
         RESUMED,
         STEPPING_IN,
@@ -104,7 +98,7 @@ public class SimpleDebugger implements Debugger {
         public CodeFrame frame;
         public CodeFunction func;
         public int id;
-        public ObjectValue local, capture, global;
+        public ObjectValue local, capture, global, valstack;
         public JSONMap serialized;
         public Location location;
         public boolean debugData = false;
@@ -126,6 +120,7 @@ public class SimpleDebugger implements Debugger {
             this.capture = frame.getCaptureScope(ctx, true);
             this.local.setPrototype(ctx, capture);
             this.capture.setPrototype(ctx, global);
+            this.valstack = frame.getValStackScope(ctx);
 
             if (location != null) {
                 debugData = true;
@@ -137,6 +132,7 @@ public class SimpleDebugger implements Debugger {
                         .add(new JSONMap().set("type", "local").set("name", "Local Scope").set("object", serializeObj(ctx, local)))
                         .add(new JSONMap().set("type", "closure").set("name", "Closure").set("object", serializeObj(ctx, capture)))
                         .add(new JSONMap().set("type", "global").set("name", "Global Scope").set("object", serializeObj(ctx, global)))
+                        .add(new JSONMap().set("type", "other").set("name", "Value Stack").set("object", serializeObj(ctx, valstack)))
                     );
             }
         }
@@ -403,7 +399,7 @@ public class SimpleDebugger implements Debugger {
     }
 
     private RunResult run(Frame codeFrame, String code) {
-        var engine = new Engine();
+        var engine = new Engine(false);
         var env = codeFrame.func.environment.fork();
 
         ObjectValue global = env.global.obj,
@@ -415,7 +411,7 @@ public class SimpleDebugger implements Debugger {
         env.global = new GlobalScope(local);
 
         var ctx = new Context(engine).pushEnv(env);
-        var awaiter = engine.pushMsg(false, ctx, new Filename("temp", "exec"), "(" + code + ")", codeFrame.frame.thisArg, codeFrame.frame.args);
+        var awaiter = engine.pushMsg(false, ctx, new Filename("jscript", "eval"), code, codeFrame.frame.thisArg, codeFrame.frame.args);
 
         engine.run(true);
 
@@ -479,13 +475,16 @@ public class SimpleDebugger implements Debugger {
     @Override public void setBreakpointByUrl(V8Message msg) {
         var line = (int)msg.params.number("lineNumber") + 1;
         var col = (int)msg.params.number("columnNumber", 0) + 1;
+        var cond = msg.params.string("condition", null);
+
+        if (cond != null) cond  = "(" + cond + ")";
 
         Pattern regex;
 
         if (msg.params.isString("url")) regex = Pattern.compile(Pattern.quote(msg.params.string("url")));
         else regex = Pattern.compile(msg.params.string("urlRegex"));
 
-        var bpcd = new BreakpointCandidate(nextId(), regex, line, col, null);
+        var bpcd = new BreakpointCandidate(nextId(), regex, line, col, cond);
         idToBptCand.put(bpcd.id, bpcd);
 
         var locs = new JSONList();
@@ -594,27 +593,23 @@ public class SimpleDebugger implements Debugger {
     }
     @Override public void getProperties(V8Message msg) {
         var obj = idToObject.get(Integer.parseInt(msg.params.string("objectId")));
-        var own = msg.params.bool("ownProperties");
-        var accessorPropertiesOnly = msg.params.bool("accessorPropertiesOnly", false);
-        var currOwn = true;
 
         var res = new JSONList();
+        var ctx = objectToCtx.get(obj);
 
-        while (obj != emptyObject && obj != null) {
-            var ctx = objectToCtx.get(obj);
-
+        if (obj != emptyObject) {
             for (var key : obj.keys(true)) {
                 var propDesc = new JSONMap();
-
+    
                 if (obj.properties.containsKey(key)) {
                     var prop = obj.properties.get(key);
-
+    
                     propDesc.set("name", Values.toString(ctx, key));
                     if (prop.getter != null) propDesc.set("get", serializeObj(ctx, prop.getter));
                     if (prop.setter != null) propDesc.set("set", serializeObj(ctx, prop.setter));
                     propDesc.set("enumerable", obj.memberEnumerable(key));
                     propDesc.set("configurable", obj.memberConfigurable(key));
-                    propDesc.set("isOwn", currOwn);
+                    propDesc.set("isOwn", true);
                     res.add(propDesc);
                 }
                 else {
@@ -623,26 +618,21 @@ public class SimpleDebugger implements Debugger {
                     propDesc.set("writable", obj.memberWritable(key));
                     propDesc.set("enumerable", obj.memberEnumerable(key));
                     propDesc.set("configurable", obj.memberConfigurable(key));
-                    propDesc.set("isOwn", currOwn);
+                    propDesc.set("isOwn", true);
                     res.add(propDesc);
                 }
             }
-
-            obj = obj.getPrototype(ctx);
-
-            if (currOwn) {
-                var protoDesc = new JSONMap();
-                protoDesc.set("name", "__proto__");
-                protoDesc.set("value", serializeObj(ctx, obj == null ? Values.NULL : obj));
-                protoDesc.set("writable", true);
-                protoDesc.set("enumerable", false);
-                protoDesc.set("configurable", false);
-                protoDesc.set("isOwn", currOwn);
-                res.add(protoDesc);
-            }
-
-            currOwn = false;
-            if (true) break;
+    
+            var proto = obj.getPrototype(ctx);
+    
+            var protoDesc = new JSONMap();
+            protoDesc.set("name", "__proto__");
+            protoDesc.set("value", serializeObj(ctx, proto == null ? Values.NULL : proto));
+            protoDesc.set("writable", true);
+            protoDesc.set("enumerable", false);
+            protoDesc.set("configurable", false);
+            protoDesc.set("isOwn", true);
+            res.add(protoDesc);
         }
 
         ws.send(msg.respond(new JSONMap().set("result", res)));
@@ -667,36 +657,40 @@ public class SimpleDebugger implements Debugger {
             else src = src.substring(0, start) + src.substring(end + 1);
         }
 
-        switch (src) {
-            case CHROME_GET_PROP_FUNC: {
-                var path = JSON.parse(new Filename("tmp", "json"), (String)args.get(0)).list();
-                Object res = thisArg;
-                for (var el : path) res = Values.getMember(ctx, res, JSON.toJs(el));
-                ws.send(msg.respond(new JSONMap().set("result", serializeObj(ctx, res))));
-                return;
+        try {
+            switch (src) {
+                case CHROME_GET_PROP_FUNC: {
+                    var path = JSON.parse(null, (String)args.get(0)).list();
+                    Object res = thisArg;
+                    for (var el : path) res = Values.getMember(ctx, res, JSON.toJs(el));
+                    ws.send(msg.respond(new JSONMap().set("result", serializeObj(ctx, res))));
+                    return;
+                }
+                case VSCODE_STRINGIFY_VAL:
+                case VSCODE_STRINGIFY_PROPS:
+                case VSCODE_SHALLOW_COPY:
+                case VSCODE_SYMBOL_REQUEST:
+                    ws.send(msg.respond(new JSONMap().set("result", serializeObj(ctx, emptyObject))));
+                    break;
+                case VSCODE_FLATTEN_ARRAY:
+                    ws.send(msg.respond(new JSONMap().set("result", serializeObj(ctx, thisArg))));
+                    break;
+                case VSCODE_CALL: {
+                    var func = (FunctionValue)(args.size() < 1 ? null : args.get(0));
+                    ws.send(msg.respond(new JSONMap().set("result", serializeObj(ctx, func.call(ctx, thisArg)))));
+                    break;
+                }
+                default:
+                    ws.send(new V8Error("Please use well-known functions with callFunctionOn"));
+                    break;
+                // default: {
+                //     var res = ctx.compile(new Filename("jscript", "eval"), src).call(ctx);
+                //     if (res instanceof FunctionValue) ((FunctionValue)res).call(ctx, thisArg, args);
+                //     ws.send(msg.respond(new JSONMap().set("result", serializeObj(ctx, res))));
+                // }
             }
-            case VSCODE_STRINGIFY_VAL:
-            case VSCODE_STRINGIFY_PROPS:
-            case VSCODE_SHALLOW_COPY:
-                ws.send(msg.respond(new JSONMap().set("result", serializeObj(ctx, emptyObject))));
-                break;
-            case VSCODE_FLATTEN_ARRAY: {
-                ws.send(msg.respond(new JSONMap().set("result", serializeObj(ctx, thisArg))));
-                break;
-            }
-            case VSCODE_SYMBOL_REQUEST:
-                ws.send(msg.respond(new JSONMap().set("result", serializeObj(ctx, new ArrayValue(ctx)))));
-                break;
-            case VSCODE_CALL: {
-                var func = (FunctionValue)(args.size() < 1 ? null : args.get(0));
-                try { ws.send(msg.respond(new JSONMap().set("result", serializeObj(ctx, func.call(ctx, thisArg))))); }
-                catch (EngineException e) { ws.send(msg.respond(new JSONMap().set("exceptionDetails", serializeException(ctx, e)))); }
-                break;
-            }
-            default:
-                ws.send(new V8Error("A non well-known function was used with callFunctionOn."));
-                break;
         }
+        catch (EngineException e) { ws.send(msg.respond(new JSONMap().set("exceptionDetails", serializeException(ctx, e)))); }
     }
 
     @Override
@@ -708,8 +702,8 @@ public class SimpleDebugger implements Debugger {
         int id = nextId();
         var src = new Source(id, filename, source, locations);
 
-        filenameToId.put(filename, id);
         idToSource.put(id, src);
+        filenameToId.put(filename, id);
 
         for (var bpcd : idToBptCand.values()) {
             if (!bpcd.pattern.matcher(filename.toString()).matches()) continue;
@@ -738,14 +732,15 @@ public class SimpleDebugger implements Debugger {
             returnVal != Runners.NO_RETURN
         );
 
-        if (error != null && !caught && StackData.frames(ctx).size() > 1) error = null;
+        // TODO: FIXXXX
+        // if (error != null && !caught && StackData.frames(ctx).size() > 1) error = null;
 
         if (error != null && (execptionType == CatchType.ALL || execptionType == CatchType.UNCAUGHT && !caught)) {
             pauseException(ctx);
         }
         else if (isBreakpointable && locToBreakpoint.containsKey(loc)) {
             var bp = locToBreakpoint.get(loc);
-            var ok = bp.condition == null ? true : Values.toBoolean(run(currFrame, bp.condition));
+            var ok = bp.condition == null ? true : Values.toBoolean(run(currFrame, bp.condition).result);
             if (ok) pauseDebug(ctx, locToBreakpoint.get(loc));
         }
         else if (isBreakpointable && tmpBreakpts.remove(loc)) pauseDebug(ctx, null);
@@ -801,27 +796,18 @@ public class SimpleDebugger implements Debugger {
     }
 
     @Override public void connect() {
-        target.data.set(StackData.DEBUGGER, this);
+        if (!target.attachDebugger(this)) {
+            ws.send(new V8Error("A debugger is already attached to this engine."));
+        }
     }
     @Override public void disconnect() {
-        target.data.remove(StackData.DEBUGGER);
+        target.detachDebugger();
         enabled = false;
         updateNotifier.next();
     }
 
-    private SimpleDebugger(WebSocket ws, Engine target) {
+    public SimpleDebugger(WebSocket ws, Engine target) {
         this.ws = ws;
         this.target = target;
-    }
-
-    public static SimpleDebugger get(WebSocket ws, Engine target) {
-        if (target.data.has(StackData.DEBUGGER)) {
-            ws.send(new V8Error("A debugger is already attached to this engine."));
-            return null;
-        }
-        else {
-            var res = new SimpleDebugger(ws, target);
-            return res;
-        }
     }
 }

@@ -46,6 +46,8 @@ public class Filename {
 
 
     public Filename(String protocol, String path) {
+        path = path.trim();
+        protocol = protocol.trim();
         this.protocol = protocol;
         this.path = path;
     }

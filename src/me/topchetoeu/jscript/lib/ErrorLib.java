@@ -11,7 +11,7 @@ import me.topchetoeu.jscript.interop.Native;
 import me.topchetoeu.jscript.interop.NativeConstructor;
 import me.topchetoeu.jscript.interop.NativeInit;
 
-public class ErrorLib {
+@Native("Error") public class ErrorLib {
     private static String toString(Context ctx, boolean rethrown, Object cause, Object name, Object message, ArrayValue stack) {
         if (name == null) name = "";
         else name = Values.toString(ctx, name).trim();
@@ -22,13 +22,6 @@ public class ErrorLib {
         if (!name.equals("")) res.append(name);
         if (!message.equals("") && !name.equals("")) res.append(": ");
         if (!message.equals("")) res.append(message);
-
-        if (stack != null) {
-            for (var el : stack) {
-                var str = Values.toString(ctx, el).trim();
-                if (!str.equals("")) res.append("\n    ").append(el);
-            }
-        }
 
         if (cause instanceof ObjectValue) {
             if (rethrown) res.append("\n    (rethrown)");

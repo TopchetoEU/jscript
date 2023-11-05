@@ -12,7 +12,7 @@ import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.interop.Native;
 import me.topchetoeu.jscript.interop.NativeGetter;
 
-public class MapLib {
+@Native("Map") public class MapLib {
     private LinkedHashMap<Object, Object> map = new LinkedHashMap<>();
 
     @Native("@@Symbol.typeName") public final String name = "Map";
@@ -64,7 +64,7 @@ public class MapLib {
     @Native public void forEach(Context ctx, FunctionValue func, Object thisArg) {
         var keys = new ArrayList<>(map.keySet());
 
-        for (var el : keys) func.call(ctx, thisArg, el, map.get(el), this);
+        for (var el : keys) func.call(ctx, thisArg, map.get(el), el,this);
     }
 
     @Native public MapLib(Context ctx, Object iterable) {

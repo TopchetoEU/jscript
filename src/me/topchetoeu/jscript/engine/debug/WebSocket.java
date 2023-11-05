@@ -87,15 +87,18 @@ public class WebSocket implements AutoCloseable {
     }
     private synchronized void write(int type, byte[] data) {
         try {
-            for (int i = 0; i < (data.length >> 16); i++) {
+            int i;
+
+            for (i = 0; i < data.length / 0xFFFF; i++) {
                 out().write(type);
                 writeLength(0xFFFF);
-                out().write(data, i << 16, 0xFFFF);
+                out().write(data, i * 0xFFFF, 0xFFFF);
+                type = 0;
             }
 
             out().write(type | 0x80);
-            writeLength(data.length & 0xFFFF);
-            out().write(data, data.length & 0xFFFF0000, data.length & 0xFFFF);
+            writeLength(data.length % 0xFFFF);
+            out().write(data, i * 0xFFFF, data.length % 0xFFFF);
         }
         catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -116,7 +119,7 @@ public class WebSocket implements AutoCloseable {
     }
     public void send(Object data) {
         // TODO: Remove
-        System.out.println("SEND: " + data);
+        // System.out.println("SEND: " + data);
         if (closed) throw new IllegalStateException("Object is closed.");
         write(1, data.toString().getBytes());
     }
@@ -199,7 +202,7 @@ public class WebSocket implements AutoCloseable {
                 var raw = data.toByteArray();
 
                 // TODO: Remove
-                System.out.println("RECEIVED: " + new String(raw));
+                // System.out.println("RECEIVED: " + new String(raw));
 
 
                 if (type == 1) return new WebSocketMessage(new String(raw));

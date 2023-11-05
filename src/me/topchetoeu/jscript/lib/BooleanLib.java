@@ -9,7 +9,7 @@ import me.topchetoeu.jscript.interop.Native;
 import me.topchetoeu.jscript.interop.NativeConstructor;
 import me.topchetoeu.jscript.interop.NativeInit;
 
-public class BooleanLib {
+@Native("Boolean") public class BooleanLib {
     public static final BooleanLib TRUE = new BooleanLib(true);
     public static final BooleanLib FALSE = new BooleanLib(false);
 

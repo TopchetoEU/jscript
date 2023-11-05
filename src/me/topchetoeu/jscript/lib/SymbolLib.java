@@ -15,7 +15,7 @@ import me.topchetoeu.jscript.interop.NativeConstructor;
 import me.topchetoeu.jscript.interop.NativeGetter;
 import me.topchetoeu.jscript.interop.NativeInit;
 
-public class SymbolLib {
+@Native("Symbol") public class SymbolLib {
     private static final Map<String, Symbol> symbols = new HashMap<>();
 
     @NativeGetter public static Symbol typeName(Context ctx) { return ctx.environment().symbol("Symbol.typeName"); }

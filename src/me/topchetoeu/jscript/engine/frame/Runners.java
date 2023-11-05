@@ -4,6 +4,7 @@ import java.util.Collections;
 
 import me.topchetoeu.jscript.compilation.Instruction;
 import me.topchetoeu.jscript.engine.Context;
+import me.topchetoeu.jscript.engine.Engine;
 import me.topchetoeu.jscript.engine.Operation;
 import me.topchetoeu.jscript.engine.scope.ValueVariable;
 import me.topchetoeu.jscript.engine.values.ArrayValue;
@@ -26,16 +27,12 @@ public class Runners {
         throw EngineException.ofSyntax((String)instr.get(0));
     }
 
-    private static Object call(Context ctx, Object func, Object thisArg, Object ...args) {
-        return Values.call(ctx, func, thisArg, args);
-    }
-
     public static Object execCall(Context ctx, Instruction instr, CodeFrame frame) {
         var callArgs = frame.take(instr.get(0));
         var func = frame.pop();
         var thisArg = frame.pop();
 
-        frame.push(ctx, call(ctx, func, thisArg, callArgs));
+        frame.push(ctx, Values.call(ctx, func, thisArg, callArgs));
 
         frame.codePtr++;
         return NO_RETURN;
@@ -45,17 +42,6 @@ public class Runners {
         var funcObj = frame.pop();
 
         frame.push(ctx, Values.callNew(ctx, funcObj, callArgs));
-
-        // if (Values.isFunction(funcObj) && Values.function(funcObj).special) {
-        //     frame.push(ctx, call(ctx, funcObj, null, callArgs));
-        // }
-        // else {
-        //     var proto = Values.getMember(ctx, funcObj, "prototype");
-        //     var obj = new ObjectValue();
-        //     obj.setPrototype(ctx, proto);
-        //     call(ctx, funcObj, obj, callArgs);
-        //     frame.push(ctx, obj);
-        // }
 
         frame.codePtr++;
         return NO_RETURN;
@@ -201,7 +187,7 @@ public class Runners {
             captures[i - 3] = frame.scope.get(instr.get(i));
         }
 
-        var body = ctx.engine.functions.get(id);
+        var body = Engine.functions.get(id);
         var func = new CodeFunction(ctx.environment(), "", localsN, len, captures, body);
 
         frame.push(ctx, func);

@@ -37,7 +37,4 @@ public interface DebugController {
      * @param frame The code frame which was popped out
      */
     void onFramePop(Context ctx, CodeFrame frame);
-
-    void connect();
-    void disconnect();
 }

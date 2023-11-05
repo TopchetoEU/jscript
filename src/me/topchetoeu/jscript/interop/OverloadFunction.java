@@ -11,6 +11,7 @@ import me.topchetoeu.jscript.engine.values.FunctionValue;
 import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.exceptions.ConvertException;
 import me.topchetoeu.jscript.exceptions.EngineException;
+import me.topchetoeu.jscript.exceptions.InterruptException;
 
 public class OverloadFunction extends FunctionValue {
     public final List<Overload> overloads = new ArrayList<>();
@@ -86,6 +87,9 @@ public class OverloadFunction extends FunctionValue {
                 else if (e.getTargetException() instanceof NullPointerException) {
                     e.printStackTrace();
                     throw EngineException.ofType("Unexpected value of 'undefined'.").add(name, loc);
+                }
+                else if (e.getTargetException() instanceof InterruptException || e.getTargetException() instanceof InterruptedException) {
+                    throw new InterruptException();
                 }
                 else {
                     throw EngineException.ofError(e.getTargetException().getMessage()).add(name, loc);

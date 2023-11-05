@@ -1,11 +1,10 @@
 package me.topchetoeu.jscript.engine.frame;
 
+import java.util.List;
 import java.util.Stack;
 
 import me.topchetoeu.jscript.Location;
-import me.topchetoeu.jscript.compilation.Instruction;
 import me.topchetoeu.jscript.engine.Context;
-import me.topchetoeu.jscript.engine.StackData;
 import me.topchetoeu.jscript.engine.scope.LocalScope;
 import me.topchetoeu.jscript.engine.scope.ValueVariable;
 import me.topchetoeu.jscript.engine.values.ArrayValue;
@@ -17,7 +16,7 @@ import me.topchetoeu.jscript.exceptions.EngineException;
 import me.topchetoeu.jscript.exceptions.InterruptException;
 
 public class CodeFrame {
-    private class TryCtx {
+    public static class TryCtx {
         public static final int STATE_TRY = 0;
         public static final int STATE_CATCH = 1;
         public static final int STATE_FINALLY_THREW = 2;
@@ -84,9 +83,30 @@ public class CodeFrame {
 
         return new ScopeValue(scope.captures, names);
     }
+    public ObjectValue getValStackScope(Context ctx) {
+        return new ObjectValue() {
+            @Override
+            protected Object getField(Context ctx, Object key) {
+                var i = (int)Values.toNumber(ctx, key);
+                if (i < 0 || i >= stackPtr) return null;
+                else return stack[i];
+            }
+            @Override
+            protected boolean hasField(Context ctx, Object key) {
+                return true;
+            }
+            @Override
+            public List<Object> keys(boolean includeNonEnumerable) {
+                var res = super.keys(includeNonEnumerable);
+                for (var i = 0; i < stackPtr; i++) res.add(i);
+                return res;
+            }
+        };
+    }
 
     public void addTry(int n, int catchN, int finallyN) {
         var res = new TryCtx(codePtr + 1, n, catchN, finallyN);
+        if (!tryStack.empty()) res.err = tryStack.peek().err;
 
         tryStack.add(res);
     }
@@ -125,34 +145,31 @@ public class CodeFrame {
     }
 
     private void setCause(Context ctx, EngineException err, EngineException cause) {
-        // err.cause = cause;
         err.setCause(cause);
-    }
-    private Object nextNoTry(Context ctx, Instruction instr) {
-        if (Thread.currentThread().isInterrupted()) throw new InterruptException();
-        if (codePtr < 0 || codePtr >= function.body.length) return null;
-
-        if (instr.location != null) prevLoc = instr.location;
-
-        try {
-            this.jumpFlag = false;
-            return Runners.exec(ctx, instr, this);
-        }
-        catch (EngineException e) {
-            throw e.add(function.name, prevLoc).setCtx(function.environment, ctx.engine);
-        }
     }
 
     public Object next(Context ctx, Object value, Object returnValue, EngineException error) {
         if (value != Runners.NO_RETURN) push(ctx, value);
-        var debugger = StackData.getDebugger(ctx);
 
         if (returnValue == Runners.NO_RETURN && error == null) {
             try {
-                var instr = function.body[codePtr];
+                if (Thread.currentThread().isInterrupted()) throw new InterruptException();
 
-                if (debugger != null) debugger.onInstruction(ctx, this, instr, Runners.NO_RETURN, null, false);
-                returnValue = nextNoTry(ctx, instr);
+                var instr = function.body[codePtr];
+                ctx.engine.onInstruction(ctx, this, instr, Runners.NO_RETURN, null, false);
+
+                if (codePtr < 0 || codePtr >= function.body.length) returnValue = null;
+                else {
+                    if (instr.location != null) prevLoc = instr.location;
+
+                    try {
+                        this.jumpFlag = false;
+                        returnValue = Runners.exec(ctx, instr, this);
+                    }
+                    catch (EngineException e) {
+                        error = e.add(function.name, prevLoc).setCtx(function.environment, ctx.engine);
+                    }
+                }
             }
             catch (EngineException e) { error = e; }
         }
@@ -192,11 +209,11 @@ public class CodeFrame {
                     break;
                 case TryCtx.STATE_CATCH:
                     if (error != null) {
+                        setCause(ctx, error, tryCtx.err);
                         if (tryCtx.hasFinally) {
                             tryCtx.err = error;
                             newState = TryCtx.STATE_FINALLY_THREW;
                         }
-                        setCause(ctx, error, tryCtx.err);
                         break;
                     }
                     else if (returnValue != Runners.NO_RETURN) {
@@ -218,27 +235,31 @@ public class CodeFrame {
                 case TryCtx.STATE_FINALLY_THREW:
                     if (error != null) setCause(ctx, error, tryCtx.err);
                     else if (codePtr < tryCtx.finallyStart || codePtr >= tryCtx.end) error = tryCtx.err;
-                    else return Runners.NO_RETURN;
+                    else if (returnValue == Runners.NO_RETURN) return Runners.NO_RETURN;
                     break;
                 case TryCtx.STATE_FINALLY_RETURNED:
+                    if (error != null) setCause(ctx, error, tryCtx.err);
                     if (returnValue == Runners.NO_RETURN) {
                         if (codePtr < tryCtx.finallyStart || codePtr >= tryCtx.end) returnValue = tryCtx.retVal;
                         else return Runners.NO_RETURN;
                     }
                     break;
                 case TryCtx.STATE_FINALLY_JUMPED:
-                    if (codePtr < tryCtx.finallyStart || codePtr >= tryCtx.end) {
+                    if (error != null) setCause(ctx, error, tryCtx.err);
+                    else if (codePtr < tryCtx.finallyStart || codePtr >= tryCtx.end) {
                         if (!jumpFlag) codePtr = tryCtx.jumpPtr;
                         else codePtr = tryCtx.end;
                     }
-                    else return Runners.NO_RETURN;
+                    else if (returnValue == Runners.NO_RETURN) return Runners.NO_RETURN;
                     break;
             }
 
             if (tryCtx.state == TryCtx.STATE_CATCH) scope.catchVars.remove(scope.catchVars.size() - 1);
 
             if (newState == -1) {
+                var err = tryCtx.err;
                 tryStack.pop();
+                if (!tryStack.isEmpty()) tryStack.peek().err = err;
                 continue;
             }
 
@@ -247,7 +268,7 @@ public class CodeFrame {
                 case TryCtx.STATE_CATCH:
                     scope.catchVars.add(new ValueVariable(false, tryCtx.err.value));
                     codePtr = tryCtx.catchStart;
-                    if (debugger != null) debugger.onInstruction(ctx, this, function.body[codePtr], null, error, true);
+                    ctx.engine.onInstruction(ctx, this, function.body[codePtr], null, error, true);
                     break;
                 default:
                     codePtr = tryCtx.finallyStart;
@@ -255,13 +276,13 @@ public class CodeFrame {
 
             return Runners.NO_RETURN;
         }
-    
+
         if (error != null) {
-            if (debugger != null) debugger.onInstruction(ctx, this, function.body[codePtr], null, error, false);
+            ctx.engine.onInstruction(ctx, this, function.body[codePtr], null, error, false);
             throw error;
         }
         if (returnValue != Runners.NO_RETURN) {
-            if (debugger != null) debugger.onInstruction(ctx, this, function.body[codePtr], returnValue, null, false);
+            ctx.engine.onInstruction(ctx, this, function.body[codePtr], returnValue, null, false);
             return returnValue;
         }
 

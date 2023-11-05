@@ -29,7 +29,7 @@ public class LazyOrStatement extends Statement {
         if (pollute) target.add(Instruction.dup().locate(loc()));
         int start = target.size();
         target.add(Instruction.nop());
-        target.add(Instruction.discard().locate(loc()));
+        if (pollute) target.add(Instruction.discard().locate(loc()));
         second.compile(target, scope, pollute);
         target.set(start, Instruction.jmpIf(target.size() - start).locate(loc()));
     }

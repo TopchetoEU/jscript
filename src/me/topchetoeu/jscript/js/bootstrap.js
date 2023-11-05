@@ -1,7 +1,5 @@
 (function (_arguments) {
     var ts = _arguments[0];
-    log("Loaded typescript!");
-
     var src = '', lib = _arguments[2].concat([ 'declare const exit: never;' ]).join(''), decls = '', version = 0;
     var libSnapshot = ts.ScriptSnapshot.fromString(lib);
 
@@ -42,7 +40,7 @@
     service.getEmitOutput('/lib.d.ts');
     log('Loaded libraries!');
 
-    function compile(filename, code) {
+    function compile(code, filename) {
         src = code, version++;
 
         var emit = service.getEmitOutput("/src.ts");

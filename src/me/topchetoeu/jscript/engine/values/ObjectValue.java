@@ -103,8 +103,7 @@ public class ObjectValue {
         ) return true;
 
         if (!extensible() && !values.containsKey(key) && !properties.containsKey(key)) return false;
-        if (!memberConfigurable(key))
-            return false;
+        if (!memberConfigurable(key)) return false;
 
         nonWritableSet.remove(key);
         nonEnumerableSet.remove(key);

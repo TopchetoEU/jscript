@@ -16,7 +16,7 @@ import me.topchetoeu.jscript.interop.NativeGetter;
 import me.topchetoeu.jscript.interop.NativeInit;
 import me.topchetoeu.jscript.interop.NativeSetter;
 
-public class ArrayLib {
+@Native("Array") public class ArrayLib {
     @NativeGetter(thisArg = true) public static int length(Context ctx, ArrayValue thisArg) {
         return thisArg.size();
     }
@@ -93,13 +93,14 @@ public class ArrayLib {
         return res;
     }
 
-    @Native(thisArg = true) public static void sort(Context ctx, ArrayValue arr, FunctionValue cmp) {
+    @Native(thisArg = true) public static ArrayValue sort(Context ctx, ArrayValue arr, FunctionValue cmp) {
         arr.sort((a, b) -> {
             var res = Values.toNumber(ctx, cmp.call(ctx, null, a, b));
             if (res < 0) return -1;
             if (res > 0) return 1;
             return 0;
         });
+        return arr;
     }
 
     private static int normalizeI(int len, int i, boolean clamp) {
@@ -164,6 +165,37 @@ public class ArrayLib {
         }
     }
 
+    @Native(thisArg = true) public static Object reduce(Context ctx, ArrayValue arr, FunctionValue func, Object... args) {
+        var i = 0;
+        var res = arr.get(0);
+
+        if (args.length > 0) res = args[0];
+        else for (; !arr.has(i) && i < arr.size(); i++) res = arr.get(i);
+
+        for (; i < arr.size(); i++) {
+            if (arr.has(i)) {
+                res = func.call(ctx, null, res, arr.get(i), i, arr);
+            }
+        }
+
+        return res;
+    }
+    @Native(thisArg = true) public static Object reduceRight(Context ctx, ArrayValue arr, FunctionValue func, Object... args) {
+        var i = arr.size();
+        var res = arr.get(0);
+
+        if (args.length > 0) res = args[0];
+        else while (!arr.has(i--) && i >= 0) res = arr.get(i);
+
+        for (; i >= 0; i--) {
+            if (arr.has(i)) {
+                res = func.call(ctx, null, res, arr.get(i), i, arr);
+            }
+        }
+
+        return res;
+    }
+
     @Native(thisArg = true) public static ArrayValue flat(Context ctx, ArrayValue arr, int depth) {
         var res = new ArrayValue(arr.size());
         var stack = new Stack<Object>();
@@ -224,7 +256,7 @@ public class ArrayLib {
     @Native(thisArg = true) public static int indexOf(Context ctx, ArrayValue arr, Object val, int start) {
         start = normalizeI(arr.size(), start, true);
 
-        for (int i = 0; i < arr.size() && i < start; i++) {
+        for (int i = start; i < arr.size(); i++) {
             if (Values.strictEquals(ctx, arr.get(i), val)) return i;
         }
 
@@ -268,16 +300,13 @@ public class ArrayLib {
         return arr.size();
     }
 
-    @Native(thisArg = true) public static ArrayValue slice(Context ctx, ArrayValue arr, int start, int end) {
+    @Native(thisArg = true) public static ArrayValue slice(Context ctx, ArrayValue arr, int start, Object _end) {
         start = normalizeI(arr.size(), start, true);
-        end = normalizeI(arr.size(), end, true);
+        int end = normalizeI(arr.size(), (int)(_end == null ? arr.size() : Values.toNumber(ctx, _end)), true);
 
         var res = new ArrayValue(end - start);
         arr.copyTo(ctx, res, start, 0, end - start);
         return res;
-    }
-    @Native(thisArg = true) public static ArrayValue slice(Context ctx, ArrayValue arr, int start) {
-        return slice(ctx, arr, start, arr.size());
     }
 
     @Native(thisArg = true) public static ArrayValue splice(Context ctx, ArrayValue arr, int start, int deleteCount, Object ...items) {
@@ -303,12 +332,14 @@ public class ArrayLib {
 
     @Native(thisArg = true) public static String join(Context ctx, ArrayValue arr, String sep) {
         var res = new StringBuilder();
-        var comma = true;
+        var comma = false;
 
         for (int i = 0; i < arr.size(); i++) {
             if (!arr.has(i)) continue;
+
             if (comma) res.append(sep);
-            comma = false;
+            comma = true;
+
             var el = arr.get(i);
             if (el == null || el == Values.NULL) continue;
 

@@ -6,13 +6,14 @@ import java.util.regex.Pattern;
 
 import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.values.ArrayValue;
+import me.topchetoeu.jscript.engine.values.FunctionValue;
 import me.topchetoeu.jscript.engine.values.NativeWrapper;
 import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.interop.Native;
 import me.topchetoeu.jscript.interop.NativeGetter;
 
-public class RegExpLib {
+@Native("RegExp") public class RegExpLib {
     // I used Regex to analyze Regex
     private static final Pattern NAMED_PATTERN = Pattern.compile("\\(\\?<([^=!].*?)>", Pattern.DOTALL);
     private static final Pattern ESCAPE_PATTERN = Pattern.compile("[/\\-\\\\^$*+?.()|\\[\\]{}]");
@@ -81,7 +82,6 @@ public class RegExpLib {
         return res;
     }
 
-    
     @Native public Object exec(String str) {
         var matcher = pattern.matcher(str);
         if (lastI > str.length() || !matcher.find(lastI) || sticky && matcher.start() != lastI) {
@@ -133,7 +133,7 @@ public class RegExpLib {
         return "/" + source + "/" + flags();
     }
 
-    @Native("@@Symvol.match") public Object match(Context ctx, String target) {
+    @Native("@@Symbol.match") public Object match(Context ctx, String target) {
         if (this.global) {
             var res = new ArrayValue();
             Object val;
@@ -150,7 +150,7 @@ public class RegExpLib {
         }
     }
 
-    @Native("@@Symvol.matchAll") public Object matchAll(Context ctx, String target) {
+    @Native("@@Symbol.matchAll") public Object matchAll(Context ctx, String target) {
         var pattern = new RegExpLib(this.source, this.flags() + "g");
 
         return Values.fromJavaIterator(ctx, new Iterator<Object>() {
@@ -171,8 +171,8 @@ public class RegExpLib {
             }
         });
     }
-    
-    @Native("@@Symvol.split") public ArrayValue split(Context ctx, String target, Object limit, boolean sensible) {
+
+    @Native("@@Symbol.split") public ArrayValue split(Context ctx, String target, Object limit, boolean sensible) {
         var pattern = new RegExpLib(this.source, this.flags() + "g");
         Object match;
         int lastEnd = 0;
@@ -214,29 +214,41 @@ public class RegExpLib {
         }
         return res;
     }
-    // [Symbol.replace](target, replacement) {
-    //     const pattern = new this.constructor(this, this.flags + "d") as RegExp;
-    //     let match: RegExpResult | null;
-    //     let lastEnd = 0;
-    //     const res: string[] = [];
-    //     // log(pattern.toString());
-    //     while ((match = pattern.exec(target)) !== null) {
-    //         const indices = match.indices![0];
-    //         res.push(target.substring(lastEnd, indices[0]));
-    //         if (replacement instanceof Function) {
-    //             res.push(replacement(target.substring(indices[0], indices[1]), ...match.slice(1), indices[0], target));
-    //         }
-    //         else {
-    //             res.push(replacement);
-    //         }
-    //         lastEnd = indices[1];
-    //         if (!pattern.global) break;
-    //     }
-    //     if (lastEnd < target.length) {
-    //         res.push(target.substring(lastEnd));
-    //     }
-    //     return res.join('');
-    // },
+
+    @Native("@@Symbol.replace") public String replace(Context ctx, String target, Object replacement) {
+        var pattern = new RegExpLib(this.source, this.flags() + "d");
+        Object match;
+        var lastEnd = 0;
+        var res = new StringBuilder();
+    
+        while ((match = pattern.exec(target)) != Values.NULL) {
+            var indices = (ArrayValue)((ArrayValue)Values.getMember(ctx, match, "indices")).get(0);
+            var arrMatch = (ArrayValue)match;
+
+            var start = ((Number)indices.get(0)).intValue();
+            var end = ((Number)indices.get(1)).intValue();
+
+            res.append(target.substring(lastEnd, start));
+            if (replacement instanceof FunctionValue) {
+                var args = new Object[arrMatch.size() + 2];
+                args[0] = target.substring(start, end);
+                arrMatch.copyTo(args, 1, 1, arrMatch.size() - 1);
+                args[args.length - 2] = start;
+                args[args.length - 1] = target;
+                res.append(Values.toString(ctx, ((FunctionValue)replacement).call(ctx, null, args)));
+            }
+            else {
+                res.append(Values.toString(ctx, replacement));
+            }
+            lastEnd = end;
+            if (!pattern.global) break;
+        }
+        if (lastEnd < target.length()) {
+            res.append(target.substring(lastEnd));
+        }
+        return res.toString();
+    }
+
     // [Symbol.search](target, reverse, start) {
     //     const pattern: RegExp | undefined = new this.constructor(this, this.flags + "g") as RegExp;
     //     if (!reverse) {
@@ -258,6 +270,7 @@ public class RegExpLib {
     //         else return -1;
     //     }
     // },
+
     @Native public RegExpLib(Context ctx, Object pattern, Object flags) {
         this(cleanupPattern(ctx, pattern), cleanupFlags(ctx, flags));
     }
@@ -276,6 +289,7 @@ public class RegExpLib {
         if (flags.contains("s")) this.flags |= Pattern.DOTALL;
         if (flags.contains("u")) this.flags |= Pattern.UNICODE_CHARACTER_CLASS;
 
+        if (pattern.equals("{(\\d+)}")) pattern = "\\{([0-9]+)\\}";
         this.pattern = Pattern.compile(pattern.replace("\\d", "[0-9]"), this.flags);
 
         var matcher = NAMED_PATTERN.matcher(source);

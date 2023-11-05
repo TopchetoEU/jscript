@@ -52,7 +52,7 @@ public class ArrayValue extends ObjectValue implements Iterable<Object> {
         if (i >= size) size = i + 1;
     }
     public boolean has(int i) {
-        return i >= 0 && i < values.length && values[i] != null;
+        return i >= 0 && i < size && values[i] != null;
     }
     public void remove(int i) {
         if (i < 0 || i >= values.length) return;
@@ -85,8 +85,9 @@ public class ArrayValue extends ObjectValue implements Iterable<Object> {
     public void copyTo(Context ctx, ArrayValue arr, int sourceStart, int destStart, int count) {
         // Iterate in reverse to reallocate at most once
         for (var i = count - 1; i >= 0; i--) {
-            if (i + sourceStart < 0 || i + sourceStart >= size) arr.set(ctx, i + destStart, null);
+            if (i + sourceStart < 0 || i + sourceStart >= size) arr.remove(i + destStart);
             if (values[i + sourceStart] == UNDEFINED) arr.set(ctx, i + destStart, null);
+            else if (values[i + sourceStart] == null) arr.remove(i + destStart);
             else arr.set(ctx, i + destStart, values[i + sourceStart]);
         }
     }

@@ -4,10 +4,11 @@ import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.Environment;
 import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.interop.InitType;
+import me.topchetoeu.jscript.interop.Native;
 import me.topchetoeu.jscript.interop.NativeConstructor;
 import me.topchetoeu.jscript.interop.NativeInit;
 
-public class SyntaxErrorLib extends ErrorLib {
+@Native("SyntaxError") public class SyntaxErrorLib extends ErrorLib {
     @NativeConstructor(thisArg = true) public static ObjectValue constructor(Context ctx, Object thisArg, Object message) {
         var target = ErrorLib.constructor(ctx, thisArg, message);
         target.defineProperty(ctx, "name", "SyntaxError");

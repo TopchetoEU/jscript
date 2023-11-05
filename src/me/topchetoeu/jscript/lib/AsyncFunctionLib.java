@@ -8,8 +8,9 @@ import me.topchetoeu.jscript.engine.values.CodeFunction;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
 import me.topchetoeu.jscript.engine.values.NativeFunction;
 import me.topchetoeu.jscript.exceptions.EngineException;
+import me.topchetoeu.jscript.interop.Native;
 
-public class AsyncFunctionLib extends FunctionValue {
+@Native("AsyncFunction") public class AsyncFunctionLib extends FunctionValue {
     public final FunctionValue factory;
 
     public static class AsyncHelper {

@@ -11,6 +11,7 @@ import me.topchetoeu.jscript.engine.scope.GlobalScope;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
 import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.interop.Native;
+import me.topchetoeu.jscript.interop.NativeGetter;
 
 public class Internals {
     private static final DataKey<HashMap<Integer, Thread>> THREADS = new DataKey<>();
@@ -20,6 +21,7 @@ public class Internals {
     @Native public static void log(Context ctx, Object ...args) {
         for (var arg : args) {
             Values.printValue(ctx, arg);
+            System.out.print(" ");
         }
         System.out.println();
     }
@@ -99,6 +101,13 @@ public class Internals {
     }
     @Native public static boolean isInfinite(Context ctx, double val) {
         return NumberLib.isInfinite(ctx, val);
+    }
+
+    @NativeGetter public static double NaN(Context ctx) {
+        return Double.NaN;
+    }
+    @NativeGetter public static double Infinity(Context ctx) {
+        return Double.POSITIVE_INFINITY;
     }
 
     public void apply(Environment env) {

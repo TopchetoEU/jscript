@@ -12,7 +12,7 @@ import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.interop.Native;
 import me.topchetoeu.jscript.interop.NativeGetter;
 
-public class SetLib {
+@Native("Set") public class SetLib {
     private LinkedHashSet<Object> set = new LinkedHashSet<>();
 
     @Native("@@Symbol.typeName") public final String name = "Set";

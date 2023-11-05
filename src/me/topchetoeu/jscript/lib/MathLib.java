@@ -2,7 +2,7 @@ package me.topchetoeu.jscript.lib;
 
 import me.topchetoeu.jscript.interop.Native;
 
-public class MathLib {
+@Native("Math") public class MathLib {
     @Native public static final double E = Math.E;
     @Native public static final double PI = Math.PI;
     @Native public static final double SQRT2 = Math.sqrt(2);
