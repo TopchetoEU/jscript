@@ -1,7 +1,6 @@
 .vscode
 .gradle
 .ignore
-ts*.js
 /out
 /build
 /bin
