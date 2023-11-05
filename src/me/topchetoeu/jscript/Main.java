@@ -100,10 +100,13 @@ public class Main {
                 Reading.resourceToString("js/ts.js"), null
             ).await();
             System.out.println("Loaded typescript!");
+
+            var ctx = new Context(engine).pushEnv(env.child());
+
             engine.pushMsg(
-                false, new Context(engine).pushEnv(env.child()),
+                false, ctx,
                 new Filename("jscript", "internals/bootstrap.js"), Reading.resourceToString("js/bootstrap.js"), null,
-                tsEnv.global.obj, env, new ArrayValue(null, Reading.resourceToString("js/lib.d.ts"))
+                tsEnv.global.get(ctx, "ts"), env, new ArrayValue(null, Reading.resourceToString("js/lib.d.ts"))
             ).await();
         }
         catch (EngineException e) {
