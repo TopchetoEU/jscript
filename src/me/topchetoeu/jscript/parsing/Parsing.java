@@ -257,7 +257,7 @@ public class Parsing {
                     }
                     break;
                 case CURR_LITERAL:
-                    if (isAlphanumeric(c) || c == '_') {
+                    if (isAlphanumeric(c) || c == '_' || c == '$') {
                         currToken.append(c);
                         continue;
                     }

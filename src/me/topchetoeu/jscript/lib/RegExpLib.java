@@ -2,7 +2,6 @@ package me.topchetoeu.jscript.lib;
 
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.function.Function;
 import java.util.regex.Pattern;
 
 import me.topchetoeu.jscript.engine.Context;
@@ -290,6 +289,7 @@ import me.topchetoeu.jscript.interop.NativeGetter;
         if (flags.contains("s")) this.flags |= Pattern.DOTALL;
         if (flags.contains("u")) this.flags |= Pattern.UNICODE_CHARACTER_CLASS;
 
+        if (pattern.equals("{(\\d+)}")) pattern = "\\{([0-9]+)\\}";
         this.pattern = Pattern.compile(pattern.replace("\\d", "[0-9]"), this.flags);
 
         var matcher = NAMED_PATTERN.matcher(source);
