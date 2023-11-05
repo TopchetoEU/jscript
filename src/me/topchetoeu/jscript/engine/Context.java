@@ -40,7 +40,7 @@ public class Context {
         else source = Values.toString(this, transpiled);
 
         var breakpoints = new TreeSet<Location>();
-        FunctionValue res = Parsing.compile(engine.functions, breakpoints, environment(), filename, source);
+        FunctionValue res = Parsing.compile(Engine.functions, breakpoints, environment(), filename, source);
         engine.onSource(filename, source, breakpoints);
 
         if (runner != null) res = (FunctionValue)runner.call(this, null, res);

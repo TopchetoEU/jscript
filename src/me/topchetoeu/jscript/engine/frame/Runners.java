@@ -4,6 +4,7 @@ import java.util.Collections;
 
 import me.topchetoeu.jscript.compilation.Instruction;
 import me.topchetoeu.jscript.engine.Context;
+import me.topchetoeu.jscript.engine.Engine;
 import me.topchetoeu.jscript.engine.Operation;
 import me.topchetoeu.jscript.engine.scope.ValueVariable;
 import me.topchetoeu.jscript.engine.values.ArrayValue;
@@ -186,7 +187,7 @@ public class Runners {
             captures[i - 3] = frame.scope.get(instr.get(i));
         }
 
-        var body = ctx.engine.functions.get(id);
+        var body = Engine.functions.get(id);
         var func = new CodeFunction(ctx.environment(), "", localsN, len, captures, body);
 
         frame.push(ctx, func);
