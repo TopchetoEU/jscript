@@ -11,6 +11,11 @@ jobs:
     runs-on: "ubuntu-latest"
 
     steps:
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'adopt'
+          java-version: '17'
       - name: Clone repository
         uses: GuillaumeFalourd/clone-github-repo-action@main
         with:
