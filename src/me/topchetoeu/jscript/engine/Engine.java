@@ -53,16 +53,17 @@ public class Engine implements DebugController {
     private static int nextId = 0;
     public static final HashMap<Long, FunctionBody> functions = new HashMap<>();
 
+    public final int id = ++nextId;
+    public final boolean debugging;
+    public int maxStackFrames = 10000;
+
+    private final HashMap<Filename, String> sources = new HashMap<>();
+    private final HashMap<Filename, TreeSet<Location>> bpts = new HashMap<>();
+
+    private DebugController debugger;
     private Thread thread;
     private LinkedBlockingDeque<Task> macroTasks = new LinkedBlockingDeque<>();
     private LinkedBlockingDeque<Task> microTasks = new LinkedBlockingDeque<>();
-
-    public final int id = ++nextId;
-    public final Data data = new Data().set(StackData.MAX_FRAMES, 10000);
-    public final boolean debugging;
-    private final HashMap<Filename, String> sources = new HashMap<>();
-    private final HashMap<Filename, TreeSet<Location>> bpts = new HashMap<>();
-    private DebugController debugger;
 
     public boolean attachDebugger(DebugController debugger) {
         if (!debugging || this.debugger != null) return false;

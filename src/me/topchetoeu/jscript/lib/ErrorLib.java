@@ -2,7 +2,6 @@ package me.topchetoeu.jscript.lib;
 
 import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.Environment;
-import me.topchetoeu.jscript.engine.StackData;
 import me.topchetoeu.jscript.engine.values.ArrayValue;
 import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.engine.values.Values;
@@ -51,7 +50,7 @@ import me.topchetoeu.jscript.interop.NativeInit;
         var target = new ObjectValue();
         if (thisArg instanceof ObjectValue) target = (ObjectValue)thisArg;
 
-        target.defineProperty(ctx, "stack", ArrayValue.of(ctx, StackData.stackTrace(ctx)));
+        target.defineProperty(ctx, "stack", ArrayValue.of(ctx, ctx.stackTrace()));
         target.defineProperty(ctx, "name", "Error");
         if (message == null) target.defineProperty(ctx, "message", "");
         else target.defineProperty(ctx, "message", Values.toString(ctx, message));

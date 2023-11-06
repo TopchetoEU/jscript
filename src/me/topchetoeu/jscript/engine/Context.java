@@ -1,17 +1,23 @@
 package me.topchetoeu.jscript.engine;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Stack;
 import java.util.TreeSet;
 
 import me.topchetoeu.jscript.Filename;
 import me.topchetoeu.jscript.Location;
+import me.topchetoeu.jscript.engine.frame.CodeFrame;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
 import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.engine.values.Values;
+import me.topchetoeu.jscript.exceptions.EngineException;
 import me.topchetoeu.jscript.parsing.Parsing;
 
 public class Context {
     private final Stack<Environment> env = new Stack<>();
+    private final ArrayList<CodeFrame> frames = new ArrayList<>();
     public final Data data;
     public final Engine engine;
 
@@ -48,16 +54,58 @@ public class Context {
         return res;
     }
 
-    public Context(Engine engine, Data data) {
-        this.data = new Data(engine.data);
-        if (data != null) this.data.addAll(data);
+
+    public void pushFrame(CodeFrame frame) {
+        frames.add(frame);
+        if (frames.size() > engine.maxStackFrames) throw EngineException.ofRange("Stack overflow!");
+        pushEnv(frame.function.environment);
+    }
+    public boolean popFrame(CodeFrame frame) {
+        if (frames.size() == 0) return false;
+        if (frames.get(frames.size() - 1) != frame) return false;
+        frames.remove(frames.size() - 1);
+        popEnv();
+        engine.onFramePop(this, frame);
+        return true;
+    }
+    public CodeFrame peekFrame() {
+        if (frames.size() == 0) return null;
+        return frames.get(frames.size() - 1);
+    }
+
+    public List<CodeFrame> frames() {
+        return Collections.unmodifiableList(frames);
+    }
+    public List<String> stackTrace() {
+        var res = new ArrayList<String>();
+
+        for (var i = frames.size() - 1; i >= 0; i--) {
+            var el = frames.get(i);
+            var name = el.function.name;
+            Location loc = null;
+
+            for (var j = el.codePtr; j >= 0 && loc == null; j--) loc = el.function.body[j].location;
+            if (loc == null) loc = el.function.loc();
+
+            var trace = "";
+
+            if (loc != null) trace += "at " + loc.toString() + " ";
+            if (name != null && !name.equals("")) trace += "in " + name + " ";
+
+            trace = trace.trim();
+
+            if (!trace.equals("")) res.add(trace);
+        }
+
+        return res;
+    }
+
+    public Context(Engine engine) {
+        this.data = new Data();
         this.engine = engine;
     }
-    public Context(Engine engine) {
-        this(engine, (Data)null);
-    }
     public Context(Engine engine, Environment env) {
-        this(engine, (Data)null);
+        this(engine);
         this.pushEnv(env);
         
     }

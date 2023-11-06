@@ -68,9 +68,6 @@ public class Environment {
         return res;
     }
 
-    public Context context(Engine engine, Data data) {
-        return new Context(engine, data).pushEnv(this);
-    }
     public Context context(Engine engine) {
         return new Context(engine).pushEnv(this);
     }

@@ -15,7 +15,6 @@ import me.topchetoeu.jscript.compilation.Instruction;
 import me.topchetoeu.jscript.compilation.Instruction.Type;
 import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.Engine;
-import me.topchetoeu.jscript.engine.StackData;
 import me.topchetoeu.jscript.engine.frame.CodeFrame;
 import me.topchetoeu.jscript.engine.frame.Runners;
 import me.topchetoeu.jscript.engine.scope.GlobalScope;
@@ -187,7 +186,7 @@ public class SimpleDebugger implements Debugger {
     }
 
     private void updateFrames(Context ctx) {
-        var frame = StackData.peekFrame(ctx);
+        var frame = ctx.peekFrame();
         if (frame == null) return;
 
         if (!codeFrameToFrame.containsKey(frame)) {
@@ -202,7 +201,7 @@ public class SimpleDebugger implements Debugger {
     }
     private JSONList serializeFrames(Context ctx) {
         var res = new JSONList();
-        var frames = StackData.frames(ctx);
+        var frames = ctx.frames();
 
         for (var i = frames.size() - 1; i >= 0; i--) {
             res.add(codeFrameToFrame.get(frames.get(i)).serialized);
@@ -782,7 +781,7 @@ public class SimpleDebugger implements Debugger {
         try { idToFrame.remove(codeFrameToFrame.remove(frame).id); }
         catch (NullPointerException e) { }
 
-        if (StackData.frames(ctx).size() == 0) resume(State.RESUMED);
+        if (ctx.frames().size() == 0) resume(State.RESUMED);
         else if (stepOutFrame != null && stepOutFrame.frame == frame &&
             (state == State.STEPPING_OUT || state == State.STEPPING_IN || state == State.STEPPING_OVER)
         ) {
