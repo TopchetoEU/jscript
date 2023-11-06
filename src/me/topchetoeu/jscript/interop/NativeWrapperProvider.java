@@ -117,6 +117,11 @@ public class NativeWrapperProvider implements WrappersProvider {
     public static ObjectValue makeProto(Environment ctx, Class<?> clazz) {
         var res = new ObjectValue();
 
+        var name = clazz.getName();
+        var classNat = clazz.getAnnotation(Native.class);
+        if (classNat != null && !classNat.value().trim().equals("")) name = classNat.value().trim();
+        res.defineProperty(null, ctx.symbol("Symbol.typeName"), name);
+
         for (var overload : clazz.getDeclaredMethods()) {
             var init = overload.getAnnotation(NativeInit.class);
             if (init == null || init.value() != InitType.PROTOTYPE) continue;

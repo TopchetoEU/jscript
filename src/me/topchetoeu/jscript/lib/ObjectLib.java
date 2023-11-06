@@ -1,17 +1,14 @@
 package me.topchetoeu.jscript.lib;
 
 import me.topchetoeu.jscript.engine.Context;
-import me.topchetoeu.jscript.engine.Environment;
 import me.topchetoeu.jscript.engine.values.ArrayValue;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
 import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.engine.values.Symbol;
 import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.exceptions.EngineException;
-import me.topchetoeu.jscript.interop.InitType;
 import me.topchetoeu.jscript.interop.Native;
 import me.topchetoeu.jscript.interop.NativeConstructor;
-import me.topchetoeu.jscript.interop.NativeInit;
 
 @Native("Object") public class ObjectLib {
     @Native public static ObjectValue assign(Context ctx, ObjectValue dst, Object... src) {
@@ -211,9 +208,5 @@ import me.topchetoeu.jscript.interop.NativeInit;
         else if (arg instanceof String) return StringLib.constructor(ctx, thisArg, arg);
         // else if (arg instanceof Symbol) return SymbolPolyfill.constructor(ctx, thisArg, arg);
         else return arg;
-    }
-
-    @NativeInit(InitType.PROTOTYPE) public static void init(Environment env, ObjectValue target) {
-        target.defineProperty(null, env.symbol("Symbol.typeName"), "Object");
     }
 }

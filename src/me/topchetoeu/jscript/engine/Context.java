@@ -18,7 +18,6 @@ import me.topchetoeu.jscript.parsing.Parsing;
 public class Context {
     private final Stack<Environment> env = new Stack<>();
     private final ArrayList<CodeFrame> frames = new ArrayList<>();
-    public final Data data;
     public final Engine engine;
 
     public Environment environment() {
@@ -101,7 +100,6 @@ public class Context {
     }
 
     public Context(Engine engine) {
-        this.data = new Data();
         this.engine = engine;
     }
     public Context(Engine engine, Environment env) {

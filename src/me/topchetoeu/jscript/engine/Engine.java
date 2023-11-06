@@ -81,20 +81,6 @@ public class Engine implements DebugController {
         return true;
     }
 
-    @Override public void onFramePop(Context ctx, CodeFrame frame) {
-        if (debugging && debugger != null) debugger.onFramePop(ctx, frame);
-    }
-    @Override public boolean onInstruction(Context ctx, CodeFrame frame, Instruction instruction, Object returnVal, EngineException error, boolean caught) {
-        if (debugging && debugger != null) return debugger.onInstruction(ctx, frame, instruction, returnVal, error, caught);
-        else return false;
-    }
-    @Override public void onSource(Filename filename, String source, TreeSet<Location> breakpoints) {
-        if (!debugging) return;
-        if (debugger != null) debugger.onSource(filename, source, breakpoints);
-        sources.put(filename, source);
-        bpts.put(filename, breakpoints);
-    }
-
     private void runTask(Task task) {
         try {
             task.notifier.next(task.func.call(task.ctx, task.thisArg, task.args));
@@ -148,6 +134,20 @@ public class Engine implements DebugController {
     }
     public Awaitable<Object> pushMsg(boolean micro, Context ctx, Filename filename, String raw, Object thisArg, Object ...args) {
         return pushMsg(micro, ctx, new UncompiledFunction(filename, raw), thisArg, args);
+    }
+
+    @Override public void onFramePop(Context ctx, CodeFrame frame) {
+        if (debugging && debugger != null) debugger.onFramePop(ctx, frame);
+    }
+    @Override public boolean onInstruction(Context ctx, CodeFrame frame, Instruction instruction, Object returnVal, EngineException error, boolean caught) {
+        if (debugging && debugger != null) return debugger.onInstruction(ctx, frame, instruction, returnVal, error, caught);
+        else return false;
+    }
+    @Override public void onSource(Filename filename, String source, TreeSet<Location> breakpoints) {
+        if (!debugging) return;
+        if (debugger != null) debugger.onSource(filename, source, breakpoints);
+        sources.put(filename, source);
+        bpts.put(filename, breakpoints);
     }
 
     public Engine(boolean debugging) {

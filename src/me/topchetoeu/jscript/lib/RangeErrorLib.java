@@ -15,7 +15,6 @@ import me.topchetoeu.jscript.interop.NativeInit;
         return target;
     }
     @NativeInit(InitType.PROTOTYPE) public static void init(Environment env, ObjectValue target) {
-        target.defineProperty(null, env.symbol("Symbol.typeName"), "RangeError");
         target.defineProperty(null, "name", "RangeError");
     }
 }

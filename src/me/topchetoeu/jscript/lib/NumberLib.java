@@ -1,13 +1,10 @@
 package me.topchetoeu.jscript.lib;
 
 import me.topchetoeu.jscript.engine.Context;
-import me.topchetoeu.jscript.engine.Environment;
 import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.engine.values.Values;
-import me.topchetoeu.jscript.interop.InitType;
 import me.topchetoeu.jscript.interop.Native;
 import me.topchetoeu.jscript.interop.NativeConstructor;
-import me.topchetoeu.jscript.interop.NativeInit;
 
 @Native("Number") public class NumberLib {
     @Native public static final double EPSILON = java.lang.Math.ulp(1.0);
@@ -51,9 +48,5 @@ import me.topchetoeu.jscript.interop.NativeInit;
 
     public NumberLib(double val) {
         this.value = val;
-    }
-
-    @NativeInit(InitType.PROTOTYPE) public static void init(Environment env, ObjectValue target) {
-        target.defineProperty(null, env.symbol("Symbol.typeName"), "Number");
     }
 }

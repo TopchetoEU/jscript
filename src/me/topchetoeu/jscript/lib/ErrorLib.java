@@ -59,7 +59,6 @@ import me.topchetoeu.jscript.interop.NativeInit;
     }
 
     @NativeInit(InitType.PROTOTYPE) public static void init(Environment env, ObjectValue target) {
-        target.defineProperty(null, env.symbol("Symbol.typeName"), "Error");
         target.defineProperty(null, "name", "Error");
     }
 }
