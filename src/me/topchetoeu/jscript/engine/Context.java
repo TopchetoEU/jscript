@@ -54,6 +54,11 @@ public class Context {
         this.engine = engine;
     }
     public Context(Engine engine) {
-        this(engine, null);
+        this(engine, (Data)null);
+    }
+    public Context(Engine engine, Environment env) {
+        this(engine, (Data)null);
+        this.pushEnv(env);
+        
     }
 }

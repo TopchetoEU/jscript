@@ -112,7 +112,6 @@ public class SimpleDebugger implements Debugger {
             this.frame = frame;
             this.func = frame.function;
             this.id = id;
-            this.local = new ObjectValue();
             this.location = frame.function.loc();
 
             this.global = frame.function.environment.global.obj;

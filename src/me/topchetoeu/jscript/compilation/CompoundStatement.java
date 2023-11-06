@@ -24,9 +24,7 @@ public class CompoundStatement extends Statement {
     public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {
         for (var stm : statements) {
             if (stm instanceof FunctionStatement) {
-                int start = target.size();
                 ((FunctionStatement)stm).compile(target, scope, null, true);
-                target.setDebug(start);
                 target.add(Instruction.discard());
             }
         }

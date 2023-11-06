@@ -113,7 +113,7 @@ public class Internals {
         return Double.POSITIVE_INFINITY;
     }
 
-    public void apply(Environment env) {
+    public static Environment apply(Environment env) {
         var wp = env.wrappers;
         var glob = env.global = new GlobalScope(wp.getNamespace(Internals.class));
 
@@ -157,6 +157,6 @@ public class Internals {
         wp.getProto(ObjectLib.class).setPrototype(null, null);
         env.regexConstructor = wp.getConstr(RegExpLib.class);
 
-        System.out.println("Loaded polyfills!");
+        return env;
     }
 }
