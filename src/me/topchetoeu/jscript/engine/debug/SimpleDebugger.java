@@ -31,6 +31,7 @@ import me.topchetoeu.jscript.json.JSONElement;
 import me.topchetoeu.jscript.json.JSONList;
 import me.topchetoeu.jscript.json.JSONMap;
 
+// very simple indeed
 public class SimpleDebugger implements Debugger {
     public static final String CHROME_GET_PROP_FUNC = "function s(e){let t=this;const n=JSON.parse(e);for(let e=0,i=n.length;e<i;++e)t=t[n[e]];return t}";
     public static final String VSCODE_STRINGIFY_VAL = "function(...runtimeArgs){\n    let t = 1024; let e = null;\n    if(e)try{let r=\"<<default preview>>\",i=e.call(this,r);if(i!==r)return String(i)}catch(r){return`<<indescribable>>${JSON.stringify([String(r),\"object\"])}`}if(typeof this==\"object\"&&this){let r;for(let i of[Symbol.for(\"debug.description\"),Symbol.for(\"nodejs.util.inspect.custom\")])try{r=this[i]();break}catch{}if(!r&&!String(this.toString).includes(\"[native code]\")&&(r=String(this)),r&&!r.startsWith(\"[object \"))return r.length>=t?r.slice(0,t)+\"\\u2026\":r}\n  ;\n\n}";
@@ -136,7 +137,7 @@ public class SimpleDebugger implements Debugger {
         }
     }
 
-    private class RunResult {
+    private static class RunResult {
         public final Context ctx;
         public final Object result;
         public final EngineException error;
@@ -598,10 +599,10 @@ public class SimpleDebugger implements Debugger {
         if (obj != emptyObject) {
             for (var key : obj.keys(true)) {
                 var propDesc = new JSONMap();
-    
+
                 if (obj.properties.containsKey(key)) {
                     var prop = obj.properties.get(key);
-    
+
                     propDesc.set("name", Values.toString(ctx, key));
                     if (prop.getter != null) propDesc.set("get", serializeObj(ctx, prop.getter));
                     if (prop.setter != null) propDesc.set("set", serializeObj(ctx, prop.setter));
