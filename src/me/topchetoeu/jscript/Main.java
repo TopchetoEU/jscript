@@ -142,20 +142,18 @@ public class Main {
             Values.printError(e, "(while initializing TS)");
         }
     }
-    private static void initReader() {
-        var reader = new Thread(Main::reader);
-        reader.setDaemon(true);
-        reader.setName("STD Reader");
-        reader.start();
-    }
 
     public static void main(String args[]) {
-        System.out.println(String.format("Running %s v%s by %s", Metadata.NAME, Metadata.VERSION, Metadata.AUTHOR));
+        System.out.println(String.format("Running %s v%s by %s", Metadata.name(), Metadata.version(), Metadata.author()));
 
         Main.args = args;
+        var reader = new Thread(Main::reader);
 
         initEnv();
         initEngine();
-        initReader();
+
+        reader.setDaemon(true);
+        reader.setName("STD Reader");
+        reader.start();
     }
 }

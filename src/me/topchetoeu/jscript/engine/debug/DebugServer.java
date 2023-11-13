@@ -19,7 +19,7 @@ import me.topchetoeu.jscript.json.JSONList;
 import me.topchetoeu.jscript.json.JSONMap;
 
 public class DebugServer {
-    public static String browserDisplayName = Metadata.NAME + "/" + Metadata.VERSION;
+    public static String browserDisplayName = Metadata.name() + "/" + Metadata.version();
 
     public final HashMap<String, DebuggerProvider> targets = new HashMap<>();
 
@@ -236,9 +236,9 @@ public class DebugServer {
             this.protocol = getClass().getClassLoader().getResourceAsStream("assets/protocol.json").readAllBytes();
             var index = new String(getClass().getClassLoader().getResourceAsStream("assets/index.html").readAllBytes());
             this.index = index
-                .replace("${NAME}", Metadata.NAME)
-                .replace("${VERSION}", Metadata.VERSION)
-                .replace("${AUTHOR}", Metadata.AUTHOR)
+                .replace("${NAME}", Metadata.name())
+                .replace("${VERSION}", Metadata.version())
+                .replace("${AUTHOR}", Metadata.author())
                 .getBytes();
         }
         catch (IOException e) { throw new UncheckedIOException(e); }
