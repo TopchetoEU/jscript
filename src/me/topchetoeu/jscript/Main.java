@@ -60,7 +60,7 @@ public class Main {
                         System.out.println();
                     }
                 }
-                catch (EngineException e) { Values.printError(e, ""); }
+                catch (EngineException e) { Values.printError(e, null); }
             }
             for (var i = 0; ; i++) {
                 try {
@@ -75,8 +75,8 @@ public class Main {
                     Values.printValue(null, res);
                     System.out.println();
                 }
-                catch (EngineException e) { Values.printError(e, ""); }
-                catch (SyntaxException e) { Values.printError(e, ""); }
+                catch (EngineException e) { Values.printError(e, null); }
+                catch (SyntaxException e) { Values.printError(e, null); }
             }
         }
         catch (IOException e) {
