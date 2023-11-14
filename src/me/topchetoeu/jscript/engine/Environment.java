@@ -22,6 +22,10 @@ public class Environment {
     public GlobalScope global;
     public WrappersProvider wrappers;
 
+    private static int nextId = 0;
+
+    @Native public int id = ++nextId;
+
     @Native public FunctionValue compile;
     @Native public FunctionValue regexConstructor = new NativeFunction("RegExp", (ctx, thisArg, args) -> {
         throw EngineException.ofError("Regular expressions not supported.").setCtx(ctx.environment(), ctx.engine);

@@ -33,7 +33,8 @@ public class Context {
     }
 
     public FunctionValue compile(Filename filename, String raw) {
-        var transpiled = environment().compile.call(this, null, raw, filename.toString());
+        var env = environment();
+        var transpiled = env.compile.call(this, null, raw, filename.toString(), env);
         String source = null;
         FunctionValue runner = null;
 
@@ -45,7 +46,7 @@ public class Context {
         else source = Values.toString(this, transpiled);
 
         var breakpoints = new TreeSet<Location>();
-        FunctionValue res = Parsing.compile(Engine.functions, breakpoints, environment(), filename, source);
+        FunctionValue res = Parsing.compile(Engine.functions, breakpoints, env, filename, source);
         engine.onSource(filename, source, breakpoints);
 
         if (runner != null) res = (FunctionValue)runner.call(this, null, res);
