@@ -105,7 +105,7 @@ public class Values {
     }
     public static boolean toBoolean(Object obj) {
         if (obj == NULL || obj == null) return false;
-        if (obj instanceof Number && number(obj) == 0) return false;
+        if (obj instanceof Number && (number(obj) == 0 || Double.isNaN(number(obj)))) return false;
         if (obj instanceof String && ((String)obj).equals("")) return false;
         if (obj instanceof Boolean) return (Boolean)obj;
         return true;
@@ -272,15 +272,15 @@ public class Values {
 
         var proto = getPrototype(ctx, obj);
 
-        if (proto == null) return key.equals("__proto__") ? NULL : null;
-        else if (key != null && key.equals("__proto__")) return proto;
+        if (proto == null) return "__proto__".equals(key) ? NULL : null;
+        else if (key != null && "__proto__".equals(key)) return proto;
         else return proto.getMember(ctx, key, obj);
     }
     public static boolean setMember(Context ctx, Object obj, Object key, Object val) {
         obj = normalize(ctx, obj); key = normalize(ctx, key); val = normalize(ctx, val);
         if (obj == null) throw EngineException.ofType("Tried to access member of undefined.");
         if (obj == NULL) throw EngineException.ofType("Tried to access member of null.");
-        if (key.equals("__proto__")) return setPrototype(ctx, obj, val);
+        if (key != null && "__proto__".equals(key)) return setPrototype(ctx, obj, val);
         if (isObject(obj)) return object(obj).setMember(ctx, key, val, false);
 
         var proto = getPrototype(ctx, obj);
@@ -290,7 +290,7 @@ public class Values {
         if (obj == null || obj == NULL) return false;
         obj = normalize(ctx, obj); key = normalize(ctx, key);
 
-        if (key.equals("__proto__")) return true;
+        if ("__proto__".equals(key)) return true;
         if (isObject(obj)) return object(obj).hasMember(ctx, key, own);
 
         if (obj instanceof String && key instanceof Number) {

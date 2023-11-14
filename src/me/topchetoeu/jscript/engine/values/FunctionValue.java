@@ -21,21 +21,21 @@ public abstract class FunctionValue extends ObjectValue {
 
     @Override
     protected Object getField(Context ctx, Object key) {
-        if (key.equals("name")) return name;
-        if (key.equals("length")) return length;
+        if ("name".equals(key)) return name;
+        if ("length".equals(key)) return length;
         return super.getField(ctx, key);
     }
     @Override
     protected boolean setField(Context ctx, Object key, Object val) {
-        if (key.equals("name")) name = Values.toString(ctx, val);
-        else if (key.equals("length")) length = (int)Values.toNumber(ctx, val);
+        if ("name".equals(key)) name = Values.toString(ctx, val);
+        else if ("length".equals(key)) length = (int)Values.toNumber(ctx, val);
         else return super.setField(ctx, key, val);
         return true;
     }
     @Override
     protected boolean hasField(Context ctx, Object key) {
-        if (key.equals("name")) return true;
-        if (key.equals("length")) return true;
+        if ("name".equals(key)) return true;
+        if ("length".equals(key)) return true;
         return super.hasField(ctx, key);
     }
 
