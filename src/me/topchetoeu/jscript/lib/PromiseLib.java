@@ -347,4 +347,19 @@ import me.topchetoeu.jscript.interop.Native;
     public PromiseLib() {
         this(STATE_PENDING, null);
     }
+
+    public static PromiseLib await(Context ctx, PromiseRunner runner) {
+        var res = new PromiseLib();
+
+        new Thread(() -> {
+            try {
+                res.fulfill(ctx, runner.run());
+            }
+            catch (EngineException e) {
+                res.reject(ctx, e.value);
+            }
+        }, "Promisifier").start();
+
+        return res;
+    }
 }
