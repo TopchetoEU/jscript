@@ -1,74 +1,75 @@
 package me.topchetoeu.jscript.filesystem;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
+
+import me.topchetoeu.jscript.filesystem.FilesystemException.FSCode;
 
 public class PhysicalFilesystem implements Filesystem {
     public final Path root;
 
-    private Permissions getPerms(Path path) {
-        var file = path.toFile();
-        if (!path.startsWith(root)) return Permissions.NONE;
-        if (file.canRead() && file.canWrite()) return Permissions.READ_WRITE;
-        if (file.canRead()) return Permissions.READ;
-
-        return Permissions.NONE;
-    }
     private Path getPath(String name) {
-        return root.resolve(name);
+        return root.resolve(name.replace("\\", "/")).normalize();
+    }
+
+    private void checkMode(Path path, Mode mode) {
+        if (!path.startsWith(root)) throw new FilesystemException(path.toString(), FSCode.NO_PERMISSIONS_R);
+        if (mode.readable && !path.toFile().canRead()) throw new FilesystemException(path.toString(), FSCode.NO_PERMISSIONS_R);
+        if (mode.writable && !path.toFile().canWrite()) throw new FilesystemException(path.toString(), FSCode.NO_PERMISSIONS_RW);
     }
 
     @Override
-    public File open(String path) throws IOException, InterruptedException {
-        var _path = root.resolve(path);
-
-        var perms = getPerms(_path);
-        if (perms == Permissions.NONE) return InaccessibleFile.INSTANCE;
-
+    public File open(String path, Mode perms) {
+        var _path = getPath(path);
         var f = _path.toFile();
 
-        if (f.isDirectory()) {
-            var res = new StringBuilder();
+        checkMode(_path, perms);
 
-            for (var child : f.listFiles()) res.append(child.toString()).append('\n');
 
-            return new MemoryFile(res.toString().getBytes(), Permissions.READ);
+        if (f.isDirectory()) return MemoryFile.fromFileList(path, f.listFiles());
+        else try { return new PhysicalFile(path, perms); }
+        catch (FileNotFoundException e) { throw new FilesystemException(_path.toString(), FSCode.DOESNT_EXIST); }
+    }
+
+    @Override
+    public void create(String path, EntryType type) {
+        var _path = getPath(path);
+        var f = _path.toFile();
+
+        checkMode(_path, Mode.READ_WRITE);
+        switch (type) {
+            case FILE:
+                try {
+                    if (!f.createNewFile()) throw new FilesystemException(_path.toString(), FSCode.ALREADY_EXISTS);
+                    else break;
+                } 
+                catch (IOException e) { throw new FilesystemException(_path.toString(), FSCode.NO_PERMISSIONS_RW); }
+            case FOLDER:
+                if (!f.mkdir()) throw new FilesystemException(_path.toString(), FSCode.ALREADY_EXISTS);
+                else break;
+            case NONE:
+            default:
+                if (!f.delete()) throw new FilesystemException(_path.toString(), FSCode.DOESNT_EXIST);
+                else break;
         }
-        else return new PhysicalFile(path, perms);
     }
 
     @Override
-    public boolean mkdir(String path) throws IOException, InterruptedException {
+    public FileStat stat(String path) {
         var _path = getPath(path);
-        var perms = getPerms(_path);
         var f = _path.toFile();
 
-        if (!perms.writable) return false;
-        else return f.mkdir();
-    }
+        if (f.exists()) throw new FilesystemException(_path.toString(), FSCode.DOESNT_EXIST);
+        checkMode(_path, Mode.READ);
 
-    @Override
-    public EntryType type(String path) throws IOException, InterruptedException {
-        var _path = getPath(path);
-        var perms = getPerms(_path);
-        var f = _path.toFile();
-
-        if (perms == Permissions.NONE) return EntryType.NONE;
-        else if (f.isFile()) return EntryType.FILE;
-        else return EntryType.FOLDER;
-    }
-
-    @Override
-    public boolean rm(String path) throws IOException, InterruptedException {
-        var _path = getPath(path);
-        var perms = getPerms(_path);
-        var f = _path.toFile();
-
-        if (!perms.writable) return false;
-        else return f.delete();
+        return new FileStat(
+            f.canWrite() ? Mode.READ_WRITE : Mode.READ,
+            f.isFile() ? EntryType.FILE : EntryType.FOLDER
+        );
     }
 
     public PhysicalFilesystem(Path root) {
-        this.root = root;
+        this.root = root.toAbsolutePath().normalize();
     }
 }

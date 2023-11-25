@@ -1,27 +1,39 @@
 package me.topchetoeu.jscript.filesystem;
 
-import java.io.IOException;
-
 public interface File {
-    int read() throws IOException, InterruptedException;
-    boolean write(byte val) throws IOException, InterruptedException;
-    long tell() throws IOException, InterruptedException;
-    void seek(long offset, int pos) throws IOException, InterruptedException;
-    void close() throws IOException, InterruptedException;
-    Permissions perms();
+    int read(byte[] buff);
+    void write(byte[] buff);
+    long getPtr();
+    void setPtr(long offset, int pos);
+    void close();
+    Mode mode();
 
-    default String readToString() throws IOException, InterruptedException {
-        seek(0, 2);
-        long len = tell();
+    default String readToString() {
+        setPtr(0, 2);
+        long len = getPtr();
         if (len < 0) return null;
 
-        seek(0, 0);
-        byte[] res = new byte[(int)len];
+        setPtr(0, 0);
 
-        for (var i = 0; i < len; i++) {
-            res[i] = (byte)read();
-        }
+        byte[] res = new byte[(int)len];
+        read(res);
 
         return new String(res);
+    }
+    default String readLine() {
+        var res = new Buffer(new byte[0]);
+        var buff = new byte[1];
+
+        while (true) {
+            if (read(buff) == 0) {
+                if (res.length() == 0) return null;
+                else break;
+            }
+
+            if (buff[0] == '\n') break;
+
+            res.write(res.length(), buff);
+        }
+        return new String(res.data());
     }
 }
