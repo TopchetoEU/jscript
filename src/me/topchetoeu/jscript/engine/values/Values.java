@@ -17,8 +17,27 @@ import me.topchetoeu.jscript.exceptions.ConvertException;
 import me.topchetoeu.jscript.exceptions.EngineException;
 import me.topchetoeu.jscript.exceptions.SyntaxException;
 import me.topchetoeu.jscript.exceptions.UncheckedException;
+import me.topchetoeu.jscript.lib.PromiseLib;
 
 public class Values {
+    public static enum CompareResult {
+        NOT_EQUAL,
+        EQUAL,
+        LESS,
+        GREATER;
+
+        public boolean less() { return this == LESS; }
+        public boolean greater() { return this == GREATER; }
+        public boolean lessOrEqual() { return this == LESS || this == EQUAL; }
+        public boolean greaterOrEqual() { return this == GREATER || this == EQUAL; }
+
+        public static CompareResult from(int cmp) {
+            if (cmp < 0) return LESS;
+            if (cmp > 0) return GREATER;
+            return EQUAL;
+        }
+    }
+
     public static final Object NULL = new Object();
 
     public static boolean isObject(Object val) { return val instanceof ObjectValue; }
@@ -137,7 +156,7 @@ public class Values {
         }
         if (val instanceof Boolean) return (Boolean)val ? "true" : "false";
         if (val instanceof String) return (String)val;
-        if (val instanceof Symbol) return ((Symbol)val).toString();
+        if (val instanceof Symbol) return val.toString();
 
         return "Unknown value";
     }
@@ -191,12 +210,18 @@ public class Values {
         return _a >>> _b;
     }
 
-    public static int compare(Context ctx, Object a, Object b) {
+    public static CompareResult compare(Context ctx, Object a, Object b) {
         a = toPrimitive(ctx, a, ConvertHint.VALUEOF);
         b = toPrimitive(ctx, b, ConvertHint.VALUEOF);
 
-        if (a instanceof String && b instanceof String) return ((String)a).compareTo((String)b);
-        else return Double.compare(toNumber(ctx, a), toNumber(ctx, b));
+        if (a instanceof String && b instanceof String) CompareResult.from(((String)a).compareTo((String)b));
+
+        var _a = toNumber(ctx, a);
+        var _b = toNumber(ctx, b);
+
+        if (Double.isNaN(_a) || Double.isNaN(_b)) return CompareResult.NOT_EQUAL;
+
+        return CompareResult.from(Double.compare(_a, _b));
     }
 
     public static boolean not(Object obj) {
@@ -232,10 +257,10 @@ public class Values {
             case LOOSE_EQUALS: return looseEqual(ctx, args[0], args[1]);
             case LOOSE_NOT_EQUALS: return !looseEqual(ctx, args[0], args[1]);
 
-            case GREATER: return compare(ctx, args[0], args[1]) > 0;
-            case GREATER_EQUALS: return compare(ctx, args[0], args[1]) >= 0;
-            case LESS: return compare(ctx, args[0], args[1]) < 0;
-            case LESS_EQUALS: return compare(ctx, args[0], args[1]) <= 0;
+            case GREATER: return compare(ctx, args[0], args[1]).greater();
+            case GREATER_EQUALS: return compare(ctx, args[0], args[1]).greaterOrEqual();
+            case LESS: return compare(ctx, args[0], args[1]).less();
+            case LESS_EQUALS: return compare(ctx, args[0], args[1]).lessOrEqual();
 
             case INVERSE: return bitwiseNot(ctx, args[0]);
             case NOT: return not(args[0]);
@@ -275,6 +300,11 @@ public class Values {
         if (proto == null) return "__proto__".equals(key) ? NULL : null;
         else if (key != null && "__proto__".equals(key)) return proto;
         else return proto.getMember(ctx, key, obj);
+    }
+    public static Object getMemberPath(Context ctx, Object obj, Object ...path) {
+        var res = obj;
+        for (var key : path) res = getMember(ctx, res, key);
+        return res;
     }
     public static boolean setMember(Context ctx, Object obj, Object key, Object val) {
         obj = normalize(ctx, obj); key = normalize(ctx, key); val = normalize(ctx, val);
@@ -518,7 +548,7 @@ public class Values {
         throw new ConvertException(type(obj), clazz.getSimpleName());
     }
 
-    public static Iterable<Object> toJavaIterable(Context ctx, Object obj) {
+    public static Iterable<Object> fromJSIterator(Context ctx, Object obj) {
         return () -> {
             try {
                 var symbol = ctx.environment().symbol("Symbol.iterator");
@@ -571,7 +601,7 @@ public class Values {
         };
     }
 
-    public static ObjectValue fromJavaIterator(Context ctx, Iterator<?> it) {
+    public static ObjectValue toJSIterator(Context ctx, Iterator<?> it) {
         var res = new ObjectValue();
 
         try {
@@ -592,8 +622,31 @@ public class Values {
         return res;
     }
 
-    public static ObjectValue fromJavaIterable(Context ctx, Iterable<?> it) {
-        return fromJavaIterator(ctx, it.iterator());
+    public static ObjectValue toJSIterator(Context ctx, Iterable<?> it) {
+        return toJSIterator(ctx, it.iterator());
+    }
+
+    public static ObjectValue toJSAsyncIterator(Context ctx, Iterator<?> it) {
+        var res = new ObjectValue();
+
+        try {
+            var key = getMemberPath(ctx, ctx.environment().proto("symbol"), "constructor", "asyncIterator");
+            res.defineProperty(ctx, key, new NativeFunction("", (_ctx, thisArg, args) -> thisArg));
+        }
+        catch (IllegalArgumentException | NullPointerException e) { }
+
+        res.defineProperty(ctx, "next", new NativeFunction("", (_ctx, _th, _args) -> {
+            return PromiseLib.await(ctx, () -> {
+                if (!it.hasNext()) return new ObjectValue(ctx, Map.of("done", true));
+                else {
+                    var obj = new ObjectValue();
+                    obj.defineProperty(_ctx, "value", it.next());
+                    return obj;
+                }
+            });
+        }));
+
+        return res;
     }
 
     private static boolean isEmptyFunc(ObjectValue val) {
@@ -620,10 +673,7 @@ public class Values {
         var printed = true;
 
         if (val instanceof FunctionValue) {
-            System.out.print("function ");
-            var name = Values.getMember(ctx, val, "name");
-            if (name != null) System.out.print(Values.toString(ctx, name));
-            System.out.print("(...)");
+            System.out.print(val.toString());
             var loc = val instanceof CodeFunction ? ((CodeFunction)val).loc() : null;
 
             if (loc != null) System.out.print(" @ " + loc);
