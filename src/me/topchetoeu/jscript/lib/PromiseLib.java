@@ -289,7 +289,7 @@ import me.topchetoeu.jscript.interop.Native;
 
                     ctx.engine.pushMsg(true, ctx, new NativeFunction((_ctx, _thisArg, _args) -> {
                         for (var handle : handles) handle.rejected.call(handle.ctx, null, val);
-                        if (handles.size() == 0) {
+                        if (!handled) {
                             Values.printError(new EngineException(val).setCtx(ctx.environment(), ctx.engine), "(in promise)");
                         }
                         handles = null;

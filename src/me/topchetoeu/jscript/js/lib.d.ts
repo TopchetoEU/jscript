@@ -489,8 +489,11 @@ interface FileStat {
 interface File {
     readonly pointer: Promise<number>;
     readonly length: Promise<number>;
-    read(buff: number[], n: number): Promise<number>;
+    readonly mode: Promise<'' | 'r' | 'rw'>;
+
+    read(n: number): Promise<number[]>;
     write(buff: number[]): Promise<void>;
+    close(): Promise<void>;
     setPointer(val: number): Promise<void>;
 }
 interface Filesystem {
@@ -501,6 +504,11 @@ interface Filesystem {
     rm(path: string, recursive?: boolean): Promise<void>;
     stat(path: string): Promise<FileStat>;
     exists(path: string): Promise<boolean>;
+}
+
+interface Encoding {
+    encode(val: string): number[];
+    decode(val: number[]): string;
 }
 
 declare var String: StringConstructor;
@@ -529,6 +537,7 @@ declare var Object: ObjectConstructor;
 declare var Symbol: SymbolConstructor;
 declare var Promise: PromiseConstructor;
 declare var Math: MathObject;
+declare var Encoding: Encoding;
 declare var fs: Filesystem;
 
 declare var Error: ErrorConstructor;

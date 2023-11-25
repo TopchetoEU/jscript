@@ -12,6 +12,35 @@ import me.topchetoeu.jscript.interop.NativeGetter;
 public class FileLib {
     public final File file;
 
+    @NativeGetter public PromiseLib pointer(Context ctx) {
+        return PromiseLib.await(ctx, () -> {
+            try {
+                return file.getPtr();
+            }
+            catch (FilesystemException e) { throw e.toEngineException(); }
+        });
+    }
+    @NativeGetter public PromiseLib length(Context ctx) {
+        return PromiseLib.await(ctx, () -> {
+            try {
+                long curr = file.getPtr();
+                file.setPtr(0, 2);
+                long res = file.getPtr();
+                file.setPtr(curr, 0);
+                return res;
+            }
+            catch (FilesystemException e) { throw e.toEngineException(); }
+        });
+    }
+    @NativeGetter public PromiseLib getMode(Context ctx) {
+        return PromiseLib.await(ctx, () -> {
+            try {
+                return file.mode().name;
+            }
+            catch (FilesystemException e) { throw e.toEngineException(); }
+        });
+    }
+
     @Native public PromiseLib read(Context ctx, int n) {
         return PromiseLib.await(ctx, () -> {
             try {
@@ -44,39 +73,11 @@ public class FileLib {
             return null;
         });
     }
-    @NativeGetter public PromiseLib pointer(Context ctx) {
-        return PromiseLib.await(ctx, () -> {
-            try {
-                return file.getPtr();
-            }
-            catch (FilesystemException e) { throw e.toEngineException(); }
-        });
-    }
     @Native public PromiseLib setPointer(Context ctx, long ptr) {
         return PromiseLib.await(ctx, () -> {
             try {
                 file.setPtr(ptr, 0);
                 return null;
-            }
-            catch (FilesystemException e) { throw e.toEngineException(); }
-        });
-    }
-    @NativeGetter("length") public PromiseLib getLength(Context ctx) {
-        return PromiseLib.await(ctx, () -> {
-            try {
-                long curr = file.getPtr();
-                file.setPtr(0, 2);
-                long res = file.getPtr();
-                file.setPtr(curr, 0);
-                return res;
-            }
-            catch (FilesystemException e) { throw e.toEngineException(); }
-        });
-    }
-    @NativeGetter("mode") public PromiseLib getMode(Context ctx) {
-        return PromiseLib.await(ctx, () -> {
-            try {
-                return file.mode().name;
             }
             catch (FilesystemException e) { throw e.toEngineException(); }
         });
