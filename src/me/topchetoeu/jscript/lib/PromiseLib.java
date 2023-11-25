@@ -252,7 +252,7 @@ import me.topchetoeu.jscript.interop.Native;
                     this.val = val;
                     this.state = STATE_FULFILLED;
 
-                    ctx.engine.pushMsg(false, ctx, new NativeFunction((_ctx, _thisArg, _args) -> {
+                    ctx.engine.pushMsg(true, ctx, new NativeFunction((_ctx, _thisArg, _args) -> {
                         for (var handle : handles) {
                             handle.fulfilled.call(handle.ctx, null, val);
                         }
@@ -287,11 +287,12 @@ import me.topchetoeu.jscript.interop.Native;
                     this.val = val;
                     this.state = STATE_REJECTED;
 
-                    ctx.engine.pushMsg(false, ctx, new NativeFunction((_ctx, _thisArg, _args) -> {
+                    ctx.engine.pushMsg(true, ctx, new NativeFunction((_ctx, _thisArg, _args) -> {
                         for (var handle : handles) handle.rejected.call(handle.ctx, null, val);
-                        if (!handled) {
+                        if (handles.size() == 0) {
                             Values.printError(new EngineException(val).setCtx(ctx.environment(), ctx.engine), "(in promise)");
                         }
+                        handles = null;
                         return null;
                     }), null);
                 }
