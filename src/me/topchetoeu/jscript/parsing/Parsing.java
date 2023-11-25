@@ -11,7 +11,6 @@ import java.util.TreeSet;
 import me.topchetoeu.jscript.Filename;
 import me.topchetoeu.jscript.Location;
 import me.topchetoeu.jscript.compilation.*;
-import me.topchetoeu.jscript.compilation.Instruction.Type;
 import me.topchetoeu.jscript.compilation.VariableDeclareStatement.Pair;
 import me.topchetoeu.jscript.compilation.control.*;
 import me.topchetoeu.jscript.compilation.control.SwitchStatement.SwitchCase;
