@@ -140,7 +140,7 @@ import me.topchetoeu.jscript.interop.NativeConstructor;
     @Native public static ObjectValue fromEntries(Context ctx, Object iterable) {
         var res = new ObjectValue();
 
-        for (var el : Values.toJavaIterable(ctx, iterable)) {
+        for (var el : Values.fromJSIterator(ctx, iterable)) {
             if (el instanceof ArrayValue) {
                 res.defineProperty(ctx, ((ArrayValue)el).get(0), ((ArrayValue)el).get(1));
             }

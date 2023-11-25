@@ -12,6 +12,19 @@ public class NativeWrapper extends ObjectValue {
         else return super.getPrototype(ctx);
     }
 
+    @Override
+    public String toString() {
+        return wrapped.toString();
+    }
+    @Override
+    public boolean equals(Object obj) {
+        return wrapped.equals(obj);
+    }
+    @Override
+    public int hashCode() {
+        return wrapped.hashCode();
+    }
+
     public NativeWrapper(Object wrapped) {
         this.wrapped = wrapped;
         prototype = NATIVE_PROTO;
