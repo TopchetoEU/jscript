@@ -33,8 +33,8 @@ public class SwitchStatement extends Statement {
 
     @Override
     public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {
-        var caseMap = new HashMap<Integer, Integer>();
-        var stmIndexMap = new HashMap<Integer, Integer>();
+        var caseToStatement = new HashMap<Integer, Integer>();
+        var statementToIndex = new HashMap<Integer, Integer>();
 
         value.compile(target, scope, true);
 
@@ -42,7 +42,7 @@ public class SwitchStatement extends Statement {
             target.add(Instruction.dup().locate(loc()));
             ccase.value.compile(target, scope, true);
             target.add(Instruction.operation(Operation.EQUALS).locate(loc()));
-            caseMap.put(target.size(), ccase.statementI);
+            caseToStatement.put(target.size(), ccase.statementI);
             target.add(Instruction.nop().locate(ccase.value.loc()));
         }
 
@@ -51,28 +51,31 @@ public class SwitchStatement extends Statement {
         target.add(Instruction.nop());
 
         for (var stm : body) {
-            stmIndexMap.put(stmIndexMap.size(), target.size());
+            statementToIndex.put(statementToIndex.size(), target.size());
             stm.compileWithDebug(target, scope, false);
         }
 
-        if (defaultI < 0 || defaultI >= body.length) target.set(start, Instruction.jmp(target.size() - start).locate(loc()));
-        else target.set(start, Instruction.jmp(stmIndexMap.get(defaultI) - start)).locate(loc());
+        int end = target.size();
+        target.add(Instruction.discard().locate(loc()));
+        if (pollute) target.add(Instruction.loadValue(null));
 
-        for (int i = start; i < target.size(); i++) {
+        if (defaultI < 0 || defaultI >= body.length) target.set(start, Instruction.jmp(end - start).locate(loc()));
+        else target.set(start, Instruction.jmp(statementToIndex.get(defaultI) - start)).locate(loc());
+
+        for (int i = start; i < end; i++) {
             var instr = target.get(i);
             if (instr.type == Type.NOP && instr.is(0, "break") && instr.get(1) == null) {
-                target.set(i, Instruction.jmp(target.size() - i).locate(instr.location));
+                target.set(i, Instruction.jmp(end - i).locate(instr.location));
             }
         }
-        for (var el : caseMap.entrySet()) {
+        for (var el : caseToStatement.entrySet()) {
             var loc = target.get(el.getKey()).location;
-            var i = stmIndexMap.get(el.getValue());
-            if (i == null) i = target.size();
+            var i = statementToIndex.get(el.getValue());
+            if (i == null) i = end;
             target.set(el.getKey(), Instruction.jmpIf(i - el.getKey()).locate(loc));
             target.setDebug(el.getKey());
         }
 
-        target.add(Instruction.discard().locate(loc()));
     }
 
     public SwitchStatement(Location loc, Statement value, int defaultI, SwitchCase[] cases, Statement[] body) {
