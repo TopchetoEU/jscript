@@ -37,7 +37,6 @@ public class PhysicalFilesystem implements Filesystem {
         var _path = getPath(path);
         var f = _path.toFile();
 
-        checkMode(_path, Mode.READ_WRITE);
         switch (type) {
             case FILE:
                 try {
