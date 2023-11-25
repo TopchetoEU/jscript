@@ -34,13 +34,13 @@ public class FilesystemException extends RuntimeException {
     public final FSCode code;
 
     public FilesystemException(String message, String filename, FSCode code) {
-        super(code + ": " + message.formatted(filename));
+        super(code + ": " + String.format(message, filename));
         this.message = message;
         this.code = code;
         this.filename = filename;
     }
     public FilesystemException(String filename, FSCode code) {
-        super(code + ": " + MESSAGES[code.code].formatted(filename));
+        super(code + ": " + String.format(MESSAGES[code.code], filename));
         this.message = MESSAGES[code.code];
         this.code = code;
         this.filename = filename;

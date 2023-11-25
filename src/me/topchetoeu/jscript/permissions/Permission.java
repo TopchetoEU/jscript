@@ -9,7 +9,7 @@ public class Permission {
 
         @Override
         public String toString() {
-            return "State [pr=%s;trg=%s;wildN=%s;wild=%s]".formatted(predI, trgI, wildcardI, wildcard);
+            return String.format("State [pr=%s;trg=%s;wildN=%s;wild=%s]", predI, trgI, wildcardI, wildcard);
         }
 
         public State(int predicateI, int targetI, int wildcardI, boolean wildcard) {
