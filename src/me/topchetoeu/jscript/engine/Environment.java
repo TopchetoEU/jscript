@@ -8,12 +8,15 @@ import me.topchetoeu.jscript.engine.values.NativeFunction;
 import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.engine.values.Symbol;
 import me.topchetoeu.jscript.exceptions.EngineException;
+import me.topchetoeu.jscript.filesystem.RootFilesystem;
 import me.topchetoeu.jscript.interop.Native;
 import me.topchetoeu.jscript.interop.NativeGetter;
 import me.topchetoeu.jscript.interop.NativeSetter;
 import me.topchetoeu.jscript.interop.NativeWrapperProvider;
+import me.topchetoeu.jscript.permissions.Permission;
+import me.topchetoeu.jscript.permissions.PermissionsProvider;
 
-public class Environment {
+public class Environment implements PermissionsProvider {
     private HashMap<String, ObjectValue> prototypes = new HashMap<>();
 
     public final Data data = new Data();
@@ -21,6 +24,12 @@ public class Environment {
 
     public GlobalScope global;
     public WrappersProvider wrappers;
+    public PermissionsProvider permissions = null;
+    public final RootFilesystem filesystem = new RootFilesystem(this);
+
+    private static int nextId = 0;
+
+    @Native public int id = ++nextId;
 
     @Native public FunctionValue compile;
     @Native public FunctionValue regexConstructor = new NativeFunction("RegExp", (ctx, thisArg, args) -> {
@@ -68,9 +77,13 @@ public class Environment {
         return res;
     }
 
-    public Context context(Engine engine, Data data) {
-        return new Context(engine, data).pushEnv(this);
+    @Override public boolean hasPermission(Permission perm, char delim) {
+        return permissions == null || permissions.hasPermission(perm, delim);
     }
+    @Override public boolean hasPermission(Permission perm) {
+        return permissions == null || permissions.hasPermission(perm);
+    }
+
     public Context context(Engine engine) {
         return new Context(engine).pushEnv(this);
     }

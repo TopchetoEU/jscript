@@ -4,16 +4,13 @@ import java.util.HashMap;
 import java.util.Map;
 
 import me.topchetoeu.jscript.engine.Context;
-import me.topchetoeu.jscript.engine.Environment;
 import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.engine.values.Symbol;
 import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.exceptions.EngineException;
-import me.topchetoeu.jscript.interop.InitType;
 import me.topchetoeu.jscript.interop.Native;
 import me.topchetoeu.jscript.interop.NativeConstructor;
 import me.topchetoeu.jscript.interop.NativeGetter;
-import me.topchetoeu.jscript.interop.NativeInit;
 
 @Native("Symbol") public class SymbolLib {
     private static final Map<String, Symbol> symbols = new HashMap<>();
@@ -62,9 +59,5 @@ import me.topchetoeu.jscript.interop.NativeInit;
 
     public SymbolLib(Symbol val) {
         this.value = val;
-    }
-
-    @NativeInit(InitType.PROTOTYPE) public static void init(Environment env, ObjectValue target) {
-        target.defineProperty(null, env.symbol("Symbol.typeName"), "Symbol");
     }
 }

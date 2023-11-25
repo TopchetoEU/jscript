@@ -1,10 +1,7 @@
 package me.topchetoeu.jscript.filesystem;
 
-import java.io.IOException;
-
 public interface Filesystem {
-    File open(String path) throws IOException, InterruptedException;
-    boolean mkdir(String path) throws IOException, InterruptedException;
-    EntryType type(String path) throws IOException, InterruptedException;
-    boolean rm(String path) throws IOException, InterruptedException;
+    File open(String path, Mode mode) throws FilesystemException;
+    void create(String path, EntryType type) throws FilesystemException;
+    FileStat stat(String path) throws FilesystemException;
 }

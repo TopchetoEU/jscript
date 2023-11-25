@@ -119,6 +119,8 @@ public class Internals {
 
         glob.define(null, "Math", false, wp.getNamespace(MathLib.class));
         glob.define(null, "JSON", false, wp.getNamespace(JSONLib.class));
+        glob.define(null, "Encoding", false, wp.getNamespace(EncodingLib.class));
+        glob.define(null, "Filesystem", false, wp.getNamespace(FilesystemLib.class));
 
         glob.define(null, "Date", false, wp.getConstr(DateLib.class));
         glob.define(null, "Object", false, wp.getConstr(ObjectLib.class));

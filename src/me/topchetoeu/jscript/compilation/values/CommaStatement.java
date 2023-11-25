@@ -13,7 +13,7 @@ public class CommaStatement extends Statement {
     @Override
     public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {
         for (var i = 0; i < values.length; i++) {
-            values[i].compile(target, scope, i == values.length - 1 && pollute);
+            values[i].compileWithDebug(target, scope, i == values.length - 1 && pollute);
         }
     }
     

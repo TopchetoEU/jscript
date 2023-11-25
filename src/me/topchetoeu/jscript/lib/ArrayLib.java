@@ -4,16 +4,14 @@ import java.util.Iterator;
 import java.util.Stack;
 
 import me.topchetoeu.jscript.engine.Context;
-import me.topchetoeu.jscript.engine.Environment;
 import me.topchetoeu.jscript.engine.values.ArrayValue;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
+import me.topchetoeu.jscript.engine.values.NativeFunction;
 import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.engine.values.Values;
-import me.topchetoeu.jscript.interop.InitType;
 import me.topchetoeu.jscript.interop.Native;
 import me.topchetoeu.jscript.interop.NativeConstructor;
 import me.topchetoeu.jscript.interop.NativeGetter;
-import me.topchetoeu.jscript.interop.NativeInit;
 import me.topchetoeu.jscript.interop.NativeSetter;
 
 @Native("Array") public class ArrayLib {
@@ -25,10 +23,10 @@ import me.topchetoeu.jscript.interop.NativeSetter;
     }
     
     @Native(thisArg = true) public static ObjectValue values(Context ctx, ArrayValue thisArg) {
-        return Values.fromJavaIterable(ctx, thisArg);
+        return Values.toJSIterator(ctx, thisArg);
     }
     @Native(thisArg = true) public static ObjectValue keys(Context ctx, ArrayValue thisArg) {
-        return Values.fromJavaIterable(ctx, () -> new Iterator<Object>() {
+        return Values.toJSIterator(ctx, () -> new Iterator<Object>() {
             private int i = 0;
 
             @Override
@@ -43,7 +41,7 @@ import me.topchetoeu.jscript.interop.NativeSetter;
         });
     }
     @Native(thisArg = true) public static ObjectValue entries(Context ctx, ArrayValue thisArg) {
-        return Values.fromJavaIterable(ctx, () -> new Iterator<Object>() {
+        return Values.toJSIterator(ctx, () -> new Iterator<Object>() {
             private int i = 0;
 
             @Override
@@ -94,8 +92,11 @@ import me.topchetoeu.jscript.interop.NativeSetter;
     }
 
     @Native(thisArg = true) public static ArrayValue sort(Context ctx, ArrayValue arr, FunctionValue cmp) {
+        var defaultCmp = new NativeFunction("", (_ctx, thisArg, args) -> {
+            return Values.toString(ctx, args[0]).compareTo(Values.toString(ctx, args[1]));
+        });
         arr.sort((a, b) -> {
-            var res = Values.toNumber(ctx, cmp.call(ctx, null, a, b));
+            var res = Values.toNumber(ctx, (cmp == null ? defaultCmp : cmp).call(ctx, null, a, b));
             if (res < 0) return -1;
             if (res > 0) return 1;
             return 0;
@@ -368,9 +369,5 @@ import me.topchetoeu.jscript.interop.NativeSetter;
         }
 
         return res;
-    }
-
-    @NativeInit(InitType.PROTOTYPE) public static void init(Environment env, ObjectValue target) {
-        target.defineProperty(null, env.symbol("Symbol.typeName"), "Array");
     }
 }

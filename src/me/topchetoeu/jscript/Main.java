@@ -16,15 +16,13 @@ import me.topchetoeu.jscript.events.Observer;
 import me.topchetoeu.jscript.exceptions.EngineException;
 import me.topchetoeu.jscript.exceptions.InterruptException;
 import me.topchetoeu.jscript.exceptions.SyntaxException;
+import me.topchetoeu.jscript.filesystem.MemoryFilesystem;
+import me.topchetoeu.jscript.filesystem.Mode;
+import me.topchetoeu.jscript.filesystem.PhysicalFilesystem;
 import me.topchetoeu.jscript.lib.Internals;
 
-public class Main {
-    static Thread engineTask, debugTask;
-    static Engine engine;
-    static Environment env;
-    static int j = 0;
-
-    private static Observer<Object> valuePrinter = new Observer<Object>() {
+public class Main {   
+    public static class Printer implements Observer<Object> {
         public void next(Object data) {
             Values.printValue(null, data);
             System.out.println();
@@ -34,27 +32,80 @@ public class Main {
             Values.printError(err, null);
         }
 
-        @Override
         public void finish() {
             engineTask.interrupt();
         }
-    };
+    }
 
-    public static void main(String args[]) {
-        System.out.println(String.format("Running %s v%s by %s", Metadata.NAME, Metadata.VERSION, Metadata.AUTHOR));
-        engine = new Engine(true);
+    static Thread engineTask, debugTask;
+    static Engine engine = new Engine(true);
+    static DebugServer debugServer = new DebugServer();
+    static Environment environment = new Environment(null, null, null);
 
-        var exited = new boolean[1];
-        var server = new DebugServer();
-        server.targets.put("target", (ws, req) -> new SimpleDebugger(ws, engine));
-        
-        env = Internals.apply(new Environment(null, null, null));
+    static int j = 0;
+    static boolean exited = false;
+    static String[] args;
 
-        env.global.define("exit", _ctx -> {
-            exited[0] = true;
+    private static void reader() {
+        try {
+            for (var arg : args) {
+                try {
+                    if (arg.equals("--ts")) initTypescript();
+                    else {
+                        var file = Path.of(arg);
+                        var raw = Files.readString(file);
+                        var res = engine.pushMsg(
+                            false, new Context(engine, environment),
+                            Filename.fromFile(file.toFile()),
+                            raw, null
+                        ).await();
+                        Values.printValue(null, res);
+                        System.out.println();
+                    }
+                }
+                catch (EngineException e) { Values.printError(e, null); }
+            }
+            for (var i = 0; ; i++) {
+                try {
+                    var raw = Reading.read();
+
+                    if (raw == null) break;
+                    var res = engine.pushMsg(
+                        false, new Context(engine, environment),
+                        new Filename("jscript", "repl/" + i + ".js"),
+                        raw, null
+                    ).await();
+                    Values.printValue(null, res);
+                    System.out.println();
+                }
+                catch (EngineException e) { Values.printError(e, null); }
+                catch (SyntaxException e) { Values.printError(e, null); }
+            }
+        }
+        catch (IOException e) {
+            System.out.println(e.toString());
+            exited = true;
+        }
+        catch (RuntimeException ex) {
+            if (!exited) {
+                System.out.println("Internal error ocurred:");
+                ex.printStackTrace();
+            }
+        }
+        if (exited) {
+            debugTask.interrupt();
+            engineTask.interrupt();
+        }
+    }
+
+    private static void initEnv() {
+        environment = Internals.apply(environment);
+
+        environment.global.define("exit", _ctx -> {
+            exited = true;
             throw new InterruptException();
         });
-        env.global.define("go", _ctx -> {
+        environment.global.define("go", _ctx -> {
             try {
                 var f = Path.of("do.js");
                 var func = _ctx.compile(new Filename("do", "do/" + j++ + ".js"), new String(Files.readAllBytes(f)));
@@ -65,9 +116,15 @@ public class Main {
             }
         });
 
+        environment.filesystem.protocols.put("temp", new MemoryFilesystem(Mode.READ_WRITE));
+        environment.filesystem.protocols.put("file", new PhysicalFilesystem(Path.of(".").toAbsolutePath()));
+    }
+    private static void initEngine() {
+        debugServer.targets.put("target", (ws, req) -> new SimpleDebugger(ws, engine));
         engineTask = engine.start();
-        debugTask = server.start(new InetSocketAddress("127.0.0.1", 9229), true);
-
+        debugTask = debugServer.start(new InetSocketAddress("127.0.0.1", 9229), true);
+    }
+    private static void initTypescript() {
         try {
             var tsEnv = Internals.apply(new Environment(null, null, null));
             var bsEnv = Internals.apply(new Environment(null, null, null));
@@ -84,46 +141,23 @@ public class Main {
             engine.pushMsg(
                 false, ctx,
                 new Filename("jscript", "internals/bootstrap.js"), Reading.resourceToString("js/bootstrap.js"), null,
-                tsEnv.global.get(ctx, "ts"), env, new ArrayValue(null, Reading.resourceToString("js/lib.d.ts"))
+                tsEnv.global.get(ctx, "ts"), environment, new ArrayValue(null, Reading.resourceToString("js/lib.d.ts"))
             ).await();
         }
         catch (EngineException e) {
             Values.printError(e, "(while initializing TS)");
         }
+    }
 
-        var reader = new Thread(() -> {
-            try {
-                for (var arg : args) {
-                    try {
-                        var file = Path.of(arg);
-                        var raw = Files.readString(file);
-                        valuePrinter.next(engine.pushMsg(false, new Context(engine).pushEnv(env), Filename.fromFile(file.toFile()), raw, null).await());
-                    }
-                    catch (EngineException e) { Values.printError(e, ""); }
-                }
-                for (var i = 0; ; i++) {
-                    try {
-                        var raw = Reading.read();
+    public static void main(String args[]) {
+        System.out.println(String.format("Running %s v%s by %s", Metadata.name(), Metadata.version(), Metadata.author()));
 
-                        if (raw == null) break;
-                        valuePrinter.next(engine.pushMsg(false, new Context(engine).pushEnv(env), new Filename("jscript", "repl/" + i + ".js"), raw, null).await());
-                    }
-                    catch (EngineException e) { Values.printError(e, ""); }
-                }
-            }
-            catch (IOException e) { exited[0] = true; }
-            catch (SyntaxException ex) {
-                if (exited[0]) return;
-                System.out.println("Syntax error:" + ex.msg);
-            }
-            catch (RuntimeException ex) {
-                if (!exited[0]) {
-                    System.out.println("Internal error ocurred:");
-                    ex.printStackTrace();
-                }
-            }
-            if (exited[0]) debugTask.interrupt();
-        });
+        Main.args = args;
+        var reader = new Thread(Main::reader);
+
+        initEnv();
+        initEngine();
+
         reader.setDaemon(true);
         reader.setName("STD Reader");
         reader.start();

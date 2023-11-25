@@ -1,50 +1,62 @@
 package me.topchetoeu.jscript.filesystem;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 
+import me.topchetoeu.jscript.filesystem.FilesystemException.FSCode;
+
 public class PhysicalFile implements File {
+    private String filename;
     private RandomAccessFile file;
-    private Permissions perms;
+    private Mode perms;
 
     @Override
-    public int read() throws IOException, InterruptedException {
-        if (file == null || !perms.readable) return -1;
-        else return file.read();
+    public int read(byte[] buff) {
+        if (file == null || !perms.readable) throw new FilesystemException(filename, FSCode.NO_PERMISSIONS_R);
+        else try { return file.read(buff); }
+        catch (IOException e) { throw new FilesystemException(filename, FSCode.NO_PERMISSIONS_R); }
+    }
+    @Override
+    public void write(byte[] buff) {
+        if (file == null || !perms.writable) throw new FilesystemException(filename, FSCode.NO_PERMISSIONS_RW);
+        else try { file.write(buff); }
+        catch (IOException e) { throw new FilesystemException(filename, FSCode.NO_PERMISSIONS_RW); }
     }
 
     @Override
-    public boolean write(byte val) throws IOException, InterruptedException {
-        if (file == null || !perms.writable) return false;
-        file.write(val);
-        return true;
+    public long getPtr() {
+        if (file == null || !perms.readable) throw new FilesystemException(filename, FSCode.NO_PERMISSIONS_R);
+        else try { return file.getFilePointer(); }
+        catch (IOException e) { throw new FilesystemException(filename, FSCode.NO_PERMISSIONS_R); }
+    }
+    @Override
+    public void setPtr(long offset, int pos) {
+        if (file == null || !perms.readable) throw new FilesystemException(filename, FSCode.NO_PERMISSIONS_R);
+
+        try {
+            if (pos == 1) pos += file.getFilePointer();
+            else if (pos == 2) pos += file.length();
+            file.seek(pos);
+        }
+        catch (IOException e) { throw new FilesystemException(filename, FSCode.NO_PERMISSIONS_R); }
     }
 
     @Override
-    public long tell() throws IOException, InterruptedException {
-        if (file == null) return 0;
-        return file.getFilePointer();
-    }
-    @Override
-    public void seek(long offset, int pos) throws IOException, InterruptedException {
+    public void close() {
         if (file == null) return;
-        if (pos == 0) file.seek(pos);
-        else if (pos == 1) file.seek(file.getFilePointer() + pos);
-        else if (pos == 2) file.seek(file.length() + pos);
+        try { file.close(); }
+        catch (IOException e) {} // SHUT
+        file = null;
+        perms = Mode.NONE;
     }
-
     @Override
-    public void close() throws IOException, InterruptedException {
-        if (file == null) return;
-        file.close();
-    }
+    public Mode mode() { return perms; }
 
-    @Override
-    public Permissions perms() { return perms; }
-    
-    public PhysicalFile(String path, Permissions mode) throws IOException {
-        if (mode == Permissions.NONE) file = null;
-        else file = new RandomAccessFile(path, mode.readMode);
+    public PhysicalFile(String path, Mode mode) throws FileNotFoundException {
+        if (mode == Mode.NONE) file = null;
+        else try { file = new RandomAccessFile(path, mode.name); }
+        catch (FileNotFoundException e) { throw new FilesystemException(filename, FSCode.DOESNT_EXIST); }
 
         perms = mode;
     }

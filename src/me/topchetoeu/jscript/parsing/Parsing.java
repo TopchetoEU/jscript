@@ -11,7 +11,6 @@ import java.util.TreeSet;
 import me.topchetoeu.jscript.Filename;
 import me.topchetoeu.jscript.Location;
 import me.topchetoeu.jscript.compilation.*;
-import me.topchetoeu.jscript.compilation.Instruction.Type;
 import me.topchetoeu.jscript.compilation.VariableDeclareStatement.Pair;
 import me.topchetoeu.jscript.compilation.control.*;
 import me.topchetoeu.jscript.compilation.control.SwitchStatement.SwitchCase;
@@ -1896,10 +1895,7 @@ public class Parsing {
             res.add(Instruction.throwSyntax(e));
         }
 
-        if (res.size() != 0 && res.get(res.size() - 1).type == Type.DISCARD) {
-            res.set(res.size() - 1, Instruction.ret());
-        }
-        else res.add(Instruction.ret());
+        res.add(Instruction.ret());
 
         return new CodeFunction(environment, "", subscope.localsCount(), 0, new ValueVariable[0], new FunctionBody(res.array(), subscope.captures(), subscope.locals()));
     }

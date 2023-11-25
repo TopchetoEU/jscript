@@ -482,6 +482,35 @@ interface PromiseConstructor {
     allSettled<T extends any[]>(...promises: T): Promise<[...{ [P in keyof T]: PromiseResult<Awaited<T[P]>>}]>;
 }
 
+interface FileStat {
+    type: 'file' | 'folder';
+    mode: 'r' | 'rw';
+}
+interface File {
+    readonly pointer: Promise<number>;
+    readonly length: Promise<number>;
+    readonly mode: Promise<'' | 'r' | 'rw'>;
+
+    read(n: number): Promise<number[]>;
+    write(buff: number[]): Promise<void>;
+    close(): Promise<void>;
+    setPointer(val: number): Promise<void>;
+}
+interface Filesystem {
+    open(path: string, mode: 'r' | 'rw'): Promise<File>;
+    ls(path: string): AsyncIterableIterator<string>;
+    mkdir(path: string): Promise<void>;
+    mkfile(path: string): Promise<void>;
+    rm(path: string, recursive?: boolean): Promise<void>;
+    stat(path: string): Promise<FileStat>;
+    exists(path: string): Promise<boolean>;
+}
+
+interface Encoding {
+    encode(val: string): number[];
+    decode(val: number[]): string;
+}
+
 declare var String: StringConstructor;
 //@ts-ignore
 declare const arguments: IArguments;
@@ -508,6 +537,8 @@ declare var Object: ObjectConstructor;
 declare var Symbol: SymbolConstructor;
 declare var Promise: PromiseConstructor;
 declare var Math: MathObject;
+declare var Encoding: Encoding;
+declare var Filesystem: Filesystem;
 
 declare var Error: ErrorConstructor;
 declare var RangeError: RangeErrorConstructor;

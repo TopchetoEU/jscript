@@ -262,7 +262,7 @@ public class ObjectValue {
             values.put(key, val);
             return true;
         }
-        else if (key.equals("__proto__")) return setPrototype(ctx, val);
+        else if ("__proto__".equals(key)) return setPrototype(ctx, val);
         else if (nonWritableSet.contains(key)) return false;
         else return setField(ctx, key, val);
     }
@@ -273,7 +273,7 @@ public class ObjectValue {
     public final boolean hasMember(Context ctx, Object key, boolean own) {
         key = Values.normalize(ctx, key);
 
-        if (key != null && key.equals("__proto__")) return true;
+        if (key != null && "__proto__".equals(key)) return true;
         if (hasField(ctx, key)) return true;
         if (properties.containsKey(key)) return true;
         if (own) return false;

@@ -3,7 +3,6 @@ package me.topchetoeu.jscript.lib;
 import java.util.Map;
 
 import me.topchetoeu.jscript.engine.Context;
-import me.topchetoeu.jscript.engine.StackData;
 import me.topchetoeu.jscript.engine.frame.CodeFrame;
 import me.topchetoeu.jscript.engine.frame.Runners;
 import me.topchetoeu.jscript.engine.values.NativeFunction;
@@ -29,7 +28,7 @@ import me.topchetoeu.jscript.interop.Native;
         }
 
         Object res = null;
-        StackData.pushFrame(ctx, frame);
+        ctx.pushFrame(frame);
         state = 0;
 
         while (state == 0) {
@@ -50,7 +49,7 @@ import me.topchetoeu.jscript.interop.Native;
             }
         }
 
-        StackData.popFrame(ctx, frame);
+        ctx.popFrame(frame);
 
         if (state == 1) {
             PromiseLib.then(ctx, frame.pop(), new NativeFunction(this::fulfill), new NativeFunction(this::reject));

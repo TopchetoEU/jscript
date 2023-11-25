@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Map;
 
 import me.topchetoeu.jscript.engine.Context;
-import me.topchetoeu.jscript.engine.Environment;
 import me.topchetoeu.jscript.engine.values.ArrayValue;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
 import me.topchetoeu.jscript.engine.values.NativeFunction;
@@ -13,12 +12,12 @@ import me.topchetoeu.jscript.engine.values.NativeWrapper;
 import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.exceptions.EngineException;
-import me.topchetoeu.jscript.exceptions.InterruptException;
-import me.topchetoeu.jscript.interop.InitType;
 import me.topchetoeu.jscript.interop.Native;
-import me.topchetoeu.jscript.interop.NativeInit;
 
 @Native("Promise") public class PromiseLib {
+    public static interface PromiseRunner {
+        Object run();
+    }
     private static class Handle {
         public final Context ctx;
         public final FunctionValue fulfilled;
@@ -171,9 +170,7 @@ import me.topchetoeu.jscript.interop.NativeInit;
         }
 
         var fulfillHandle = new NativeFunction(null, (_ctx, th, a) -> {
-            try {
-                res.fulfill(ctx, Values.convert(ctx, fulfill.call(ctx, null, a[0]), Object.class));
-            }
+            try { res.fulfill(ctx, Values.convert(ctx, fulfill.call(ctx, null, a[0]), Object.class)); }
             catch (EngineException err) { res.reject(ctx, err.value); }
             return null;
         });
@@ -234,7 +231,7 @@ import me.topchetoeu.jscript.interop.NativeInit;
     private boolean handled = false;
     private Object val;
 
-    public void fulfill(Context ctx, Object val) {
+    public synchronized void fulfill(Context ctx, Object val) {
         if (this.state != STATE_PENDING) return;
 
         if (val instanceof PromiseLib) ((PromiseLib)val).handle(ctx,
@@ -242,12 +239,12 @@ import me.topchetoeu.jscript.interop.NativeInit;
             new NativeFunction(null, (e, th, a) -> { this.reject(ctx, a[0]); return null; })
         );
         else {
-            Object next;
-            try { next = Values.getMember(ctx, val, "next"); }
-            catch (IllegalArgumentException e) { next = null; }
+            Object then;
+            try { then = Values.getMember(ctx, val, "then"); }
+            catch (IllegalArgumentException e) { then = null; }
 
             try {
-                if (next instanceof FunctionValue) ((FunctionValue)next).call(ctx, val,
+                if (then instanceof FunctionValue) ((FunctionValue)then).call(ctx, val,
                     new NativeFunction((e, _thisArg, a) -> { this.fulfill(ctx, a.length > 0 ? a[0] : null); return null; }),
                     new NativeFunction((e, _thisArg, a) -> { this.reject(ctx, a.length > 0 ? a[0] : null); return null; })
                 );
@@ -255,9 +252,13 @@ import me.topchetoeu.jscript.interop.NativeInit;
                     this.val = val;
                     this.state = STATE_FULFILLED;
 
-                    for (var handle : handles) handle.fulfilled.call(handle.ctx, null, val);
-
-                    handles = null;
+                    ctx.engine.pushMsg(true, ctx, new NativeFunction((_ctx, _thisArg, _args) -> {
+                        for (var handle : handles) {
+                            handle.fulfilled.call(handle.ctx, null, val);
+                        }
+                        handles = null;
+                        return null;
+                    }), null);
                 }
             }
             catch (EngineException err) {
@@ -265,7 +266,7 @@ import me.topchetoeu.jscript.interop.NativeInit;
             }
         }
     }
-    public void reject(Context ctx, Object val) {
+    public synchronized void reject(Context ctx, Object val) {
         if (this.state != STATE_PENDING) return;
 
         if (val instanceof PromiseLib) ((PromiseLib)val).handle(ctx,
@@ -273,12 +274,12 @@ import me.topchetoeu.jscript.interop.NativeInit;
             new NativeFunction(null, (e, th, a) -> { this.reject(ctx, a[0]); return null; })
         );
         else {
-            Object next;
-            try { next = Values.getMember(ctx, val, "next"); }
-            catch (IllegalArgumentException e) { next = null; }
+            Object then;
+            try { then = Values.getMember(ctx, val, "then"); }
+            catch (IllegalArgumentException e) { then = null; }
 
             try {
-                if (next instanceof FunctionValue) ((FunctionValue)next).call(ctx, val,
+                if (then instanceof FunctionValue) ((FunctionValue)then).call(ctx, val,
                     new NativeFunction((e, _thisArg, a) -> { this.reject(ctx, a.length > 0 ? a[0] : null); return null; }),
                     new NativeFunction((e, _thisArg, a) -> { this.reject(ctx, a.length > 0 ? a[0] : null); return null; })
                 );
@@ -286,19 +287,14 @@ import me.topchetoeu.jscript.interop.NativeInit;
                     this.val = val;
                     this.state = STATE_REJECTED;
 
-                    for (var handle : handles) handle.rejected.call(handle.ctx, null, val);
-                    if (handles.size() == 0) {
-                        ctx.engine.pushMsg(true, ctx, new NativeFunction((_ctx, _thisArg, _args) -> {
-                            if (!handled) {
-                                Values.printError(new EngineException(val).setCtx(ctx.environment(), ctx.engine), "(in promise)");
-                                throw new InterruptException();
-                            }
-
-                            return null;
-                        }), null);
-                    }
-
-                    handles = null;
+                    ctx.engine.pushMsg(true, ctx, new NativeFunction((_ctx, _thisArg, _args) -> {
+                        for (var handle : handles) handle.rejected.call(handle.ctx, null, val);
+                        if (!handled) {
+                            Values.printError(new EngineException(val).setCtx(ctx.environment(), ctx.engine), "(in promise)");
+                        }
+                        handles = null;
+                        return null;
+                    }), null);
                 }
             }
             catch (EngineException err) {
@@ -353,7 +349,18 @@ import me.topchetoeu.jscript.interop.NativeInit;
         this(STATE_PENDING, null);
     }
 
-    @NativeInit(InitType.PROTOTYPE) public static void init(Environment env, ObjectValue target) {
-        target.defineProperty(null, env.symbol("Symbol.typeName"), "Promise");
+    public static PromiseLib await(Context ctx, PromiseRunner runner) {
+        var res = new PromiseLib();
+
+        new Thread(() -> {
+            try {
+                res.fulfill(ctx, runner.run());
+            }
+            catch (EngineException e) {
+                res.reject(ctx, e.value);
+            }
+        }, "Promisifier").start();
+
+        return res;
     }
 }

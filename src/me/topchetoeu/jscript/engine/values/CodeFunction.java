@@ -5,7 +5,6 @@ import me.topchetoeu.jscript.compilation.FunctionBody;
 import me.topchetoeu.jscript.compilation.Instruction;
 import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.Environment;
-import me.topchetoeu.jscript.engine.StackData;
 import me.topchetoeu.jscript.engine.frame.CodeFrame;
 import me.topchetoeu.jscript.engine.frame.Runners;
 import me.topchetoeu.jscript.engine.scope.ValueVariable;
@@ -35,7 +34,7 @@ public class CodeFunction extends FunctionValue {
     public Object call(Context ctx, Object thisArg, Object ...args) {
         var frame = new CodeFrame(ctx, thisArg, args, this);
         try {
-            StackData.pushFrame(ctx, frame);
+            ctx.pushFrame(frame);
 
             while (true) {
                 var res = frame.next(ctx, Runners.NO_RETURN, Runners.NO_RETURN, null);
@@ -43,7 +42,7 @@ public class CodeFunction extends FunctionValue {
             }
         }
         finally {
-            StackData.popFrame(ctx, frame);
+            ctx.popFrame(frame);
         }
     }
 

@@ -2,10 +2,10 @@ package me.topchetoeu.jscript.lib;
 
 import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.Environment;
-import me.topchetoeu.jscript.engine.StackData;
 import me.topchetoeu.jscript.engine.values.ArrayValue;
 import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.engine.values.Values;
+import me.topchetoeu.jscript.engine.values.ObjectValue.PlaceholderProto;
 import me.topchetoeu.jscript.interop.InitType;
 import me.topchetoeu.jscript.interop.Native;
 import me.topchetoeu.jscript.interop.NativeConstructor;
@@ -51,8 +51,8 @@ import me.topchetoeu.jscript.interop.NativeInit;
         var target = new ObjectValue();
         if (thisArg instanceof ObjectValue) target = (ObjectValue)thisArg;
 
-        target.defineProperty(ctx, "stack", ArrayValue.of(ctx, StackData.stackTrace(ctx)));
-        target.defineProperty(ctx, "name", "Error");
+        target.setPrototype(PlaceholderProto.ERROR);
+        target.defineProperty(ctx, "stack", ArrayValue.of(ctx, ctx.stackTrace()));
         if (message == null) target.defineProperty(ctx, "message", "");
         else target.defineProperty(ctx, "message", Values.toString(ctx, message));
 
@@ -60,7 +60,6 @@ import me.topchetoeu.jscript.interop.NativeInit;
     }
 
     @NativeInit(InitType.PROTOTYPE) public static void init(Environment env, ObjectValue target) {
-        target.defineProperty(null, env.symbol("Symbol.typeName"), "Error");
         target.defineProperty(null, "name", "Error");
     }
 }

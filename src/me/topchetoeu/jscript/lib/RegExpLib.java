@@ -153,7 +153,7 @@ import me.topchetoeu.jscript.interop.NativeGetter;
     @Native("@@Symbol.matchAll") public Object matchAll(Context ctx, String target) {
         var pattern = new RegExpLib(this.source, this.flags() + "g");
 
-        return Values.fromJavaIterator(ctx, new Iterator<Object>() {
+        return Values.toJSIterator(ctx, new Iterator<Object>() {
             private Object val = null;
             private boolean updated = false;
 

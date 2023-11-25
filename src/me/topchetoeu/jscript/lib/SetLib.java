@@ -22,15 +22,15 @@ import me.topchetoeu.jscript.interop.NativeGetter;
 
     @Native public ObjectValue entries(Context ctx) {
         var res = set.stream().map(v -> new ArrayValue(ctx, v, v)).collect(Collectors.toList());
-        return Values.fromJavaIterator(ctx, res.iterator());
+        return Values.toJSIterator(ctx, res.iterator());
     }
     @Native public ObjectValue keys(Context ctx) {
         var res = new ArrayList<>(set);
-        return Values.fromJavaIterator(ctx, res.iterator());
+        return Values.toJSIterator(ctx, res.iterator());
     }
     @Native public ObjectValue values(Context ctx) {
         var res = new ArrayList<>(set);
-        return Values.fromJavaIterator(ctx, res.iterator());
+        return Values.toJSIterator(ctx, res.iterator());
     }
 
     @Native public Object add(Object key) {
@@ -58,6 +58,6 @@ import me.topchetoeu.jscript.interop.NativeGetter;
     }
 
     @Native public SetLib(Context ctx, Object iterable) {
-        for (var el : Values.toJavaIterable(ctx, iterable)) add(el);
+        for (var el : Values.fromJSIterator(ctx, iterable)) add(el);
     }
 }

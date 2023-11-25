@@ -2,16 +2,12 @@ package me.topchetoeu.jscript.lib;
 
 import me.topchetoeu.jscript.Location;
 import me.topchetoeu.jscript.engine.Context;
-import me.topchetoeu.jscript.engine.Environment;
 import me.topchetoeu.jscript.engine.values.ArrayValue;
 import me.topchetoeu.jscript.engine.values.CodeFunction;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
 import me.topchetoeu.jscript.engine.values.NativeFunction;
-import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.exceptions.EngineException;
-import me.topchetoeu.jscript.interop.InitType;
 import me.topchetoeu.jscript.interop.Native;
-import me.topchetoeu.jscript.interop.NativeInit;
 
 @Native("Function") public class FunctionLib {
     @Native(thisArg = true) public static Object location(Context ctx, FunctionValue func) {
@@ -43,7 +39,7 @@ import me.topchetoeu.jscript.interop.NativeInit;
         });
     }
     @Native(thisArg = true) public static String toString(Context ctx, Object func) {
-        return "function (...) { ... }";
+        return func.toString();
     }
 
     @Native public static FunctionValue async(FunctionValue func) {
@@ -54,9 +50,5 @@ import me.topchetoeu.jscript.interop.NativeInit;
     }
     @Native public static FunctionValue generator(FunctionValue func) {
         return new GeneratorFunctionLib(func);
-    }
-
-    @NativeInit(InitType.PROTOTYPE) public static void init(Environment env, ObjectValue target) {
-        target.defineProperty(null, env.symbol("Symbol.typeName"), "Function");
     }
 }

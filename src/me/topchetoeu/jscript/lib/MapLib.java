@@ -35,15 +35,15 @@ import me.topchetoeu.jscript.interop.NativeGetter;
         var res = map.entrySet().stream().map(v -> {
             return new ArrayValue(ctx, v.getKey(), v.getValue());
         }).collect(Collectors.toList());
-        return Values.fromJavaIterator(ctx, res.iterator());
+        return Values.toJSIterator(ctx, res.iterator());
     }
     @Native public ObjectValue keys(Context ctx) {
         var res = new ArrayList<>(map.keySet());
-        return Values.fromJavaIterator(ctx, res.iterator());
+        return Values.toJSIterator(ctx, res.iterator());
     }
     @Native public ObjectValue values(Context ctx) {
         var res = new ArrayList<>(map.values());
-        return Values.fromJavaIterator(ctx, res.iterator());
+        return Values.toJSIterator(ctx, res.iterator());
     }
 
     @Native public Object get(Object key) {
@@ -68,7 +68,7 @@ import me.topchetoeu.jscript.interop.NativeGetter;
     }
 
     @Native public MapLib(Context ctx, Object iterable) {
-        for (var el : Values.toJavaIterable(ctx, iterable)) {
+        for (var el : Values.fromJSIterator(ctx, iterable)) {
             try {
                 set(Values.getMember(ctx, el, 0), Values.getMember(ctx, el, 1));
             }

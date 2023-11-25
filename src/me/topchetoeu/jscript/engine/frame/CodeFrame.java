@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Stack;
 
 import me.topchetoeu.jscript.Location;
+import me.topchetoeu.jscript.compilation.Instruction;
 import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.scope.LocalScope;
 import me.topchetoeu.jscript.engine.scope.ValueVariable;
@@ -151,15 +152,17 @@ public class CodeFrame {
     public Object next(Context ctx, Object value, Object returnValue, EngineException error) {
         if (value != Runners.NO_RETURN) push(ctx, value);
 
+        Instruction instr = null;
+        if (codePtr >= 0 && codePtr < function.body.length) instr = function.body[codePtr];
+
         if (returnValue == Runners.NO_RETURN && error == null) {
             try {
                 if (Thread.currentThread().isInterrupted()) throw new InterruptException();
 
-                var instr = function.body[codePtr];
-                ctx.engine.onInstruction(ctx, this, instr, Runners.NO_RETURN, null, false);
-
-                if (codePtr < 0 || codePtr >= function.body.length) returnValue = null;
+                if (instr == null) returnValue = null;
                 else {
+                    ctx.engine.onInstruction(ctx, this, instr, Runners.NO_RETURN, null, false);
+
                     if (instr.location != null) prevLoc = instr.location;
 
                     try {
@@ -278,11 +281,11 @@ public class CodeFrame {
         }
 
         if (error != null) {
-            ctx.engine.onInstruction(ctx, this, function.body[codePtr], null, error, false);
+            ctx.engine.onInstruction(ctx, this, instr, null, error, false);
             throw error;
         }
         if (returnValue != Runners.NO_RETURN) {
-            ctx.engine.onInstruction(ctx, this, function.body[codePtr], returnValue, null, false);
+            ctx.engine.onInstruction(ctx, this, instr, returnValue, null, false);
             return returnValue;
         }
 

@@ -1,7 +1,6 @@
 package me.topchetoeu.jscript.lib;
 
 import me.topchetoeu.jscript.engine.Context;
-import me.topchetoeu.jscript.engine.StackData;
 import me.topchetoeu.jscript.engine.frame.CodeFrame;
 import me.topchetoeu.jscript.engine.frame.Runners;
 import me.topchetoeu.jscript.engine.values.CodeFunction;
@@ -21,7 +20,7 @@ import me.topchetoeu.jscript.interop.Native;
 
         private void next(Context ctx, Object inducedValue, Object inducedError) {
             Object res = null;
-            StackData.pushFrame(ctx, frame);
+            ctx.pushFrame(frame);
             ctx.pushEnv(frame.function.environment);
 
             awaiting = false;
@@ -40,7 +39,7 @@ import me.topchetoeu.jscript.interop.Native;
                 }
             }
 
-            StackData.popFrame(ctx, frame);
+            ctx.popFrame(frame);
 
             if (awaiting) {
                 PromiseLib.then(ctx, frame.pop(), new NativeFunction(this::fulfill), new NativeFunction(this::reject));
