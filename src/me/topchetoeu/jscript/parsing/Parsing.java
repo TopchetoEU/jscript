@@ -1896,10 +1896,7 @@ public class Parsing {
             res.add(Instruction.throwSyntax(e));
         }
 
-        if (res.size() != 0 && res.get(res.size() - 1).type == Type.DISCARD) {
-            res.set(res.size() - 1, Instruction.ret());
-        }
-        else res.add(Instruction.ret());
+        res.add(Instruction.ret());
 
         return new CodeFunction(environment, "", subscope.localsCount(), 0, new ValueVariable[0], new FunctionBody(res.array(), subscope.captures(), subscope.locals()));
     }
