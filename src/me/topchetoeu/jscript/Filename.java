@@ -51,4 +51,10 @@ public class Filename {
         this.protocol = protocol;
         this.path = path;
     }
+
+    public static Filename parse(String val) {
+        var i = val.indexOf("://");
+        if (i >= 0) return new Filename(val.substring(0, i).trim(), val.substring(i + 3).trim());
+        else return new Filename("file", val.trim());
+    }
 }
