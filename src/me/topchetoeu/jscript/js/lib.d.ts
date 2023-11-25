@@ -538,7 +538,7 @@ declare var Symbol: SymbolConstructor;
 declare var Promise: PromiseConstructor;
 declare var Math: MathObject;
 declare var Encoding: Encoding;
-declare var fs: Filesystem;
+declare var Filesystem: Filesystem;
 
 declare var Error: ErrorConstructor;
 declare var RangeError: RangeErrorConstructor;

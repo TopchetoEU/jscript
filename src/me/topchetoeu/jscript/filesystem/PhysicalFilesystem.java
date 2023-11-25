@@ -60,7 +60,7 @@ public class PhysicalFilesystem implements Filesystem {
         var _path = getPath(path);
         var f = _path.toFile();
 
-        if (f.exists()) throw new FilesystemException(_path.toString(), FSCode.DOESNT_EXIST);
+        if (!f.exists()) throw new FilesystemException(_path.toString(), FSCode.DOESNT_EXIST);
         checkMode(_path, Mode.READ);
 
         return new FileStat(
