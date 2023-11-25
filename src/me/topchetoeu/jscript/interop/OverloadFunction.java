@@ -8,6 +8,7 @@ import java.util.List;
 import me.topchetoeu.jscript.Location;
 import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
+import me.topchetoeu.jscript.engine.values.NativeWrapper;
 import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.exceptions.ConvertException;
 import me.topchetoeu.jscript.exceptions.EngineException;
@@ -92,7 +93,14 @@ public class OverloadFunction extends FunctionValue {
                     throw new InterruptException();
                 }
                 else {
-                    throw EngineException.ofError(e.getTargetException().getMessage()).add(name, loc);
+                    var target = e.getTargetException();
+                    var targetClass = target.getClass();
+                    var err = new NativeWrapper(e.getTargetException());
+
+                    err.defineProperty(ctx, "message", target.getMessage());
+                    err.defineProperty(ctx, "name", NativeWrapperProvider.getName(targetClass));
+
+                    throw new EngineException(err).add(name, loc);
                 }
             }
             catch (ReflectiveOperationException e) {

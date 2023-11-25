@@ -108,6 +108,12 @@ public class NativeWrapperProvider implements WrappersProvider {
         }
     }
 
+    public static String getName(Class<?> clazz) {
+        var classNat = clazz.getAnnotation(Native.class);
+        if (classNat != null && !classNat.value().trim().equals("")) return classNat.value().trim();
+        else return clazz.getSimpleName();
+    }
+
     /**
      * Generates a prototype for the given class.
      * The returned object will have appropriate wrappers for all instance members.
@@ -117,10 +123,7 @@ public class NativeWrapperProvider implements WrappersProvider {
     public static ObjectValue makeProto(Environment ctx, Class<?> clazz) {
         var res = new ObjectValue();
 
-        var name = clazz.getName();
-        var classNat = clazz.getAnnotation(Native.class);
-        if (classNat != null && !classNat.value().trim().equals("")) name = classNat.value().trim();
-        res.defineProperty(null, ctx.symbol("Symbol.typeName"), name);
+        res.defineProperty(null, ctx.symbol("Symbol.typeName"), getName(clazz));
 
         for (var overload : clazz.getDeclaredMethods()) {
             var init = overload.getAnnotation(NativeInit.class);
@@ -142,11 +145,7 @@ public class NativeWrapperProvider implements WrappersProvider {
      * @param clazz The class for which a constructor should be generated
      */
     public static FunctionValue makeConstructor(Environment ctx, Class<?> clazz) {
-        var name = clazz.getName();
-        var classNat = clazz.getAnnotation(Native.class);
-        if (classNat != null && !classNat.value().trim().equals("")) name = classNat.value().trim();
-
-        FunctionValue func = new OverloadFunction(name);
+        FunctionValue func = new OverloadFunction(getName(clazz));
 
         for (var overload : clazz.getDeclaredConstructors()) {
             var nat = overload.getAnnotation(Native.class);
@@ -261,7 +260,27 @@ public class NativeWrapperProvider implements WrappersProvider {
         constructors.put(clazz, value);
     }
 
+    private void initError() {
+        var proto = new ObjectValue();
+        proto.defineProperty(null, "message", new NativeFunction("message", (ctx, thisArg, args) -> {
+            if (thisArg instanceof Throwable) return ((Throwable)thisArg).getMessage();
+            else return null;
+        }));
+        proto.defineProperty(null, "name", new NativeFunction("name", (ctx, thisArg, args) -> getName(thisArg.getClass())));
+
+        var constr = makeConstructor(null, Throwable.class);
+        proto.defineProperty(null, "constructor", constr, true, false, false);
+        constr.defineProperty(null, "prototype", proto, true, false, false);
+
+        proto.setPrototype(null, getProto(Object.class));
+        constr.setPrototype(null, getConstr(Object.class));
+
+        setProto(Throwable.class, proto);
+        setConstr(Throwable.class, constr);
+    }
+
     public NativeWrapperProvider(Environment env) {
         this.env = env;
+        initError();
     }
 }
