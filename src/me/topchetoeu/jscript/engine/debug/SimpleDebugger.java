@@ -474,8 +474,9 @@ public class SimpleDebugger implements Debugger {
     @Override public void setBreakpointByUrl(V8Message msg) {
         var line = (int)msg.params.number("lineNumber") + 1;
         var col = (int)msg.params.number("columnNumber", 0) + 1;
-        var cond = msg.params.string("condition", null);
+        var cond = msg.params.string("condition", "").trim();
 
+        if (cond.equals("")) cond = null;
         if (cond != null) cond  = "(" + cond + ")";
 
         Pattern regex;
