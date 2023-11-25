@@ -11,7 +11,7 @@ public abstract class FunctionValue extends ObjectValue {
 
     @Override
     public String toString() {
-        return "function(...) {  ...}";
+        return "function %s(...)".formatted(name);
     }
 
     public abstract Object call(Context ctx, Object thisArg, Object ...args);
