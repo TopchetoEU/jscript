@@ -5,7 +5,6 @@ import java.util.Map;
 
 @SuppressWarnings("unchecked")
 public class Data {
-    public final Data parent;
     private HashMap<DataKey<Object>, Object> data = new HashMap<>();
 
     public Data copy() {
@@ -33,19 +32,12 @@ public class Data {
         return this;
     }
     public <T> T get(DataKey<T> key, T val) {
-        for (var it = this; it != null; it = it.parent) {
-            if (it.data.containsKey(key)) {
-                return (T)it.data.get((DataKey<Object>)key);
-            }
-        }
-
+        if (data.containsKey(key)) return (T)data.get((DataKey<Object>)key);
         set(key, val);
         return val;
     }
     public <T> T get(DataKey<T> key) {
-        for (var it = this; it != null; it = it.parent) {
-            if (it.data.containsKey(key)) return (T)it.data.get((DataKey<Object>)key);
-        }
+        if (data.containsKey(key)) return (T)data.get((DataKey<Object>)key);
         return null;
     }
     public boolean has(DataKey<?> key) { return data.containsKey(key); }
@@ -60,12 +52,5 @@ public class Data {
     }
     public int increase(DataKey<Integer> key) {
         return increase(key, 1, 0);
-    }
-
-    public Data() {
-        this.parent = null;
-    }
-    public Data(Data parent) {
-        this.parent = parent;
     }
 }
