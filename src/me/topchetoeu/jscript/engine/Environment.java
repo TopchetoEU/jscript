@@ -12,6 +12,7 @@ import me.topchetoeu.jscript.interop.Native;
 import me.topchetoeu.jscript.interop.NativeGetter;
 import me.topchetoeu.jscript.interop.NativeSetter;
 import me.topchetoeu.jscript.interop.NativeWrapperProvider;
+import me.topchetoeu.jscript.permissions.PermissionsManager;
 
 public class Environment {
     private HashMap<String, ObjectValue> prototypes = new HashMap<>();
@@ -21,6 +22,7 @@ public class Environment {
 
     public GlobalScope global;
     public WrappersProvider wrappers;
+    public PermissionsManager permissions;
 
     private static int nextId = 0;
 

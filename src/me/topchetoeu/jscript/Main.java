@@ -16,6 +16,10 @@ import me.topchetoeu.jscript.events.Observer;
 import me.topchetoeu.jscript.exceptions.EngineException;
 import me.topchetoeu.jscript.exceptions.InterruptException;
 import me.topchetoeu.jscript.exceptions.SyntaxException;
+import me.topchetoeu.jscript.filesystem.MemoryFilesystem;
+import me.topchetoeu.jscript.filesystem.Mode;
+import me.topchetoeu.jscript.filesystem.RootFilesystem;
+import me.topchetoeu.jscript.lib.FilesystemLib;
 import me.topchetoeu.jscript.lib.Internals;
 
 public class Main {   
@@ -112,6 +116,11 @@ public class Main {
                 throw new EngineException("Couldn't open do.js");
             }
         });
+
+        var fs = new RootFilesystem(null);
+        fs.protocols.put("file", new MemoryFilesystem(Mode.READ_WRITE));
+
+        environment.global.define((Context)null, "fs", false, new FilesystemLib(fs));
     }
     private static void initEngine() {
         debugServer.targets.put("target", (ws, req) -> new SimpleDebugger(ws, engine));

@@ -39,7 +39,7 @@ import me.topchetoeu.jscript.interop.Native;
         });
     }
     @Native(thisArg = true) public static String toString(Context ctx, Object func) {
-        return "function (...) { ... }";
+        return func.toString();
     }
 
     @Native public static FunctionValue async(FunctionValue func) {
