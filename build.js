@@ -1,7 +1,7 @@
 const { spawn } = require('child_process');
 const fs = require('fs/promises');
 const pt = require('path');
-const { argv } = require('process');
+const { argv, exit } = require('process');
 
 const conf = {
     name: "java-jscript",
@@ -74,6 +74,7 @@ async function compileJava() {
     }
     catch (e) {
         if (argv[2] === 'debug') throw e;
-        else console.log(e.toString());
+        console.log(e.toString());
+        exit(-1);
     }
 })();
