@@ -24,7 +24,7 @@ public class MemoryFilesystem implements Filesystem {
                 if (!folders.contains(_path.getParent())) throw new FilesystemException(path, FSCode.DOESNT_EXIST);
                 if (folders.contains(_path) || files.containsKey(_path)) throw new FilesystemException(path, FSCode.ALREADY_EXISTS);
                 if (folders.contains(_path)) throw new FilesystemException(path, FSCode.ALREADY_EXISTS);
-                files.put(_path, new Buffer(new byte[0]));
+                files.put(_path, new Buffer());
                 break;
             case FOLDER:
                 if (!folders.contains(_path.getParent())) throw new FilesystemException(path, FSCode.DOESNT_EXIST);

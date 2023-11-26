@@ -21,7 +21,7 @@ public interface File {
         return new String(res);
     }
     default String readLine() {
-        var res = new Buffer(new byte[0]);
+        var res = new Buffer();
         var buff = new byte[1];
 
         while (true) {

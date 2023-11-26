@@ -24,6 +24,10 @@ public class Buffer {
         return n;
     }
 
+    public void append(byte b) {
+        write(length, new byte[] { b });
+    }
+
     public byte[] data() {
         var res = new byte[length];
         System.arraycopy(this.data, 0, res, 0, length);
@@ -37,5 +41,13 @@ public class Buffer {
         this.data = new byte[data.length];
         this.length = data.length;
         System.arraycopy(data, 0, this.data, 0, data.length);
+    }
+    public Buffer(int capacity) {
+        this.data = new byte[capacity];
+        this.length = 0;
+    }
+    public Buffer() {
+        this.data = new byte[128];
+        this.length = 0;
     }
 }
