@@ -90,7 +90,6 @@ public class Parsing {
         // We allow yield and await, because they're part of the custom async and generator functions
     }
 
-
     public static boolean isDigit(char c) {
         return c >= '0' && c <= '9';
     }
@@ -396,7 +395,7 @@ public class Parsing {
         return tokens;
     }
 
-    private static int fromHex(char c) {
+    public static int fromHex(char c) {
         if (c >= 'A' && c <= 'F') return c - 'A' + 10;
         if (c >= 'a' && c <= 'f') return c - 'a' + 10;
         if (c >= '0' && c <= '9') return c - '0';

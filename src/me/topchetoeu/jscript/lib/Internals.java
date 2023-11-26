@@ -10,8 +10,11 @@ import me.topchetoeu.jscript.engine.Environment;
 import me.topchetoeu.jscript.engine.scope.GlobalScope;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
 import me.topchetoeu.jscript.engine.values.Values;
+import me.topchetoeu.jscript.exceptions.EngineException;
+import me.topchetoeu.jscript.filesystem.Buffer;
 import me.topchetoeu.jscript.interop.Native;
 import me.topchetoeu.jscript.interop.NativeGetter;
+import me.topchetoeu.jscript.parsing.Parsing;
 
 public class Internals {
     private static final DataKey<HashMap<Integer, Thread>> THREADS = new DataKey<>();
@@ -111,6 +114,60 @@ public class Internals {
     }
     @NativeGetter public static double Infinity(Context ctx) {
         return Double.POSITIVE_INFINITY;
+    }
+    private static final String HEX = "0123456789ABCDEF";
+
+    private static String encodeUriAny(String str, String keepAlphabet) {
+        if (str == null) str = "undefined";
+
+        var bytes = str.getBytes();
+        var sb = new StringBuilder(bytes.length);
+
+        for (byte c : bytes) {
+            if (Parsing.isAlphanumeric((char)c) || Parsing.isAny((char)c, keepAlphabet)) sb.append((char)c);
+            else {
+                sb.append('%');
+                sb.append(HEX.charAt(c / 16));
+                sb.append(HEX.charAt(c % 16));
+            }
+        }
+
+        return sb.toString();
+    }
+    private static String decodeUriAny(String str, String keepAlphabet) {
+        if (str == null) str = "undefined";
+
+        var res = new Buffer();
+        var bytes = str.getBytes();
+
+        for (var i = 0; i < bytes.length; i++) {
+            var c = bytes[i];
+            if (c == '%') {
+                if (i >= bytes.length - 2) throw EngineException.ofError("URIError", "URI malformed.");
+                var b = Parsing.fromHex((char)bytes[i + 1]) * 16 | Parsing.fromHex((char)bytes[i + 2]);
+                if (!Parsing.isAny((char)b, keepAlphabet)) {
+                    i += 2;
+                    res.append((byte)b);
+                    continue;
+                }
+            }
+            res.append(c);
+        }
+
+        return new String(res.data());
+    }
+
+    @Native public static String encodeURIComponent(String str) {
+        return encodeUriAny(str, ".-_!~*'()");
+    }
+    @Native public static String decodeURIComponent(String str) {
+        return decodeUriAny(str, "");
+    }
+    @Native public static String encodeURI(String str) {
+        return encodeUriAny(str, ";,/?:@&=+$#.-_!~*'()");
+    }
+    @Native public static String decodeURI(String str) {
+        return decodeUriAny(str, ",/?:@&=+$#.");
     }
 
     public static Environment apply(Environment env) {

@@ -2,7 +2,8 @@
     var ts = _arguments[0];
     var src = '', version = 0;
     var lib = _arguments[2].concat([
-        'declare const exit: never; declare const go: any;',
+        'declare const exit: never;',
+        'declare const go: any;',
         'declare function getTsDeclarations(): string[];'
     ]).join('');
     var libSnapshot = ts.ScriptSnapshot.fromString(lib);
@@ -21,6 +22,7 @@
         forceConsistentCasingInFileNames: true,
         experimentalDecorators: true,
         strict: true,
+        sourceMap: true,
     };
 
     var reg = ts.createDocumentRegistry();
@@ -82,9 +84,11 @@
             throw new SyntaxError(diagnostics.join("\n"));
         }
 
-        var result = emit.outputFiles[0].text;
-        var declaration = emit.outputFiles[1].text;
-        
+        var map = emit.outputFiles[0].text;
+        var result = emit.outputFiles[1].text;
+        var declaration = emit.outputFiles[2].text;
+
+        log(map);
 
         return {
             source: result,
