@@ -9,6 +9,7 @@ import java.util.Base64;
 import java.util.HashMap;
 
 import me.topchetoeu.jscript.Metadata;
+import me.topchetoeu.jscript.Reading;
 import me.topchetoeu.jscript.engine.debug.WebSocketMessage.Type;
 import me.topchetoeu.jscript.events.Notifier;
 import me.topchetoeu.jscript.exceptions.SyntaxException;
@@ -232,10 +233,9 @@ public class DebugServer {
 
     public DebugServer() {
         try {
-            this.favicon = getClass().getClassLoader().getResourceAsStream("assets/favicon.png").readAllBytes();
-            this.protocol = getClass().getClassLoader().getResourceAsStream("assets/protocol.json").readAllBytes();
-            var index = new String(getClass().getClassLoader().getResourceAsStream("assets/index.html").readAllBytes());
-            this.index = index
+            this.favicon = Reading.resourceToStream("debugger/favicon.png").readAllBytes();
+            this.protocol = Reading.resourceToStream("debugger/protocol.json").readAllBytes();
+            this.index = Reading.resourceToString("debugger/index.html")
                 .replace("${NAME}", Metadata.name())
                 .replace("${VERSION}", Metadata.version())
                 .replace("${AUTHOR}", Metadata.author())
