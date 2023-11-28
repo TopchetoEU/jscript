@@ -9,11 +9,11 @@ import java.util.TreeSet;
 import me.topchetoeu.jscript.Filename;
 import me.topchetoeu.jscript.Location;
 import me.topchetoeu.jscript.engine.frame.CodeFrame;
+import me.topchetoeu.jscript.engine.values.ArrayValue;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
-import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.exceptions.EngineException;
-import me.topchetoeu.jscript.parsing.Parsing;
+import me.topchetoeu.jscript.mapping.SourceMap;
 
 public class Context {
     private final Stack<Environment> env = new Stack<>();
@@ -34,24 +34,17 @@ public class Context {
 
     public FunctionValue compile(Filename filename, String raw) {
         var env = environment();
-        var transpiled = env.compile.call(this, null, raw, filename.toString(), env);
-        String source = null;
-        FunctionValue runner = null;
+        var result = env.compile.call(this, null, raw, filename.toString(), env);
 
-        if (transpiled instanceof ObjectValue) {
-            source = Values.toString(this, Values.getMember(this, transpiled, "source"));
-            var _runner = Values.getMember(this, transpiled, "runner");
-            if (_runner instanceof FunctionValue) runner = (FunctionValue)_runner;
-        }
-        else source = Values.toString(this, transpiled);
+        var function = (FunctionValue)Values.getMember(this, result, "function");
+        var rawMapChain = ((ArrayValue)Values.getMember(this, result, "mapChain")).toArray();
+        var maps = new SourceMap[rawMapChain.length];
+        for (var i = 0; i < maps.length; i++) maps[i] = SourceMap.parse((String)rawMapChain[i]);
+        var map = SourceMap.chain(maps);
 
-        var breakpoints = new TreeSet<Location>();
-        FunctionValue res = Parsing.compile(Engine.functions, breakpoints, env, filename, source);
-        engine.onSource(filename, source, breakpoints);
+        engine.onSource(filename, raw, new TreeSet<>(), map);
 
-        if (runner != null) res = (FunctionValue)runner.call(this, null, res);
-
-        return res;
+        return function;
     }
 
 

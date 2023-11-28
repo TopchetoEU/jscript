@@ -1,7 +1,6 @@
-(function (_arguments) {
-    var ts = _arguments[0];
+(function (ts, env, libs) {
     var src = '', version = 0;
-    var lib = _arguments[2].concat([
+    var lib = libs.concat([
         'declare const exit: never;',
         'declare const go: any;',
         'declare function getTsDeclarations(): string[];'
@@ -57,6 +56,8 @@
     service.getEmitOutput("/lib.d.ts");
     log("Loaded libraries!");
 
+    var oldCompile = env.compile;
+
     function compile(code, filename, env) {
         src = code;
         version++;
@@ -88,23 +89,19 @@
         var result = emit.outputFiles[1].text;
         var declaration = emit.outputFiles[2].text;
 
+        var compiled = oldCompile(result, filename, env);
+
         return {
-            source: result,
-            map: log(JSON.stringify({
-                version: 3,
-                sources: [ filename ],
+            function: function () {
+                var val = compiled.function.apply(this, arguments);
+                if (declaration !== '') declSnapshots.push(ts.ScriptSnapshot.fromString(declaration));
+                return val;
+            },
+            mapChain: compiled.mapChain.concat(JSON.stringify({
                 file: filename,
-                mappings: map.mappings
-            })),
-            runner: function(func) {
-                return function() {
-                    var val = func.apply(this, arguments);
-                    if (declaration !== '') {
-                        declSnapshots.push(ts.ScriptSnapshot.fromString(declaration));
-                    }
-                    return val;
-                }
-            }
+                sources: [filename],
+                mappings: map.mappings,
+            }))
         };
     }
 
@@ -115,5 +112,5 @@
         }
     }
 
-    apply(_arguments[1]);
-})(arguments);
+    apply(env);
+})(arguments[0], arguments[1], arguments[2]);
