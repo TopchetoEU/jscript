@@ -1,5 +1,7 @@
 package me.topchetoeu.jscript.mapping;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.TreeMap;
 
 import me.topchetoeu.jscript.Filename;
@@ -7,34 +9,55 @@ import me.topchetoeu.jscript.Location;
 import me.topchetoeu.jscript.json.JSON;
 
 public class SourceMap implements LocationMap {
-    private TreeMap<Location, Location> srcToDst = new TreeMap<>();
-    private TreeMap<Location, Location> dstToSrc = new TreeMap<>();
+    private final TreeMap<Location, Location> orgToSrc = new TreeMap<>();
+    private final TreeMap<Location, Location> srcToOrg = new TreeMap<>();
 
-    public Location srcToDst(Location loc) {
-        if (srcToDst.containsKey(loc)) return loc;
-
-        var tail = srcToDst.tailMap(loc);
-        if (tail.isEmpty()) return null;
-
-        var key = tail.firstKey();
-        if (key != null) return srcToDst.get(key);
-        else return null;
+    public Location toSource(Location loc) {
+        return convert(loc, orgToSrc);
     }
-    public Location dstToSrc(Location loc) {
-        if (dstToSrc.containsKey(loc)) return loc;
 
-        var tail = dstToSrc.tailMap(loc);
-        if (tail.isEmpty()) return null;
+    public Location toOriginal(Location loc) {
+        return convert(loc, srcToOrg);
+    }
 
-        var key = tail.firstKey();
-        if (key != null) return dstToSrc.get(key);
-        else return null;
+    public static Location convert(Location loc, TreeMap<Location, Location> map) {
+        if (map.containsKey(loc)) return loc;
+
+        var srcA = map.floorKey(loc);
+        return srcA == null ? loc : srcA;
+    }
+
+    public void chain(LocationMap map) {
+        for (var key : orgToSrc.keySet()) {
+            orgToSrc.put(key, map.toSource(key));
+        }
+        for (var key : srcToOrg.keySet()) {
+            srcToOrg.put(map.toOriginal(key), key);
+        }
+    }
+
+    public SourceMap clone() {
+        var res = new SourceMap();
+        res.orgToSrc.putAll(this.orgToSrc);
+        res.srcToOrg.putAll(this.srcToOrg);
+        return res;
+    }
+
+    public void split(Map<Filename, TreeMap<Location, Location>> maps) {
+        for (var el : orgToSrc.entrySet()) {
+            var map = maps.get(el.getKey().filename());
+            if (map == null) maps.put(el.getKey().filename(), map = new TreeMap<>());
+            map.put(el.getKey(), el.getValue());
+
+            map = maps.get(el.getValue().filename());
+            if (map == null) maps.put(el.getValue().filename(), map = new TreeMap<>());
+            map.put(el.getValue(), el.getKey());
+        }
     }
 
     public static SourceMap parse(String raw) {
         var res = new SourceMap();
         var json = JSON.parse(null, raw).map();
-        if (json.number("version") != 3) throw new IllegalArgumentException("Source map version must be 3.");
         var sources = json.list("sources").stream().map(v -> v.string()).toArray(String[]::new);
         var dstFilename = Filename.parse(json.string("file"));
         var mapping = VLQ.decodeMapping(json.string("mappings"));
@@ -55,12 +78,19 @@ public class SourceMap implements LocationMap {
                 var src = new Location(srcRow + 1, srcCol + 1, Filename.parse(sources[srcI]));
                 var dst = new Location(dstRow + 1, dstCol + 1, dstFilename);
 
-                System.out.printf("%s -> %s\n", src, dst);
-
-                res.srcToDst.put(src, dst);
-                res.dstToSrc.put(dst, src);
+                res.orgToSrc.put(src, dst);
+                res.srcToOrg.put(dst, src);
             }
         }
+
+        return res;
+    }
+
+    public static SourceMap chain(SourceMap ...maps) {
+        if (maps.length == 0) return null;
+        var res = maps[0];
+
+        for (var i = 1; i < maps.length; i++) res.chain(maps[i]);
 
         return res;
     }
