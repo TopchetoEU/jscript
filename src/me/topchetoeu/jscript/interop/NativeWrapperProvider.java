@@ -165,7 +165,7 @@ public class NativeWrapperProvider implements WrappersProvider {
         }
 
         if (((OverloadFunction)func).overloads.size() == 0) {
-            func = new NativeFunction(clazz.getName(), (a, b, c) -> { throw EngineException.ofError("This constructor is not invokable."); });
+            func = new NativeFunction(getName(clazz), (a, b, c) -> { throw EngineException.ofError("This constructor is not invokable."); });
         }
 
         applyMethods(ctx, false, func, clazz);
