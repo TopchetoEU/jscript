@@ -11,7 +11,6 @@ import me.topchetoeu.jscript.engine.scope.ValueVariable;
 
 public class CodeFunction extends FunctionValue {
     public final int localsN;
-    public final int length;
     public final Instruction[] body;
     public final String[] captureNames, localNames;
     public final ValueVariable[] captures;
@@ -46,14 +45,13 @@ public class CodeFunction extends FunctionValue {
         }
     }
 
-    public CodeFunction(Environment environment, String name, int localsN, int length, ValueVariable[] captures, FunctionBody body) {
-        super(name, length);
+    public CodeFunction(Environment environment, String name, FunctionBody body, ValueVariable... captures) {
+        super(name, body.argsN);
         this.captures = captures;
         this.captureNames = body.captureNames;
         this.localNames = body.localNames;
         this.environment = environment;
-        this.localsN = localsN;
-        this.length = length;
+        this.localsN = body.localsN;
         this.body = body.instructions;
     }
 }

@@ -14,17 +14,18 @@ import me.topchetoeu.jscript.exceptions.SyntaxException;
 
 public class FunctionStatement extends Statement {
     public final CompoundStatement body;
-    public final String name;
+    public final String varName;
     public final String[] args;
+    public final boolean statement;
 
     private static Random rand = new Random();
 
     @Override
-    public boolean pure() { return name == null; }
+    public boolean pure() { return varName == null; }
 
     @Override
     public void declare(ScopeRecord scope) {
-        if (name != null) scope.define(name);
+        if (varName != null) scope.define(varName);
     }
 
     public static void checkBreakAndCont(CompileTarget target, int start) {
@@ -40,73 +41,83 @@ public class FunctionStatement extends Statement {
         }
     }
 
-    public void compile(CompileTarget target, ScopeRecord scope, String name, boolean isStatement) {
+    protected long compileBody(CompileTarget target, ScopeRecord scope, boolean polute) {
         for (var i = 0; i < args.length; i++) {
             for (var j = 0; j < i; j++) {
-                if (args[i].equals(args[j])){
-                    target.add(Instruction.throwSyntax(new SyntaxException(loc(), "Duplicate parameter '" + args[i] + "'.")));
-                    return;
+                if (args[i].equals(args[j])) {
+                    throw new SyntaxException(loc(), "Duplicate parameter '" + args[i] + "'.");
                 }
             }
         }
-        var subscope = scope.child();
 
-        int start = target.size();
-        var funcTarget = new CompileTarget(target.functions, target.breakpoints);
+        var id = rand.nextLong();
+        var subscope = scope.child();
+        var subtarget = new CompileTarget(target.functions, target.breakpoints);
 
         subscope.define("this");
         var argsVar = subscope.define("arguments");
 
         if (args.length > 0) {
             for (var i = 0; i < args.length; i++) {
-                funcTarget.add(Instruction.loadVar(argsVar).locate(loc()));
-                funcTarget.add(Instruction.loadMember(i).locate(loc()));
-                funcTarget.add(Instruction.storeVar(subscope.define(args[i])).locate(loc()));
+                subtarget.add(Instruction.loadVar(loc(), argsVar));
+                subtarget.add(Instruction.loadMember(loc(), i));
+                subtarget.add(Instruction.storeVar(loc(), subscope.define(args[i])));
             }
         }
 
-        if (!isStatement && this.name != null) {
-            funcTarget.add(Instruction.storeSelfFunc((int)subscope.define(this.name)));
+        if (!statement && this.varName != null) {
+            subtarget.add(Instruction.storeSelfFunc(loc(), (int)subscope.define(this.varName)));
         }
 
         body.declare(subscope);
-        body.compile(funcTarget, subscope, false);
-        funcTarget.add(Instruction.ret().locate(loc()));
-        checkBreakAndCont(funcTarget, start);
+        body.compile(subtarget, subscope, false);
+        subtarget.add(Instruction.ret(subtarget.lastLoc(loc())));
+        checkBreakAndCont(subtarget, 0);
 
-        var id = rand.nextLong();
+        if (polute) target.add(Instruction.loadFunc(loc(), id, subscope.getCaptures()));
+        target.functions.put(id, new FunctionBody(subscope.localsCount(), args.length, subtarget.array(), subscope.captures(), subscope.locals()));
 
-        target.add(Instruction.loadFunc(id, subscope.localsCount(), args.length, subscope.getCaptures()).locate(loc()));
-        target.functions.put(id, new FunctionBody(funcTarget.array(), subscope.captures(), subscope.locals()));
-
-        if (name == null) name = this.name;
-
-        if (name != null) {
-            target.add(Instruction.dup().locate(loc()));
-            target.add(Instruction.loadValue("name").locate(loc()));
-            target.add(Instruction.loadValue(name).locate(loc()));
-            target.add(Instruction.storeMember().locate(loc()));
-        }
-
-        if (this.name != null && isStatement) {
-            var key = scope.getKey(this.name);
-
-            if (key instanceof String) target.add(Instruction.makeVar((String)key).locate(loc()));
-            target.add(Instruction.storeVar(scope.getKey(this.name), false).locate(loc()));
-        }
-
-    }
-    @Override
-    public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {
-        compile(target, scope, null, false);
-        if (!pollute) target.add(Instruction.discard().locate(loc()));
+        return id;
     }
 
-    public FunctionStatement(Location loc, String name, String[] args, CompoundStatement body) {
+    public void compile(CompileTarget target, ScopeRecord scope, boolean pollute, String name) {
+        if (this.varName != null) name = this.varName;
+
+        var hasVar = this.varName != null && statement;
+        var hasName = name != null;
+
+        compileBody(target, scope, pollute || hasVar || hasName);
+
+        if (hasName) {
+            if (pollute || hasVar) target.add(Instruction.dup(loc()));
+            target.add(Instruction.loadValue(loc(), "name"));
+            target.add(Instruction.loadValue(loc(), name));
+            target.add(Instruction.storeMember(loc()));
+        }
+
+        if (hasVar) {
+            var key = scope.getKey(this.varName);
+
+            if (key instanceof String) target.add(Instruction.makeVar(loc(), (String)key));
+            target.add(Instruction.storeVar(loc(), scope.getKey(this.varName), false));
+        }
+    }
+    @Override public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {
+        compile(target, scope, pollute, null);
+    }
+
+    public FunctionStatement(Location loc, String varName, String[] args, boolean statement, CompoundStatement body) {
         super(loc);
-        this.name = name;
+
+        this.varName = varName;
+        this.statement = statement;
 
         this.args = args;
         this.body = body;
+    }
+
+    public static void compileWithName(Statement stm, CompileTarget target, ScopeRecord scope, boolean pollute, String name) {
+        if (stm instanceof FunctionStatement) ((FunctionStatement)stm).compile(target, scope, pollute, name);
+        else stm.compile(target, scope, pollute);
     }
 }

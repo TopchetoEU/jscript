@@ -179,16 +179,13 @@ public class Runners {
     }
     public static Object execLoadFunc(Context ctx, Instruction instr, CodeFrame frame) {
         long id = (Long)instr.get(0);
-        int localsN = (Integer)instr.get(1);
-        int len = (Integer)instr.get(2);
-        var captures = new ValueVariable[instr.params.length - 3];
+        var captures = new ValueVariable[instr.params.length - 1];
 
-        for (var i = 3; i < instr.params.length; i++) {
-            captures[i - 3] = frame.scope.get(instr.get(i));
+        for (var i = 1; i < instr.params.length; i++) {
+            captures[i - 1] = frame.scope.get(instr.get(i));
         }
 
-        var body = Engine.functions.get(id);
-        var func = new CodeFunction(ctx.environment(), "", localsN, len, captures, body);
+        var func = new CodeFunction(ctx.environment(), "", Engine.functions.get(id), captures);
 
         frame.push(ctx, func);
 
@@ -306,7 +303,6 @@ public class Runners {
         var val = frame.pop();
 
         if (!Values.deleteMember(ctx, val, key)) throw EngineException.ofSyntax("Can't delete member '" + key + "'.");
-        frame.push(ctx, true);
         frame.codePtr++;
         return NO_RETURN;
     }

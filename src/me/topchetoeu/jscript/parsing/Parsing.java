@@ -808,7 +808,7 @@ public class Parsing {
 
         return ParseRes.res(new ObjProp(
             name, access,
-            new FunctionStatement(loc, access + " " + name.toString(), argsRes.result.toArray(String[]::new), res.result)
+            new FunctionStatement(loc, access + " " + name.toString(), argsRes.result.toArray(String[]::new), false, res.result)
         ), n);
     }
     public static ParseRes<ObjectStatement> parseObject(Filename filename, List<Token> tokens, int i) {
@@ -966,7 +966,7 @@ public class Parsing {
         var res = parseCompound(filename, tokens, i + n);
         n += res.n;
 
-        if (res.isSuccess()) return ParseRes.res(new FunctionStatement(loc, name, args.toArray(String[]::new), res.result), n);
+        if (res.isSuccess()) return ParseRes.res(new FunctionStatement(loc, name, args.toArray(String[]::new), statement, res.result), n);
         else return ParseRes.error(loc, "Expected a compound statement for function.", res);
     }
 
@@ -1891,19 +1891,19 @@ public class Parsing {
         }
         catch (SyntaxException e) {
             res.target.clear();
-            res.add(Instruction.throwSyntax(e));
+            res.add(Instruction.throwSyntax(e.loc, e));
         }
 
-        res.add(Instruction.ret());
+        res.add(Instruction.ret(body.loc()));
 
-        return new CodeFunction(environment, "", subscope.localsCount(), 0, new ValueVariable[0], new FunctionBody(res.array(), subscope.captures(), subscope.locals()));
+        return new CodeFunction(environment, "", new FunctionBody(subscope.localsCount(), 0, res.array(), subscope.captures(), subscope.locals()), new ValueVariable[0]);
     }
     public static CodeFunction compile(HashMap<Long, FunctionBody> funcs, TreeSet<Location> breakpoints, Environment environment, Filename filename, String raw) {
         try {
             return compile(funcs, breakpoints, environment, parse(filename, raw));
         }
         catch (SyntaxException e) {
-            return new CodeFunction(environment, null, 2, 0, new ValueVariable[0], new FunctionBody(new Instruction[] { Instruction.throwSyntax(e).locate(e.loc) }));
+            return new CodeFunction(environment, null, new FunctionBody(Instruction.throwSyntax(e.loc, e)));
         }
     }
 }
