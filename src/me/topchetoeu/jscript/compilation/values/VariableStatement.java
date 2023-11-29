@@ -22,8 +22,8 @@ public class VariableStatement extends AssignableStatement {
     @Override
     public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {
         var i = scope.getKey(name);
-        target.add(Instruction.loadVar(i).locate(loc()));
-        if (!pollute) target.add(Instruction.discard().locate(loc()));
+        target.add(Instruction.loadVar(loc(), i));
+        if (!pollute) target.add(Instruction.discard(loc()));
     }
 
     public VariableStatement(Location loc, String name) {

@@ -12,7 +12,7 @@ public class VoidStatement extends Statement {
     @Override
     public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {
         if (value != null) value.compile(target, scope, false);
-        if (pollute) target.add(Instruction.loadValue(null).locate(loc()));
+        if (pollute) target.add(Instruction.loadValue(loc(), null));
     }
 
     @Override

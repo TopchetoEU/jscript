@@ -12,7 +12,7 @@ public class GlobalThisStatement extends Statement {
 
     @Override
     public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {
-        if (pollute) target.add(Instruction.loadGlob().locate(loc()));
+        if (pollute) target.add(Instruction.loadGlob(loc()));
     }
 
     public GlobalThisStatement(Location loc) {

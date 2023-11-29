@@ -20,8 +20,8 @@ public class OperationStatement extends Statement {
             arg.compile(target, scope, true);
         }
 
-        if (pollute) target.add(Instruction.operation(operation).locate(loc()));
-        else target.add(Instruction.discard().locate(loc()));
+        if (pollute) target.add(Instruction.operation(loc(), operation));
+        else target.add(Instruction.discard(loc()));
     }
 
     @Override

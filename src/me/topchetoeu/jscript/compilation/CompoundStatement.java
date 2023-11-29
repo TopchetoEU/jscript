@@ -23,10 +23,7 @@ public class CompoundStatement extends Statement {
     @Override
     public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {
         for (var stm : statements) {
-            if (stm instanceof FunctionStatement) {
-                ((FunctionStatement)stm).compile(target, scope, null, true);
-                target.add(Instruction.discard());
-            }
+            if (stm instanceof FunctionStatement) stm.compile(target, scope, false);
         }
 
         for (var i = 0; i < statements.length; i++) {
@@ -38,7 +35,7 @@ public class CompoundStatement extends Statement {
         }
 
         if (end != null) {
-            target.add(Instruction.nop().locate(end));
+            target.add(Instruction.nop(end));
             target.setDebug();
         }
     }

@@ -36,22 +36,22 @@ public class IfStatement extends Statement {
 
         if (elseBody == null) {
             int i = target.size();
-            target.add(Instruction.nop());
+            target.add(Instruction.nop(null));
             body.compileWithDebug(target, scope, pollute);
             int endI = target.size();
-            target.set(i, Instruction.jmpIfNot(endI - i).locate(loc()));
+            target.set(i, Instruction.jmpIfNot(loc(), endI - i));
         }
         else {
             int start = target.size();
-            target.add(Instruction.nop());
+            target.add(Instruction.nop(null));
             body.compileWithDebug(target, scope, pollute);
-            target.add(Instruction.nop());
+            target.add(Instruction.nop(null));
             int mid = target.size();
             elseBody.compileWithDebug(target, scope, pollute);
             int end = target.size();
 
-            target.set(start, Instruction.jmpIfNot(mid - start).locate(loc()));
-            target.set(mid - 1, Instruction.jmp(end - mid + 1).locate(loc()));
+            target.set(start, Instruction.jmpIfNot(loc(), mid - start));
+            target.set(mid - 1, Instruction.jmp(loc(), end - mid + 1));
         }
     }
     

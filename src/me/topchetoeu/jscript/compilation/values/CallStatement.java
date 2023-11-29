@@ -16,15 +16,15 @@ public class CallStatement extends Statement {
             ((IndexStatement)func).compile(target, scope, true, true);
         }
         else {
-            target.add(Instruction.loadValue(null).locate(loc()));
+            target.add(Instruction.loadValue(loc(), null));
             func.compile(target, scope, true);
         }
 
         for (var arg : args) arg.compile(target, scope, true);
 
-        target.add(Instruction.call(args.length).locate(loc()));
+        target.add(Instruction.call(loc(), args.length));
         target.setDebug();
-        if (!pollute) target.add(Instruction.discard().locate(loc()));
+        if (!pollute) target.add(Instruction.discard(loc()));
     }
 
     public CallStatement(Location loc, Statement func, Statement ...args) {

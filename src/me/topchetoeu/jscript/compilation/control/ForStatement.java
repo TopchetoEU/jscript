@@ -30,8 +30,8 @@ public class ForStatement extends Statement {
                 assignment.compileWithDebug(target, scope, false);
                 int end = target.size();
                 WhileStatement.replaceBreaks(target, label, start, mid, mid, end + 1);
-                target.add(Instruction.jmp(start - target.size()).locate(loc()));
-                if (pollute) target.add(Instruction.loadValue(null).locate(loc()));
+                target.add(Instruction.jmp(loc(), start - target.size()));
+                if (pollute) target.add(Instruction.loadValue(loc(), null));
             }
             return;
         }
@@ -39,7 +39,7 @@ public class ForStatement extends Statement {
         int start = target.size();
         condition.compile(target, scope, true);
         int mid = target.size();
-        target.add(Instruction.nop());
+        target.add(Instruction.nop(null));
         body.compile(target, scope, false);
         int beforeAssign = target.size();
         assignment.compileWithDebug(target, scope, false);
@@ -47,9 +47,9 @@ public class ForStatement extends Statement {
 
         WhileStatement.replaceBreaks(target, label, mid + 1, end, beforeAssign, end + 1);
 
-        target.add(Instruction.jmp(start - end).locate(loc()));
-        target.set(mid, Instruction.jmpIfNot(end - mid + 1).locate(loc()));
-        if (pollute) target.add(Instruction.loadValue(null).locate(loc()));
+        target.add(Instruction.jmp(loc(), start - end));
+        target.set(mid, Instruction.jmpIfNot(loc(), end - mid + 1));
+        if (pollute) target.add(Instruction.loadValue(loc(), null));
     }
     @Override
     public Statement optimize() {

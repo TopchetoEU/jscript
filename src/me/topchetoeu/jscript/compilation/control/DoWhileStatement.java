@@ -28,10 +28,10 @@ public class DoWhileStatement extends Statement {
                 WhileStatement.replaceBreaks(target, label, start, end, end + 1, end + 1);
             }
             else {
-                target.add(Instruction.jmp(start - end).locate(loc()));
+                target.add(Instruction.jmp(loc(), start - end));
                 WhileStatement.replaceBreaks(target, label, start, end, start, end + 1);
             }
-            if (pollute) target.add(Instruction.loadValue(null).locate(loc()));
+            if (pollute) target.add(Instruction.loadValue(loc(), null));
             return;
         }
 
@@ -42,7 +42,7 @@ public class DoWhileStatement extends Statement {
         int end = target.size();
 
         WhileStatement.replaceBreaks(target, label, start, mid - 1, mid, end + 1);
-        target.add(Instruction.jmpIf(start - end).locate(loc()));
+        target.add(Instruction.jmpIf(loc(), start - end));
     }
 
     @Override

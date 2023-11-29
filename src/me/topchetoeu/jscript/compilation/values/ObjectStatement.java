@@ -16,15 +16,14 @@ public class ObjectStatement extends Statement {
 
     @Override
     public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {
-        target.add(Instruction.loadObj().locate(loc()));
+        target.add(Instruction.loadObj(loc()));
 
         for (var el : map.entrySet()) {
-            target.add(Instruction.dup().locate(loc()));
-            target.add(Instruction.loadValue(el.getKey()).locate(loc()));
+            target.add(Instruction.dup(loc()));
+            target.add(Instruction.loadValue(loc(), el.getKey()));
             var val = el.getValue();
-            if (val instanceof FunctionStatement) ((FunctionStatement)val).compile(target, scope, el.getKey().toString(), false);
-            else val.compile(target, scope, true);
-            target.add(Instruction.storeMember().locate(loc()));
+            FunctionStatement.compileWithName(val, target, scope, true, el.getKey().toString());
+            target.add(Instruction.storeMember(loc()));
         }
 
         var keys = new ArrayList<Object>();
@@ -32,19 +31,19 @@ public class ObjectStatement extends Statement {
         keys.addAll(setters.keySet());
 
         for (var key : keys) {
-            if (key instanceof String) target.add(Instruction.loadValue((String)key).locate(loc()));
-            else target.add(Instruction.loadValue((Double)key).locate(loc()));
+            if (key instanceof String) target.add(Instruction.loadValue(loc(), (String)key));
+            else target.add(Instruction.loadValue(loc(), (Double)key));
 
             if (getters.containsKey(key)) getters.get(key).compile(target, scope, true);
-            else target.add(Instruction.loadValue(null).locate(loc()));
+            else target.add(Instruction.loadValue(loc(), null));
 
             if (setters.containsKey(key)) setters.get(key).compile(target, scope, true);
-            else target.add(Instruction.loadValue(null).locate(loc()));
+            else target.add(Instruction.loadValue(loc(), null));
 
-            target.add(Instruction.defProp().locate(loc()));
+            target.add(Instruction.defProp(loc()));
         }
 
-        if (!pollute) target.add(Instruction.discard().locate(loc()));
+        if (!pollute) target.add(Instruction.discard(loc()));
     }
 
     public ObjectStatement(Location loc, Map<Object, Statement> map, Map<Object, FunctionStatement> getters, Map<Object, FunctionStatement> setters) {

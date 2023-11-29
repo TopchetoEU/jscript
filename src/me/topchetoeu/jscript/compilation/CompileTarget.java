@@ -28,6 +28,10 @@ public class CompileTarget {
         return target.get(i);
     }
     public int size() { return target.size(); }
+    public Location lastLoc(Location fallback) {
+        if (target.size() == 0) return fallback;
+        else return target.get(target.size() - 1).location;
+    }
 
     public Instruction[] array() { return target.toArray(Instruction[]::new); }
 

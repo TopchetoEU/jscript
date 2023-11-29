@@ -15,8 +15,8 @@ public class DeleteStatement extends Statement {
         value.compile(target, scope, true);
         key.compile(target, scope, true);
 
-        target.add(Instruction.delete().locate(loc()));
-        if (!pollute) target.add(Instruction.discard().locate(loc()));
+        target.add(Instruction.delete(loc()));
+        if (pollute) target.add(Instruction.loadValue(loc(), true));
     }
 
     public DeleteStatement(Location loc, Statement key, Statement value) {

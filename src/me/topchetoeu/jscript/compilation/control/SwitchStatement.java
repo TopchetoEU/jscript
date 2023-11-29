@@ -39,16 +39,16 @@ public class SwitchStatement extends Statement {
         value.compile(target, scope, true);
 
         for (var ccase : cases) {
-            target.add(Instruction.dup().locate(loc()));
+            target.add(Instruction.dup(loc()));
             ccase.value.compile(target, scope, true);
-            target.add(Instruction.operation(Operation.EQUALS).locate(loc()));
+            target.add(Instruction.operation(loc(), Operation.EQUALS));
             caseToStatement.put(target.size(), ccase.statementI);
-            target.add(Instruction.nop().locate(ccase.value.loc()));
+            target.add(Instruction.nop(null));
         }
 
         int start = target.size();
 
-        target.add(Instruction.nop());
+        target.add(Instruction.nop(null));
 
         for (var stm : body) {
             statementToIndex.put(statementToIndex.size(), target.size());
@@ -56,24 +56,22 @@ public class SwitchStatement extends Statement {
         }
 
         int end = target.size();
-        target.add(Instruction.discard().locate(loc()));
-        if (pollute) target.add(Instruction.loadValue(null));
+        target.add(Instruction.discard(loc()));
+        if (pollute) target.add(Instruction.loadValue(loc(), null));
 
-        if (defaultI < 0 || defaultI >= body.length) target.set(start, Instruction.jmp(end - start).locate(loc()));
-        else target.set(start, Instruction.jmp(statementToIndex.get(defaultI) - start)).locate(loc());
+        if (defaultI < 0 || defaultI >= body.length) target.set(start, Instruction.jmp(loc(), end - start));
+        else target.set(start, Instruction.jmp(loc(), statementToIndex.get(defaultI) - start));
 
         for (int i = start; i < end; i++) {
             var instr = target.get(i);
             if (instr.type == Type.NOP && instr.is(0, "break") && instr.get(1) == null) {
-                target.set(i, Instruction.jmp(end - i).locate(instr.location));
+                target.set(i, Instruction.jmp(loc(), end - i).locate(instr.location));
             }
         }
         for (var el : caseToStatement.entrySet()) {
-            var loc = target.get(el.getKey()).location;
             var i = statementToIndex.get(el.getValue());
             if (i == null) i = end;
-            target.set(el.getKey(), Instruction.jmpIf(i - el.getKey()).locate(loc));
-            target.setDebug(el.getKey());
+            target.set(el.getKey(), Instruction.jmpIf(loc(), i - el.getKey()));
         }
 
     }

@@ -1,4 +1,4 @@
-package me.topchetoeu.jscript.compilation.control;
+package me.topchetoeu.jscript.compilation.values;
 
 import me.topchetoeu.jscript.Location;
 import me.topchetoeu.jscript.compilation.CompileTarget;
@@ -14,18 +14,19 @@ public class ArrayStatement extends Statement {
 
     @Override
     public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {
-        target.add(Instruction.loadArr(statements.length).locate(loc()));
-        var i = 0;
-        for (var el : statements) {
+        target.add(Instruction.loadArr(loc(), statements.length));
+
+        for (var i = 0; i < statements.length; i++) {
+            var el = statements[i];
             if (el != null) {
-                target.add(Instruction.dup().locate(loc()));
-                target.add(Instruction.loadValue(i).locate(loc()));
+                target.add(Instruction.dup(loc()));
+                target.add(Instruction.loadValue(loc(), i));
                 el.compile(target, scope, true);
-                target.add(Instruction.storeMember().locate(loc()));
+                target.add(Instruction.storeMember(loc()));
             }
-            i++;
         }
-        if (!pollute) target.add(Instruction.discard().locate(loc()));
+
+        if (!pollute) target.add(Instruction.discard(loc()));
     }
 
     public ArrayStatement(Location loc, Statement[] statements) {

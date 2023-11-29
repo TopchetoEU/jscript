@@ -16,16 +16,14 @@ public class VariableAssignStatement extends Statement {
     public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {
         var i = scope.getKey(name);
         if (operation != null) {
-            target.add(Instruction.loadVar(i).locate(loc()));
-            if (value instanceof FunctionStatement) ((FunctionStatement)value).compile(target, scope, name, false);
-            else value.compile(target, scope, true);
-            target.add(Instruction.operation(operation).locate(loc()));
-            target.add(Instruction.storeVar(i, pollute).locate(loc()));
+            target.add(Instruction.loadVar(loc(), i));
+            FunctionStatement.compileWithName(value, target, scope, true, name);
+            target.add(Instruction.operation(loc(), operation));
+            target.add(Instruction.storeVar(loc(), i, pollute));
         }
         else {
-            if (value instanceof FunctionStatement) ((FunctionStatement)value).compile(target, scope, name, false);
-            else value.compile(target, scope, true);
-            target.add(Instruction.storeVar(i, pollute).locate(loc()));
+            FunctionStatement.compileWithName(value, target, scope, true, name);
+            target.add(Instruction.storeVar(loc(), i, pollute));
         }
     }
 

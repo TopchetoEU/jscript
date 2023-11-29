@@ -14,8 +14,8 @@ public class RegexStatement extends Statement {
 
     @Override
     public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {
-        target.add(Instruction.loadRegex(pattern, flags).locate(loc()));
-        if (!pollute) target.add(Instruction.discard().locate(loc()));
+        target.add(Instruction.loadRegex(loc(), pattern, flags));
+        if (!pollute) target.add(Instruction.discard(loc()));
     }
 
     public RegexStatement(Location loc, String pattern, String flags) {

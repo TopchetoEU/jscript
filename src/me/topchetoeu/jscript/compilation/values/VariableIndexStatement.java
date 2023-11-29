@@ -14,7 +14,7 @@ public class VariableIndexStatement extends Statement {
 
     @Override
     public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {
-        if (pollute) target.add(Instruction.loadVar(index).locate(loc()));
+        if (pollute) target.add(Instruction.loadVar(loc(), index));
     }
 
     public VariableIndexStatement(Location loc, int i) {

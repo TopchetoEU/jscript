@@ -34,21 +34,17 @@ public class VariableDeclareStatement extends Statement {
             var key = scope.getKey(entry.name);
             int start = target.size();
 
-            if (key instanceof String) target.add(Instruction.makeVar((String)key).locate(entry.location));
+            if (key instanceof String) target.add(Instruction.makeVar(entry.location, (String)key));
 
-            if (entry.value instanceof FunctionStatement) {
-                ((FunctionStatement)entry.value).compile(target, scope, entry.name, false);
-                target.add(Instruction.storeVar(key).locate(entry.location));
-            }
-            else if (entry.value != null) {
-                entry.value.compile(target, scope, true);
-                target.add(Instruction.storeVar(key).locate(entry.location));
+            if (entry.value != null) {
+                FunctionStatement.compileWithName(entry.value, target, scope, true, entry.name);
+                target.add(Instruction.storeVar(entry.location, key));
             }
 
             if (target.size() != start) target.setDebug(start);
         }
 
-        if (pollute) target.add(Instruction.loadValue(null).locate(loc()));
+        if (pollute) target.add(Instruction.loadValue(loc(), null));
     }
 
     public VariableDeclareStatement(Location loc, List<Pair> values) {

@@ -25,26 +25,26 @@ public class ForInStatement extends Statement {
         var key = scope.getKey(varName);
 
         int first = target.size();
-        if (key instanceof String) target.add(Instruction.makeVar((String)key));
+        if (key instanceof String) target.add(Instruction.makeVar(loc(), (String)key));
 
         if (varValue != null) {
             varValue.compile(target, scope, true);
-            target.add(Instruction.storeVar(scope.getKey(varName)));
+            target.add(Instruction.storeVar(loc(), scope.getKey(varName)));
         }
 
         object.compileWithDebug(target, scope, true);
-        target.add(Instruction.keys(true));
+        target.add(Instruction.keys(loc(), true));
 
         int start = target.size();
-        target.add(Instruction.dup());
-        target.add(Instruction.loadValue(null));
-        target.add(Instruction.operation(Operation.EQUALS));
+        target.add(Instruction.dup(loc()));
+        target.add(Instruction.loadValue(loc(), null));
+        target.add(Instruction.operation(loc(), Operation.EQUALS));
         int mid = target.size();
-        target.add(Instruction.nop());
+        target.add(Instruction.nop(loc()));
 
-        target.add(Instruction.loadMember("value").locate(varLocation));
+        target.add(Instruction.loadMember(varLocation, "value"));
+        target.add(Instruction.storeVar(varLocation, key));
         target.setDebug();
-        target.add(Instruction.storeVar(key));
 
         body.compileWithDebug(target, scope, false);
 
@@ -52,10 +52,10 @@ public class ForInStatement extends Statement {
 
         WhileStatement.replaceBreaks(target, label, mid + 1, end, start, end + 1);
 
-        target.add(Instruction.jmp(start - end));
-        target.add(Instruction.discard());
-        target.set(mid, Instruction.jmpIf(end - mid + 1));
-        if (pollute) target.add(Instruction.loadValue(null));
+        target.add(Instruction.jmp(loc(), start - end));
+        target.add(Instruction.discard(loc()));
+        target.set(mid, Instruction.jmpIf(loc(), end - mid + 1));
+        if (pollute) target.add(Instruction.loadValue(loc(), null));
         target.get(first).locate(loc());
         target.setDebug(first);
     }

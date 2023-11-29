@@ -11,8 +11,8 @@ public class ContinueStatement extends Statement {
 
     @Override
     public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {
-        target.add(Instruction.nop("cont", label).locate(loc()));
-        if (pollute) target.add(Instruction.loadValue(null).locate(loc()));
+        target.add(Instruction.nop(loc(), "cont", label));
+        if (pollute) target.add(Instruction.loadValue(loc(), null));
     }
 
     public ContinueStatement(Location loc, String label) {

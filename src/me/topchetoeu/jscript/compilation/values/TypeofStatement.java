@@ -4,7 +4,6 @@ import me.topchetoeu.jscript.Location;
 import me.topchetoeu.jscript.compilation.CompileTarget;
 import me.topchetoeu.jscript.compilation.Instruction;
 import me.topchetoeu.jscript.compilation.Statement;
-import me.topchetoeu.jscript.compilation.control.ArrayStatement;
 import me.topchetoeu.jscript.engine.scope.ScopeRecord;
 import me.topchetoeu.jscript.engine.values.Values;
 
@@ -19,12 +18,12 @@ public class TypeofStatement extends Statement {
         if (value instanceof VariableStatement) {
             var i = scope.getKey(((VariableStatement)value).name);
             if (i instanceof String) {
-                target.add(Instruction.typeof((String)i).locate(loc()));
+                target.add(Instruction.typeof(loc(), (String)i));
                 return;
             }
         }
         value.compile(target, scope, pollute);
-        target.add(Instruction.typeof().locate(loc()));
+        target.add(Instruction.typeof(loc()));
     }
 
     @Override

@@ -27,7 +27,7 @@ public class WhileStatement extends Statement {
                 body.compile(target, scope, false);
                 int end = target.size();
                 replaceBreaks(target, label, start, end, start, end + 1);
-                target.add(Instruction.jmp(start - target.size()).locate(loc()));
+                target.add(Instruction.jmp(loc(), start - target.size()));
                 return;
             }
         }
@@ -35,16 +35,16 @@ public class WhileStatement extends Statement {
         int start = target.size();
         condition.compile(target, scope, true);
         int mid = target.size();
-        target.add(Instruction.nop());
+        target.add(Instruction.nop(null));
         body.compile(target, scope, false);
 
         int end = target.size();
 
         replaceBreaks(target, label, mid + 1, end, start, end + 1);
 
-        target.add(Instruction.jmp(start - end).locate(loc()));
-        target.set(mid, Instruction.jmpIfNot(end - mid + 1).locate(loc()));
-        if (pollute) target.add(Instruction.loadValue(null).locate(loc()));
+        target.add(Instruction.jmp(loc(), start - end));
+        target.set(mid, Instruction.jmpIfNot(loc(), end - mid + 1));
+        if (pollute) target.add(Instruction.loadValue(loc(), null));
     }
     @Override
     public Statement optimize() {
@@ -71,12 +71,10 @@ public class WhileStatement extends Statement {
         for (int i = start; i < end; i++) {
             var instr = target.get(i);
             if (instr.type == Type.NOP && instr.is(0, "cont") && (instr.get(1) == null || instr.is(1, label))) {
-                target.set(i, Instruction.jmp(continuePoint - i));
-                target.get(i).location = instr.location;
+                target.set(i, Instruction.jmp(instr.location, continuePoint - i));
             }
             if (instr.type == Type.NOP && instr.is(0, "break") && (instr.get(1) == null || instr.is(1, label))) {
-                target.set(i, Instruction.jmp(breakPoint - i));
-                target.get(i).location = instr.location;
+                target.set(i, Instruction.jmp(instr.location, breakPoint - i));
             }
         }
     }

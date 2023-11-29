@@ -18,13 +18,13 @@ public class IndexAssignStatement extends Statement {
         if (operation != null) {
             object.compile(target, scope, true);
             index.compile(target, scope, true);
-            target.add(Instruction.dup(2, 0).locate(loc()));
+            target.add(Instruction.dup(loc(), 2, 0));
 
-            target.add(Instruction.loadMember().locate(loc()));
+            target.add(Instruction.loadMember(loc()));
             value.compile(target, scope, true);
-            target.add(Instruction.operation(operation).locate(loc()));
+            target.add(Instruction.operation(loc(), operation));
 
-            target.add(Instruction.storeMember(pollute).locate(loc()));
+            target.add(Instruction.storeMember(loc(), pollute));
             target.setDebug();
         }
         else {
@@ -32,7 +32,7 @@ public class IndexAssignStatement extends Statement {
             index.compile(target, scope, true);
             value.compile(target, scope, true);
 
-            target.add(Instruction.storeMember(pollute).locate(loc()));
+            target.add(Instruction.storeMember(loc(), pollute));
             target.setDebug();
         }
     }

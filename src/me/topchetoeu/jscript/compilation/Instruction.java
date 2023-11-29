@@ -129,26 +129,29 @@ public class Instruction {
         this.params = params;
     }
 
-    public static Instruction tryInstr(int n, int catchN, int finallyN) {
-        return new Instruction(null, Type.TRY, n, catchN, finallyN);
+    public static Instruction tryInstr(Location loc, int n, int catchN, int finallyN) {
+        return new Instruction(loc, Type.TRY, n, catchN, finallyN);
     }
-    public static Instruction throwInstr() {
-        return new Instruction(null, Type.THROW);
+    public static Instruction throwInstr(Location loc) {
+        return new Instruction(loc, Type.THROW);
     }
-    public static Instruction throwSyntax(SyntaxException err) {
-        return new Instruction(null, Type.THROW_SYNTAX, err.getMessage());
+    public static Instruction throwSyntax(Location loc, SyntaxException err) {
+        return new Instruction(loc, Type.THROW_SYNTAX, err.getMessage());
     }
-    public static Instruction delete() {
-        return new Instruction(null, Type.DELETE);
+    public static Instruction throwSyntax(Location loc, String err) {
+        return new Instruction(loc, Type.THROW_SYNTAX, err);
     }
-    public static Instruction ret() {
-        return new Instruction(null, Type.RETURN);
+    public static Instruction delete(Location loc) {
+        return new Instruction(loc, Type.DELETE);
     }
-    public static Instruction debug() {
-        return new Instruction(null, Type.NOP, "debug");
+    public static Instruction ret(Location loc) {
+        return new Instruction(loc, Type.RETURN);
+    }
+    public static Instruction debug(Location loc) {
+        return new Instruction(loc, Type.NOP, "debug");
     }
 
-    public static Instruction nop(Object ...params) {
+    public static Instruction nop(Location loc, Object ...params) {
         for (var param : params) {
             if (param instanceof String) continue;
             if (param instanceof Boolean) continue;
@@ -158,109 +161,107 @@ public class Instruction {
 
             throw new RuntimeException("NOP params may contain only strings, booleans, doubles, integers and nulls.");
         }
-        return new Instruction(null, Type.NOP, params);
+        return new Instruction(loc, Type.NOP, params);
     }
 
-    public static Instruction call(int argn) {
-        return new Instruction(null, Type.CALL, argn);
+    public static Instruction call(Location loc, int argn) {
+        return new Instruction(loc, Type.CALL, argn);
     }
-    public static Instruction callNew(int argn) {
-        return new Instruction(null, Type.CALL_NEW, argn);
+    public static Instruction callNew(Location loc, int argn) {
+        return new Instruction(loc, Type.CALL_NEW, argn);
     }
-    public static Instruction jmp(int offset) {
-        return new Instruction(null, Type.JMP, offset);
+    public static Instruction jmp(Location loc, int offset) {
+        return new Instruction(loc, Type.JMP, offset);
     }
-    public static Instruction jmpIf(int offset) {
-        return new Instruction(null, Type.JMP_IF, offset);
+    public static Instruction jmpIf(Location loc, int offset) {
+        return new Instruction(loc, Type.JMP_IF, offset);
     }
-    public static Instruction jmpIfNot(int offset) {
-        return new Instruction(null, Type.JMP_IFN, offset);
-    }
-
-    public static Instruction loadValue(Object val) {
-        return new Instruction(null, Type.LOAD_VALUE, val);
+    public static Instruction jmpIfNot(Location loc, int offset) {
+        return new Instruction(loc, Type.JMP_IFN, offset);
     }
 
-    public static Instruction makeVar(String name) {
-        return new Instruction(null, Type.MAKE_VAR, name);
+    public static Instruction loadValue(Location loc, Object val) {
+        return new Instruction(loc, Type.LOAD_VALUE, val);
     }
-    public static Instruction loadVar(Object i) {
-        return new Instruction(null, Type.LOAD_VAR, i);
+
+    public static Instruction makeVar(Location loc, String name) {
+        return new Instruction(loc, Type.MAKE_VAR, name);
     }
-    public static Instruction loadGlob() {
-        return new Instruction(null, Type.LOAD_GLOB);
+    public static Instruction loadVar(Location loc, Object i) {
+        return new Instruction(loc, Type.LOAD_VAR, i);
     }
-    public static Instruction loadMember() {
-        return new Instruction(null, Type.LOAD_MEMBER);
+    public static Instruction loadGlob(Location loc) {
+        return new Instruction(loc, Type.LOAD_GLOB);
     }
-    public static Instruction loadMember(Object key) {
+    public static Instruction loadMember(Location loc) {
+        return new Instruction(loc, Type.LOAD_MEMBER);
+    }
+    public static Instruction loadMember(Location loc, Object key) {
         if (key instanceof Number) key = ((Number)key).doubleValue();
-        return new Instruction(null, Type.LOAD_VAL_MEMBER, key);
+        return new Instruction(loc, Type.LOAD_VAL_MEMBER, key);
     }
 
-    public static Instruction loadRegex(String pattern, String flags) {
-        return new Instruction(null, Type.LOAD_REGEX, pattern, flags);
+    public static Instruction loadRegex(Location loc, String pattern, String flags) {
+        return new Instruction(loc, Type.LOAD_REGEX, pattern, flags);
     }
-    public static Instruction loadFunc(long id, int varN, int len, int[] captures) {
-        var args = new Object[3 + captures.length];
+    public static Instruction loadFunc(Location loc, long id, int[] captures) {
+        var args = new Object[1 + captures.length];
         args[0] = id;
-        args[1] = varN;
-        args[2] = len;
-        for (var i = 0; i < captures.length; i++) args[i + 3] = captures[i];
-        return new Instruction(null, Type.LOAD_FUNC, args);
+        for (var i = 0; i < captures.length; i++) args[i + 1] = captures[i];
+        return new Instruction(loc, Type.LOAD_FUNC, args);
     }
-    public static Instruction loadObj() {
-        return new Instruction(null, Type.LOAD_OBJ);
+    public static Instruction loadObj(Location loc) {
+        return new Instruction(loc, Type.LOAD_OBJ);
     }
-    public static Instruction loadArr(int count) {
-        return new Instruction(null, Type.LOAD_ARR, count);
+    public static Instruction loadArr(Location loc, int count) {
+        return new Instruction(loc, Type.LOAD_ARR, count);
     }
-    public static Instruction dup() {
-        return new Instruction(null, Type.DUP, 0, 1);
+    public static Instruction dup(Location loc) {
+        return new Instruction(loc, Type.DUP, 0, 1);
     }
-    public static Instruction dup(int count, int offset) {
-        return new Instruction(null, Type.DUP, offset, count);
+    public static Instruction dup(Location loc, int count, int offset) {
+        return new Instruction(loc, Type.DUP, offset, count);
     }
-    public static Instruction move(int count, int offset) {
-        return new Instruction(null, Type.MOVE, offset, count);
+    public static Instruction move(Location loc, int count, int offset) {
+        return new Instruction(loc, Type.MOVE, offset, count);
     }
 
-    public static Instruction storeSelfFunc(int i) {
-        return new Instruction(null, Type.STORE_SELF_FUNC, i);
+    public static Instruction storeSelfFunc(Location loc, int i) {
+        return new Instruction(loc, Type.STORE_SELF_FUNC, i);
     }
-    public static Instruction storeVar(Object i) {
-        return new Instruction(null, Type.STORE_VAR, i, false);
+    public static Instruction storeVar(Location loc, Object i) {
+        return new Instruction(loc, Type.STORE_VAR, i, false);
     }
-    public static Instruction storeVar(Object i, boolean keep) {
-        return new Instruction(null, Type.STORE_VAR, i, keep);
+    public static Instruction storeVar(Location loc, Object i, boolean keep) {
+        return new Instruction(loc, Type.STORE_VAR, i, keep);
     }
-    public static Instruction storeMember() {
-        return new Instruction(null, Type.STORE_MEMBER, false);
+    public static Instruction storeMember(Location loc) {
+        return new Instruction(loc, Type.STORE_MEMBER, false);
     }
-    public static Instruction storeMember(boolean keep) {
-        return new Instruction(null, Type.STORE_MEMBER, keep);
+    public static Instruction storeMember(Location loc, boolean keep) {
+        return new Instruction(loc, Type.STORE_MEMBER, keep);
     }
-    public static Instruction discard() {
-        return new Instruction(null, Type.DISCARD);
-    }
-
-    public static Instruction typeof() {
-        return new Instruction(null, Type.TYPEOF);
-    }
-    public static Instruction typeof(Object varName) {
-        return new Instruction(null, Type.TYPEOF, varName);
+    public static Instruction discard(Location loc) {
+        return new Instruction(loc, Type.DISCARD);
     }
 
-    public static Instruction keys(boolean forInFormat) {
-        return new Instruction(null, Type.KEYS, forInFormat);
+    public static Instruction typeof(Location loc) {
+        return new Instruction(loc, Type.TYPEOF);
+    }
+    public static Instruction typeof(Location loc, Object varName) {
+        return new Instruction(loc, Type.TYPEOF, varName);
     }
 
-    public static Instruction defProp() {
-        return new Instruction(null, Type.DEF_PROP);
+    public static Instruction keys(Location loc, boolean forInFormat) {
+        return new Instruction(loc, Type.KEYS, forInFormat);
     }
 
-    public static Instruction operation(Operation op) {
-        return new Instruction(null, Type.OPERATION, op);
+    public static Instruction defProp(Location loc) {
+        return new Instruction(loc, Type.DEF_PROP);
+    }
+
+    public static Instruction operation(Location loc, Operation op) {
+        return new Instruction(loc, Type.OPERATION, op);
     }
 
     @Override
