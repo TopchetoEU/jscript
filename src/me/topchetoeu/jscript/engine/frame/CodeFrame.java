@@ -38,7 +38,7 @@ public class CodeFrame {
         }
 
         public TryCtx _catch(EngineException e) {
-            e.setCause(error);
+            if (error != null) e.setCause(error);
             return new TryCtx(TryState.CATCH, e, result, restoreStackPtr, start, end, -1, finallyStart);
         }
         public TryCtx _finally(PendingResult res) {
@@ -62,8 +62,10 @@ public class CodeFrame {
         public final Object value;
         public final EngineException error;
         public final int ptr;
+        public final Instruction instruction;
 
-        private PendingResult(boolean isReturn, boolean isJump, boolean isThrow, Object value, EngineException error, int ptr) {
+        private PendingResult(Instruction instr, boolean isReturn, boolean isJump, boolean isThrow, Object value, EngineException error, int ptr) {
+            this.instruction = instr;
             this.isReturn = isReturn;
             this.isJump = isJump;
             this.isThrow = isThrow;
@@ -73,16 +75,16 @@ public class CodeFrame {
         }
 
         public static PendingResult ofNone() {
-            return new PendingResult(false, false, false, null, null, 0);
+            return new PendingResult(null, false, false, false, null, null, 0);
         }
-        public static PendingResult ofReturn(Object value) {
-            return new PendingResult(true, false, false, value, null, 0);
+        public static PendingResult ofReturn(Object value, Instruction instr) {
+            return new PendingResult(instr, true, false, false, value, null, 0);
         }
-        public static PendingResult ofThrow(EngineException error) {
-            return new PendingResult(false, false, true, null, error, 0);
+        public static PendingResult ofThrow(EngineException error, Instruction instr) {
+            return new PendingResult(instr, false, false, true, null, error, 0);
         }
-        public static PendingResult ofJump(int codePtr) {
-            return new PendingResult(false, true, false, null, null, codePtr);
+        public static PendingResult ofJump(int codePtr, Instruction instr) {
+            return new PendingResult(instr, false, true, false, null, null, codePtr);
         }
     }
 
@@ -212,48 +214,45 @@ public class CodeFrame {
             catch (EngineException e) { error = e; }
         }
 
-        if (!tryStack.empty()) {
+        while (!tryStack.empty()) {
             var tryCtx = tryStack.peek();
-            var pendingResult = PendingResult.ofNone();
-            boolean shouldCatch = false, shouldFinally = false, shouldExit = this.popTryFlag;
+            TryCtx newCtx = null;
 
-            if (tryCtx.state != TryState.FINALLY) {
-                if (error != null && tryCtx.hasCatch()) shouldCatch = true;
-                else if (error != null && tryCtx.hasFinally()) {
-                    pendingResult = PendingResult.ofThrow(error);
-                    shouldFinally = true;
-                }
-                else if (returnValue != Runners.NO_RETURN && tryCtx.hasFinally()) {
-                    pendingResult = PendingResult.ofReturn(returnValue);
-                    shouldFinally = true;
-                }
-                else if (jumpFlag && !tryCtx.inBounds(codePtr) && tryCtx.hasFinally()) {
-                    pendingResult = PendingResult.ofJump(codePtr);
-                    shouldFinally = true;
-                }
+            if (error != null) {
+                if (tryCtx.hasCatch()) newCtx = tryCtx._catch(error);
+                else if (tryCtx.hasFinally()) newCtx = tryCtx._finally(PendingResult.ofThrow(error, instr));
             }
+            else if (returnValue != Runners.NO_RETURN) {
+                if (tryCtx.hasFinally()) newCtx = tryCtx._finally(PendingResult.ofReturn(returnValue, instr));
+            }
+            else if (jumpFlag && !tryCtx.inBounds(codePtr)) {
+                if (tryCtx.hasFinally()) newCtx = tryCtx._finally(PendingResult.ofJump(codePtr, instr));
+            }
+            else if (!this.popTryFlag) newCtx = tryCtx;
 
-            if (tryCtx.hasCatch() && shouldCatch) {
-                if (tryCtx.state != TryState.CATCH) scope.catchVars.add(new ValueVariable(false, error.value));
+            if (newCtx != null) {
+                if (newCtx != tryCtx) {
+                    switch (newCtx.state) {
+                        case CATCH:
+                            if (tryCtx.state != TryState.CATCH) scope.catchVars.add(new ValueVariable(false, error.value));
+                            codePtr = tryCtx.catchStart;
+                            stackPtr = tryCtx.restoreStackPtr;
+                            break;
+                        case FINALLY:
+                            if (tryCtx.state == TryState.CATCH) scope.catchVars.remove(scope.catchVars.size() - 1);
+                            codePtr = tryCtx.finallyStart;
+                            stackPtr = tryCtx.restoreStackPtr;
+                        default:
+                    }
 
-                codePtr = tryCtx.catchStart;
-                stackPtr = tryCtx.restoreStackPtr;
-                tryStack.pop();
-                tryStack.push(tryCtx._catch(error));
+                    tryStack.pop();
+                    tryStack.push(newCtx);
+                }
                 error = null;
                 returnValue = Runners.NO_RETURN;
+                break;
             }
-            else if (tryCtx.hasFinally() && shouldFinally) {
-                if (tryCtx.state == TryState.CATCH) scope.catchVars.remove(scope.catchVars.size() - 1);
-
-                codePtr = tryCtx.finallyStart;
-                stackPtr = tryCtx.restoreStackPtr;
-                tryStack.pop();
-                tryStack.push(tryCtx._finally(pendingResult));
-                error = null;
-                returnValue = Runners.NO_RETURN;
-            }
-            else if (shouldExit) {
+            else {
                 if (tryCtx.state == TryState.CATCH) scope.catchVars.remove(scope.catchVars.size() - 1);
 
                 if (tryCtx.state != TryState.FINALLY && tryCtx.hasFinally()) {
@@ -261,12 +260,22 @@ public class CodeFrame {
                     stackPtr = tryCtx.restoreStackPtr;
                     tryStack.pop();
                     tryStack.push(tryCtx._finally(null));
+                    break;
                 }
                 else {
+                    tryStack.pop();
                     codePtr = tryCtx.end;
-                    if (tryCtx.result.isJump) codePtr = tryCtx.result.ptr;
+                    if (tryCtx.result.instruction != null) instr = tryCtx.result.instruction;
+                    if (tryCtx.result.isJump) {
+                        codePtr = tryCtx.result.ptr;
+                        jumpFlag = true;
+                    }
                     if (tryCtx.result.isReturn) returnValue = tryCtx.result.value;
-                    if (tryCtx.result.isThrow) error = tryCtx.result.error;
+                    if (tryCtx.result.isThrow) {
+                        error = tryCtx.result.error;
+                    }
+                    if (error != null) error.setCause(tryCtx.error);
+                    continue;
                 }
             }
         }
