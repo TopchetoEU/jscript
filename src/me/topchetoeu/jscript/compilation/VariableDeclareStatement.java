@@ -3,6 +3,7 @@ package me.topchetoeu.jscript.compilation;
 import java.util.List;
 
 import me.topchetoeu.jscript.Location;
+import me.topchetoeu.jscript.compilation.Instruction.BreakpointType;
 import me.topchetoeu.jscript.compilation.values.FunctionStatement;
 import me.topchetoeu.jscript.engine.scope.ScopeRecord;
 
@@ -32,16 +33,13 @@ public class VariableDeclareStatement extends Statement {
         for (var entry : values) {
             if (entry.name == null) continue;
             var key = scope.getKey(entry.name);
-            int start = target.size();
 
             if (key instanceof String) target.add(Instruction.makeVar(entry.location, (String)key));
 
-            if (entry.value != null) {
-                FunctionStatement.compileWithName(entry.value, target, scope, true, entry.name);
-                target.add(Instruction.storeVar(entry.location, key));
-            }
-
-            if (target.size() != start) target.setDebug(start);
+            target.queueDebug(BreakpointType.STEP_OVER, entry.location);
+            if (entry.value != null) FunctionStatement.compileWithName(entry.value, target, scope, true, entry.name);
+            else target.add(Instruction.loadValue(entry.location, null));
+            target.add(Instruction.storeVar(entry.location, key));
         }
 
         if (pollute) target.add(Instruction.loadValue(loc(), null));

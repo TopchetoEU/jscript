@@ -7,8 +7,7 @@ import me.topchetoeu.jscript.compilation.Instruction;
 import me.topchetoeu.jscript.engine.scope.ScopeRecord;
 
 public class GlobalThisStatement extends Statement {
-    @Override
-    public boolean pure() { return true; }
+    @Override public boolean pure() { return true; }
 
     @Override
     public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {

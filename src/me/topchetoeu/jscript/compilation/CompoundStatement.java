@@ -1,63 +1,53 @@
 package me.topchetoeu.jscript.compilation;
 
-import java.util.Vector;
-
 import me.topchetoeu.jscript.Location;
-import me.topchetoeu.jscript.compilation.control.ContinueStatement;
-import me.topchetoeu.jscript.compilation.control.ReturnStatement;
-import me.topchetoeu.jscript.compilation.control.ThrowStatement;
+import me.topchetoeu.jscript.compilation.Instruction.BreakpointType;
 import me.topchetoeu.jscript.compilation.values.FunctionStatement;
 import me.topchetoeu.jscript.engine.scope.ScopeRecord;
 
 public class CompoundStatement extends Statement {
     public final Statement[] statements;
+    public final boolean separateFuncs;
     public Location end;
 
-    @Override
-    public void declare(ScopeRecord varsScope) {
+    @Override public boolean pure() {
         for (var stm : statements) {
-            stm.declare(varsScope);
+            if (!stm.pure()) return false;
         }
+
+        return true;
     }
 
     @Override
-    public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {
-        for (var stm : statements) {
-            if (stm instanceof FunctionStatement) stm.compile(target, scope, false);
+    public void declare(ScopeRecord varsScope) {
+        for (var stm : statements) stm.declare(varsScope);
+    }
+
+    @Override
+    public void compileWithDebug(CompileTarget target, ScopeRecord scope, boolean pollute, BreakpointType type) {
+        if (separateFuncs) for (var stm : statements) {
+            if (stm instanceof FunctionStatement && ((FunctionStatement)stm).statement) {
+                stm.compile(target, scope, false);
+            }
         }
+
+        var polluted = false;
 
         for (var i = 0; i < statements.length; i++) {
             var stm = statements[i];
 
-            if (stm instanceof FunctionStatement) continue;
-            if (i != statements.length - 1) stm.compileWithDebug(target, scope, false);
-            else stm.compileWithDebug(target, scope, pollute);
+            if (separateFuncs && stm instanceof FunctionStatement) continue;
+            if (i != statements.length - 1) stm.compileWithDebug(target, scope, false, BreakpointType.STEP_OVER);
+            else stm.compileWithDebug(target, scope, polluted = pollute, BreakpointType.STEP_OVER);
         }
 
-        if (end != null) {
-            target.add(Instruction.nop(end));
-            target.setDebug();
+        if (!polluted && pollute) {
+            target.add(Instruction.loadValue(loc(), null));
         }
     }
-
     @Override
-    public Statement optimize() {
-        var res = new Vector<Statement>(statements.length);
-
-        for (var i = 0; i < statements.length; i++) {
-            var stm = statements[i].optimize();
-            if (i < statements.length - 1 && stm.pure()) continue;
-            res.add(stm);
-            if (
-                stm instanceof ContinueStatement ||
-                stm instanceof ReturnStatement ||
-                stm instanceof ThrowStatement ||
-                stm instanceof ContinueStatement
-            ) break;
-        }
-
-        if (res.size() == 1) return res.get(0);
-        else return new CompoundStatement(loc(), res.toArray(Statement[]::new));
+    public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {
+        compileWithDebug(target, scope, pollute, BreakpointType.STEP_IN);
     }
 
     public CompoundStatement setEnd(Location loc) {
@@ -65,8 +55,9 @@ public class CompoundStatement extends Statement {
         return this;
     }
 
-    public CompoundStatement(Location loc, Statement ...statements) {
+    public CompoundStatement(Location loc, boolean separateFuncs, Statement ...statements) {
         super(loc);
+        this.separateFuncs = separateFuncs;
         this.statements = statements;
     }
 }

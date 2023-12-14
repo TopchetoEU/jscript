@@ -25,27 +25,28 @@ public class TryStatement extends Statement {
     public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {
         target.add(Instruction.nop(null));
 
-        int start = target.size(), tryN, catchN = -1, finN = -1;
+        int start = target.size(), catchStart = -1, finallyStart = -1;
 
         tryBody.compile(target, scope, false);
-        tryN = target.size() - start;
+        target.add(Instruction.tryEnd(loc()));
 
         if (catchBody != null) {
-            int tmp = target.size();
+            catchStart = target.size() - start;
             var local = scope instanceof GlobalScope ? scope.child() : (LocalScopeRecord)scope;
             local.define(name, true);
             catchBody.compile(target, scope, false);
             local.undefine();
-            catchN = target.size() - tmp;
+            target.add(Instruction.tryEnd(loc()));
         }
 
         if (finallyBody != null) {
-            int tmp = target.size();
+            finallyStart = target.size() - start;
             finallyBody.compile(target, scope, false);
-            finN = target.size() - tmp;
+            target.add(Instruction.tryEnd(loc()));
         }
 
-        target.set(start - 1, Instruction.tryInstr(loc(), tryN, catchN, finN));
+
+        target.set(start - 1, Instruction.tryStart(loc(), catchStart, finallyStart, target.size() - start));
         if (pollute) target.add(Instruction.loadValue(loc(), null));
     }
 

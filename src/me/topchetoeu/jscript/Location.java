@@ -71,4 +71,23 @@ public class Location implements Comparable<Location> {
         this.start = start;
         this.filename = filename;
     }
+
+    public static Location parse(String raw) {
+        int i0 = -1, i1 = -1;
+        for (var i = raw.length() - 1; i >= 0; i--) {
+            if (raw.charAt(i) == ':') {
+                if (i1 == -1) i1 = i;
+                else if (i0 == -1) {
+                    i0 = i;
+                    break;
+                }
+            }
+        }
+
+        return new Location(
+            Integer.parseInt(raw.substring(i0 + 1, i1)),
+            Integer.parseInt(raw.substring(i1 + 1)),
+            Filename.parse(raw.substring(0, i0))
+        );
+    }
 }

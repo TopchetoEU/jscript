@@ -1,9 +1,10 @@
 package me.topchetoeu.jscript.engine;
 
 import java.util.HashMap;
-import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 import me.topchetoeu.jscript.Filename;
+import me.topchetoeu.jscript.Location;
 import me.topchetoeu.jscript.engine.scope.GlobalScope;
 import me.topchetoeu.jscript.engine.values.ArrayValue;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
@@ -39,11 +40,24 @@ public class Environment implements PermissionsProvider {
     @Native public FunctionValue compile = new NativeFunction("compile", (ctx, thisArg, args) -> {
         var source = Values.toString(ctx, args[0]);
         var filename = Values.toString(ctx, args[1]);
+        var isDebug = Values.toBoolean(args[2]);
+
         var env = Values.wrapper(args[2], Environment.class);
         var res = new ObjectValue();
 
-        res.defineProperty(ctx, "function", Parsing.compile(Engine.functions, new TreeSet<>(), env, Filename.parse(filename), source));
+        System.out.println(source);
+        
+        var target = Parsing.compile(env, Filename.parse(filename), source);
+        Engine.functions.putAll(target.functions);
+        Engine.functions.remove(0l);
+
+        res.defineProperty(ctx, "function", target.func(env));
         res.defineProperty(ctx, "mapChain", new ArrayValue());
+
+
+        if (isDebug) {
+            res.defineProperty(ctx, "breakpoints", ArrayValue.of(ctx, target.breakpoints.stream().map(Location::toString).collect(Collectors.toList())));
+        }
 
         return res;
     });
@@ -64,12 +78,7 @@ public class Environment implements PermissionsProvider {
     }
 
     @Native public Symbol symbol(String name) {
-        if (symbols.containsKey(name)) return symbols.get(name);
-        else {
-            var res = new Symbol(name);
-            symbols.put(name, res);
-            return res;
-        }
+        return getSymbol(name);
     }
 
     @NativeGetter("global") public ObjectValue getGlobal() {
@@ -101,6 +110,15 @@ public class Environment implements PermissionsProvider {
 
     public Context context(Engine engine) {
         return new Context(engine).pushEnv(this);
+    }
+
+    public static Symbol getSymbol(String name) {
+        if (symbols.containsKey(name)) return symbols.get(name);
+        else {
+            var res = new Symbol(name);
+            symbols.put(name, res);
+            return res;
+        }
     }
 
     public Environment(FunctionValue compile, WrappersProvider nativeConverter, GlobalScope global) {

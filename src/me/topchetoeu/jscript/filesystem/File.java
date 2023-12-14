@@ -1,5 +1,7 @@
 package me.topchetoeu.jscript.filesystem;
 
+import me.topchetoeu.jscript.Buffer;
+
 public interface File {
     int read(byte[] buff);
     void write(byte[] buff);

@@ -9,8 +9,13 @@ import me.topchetoeu.jscript.engine.scope.ScopeRecord;
 public class ArrayStatement extends Statement {
     public final Statement[] statements;
 
-    @Override
-    public boolean pure() { return true; }
+    @Override public boolean pure() {
+        for (var stm : statements) {
+            if (!stm.pure()) return false;
+        }
+
+        return true;
+    }
 
     @Override
     public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {

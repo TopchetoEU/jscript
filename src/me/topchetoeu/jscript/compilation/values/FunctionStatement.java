@@ -17,15 +17,15 @@ public class FunctionStatement extends Statement {
     public final String varName;
     public final String[] args;
     public final boolean statement;
+    public final Location end;
 
     private static Random rand = new Random();
 
-    @Override
-    public boolean pure() { return varName == null; }
+    @Override public boolean pure() { return varName == null && statement; }
 
     @Override
     public void declare(ScopeRecord scope) {
-        if (varName != null) scope.define(varName);
+        if (varName != null && statement) scope.define(varName);
     }
 
     public static void checkBreakAndCont(CompileTarget target, int start) {
@@ -41,7 +41,7 @@ public class FunctionStatement extends Statement {
         }
     }
 
-    protected long compileBody(CompileTarget target, ScopeRecord scope, boolean polute) {
+    private long compileBody(CompileTarget target, ScopeRecord scope, boolean polute) {
         for (var i = 0; i < args.length; i++) {
             for (var j = 0; j < i; j++) {
                 if (args[i].equals(args[j])) {
@@ -71,11 +71,14 @@ public class FunctionStatement extends Statement {
 
         body.declare(subscope);
         body.compile(subtarget, subscope, false);
-        subtarget.add(Instruction.ret(subtarget.lastLoc(loc())));
+        subtarget.add(Instruction.ret(end));
         checkBreakAndCont(subtarget, 0);
 
         if (polute) target.add(Instruction.loadFunc(loc(), id, subscope.getCaptures()));
-        target.functions.put(id, new FunctionBody(subscope.localsCount(), args.length, subtarget.array(), subscope.captures(), subscope.locals()));
+        target.functions.put(id, new FunctionBody(
+            subscope.localsCount(), args.length,
+            subtarget.array(), subscope.captures(), subscope.locals()
+        ));
 
         return id;
     }
@@ -106,9 +109,10 @@ public class FunctionStatement extends Statement {
         compile(target, scope, pollute, null);
     }
 
-    public FunctionStatement(Location loc, String varName, String[] args, boolean statement, CompoundStatement body) {
+    public FunctionStatement(Location loc, Location end, String varName, String[] args, boolean statement, CompoundStatement body) {
         super(loc);
 
+        this.end = end;
         this.varName = varName;
         this.statement = statement;
 

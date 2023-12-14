@@ -1,5 +1,6 @@
 package me.topchetoeu.jscript.filesystem;
 
+import me.topchetoeu.jscript.Buffer;
 import me.topchetoeu.jscript.filesystem.FilesystemException.FSCode;
 
 public class MemoryFile implements File {

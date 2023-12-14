@@ -10,10 +10,7 @@ import me.topchetoeu.jscript.engine.values.Values;
 public class LazyAndStatement extends Statement {
     public final Statement first, second;
 
-    @Override
-    public boolean pure() {
-        return first.pure() && second.pure();
-    }
+    @Override public boolean pure() { return first.pure() && second.pure(); }
 
     @Override
     public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {

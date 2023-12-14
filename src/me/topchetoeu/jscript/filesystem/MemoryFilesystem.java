@@ -4,6 +4,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.HashSet;
 
+import me.topchetoeu.jscript.Buffer;
 import me.topchetoeu.jscript.filesystem.FilesystemException.FSCode;
 
 public class MemoryFilesystem implements Filesystem {

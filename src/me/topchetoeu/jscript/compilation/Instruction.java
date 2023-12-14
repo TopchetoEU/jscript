@@ -10,7 +10,8 @@ public class Instruction {
         THROW,
         THROW_SYNTAX,
         DELETE,
-        TRY,
+        TRY_START,
+        TRY_END,
         NOP,
 
         CALL,
@@ -86,10 +87,29 @@ public class Instruction {
         //     this(false);
         // }
     }
+    public static enum BreakpointType {
+        NONE,
+        STEP_OVER,
+        STEP_IN;
+
+        public boolean shouldStepIn() {
+            return this != NONE;
+        }
+        public boolean shouldStepOver() {
+            return this == STEP_OVER;
+        }
+    }
 
     public final Type type;
     public final Object[] params;
     public Location location;
+    public BreakpointType breakpoint = BreakpointType.NONE;
+
+    public Instruction setDbgData(Instruction other) {
+        this.location = other.location;
+        this.breakpoint = other.breakpoint;
+        return this;
+    }
 
     public Instruction locate(Location loc) {
         this.location = loc;
@@ -129,8 +149,11 @@ public class Instruction {
         this.params = params;
     }
 
-    public static Instruction tryInstr(Location loc, int n, int catchN, int finallyN) {
-        return new Instruction(loc, Type.TRY, n, catchN, finallyN);
+    public static Instruction tryStart(Location loc, int catchStart, int finallyStart, int end) {
+        return new Instruction(loc, Type.TRY_START, catchStart, finallyStart, end);
+    }
+    public static Instruction tryEnd(Location loc) {
+        return new Instruction(loc, Type.TRY_END);
     }
     public static Instruction throwInstr(Location loc) {
         return new Instruction(loc, Type.THROW);

@@ -6,6 +6,7 @@ import me.topchetoeu.jscript.Location;
 import me.topchetoeu.jscript.compilation.CompileTarget;
 import me.topchetoeu.jscript.compilation.Instruction;
 import me.topchetoeu.jscript.compilation.Statement;
+import me.topchetoeu.jscript.compilation.Instruction.BreakpointType;
 import me.topchetoeu.jscript.compilation.Instruction.Type;
 import me.topchetoeu.jscript.engine.Operation;
 import me.topchetoeu.jscript.engine.scope.ScopeRecord;
@@ -36,7 +37,7 @@ public class SwitchStatement extends Statement {
         var caseToStatement = new HashMap<Integer, Integer>();
         var statementToIndex = new HashMap<Integer, Integer>();
 
-        value.compile(target, scope, true);
+        value.compileWithDebug(target, scope, true, BreakpointType.STEP_OVER);
 
         for (var ccase : cases) {
             target.add(Instruction.dup(loc()));
@@ -52,7 +53,7 @@ public class SwitchStatement extends Statement {
 
         for (var stm : body) {
             statementToIndex.put(statementToIndex.size(), target.size());
-            stm.compileWithDebug(target, scope, false);
+            stm.compileWithDebug(target, scope, false, BreakpointType.STEP_OVER);
         }
 
         int end = target.size();

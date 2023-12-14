@@ -14,6 +14,14 @@ public class ObjectStatement extends Statement {
     public final Map<Object, FunctionStatement> getters;
     public final Map<Object, FunctionStatement> setters;
 
+    @Override public boolean pure() {
+        for (var el : map.values()) {
+            if (!el.pure()) return false;
+        }
+
+        return true;
+    }
+
     @Override
     public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {
         target.add(Instruction.loadObj(loc()));

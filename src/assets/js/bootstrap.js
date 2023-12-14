@@ -1,8 +1,8 @@
 (function (ts, env, libs) {
     var src = '', version = 0;
     var lib = libs.concat([
-        'declare const exit: never;',
-        'declare const go: any;',
+        'declare function exit(): never;',
+        'declare function go(): any;',
         'declare function getTsDeclarations(): string[];'
     ]).join('');
     var libSnapshot = ts.ScriptSnapshot.fromString(lib);
@@ -64,6 +64,7 @@
 
         if (!environments[env.id]) environments[env.id] = []
         declSnapshots = environments[env.id];
+        debugger;
         var emit = service.getEmitOutput("/src.ts");
 
         var diagnostics = []
@@ -97,11 +98,8 @@
                 if (declaration !== '') declSnapshots.push(ts.ScriptSnapshot.fromString(declaration));
                 return val;
             },
-            mapChain: compiled.mapChain.concat(JSON.stringify({
-                file: filename,
-                sources: [filename],
-                mappings: map.mappings,
-            }))
+            breakpoints: compiled.breakpoints,
+            mapChain: compiled.mapChain.concat(map.mappings),
         };
     }
 

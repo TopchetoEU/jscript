@@ -12,9 +12,6 @@ import me.topchetoeu.jscript.exceptions.EngineException;
 public class GlobalScope implements ScopeRecord {
     public final ObjectValue obj;
 
-    @Override
-    public GlobalScope parent() { return null; }
-
     public boolean has(Context ctx, String name) {
         return obj.hasMember(ctx, name, false);
     }
@@ -28,7 +25,7 @@ public class GlobalScope implements ScopeRecord {
         return new GlobalScope(obj);
     }
     public LocalScopeRecord child() {
-        return new LocalScopeRecord(this);
+        return new LocalScopeRecord();
     }
 
     public Object define(String name) {

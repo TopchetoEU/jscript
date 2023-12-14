@@ -75,7 +75,6 @@ public class DebugServer {
                         debugger.enable(msg); continue;
                     case "Debugger.disable": debugger.disable(msg); continue;
 
-                    case "Debugger.setBreakpoint": debugger.setBreakpoint(msg); continue;
                     case "Debugger.setBreakpointByUrl": debugger.setBreakpointByUrl(msg); continue;
                     case "Debugger.removeBreakpoint": debugger.removeBreakpoint(msg); continue;
                     case "Debugger.continueToLocation": debugger.continueToLocation(msg); continue;

@@ -9,8 +9,8 @@ import me.topchetoeu.jscript.engine.scope.ScopeRecord;
 public class RegexStatement extends Statement {
     public final String pattern, flags;
 
-    @Override
-    public boolean pure() { return true; }
+    // Not really pure, since a function is called, but can be ignored.
+    @Override public boolean pure() { return true; }
 
     @Override
     public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {

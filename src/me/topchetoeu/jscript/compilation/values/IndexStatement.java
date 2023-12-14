@@ -5,15 +5,13 @@ import me.topchetoeu.jscript.compilation.AssignableStatement;
 import me.topchetoeu.jscript.compilation.CompileTarget;
 import me.topchetoeu.jscript.compilation.Instruction;
 import me.topchetoeu.jscript.compilation.Statement;
+import me.topchetoeu.jscript.compilation.Instruction.BreakpointType;
 import me.topchetoeu.jscript.engine.Operation;
 import me.topchetoeu.jscript.engine.scope.ScopeRecord;
 
 public class IndexStatement extends AssignableStatement {
     public final Statement object;
     public final Statement index;
-
-    @Override
-    public boolean pure() { return true; }
 
     @Override
     public Statement toAssign(Statement val, Operation operation) {
@@ -24,13 +22,13 @@ public class IndexStatement extends AssignableStatement {
         if (dupObj) target.add(Instruction.dup(loc()));
         if (index instanceof ConstantStatement) {
             target.add(Instruction.loadMember(loc(), ((ConstantStatement)index).value));
-            target.setDebug();
+            target.setDebug(BreakpointType.STEP_IN);
             return;
         }
 
         index.compile(target, scope, true);
         target.add(Instruction.loadMember(loc()));
-        target.setDebug();
+        target.setDebug(BreakpointType.STEP_IN);
         if (!pollute) target.add(Instruction.discard(loc()));
     }
     @Override

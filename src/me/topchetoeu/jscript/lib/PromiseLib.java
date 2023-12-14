@@ -154,20 +154,20 @@ import me.topchetoeu.jscript.interop.Native;
      * Thread safe - you can call this from anywhere
      * HOWEVER, it's strongly recommended to use this only in javascript
      */
-    @Native(thisArg=true) public static Object then(Context ctx, Object thisArg, Object _onFulfill, Object _onReject) {
+    @Native(thisArg=true) public static Object then(Context ctx, Object _thisArg, Object _onFulfill, Object _onReject) {
         var onFulfill = _onFulfill instanceof FunctionValue ? ((FunctionValue)_onFulfill) : null;
         var onReject = _onReject instanceof FunctionValue ? ((FunctionValue)_onReject) : null;
 
         var res = new PromiseLib();
 
-        var fulfill = onFulfill == null ? new NativeFunction((_ctx, _thisArg, _args) -> _args.length > 0 ? _args[0] : null) : (FunctionValue)onFulfill;
-        var reject = onReject == null ? new NativeFunction((_ctx, _thisArg, _args) -> {
+        var fulfill = onFulfill == null ? new NativeFunction((_ctx, _0, _args) -> _args.length > 0 ? _args[0] : null) : (FunctionValue)onFulfill;
+        var reject = onReject == null ? new NativeFunction((_ctx, _0, _args) -> {
             throw new EngineException(_args.length > 0 ? _args[0] : null);
         }) : (FunctionValue)onReject;
 
-        if (thisArg instanceof NativeWrapper && ((NativeWrapper)thisArg).wrapped instanceof PromiseLib) {
-            thisArg = ((NativeWrapper)thisArg).wrapped;
-        }
+        var thisArg = _thisArg instanceof NativeWrapper && ((NativeWrapper)_thisArg).wrapped instanceof PromiseLib ?
+            ((NativeWrapper)_thisArg).wrapped :
+            _thisArg;
 
         var fulfillHandle = new NativeFunction(null, (_ctx, th, a) -> {
             try { res.fulfill(ctx, Values.convert(ctx, fulfill.call(ctx, null, a[0]), Object.class)); }
@@ -177,6 +177,7 @@ import me.topchetoeu.jscript.interop.Native;
         var rejectHandle = new NativeFunction(null, (_ctx, th, a) -> {
             try { res.fulfill(ctx, reject.call(ctx, null, a[0])); }
             catch (EngineException err) { res.reject(ctx, err.value); }
+            if (thisArg instanceof PromiseLib) ((PromiseLib)thisArg).handled = true;
             return null;
         });
 

@@ -12,6 +12,8 @@ public class VariableAssignStatement extends Statement {
     public final Statement value;
     public final Operation operation;
 
+    @Override public boolean pure() { return false; }
+
     @Override
     public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {
         var i = scope.getKey(name);

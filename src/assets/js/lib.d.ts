@@ -19,12 +19,7 @@ type Extract<T, U> = T extends U ? T : never;
 type Record<KeyT extends string | number | symbol, ValT> = { [x in KeyT]: ValT }
 type ReplaceFunc = (match: string, ...args: any[]) => string;
 
-type PromiseFulfillFunc<T> = (val: T) => void;
-type PromiseThenFunc<T, NextT> = (val: T) => NextT;
-type PromiseRejectFunc = (err: unknown) => void;
-type PromiseFunc<T> = (resolve: PromiseFulfillFunc<T>, reject: PromiseRejectFunc) => void;
-
-type PromiseResult<T> ={ type: 'fulfilled'; value: T; } | { type: 'rejected'; reason: any; }
+type PromiseResult<T> = { type: 'fulfilled'; value: T; } | { type: 'rejected'; reason: any; }
 
 // wippidy-wine, this code is now mine :D
 type Awaited<T> =
@@ -46,8 +41,7 @@ type IteratorReturnResult<TReturn> =
 type IteratorResult<T, TReturn = any> = IteratorYieldResult<T> | IteratorReturnResult<TReturn>;
 
 interface Thenable<T> {
-    then<NextT>(onFulfilled: PromiseThenFunc<T, NextT>, onRejected?: PromiseRejectFunc): Promise<Awaited<NextT>>;
-    then(onFulfilled: undefined, onRejected?: PromiseRejectFunc): Promise<T>;
+    then<NextT = void>(onFulfilled?: (val: T) => NextT, onRejected?: (err: any) => NextT): Promise<Awaited<NextT>>;
 }
 
 interface RegExpResultIndices extends Array<[number, number]> {
@@ -465,13 +459,13 @@ interface SymbolConstructor {
 }
 
 interface Promise<T> extends Thenable<T> {
-    catch(func: PromiseRejectFunc): Promise<T>;
+    catch<ResT = void>(func: (err: unknown) => ResT): Promise<ResT>;
     finally(func: () => void): Promise<T>;
 }
 interface PromiseConstructor {
     prototype: Promise<any>;
 
-    new <T>(func: PromiseFunc<T>): Promise<Awaited<T>>;
+    new <T>(func: (res: (val: T) => void, rej: (err: unknown) => void) => void): Promise<Awaited<T>>;
     resolve<T>(val: T): Promise<Awaited<T>>;
     reject(val: any): Promise<never>;
 
@@ -544,6 +538,7 @@ declare var Error: ErrorConstructor;
 declare var RangeError: RangeErrorConstructor;
 declare var TypeError: TypeErrorConstructor;
 declare var SyntaxError: SyntaxErrorConstructor;
+declare var self: typeof globalThis;
 
 declare class Map<KeyT, ValueT> {
     public [Symbol.iterator](): IterableIterator<[KeyT, ValueT]>;

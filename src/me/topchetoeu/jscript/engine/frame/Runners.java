@@ -97,25 +97,24 @@ public class Runners {
             obj.defineProperty(ctx, "value", el);
             frame.push(ctx, obj);
         }
-        // var arr = new ObjectValue();
 
-        // var members = Values.getMembers(ctx, val, false, false);
-        // Collections.reverse(members);
-        // for (var el : members) {
-        //     if (el instanceof Symbol) continue;
-        //     arr.defineProperty(ctx, i++, el);
-        // }
-
-        // arr.defineProperty(ctx, "length", i);
-
-        // frame.push(ctx, arr);
         frame.codePtr++;
         return NO_RETURN;
     }
 
-    public static Object execTry(Context ctx, Instruction instr, CodeFrame frame) {
-        frame.addTry(instr.get(0), instr.get(1), instr.get(2));
+    public static Object execTryStart(Context ctx, Instruction instr, CodeFrame frame) {
+        int start = frame.codePtr + 1;
+        int catchStart = (int)instr.get(0);
+        int finallyStart = (int)instr.get(1);
+        if (finallyStart >= 0) finallyStart += start;
+        if (catchStart >= 0) catchStart += start;
+        int end = (int)instr.get(2) + start;
+        frame.addTry(start, end, catchStart, finallyStart);
         frame.codePtr++;
+        return NO_RETURN;
+    }
+    public static Object execTryEnd(Context ctx, Instruction instr, CodeFrame frame) {
+        frame.popTryFlag = true;
         return NO_RETURN;
     }
 
@@ -326,7 +325,8 @@ public class Runners {
             case THROW_SYNTAX: return execThrowSyntax(ctx, instr, frame);
             case CALL: return execCall(ctx, instr, frame);
             case CALL_NEW: return execCallNew(ctx, instr, frame);
-            case TRY: return execTry(ctx, instr, frame);
+            case TRY_START: return execTryStart(ctx, instr, frame);
+            case TRY_END: return execTryEnd(ctx, instr, frame);
 
             case DUP: return execDup(ctx, instr, frame);
             case MOVE: return execMove(ctx, instr, frame);

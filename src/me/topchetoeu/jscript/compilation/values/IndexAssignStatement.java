@@ -4,6 +4,7 @@ import me.topchetoeu.jscript.Location;
 import me.topchetoeu.jscript.compilation.CompileTarget;
 import me.topchetoeu.jscript.compilation.Instruction;
 import me.topchetoeu.jscript.compilation.Statement;
+import me.topchetoeu.jscript.compilation.Instruction.BreakpointType;
 import me.topchetoeu.jscript.engine.Operation;
 import me.topchetoeu.jscript.engine.scope.ScopeRecord;
 
@@ -25,7 +26,7 @@ public class IndexAssignStatement extends Statement {
             target.add(Instruction.operation(loc(), operation));
 
             target.add(Instruction.storeMember(loc(), pollute));
-            target.setDebug();
+            target.setDebug(BreakpointType.STEP_IN);
         }
         else {
             object.compile(target, scope, true);
@@ -33,7 +34,7 @@ public class IndexAssignStatement extends Statement {
             value.compile(target, scope, true);
 
             target.add(Instruction.storeMember(loc(), pollute));
-            target.setDebug();
+            target.setDebug(BreakpointType.STEP_IN);
         }
     }
 

@@ -1,10 +1,12 @@
 package me.topchetoeu.jscript.engine;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Stack;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 import me.topchetoeu.jscript.Filename;
 import me.topchetoeu.jscript.Location;
@@ -37,12 +39,30 @@ public class Context {
         var result = env.compile.call(this, null, raw, filename.toString(), env);
 
         var function = (FunctionValue)Values.getMember(this, result, "function");
+        if (!engine.debugging) return function;
+
         var rawMapChain = ((ArrayValue)Values.getMember(this, result, "mapChain")).toArray();
+        var breakpoints = new TreeSet<>(
+            Arrays.stream(((ArrayValue)Values.getMember(this, result, "breakpoints")).toArray())
+                .map(v -> Location.parse(Values.toString(this, v)))
+                .collect(Collectors.toList())
+        );
         var maps = new SourceMap[rawMapChain.length];
-        for (var i = 0; i < maps.length; i++) maps[i] = SourceMap.parse((String)rawMapChain[i]);
+
+        for (var i = 0; i < maps.length; i++) maps[i] = SourceMap.parse(Values.toString(this, (String)rawMapChain[i]));
+
         var map = SourceMap.chain(maps);
 
-        engine.onSource(filename, raw, new TreeSet<>(), map);
+        if (map != null) {
+            var newBreakpoints = new TreeSet<Location>();
+            for (var bp : breakpoints) {
+                bp = map.toCompiled(bp);
+                if (bp != null) newBreakpoints.add(bp);
+            }
+            breakpoints = newBreakpoints;
+        }
+
+        engine.onSource(filename, raw, breakpoints, map);
 
         return function;
     }
@@ -52,6 +72,7 @@ public class Context {
         frames.add(frame);
         if (frames.size() > engine.maxStackFrames) throw EngineException.ofRange("Stack overflow!");
         pushEnv(frame.function.environment);
+        engine.onFramePush(this, frame);
     }
     public boolean popFrame(CodeFrame frame) {
         if (frames.size() == 0) return false;

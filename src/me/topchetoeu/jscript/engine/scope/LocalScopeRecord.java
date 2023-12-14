@@ -2,11 +2,8 @@ package me.topchetoeu.jscript.engine.scope;
 
 import java.util.ArrayList;
 
-import me.topchetoeu.jscript.engine.Context;
-
 public class LocalScopeRecord implements ScopeRecord {
     public final LocalScopeRecord parent;
-    public final GlobalScope global;
 
     private final ArrayList<String> captures = new ArrayList<>();
     private final ArrayList<String> locals = new ArrayList<>();
@@ -18,11 +15,8 @@ public class LocalScopeRecord implements ScopeRecord {
         return locals.toArray(String[]::new);
     }
 
-    @Override
-    public LocalScopeRecord parent() { return parent; }
-
     public LocalScopeRecord child() {
-        return new LocalScopeRecord(this, global);
+        return new LocalScopeRecord(this);
     }
 
     public int localsCount() {
@@ -62,12 +56,6 @@ public class LocalScopeRecord implements ScopeRecord {
 
         return name;
     }
-    public boolean has(Context ctx, String name) {
-        return
-            global.has(ctx, name) ||
-            locals.contains(name) ||
-            parent != null && parent.has(ctx, name);
-    }
     public Object define(String name, boolean force) {
         if (!force && locals.contains(name)) return locals.indexOf(name);
         locals.add(name);
@@ -80,12 +68,10 @@ public class LocalScopeRecord implements ScopeRecord {
         locals.remove(locals.size() - 1);
     }
 
-    public LocalScopeRecord(GlobalScope global) {
+    public LocalScopeRecord() {
         this.parent = null;
-        this.global = global;
     }
-    public LocalScopeRecord(LocalScopeRecord parent, GlobalScope global) {
+    public LocalScopeRecord(LocalScopeRecord parent) {
         this.parent = parent;
-        this.global = global;
     }
 }

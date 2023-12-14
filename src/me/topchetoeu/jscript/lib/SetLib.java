@@ -21,16 +21,13 @@ import me.topchetoeu.jscript.interop.NativeGetter;
     }
 
     @Native public ObjectValue entries(Context ctx) {
-        var res = set.stream().map(v -> new ArrayValue(ctx, v, v)).collect(Collectors.toList());
-        return Values.toJSIterator(ctx, res.iterator());
+        return ArrayValue.of(ctx, set.stream().map(v -> new ArrayValue(ctx, v, v)).collect(Collectors.toList()));
     }
     @Native public ObjectValue keys(Context ctx) {
-        var res = new ArrayList<>(set);
-        return Values.toJSIterator(ctx, res.iterator());
+        return ArrayValue.of(ctx, set);
     }
     @Native public ObjectValue values(Context ctx) {
-        var res = new ArrayList<>(set);
-        return Values.toJSIterator(ctx, res.iterator());
+        return ArrayValue.of(ctx, set);
     }
 
     @Native public Object add(Object key) {

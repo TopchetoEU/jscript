@@ -11,8 +11,7 @@ import me.topchetoeu.jscript.engine.scope.ScopeRecord;
 public class VariableStatement extends AssignableStatement {
     public final String name;
 
-    @Override
-    public boolean pure() { return true; }
+    @Override public boolean pure() { return false; }
 
     @Override
     public Statement toAssign(Statement val, Operation operation) {
