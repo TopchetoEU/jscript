@@ -45,8 +45,6 @@ public class Environment implements PermissionsProvider {
         var env = Values.wrapper(args[2], Environment.class);
         var res = new ObjectValue();
 
-        System.out.println(source);
-        
         var target = Parsing.compile(env, Filename.parse(filename), source);
         Engine.functions.putAll(target.functions);
         Engine.functions.remove(0l);
