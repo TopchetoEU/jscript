@@ -34,7 +34,6 @@ public class Instruction {
         LOAD_REGEX,
 
         DUP,
-        MOVE,
 
         STORE_VAR,
         STORE_MEMBER,
@@ -46,46 +45,6 @@ public class Instruction {
 
         TYPEOF,
         OPERATION;
-        // TYPEOF,
-        // INSTANCEOF(true),
-        // IN(true),
-
-        // MULTIPLY(true),
-        // DIVIDE(true),
-        // MODULO(true),
-        // ADD(true),
-        // SUBTRACT(true),
-
-        // USHIFT_RIGHT(true),
-        // SHIFT_RIGHT(true),
-        // SHIFT_LEFT(true),
-
-        // GREATER(true),
-        // LESS(true),
-        // GREATER_EQUALS(true),
-        // LESS_EQUALS(true),
-        // LOOSE_EQUALS(true),
-        // LOOSE_NOT_EQUALS(true),
-        // EQUALS(true),
-        // NOT_EQUALS(true),
-
-        // AND(true),
-        // OR(true),
-        // XOR(true),
-
-        // NEG(true),
-        // POS(true),
-        // NOT(true),
-        // INVERSE(true);
-
-        // final boolean isOperation;
-
-        // private Type(boolean isOperation) {
-        //     this.isOperation = isOperation;
-        // }
-        // private Type() {
-        //     this(false);
-        // }
     }
     public static enum BreakpointType {
         NONE,
@@ -240,13 +199,10 @@ public class Instruction {
         return new Instruction(loc, Type.LOAD_ARR, count);
     }
     public static Instruction dup(Location loc) {
-        return new Instruction(loc, Type.DUP, 0, 1);
+        return new Instruction(loc, Type.DUP, 1);
     }
-    public static Instruction dup(Location loc, int count, int offset) {
-        return new Instruction(loc, Type.DUP, offset, count);
-    }
-    public static Instruction move(Location loc, int count, int offset) {
-        return new Instruction(loc, Type.MOVE, offset, count);
+    public static Instruction dup(Location loc, int count) {
+        return new Instruction(loc, Type.DUP, count);
     }
 
     public static Instruction storeSelfFunc(Location loc, int i) {

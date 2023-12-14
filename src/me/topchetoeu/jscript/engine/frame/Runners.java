@@ -119,23 +119,11 @@ public class Runners {
     }
 
     public static Object execDup(Context ctx, Instruction instr, CodeFrame frame) {
-        int offset = instr.get(0), count = instr.get(1);
+        int count = instr.get(0);
 
         for (var i = 0; i < count; i++) {
-            frame.push(ctx, frame.peek(offset + count - 1));
+            frame.push(ctx, frame.peek(count - 1));
         }
-
-        frame.codePtr++;
-        return NO_RETURN;
-    }
-    public static Object execMove(Context ctx, Instruction instr, CodeFrame frame) {
-        int offset = instr.get(0), count = instr.get(1);
-
-        var tmp = frame.take(offset);
-        var res = frame.take(count);
-
-        for (var i = 0; i < offset; i++) frame.push(ctx, tmp[i]);
-        for (var i = 0; i < count; i++) frame.push(ctx, res[i]);
 
         frame.codePtr++;
         return NO_RETURN;
@@ -329,7 +317,6 @@ public class Runners {
             case TRY_END: return execTryEnd(ctx, instr, frame);
 
             case DUP: return execDup(ctx, instr, frame);
-            case MOVE: return execMove(ctx, instr, frame);
             case LOAD_VALUE: return execLoadValue(ctx, instr, frame);
             case LOAD_VAR: return execLoadVar(ctx, instr, frame);
             case LOAD_OBJ: return execLoadObj(ctx, instr, frame);

@@ -19,7 +19,7 @@ public class IndexAssignStatement extends Statement {
         if (operation != null) {
             object.compile(target, scope, true);
             index.compile(target, scope, true);
-            target.add(Instruction.dup(loc(), 2, 0));
+            target.add(Instruction.dup(loc(), 2));
 
             target.add(Instruction.loadMember(loc()));
             value.compile(target, scope, true);
