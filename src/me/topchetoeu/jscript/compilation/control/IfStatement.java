@@ -16,33 +16,31 @@ public class IfStatement extends Statement {
         if (elseBody != null) elseBody.declare(globScope);
     }
 
-    @Override
-    public void compileWithDebug(CompileTarget target, ScopeRecord scope, boolean pollute, BreakpointType breakpoint) {
-        condition.compileWithDebug(target, scope, true, breakpoint);
+    @Override public void compile(CompileTarget target, ScopeRecord scope, boolean pollute, BreakpointType breakpoint) {
+        condition.compile(target, scope, true, breakpoint);
 
         if (elseBody == null) {
             int i = target.size();
             target.add(Instruction.nop(null));
-            body.compileWithDebug(target, scope, pollute, breakpoint);
+            body.compile(target, scope, pollute, breakpoint);
             int endI = target.size();
             target.set(i, Instruction.jmpIfNot(loc(), endI - i));
         }
         else {
             int start = target.size();
             target.add(Instruction.nop(null));
-            body.compileWithDebug(target, scope, pollute, breakpoint);
+            body.compile(target, scope, pollute, breakpoint);
             target.add(Instruction.nop(null));
             int mid = target.size();
-            elseBody.compileWithDebug(target, scope, pollute, breakpoint);
+            elseBody.compile(target, scope, pollute, breakpoint);
             int end = target.size();
 
             target.set(start, Instruction.jmpIfNot(loc(), mid - start));
             target.set(mid - 1, Instruction.jmp(loc(), end - mid + 1));
         }
     }
-    @Override
-    public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {
-        compileWithDebug(target, scope, pollute, BreakpointType.STEP_IN);
+    @Override public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {
+        compile(target, scope, pollute, BreakpointType.STEP_IN);
     }
 
     public IfStatement(Location loc, Statement condition, Statement body, Statement elseBody) {

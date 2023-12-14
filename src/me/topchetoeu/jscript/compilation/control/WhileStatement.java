@@ -22,7 +22,7 @@ public class WhileStatement extends Statement {
         condition.compile(target, scope, true);
         int mid = target.size();
         target.add(Instruction.nop(null));
-        body.compileWithDebug(target, scope, false, BreakpointType.STEP_OVER);
+        body.compile(target, scope, false, BreakpointType.STEP_OVER);
 
         int end = target.size();
 

@@ -18,15 +18,15 @@ public class ForStatement extends Statement {
     }
     @Override
     public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {
-        declaration.compileWithDebug(target, scope, false, BreakpointType.STEP_OVER);
+        declaration.compile(target, scope, false, BreakpointType.STEP_OVER);
 
         int start = target.size();
-        condition.compileWithDebug(target, scope, true, BreakpointType.STEP_OVER);
+        condition.compile(target, scope, true, BreakpointType.STEP_OVER);
         int mid = target.size();
         target.add(Instruction.nop(null));
-        body.compileWithDebug(target, scope, false, BreakpointType.STEP_OVER);
+        body.compile(target, scope, false, BreakpointType.STEP_OVER);
         int beforeAssign = target.size();
-        assignment.compileWithDebug(target, scope, false, BreakpointType.STEP_OVER);
+        assignment.compile(target, scope, false, BreakpointType.STEP_OVER);
         int end = target.size();
 
         WhileStatement.replaceBreaks(target, label, mid + 1, end, beforeAssign, end + 1);

@@ -13,7 +13,7 @@ public class CallStatement extends Statement {
     public final boolean isNew;
 
     @Override
-    public void compileWithDebug(CompileTarget target, ScopeRecord scope, boolean pollute, BreakpointType type) {
+    public void compile(CompileTarget target, ScopeRecord scope, boolean pollute, BreakpointType type) {
         if (isNew) func.compile(target, scope, true);
         else if (func instanceof IndexStatement) {
             ((IndexStatement)func).compile(target, scope, true, true);
@@ -33,7 +33,7 @@ public class CallStatement extends Statement {
     }
     @Override
     public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {
-        compileWithDebug(target, scope, pollute, BreakpointType.STEP_IN);
+        compile(target, scope, pollute, BreakpointType.STEP_IN);
     }
 
     public CallStatement(Location loc, boolean isNew, Statement func, Statement ...args) {

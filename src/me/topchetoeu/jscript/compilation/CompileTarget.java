@@ -32,10 +32,17 @@ public class CompileTarget {
     public void setDebug(int i, BreakpointType type) {
         var instr = target.get(i);
         instr.breakpoint = type;
-        breakpoints.add(target.get(i).location);
 
-        var old = bpToInstr.put(instr.location, instr);
-        if (old != null) old.breakpoint = BreakpointType.NONE;
+        if (type == BreakpointType.NONE) {
+            breakpoints.remove(target.get(i).location);
+            bpToInstr.remove(instr.location, instr);
+        }
+        else {
+            breakpoints.add(target.get(i).location);
+
+            var old = bpToInstr.put(instr.location, instr);
+            if (old != null) old.breakpoint = BreakpointType.NONE;
+        }
     }
     public void setDebug(BreakpointType type) {
         setDebug(target.size() - 1, type);

@@ -24,7 +24,7 @@ public class CompoundStatement extends Statement {
     }
 
     @Override
-    public void compileWithDebug(CompileTarget target, ScopeRecord scope, boolean pollute, BreakpointType type) {
+    public void compile(CompileTarget target, ScopeRecord scope, boolean pollute, BreakpointType type) {
         if (separateFuncs) for (var stm : statements) {
             if (stm instanceof FunctionStatement && ((FunctionStatement)stm).statement) {
                 stm.compile(target, scope, false);
@@ -37,17 +37,13 @@ public class CompoundStatement extends Statement {
             var stm = statements[i];
 
             if (separateFuncs && stm instanceof FunctionStatement) continue;
-            if (i != statements.length - 1) stm.compileWithDebug(target, scope, false, BreakpointType.STEP_OVER);
-            else stm.compileWithDebug(target, scope, polluted = pollute, BreakpointType.STEP_OVER);
+            if (i != statements.length - 1) stm.compile(target, scope, false, BreakpointType.STEP_OVER);
+            else stm.compile(target, scope, polluted = pollute, BreakpointType.STEP_OVER);
         }
 
         if (!polluted && pollute) {
             target.add(Instruction.loadValue(loc(), null));
         }
-    }
-    @Override
-    public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {
-        compileWithDebug(target, scope, pollute, BreakpointType.STEP_IN);
     }
 
     public CompoundStatement setEnd(Location loc) {

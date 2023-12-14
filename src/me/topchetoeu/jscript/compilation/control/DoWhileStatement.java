@@ -19,9 +19,9 @@ public class DoWhileStatement extends Statement {
     @Override
     public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {
         int start = target.size();
-        body.compileWithDebug(target, scope, false, BreakpointType.STEP_OVER);
+        body.compile(target, scope, false, BreakpointType.STEP_OVER);
         int mid = target.size();
-        condition.compileWithDebug(target, scope, true, BreakpointType.STEP_OVER);
+        condition.compile(target, scope, true, BreakpointType.STEP_OVER);
         int end = target.size();
 
         WhileStatement.replaceBreaks(target, label, start, mid - 1, mid, end + 1);

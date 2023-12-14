@@ -8,6 +8,7 @@ import me.topchetoeu.jscript.compilation.CompoundStatement;
 import me.topchetoeu.jscript.compilation.FunctionBody;
 import me.topchetoeu.jscript.compilation.Instruction;
 import me.topchetoeu.jscript.compilation.Statement;
+import me.topchetoeu.jscript.compilation.Instruction.BreakpointType;
 import me.topchetoeu.jscript.compilation.Instruction.Type;
 import me.topchetoeu.jscript.engine.scope.ScopeRecord;
 import me.topchetoeu.jscript.exceptions.SyntaxException;
@@ -106,7 +107,7 @@ public class FunctionStatement extends Statement {
         }
     }
     @Override public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {
-        compile(target, scope, pollute, null);
+        compile(target, scope, pollute, BreakpointType.NONE);
     }
 
     public FunctionStatement(Location loc, Location end, String varName, String[] args, boolean statement, CompoundStatement body) {

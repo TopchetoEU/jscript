@@ -33,7 +33,7 @@ public class ForInStatement extends Statement {
             target.add(Instruction.storeVar(loc(), scope.getKey(varName)));
         }
 
-        object.compileWithDebug(target, scope, true, BreakpointType.STEP_OVER);
+        object.compile(target, scope, true, BreakpointType.STEP_OVER);
         target.add(Instruction.keys(loc(), true));
 
         int start = target.size();
