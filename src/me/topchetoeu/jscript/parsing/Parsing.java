@@ -880,7 +880,7 @@ public class Parsing {
         var callRes = parseCall(filename, tokens, i + n, valRes.result, 0);
         n += callRes.n;
         if (callRes.isError()) return callRes.transform();
-        else if (callRes.isFailed()) return ParseRes.res(new CallStatement(loc, false, valRes.result), n);
+        else if (callRes.isFailed()) return ParseRes.res(new CallStatement(loc, true, valRes.result), n);
         var call = (CallStatement)callRes.result;
 
         return ParseRes.res(new CallStatement(loc, true, call.func, call.args), n);

@@ -25,9 +25,9 @@ public class CallStatement extends Statement {
 
         for (var arg : args) arg.compile(target, scope, true);
 
-        target.queueDebug(type);
         if (isNew) target.add(Instruction.callNew(loc(), args.length));
         else target.add(Instruction.call(loc(), args.length));
+        target.setDebug(type);
 
         if (!pollute) target.add(Instruction.discard(loc()));
     }

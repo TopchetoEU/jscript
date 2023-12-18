@@ -64,7 +64,6 @@
 
         if (!environments[env.id]) environments[env.id] = []
         declSnapshots = environments[env.id];
-        debugger;
         var emit = service.getEmitOutput("/src.ts");
 
         var diagnostics = []

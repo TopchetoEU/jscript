@@ -36,10 +36,10 @@ public class VariableDeclareStatement extends Statement {
 
             if (key instanceof String) target.add(Instruction.makeVar(entry.location, (String)key));
 
-            target.queueDebug(BreakpointType.STEP_OVER, entry.location);
-            if (entry.value != null) FunctionStatement.compileWithName(entry.value, target, scope, true, entry.name);
-            else target.add(Instruction.loadValue(entry.location, null));
-            target.add(Instruction.storeVar(entry.location, key));
+            if (entry.value != null) {
+                FunctionStatement.compileWithName(entry.value, target, scope, true, entry.name, BreakpointType.STEP_OVER);
+                target.add(Instruction.storeVar(entry.location, key));
+            }
         }
 
         if (pollute) target.add(Instruction.loadValue(loc(), null));

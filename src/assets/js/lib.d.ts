@@ -458,11 +458,16 @@ interface SymbolConstructor {
     readonly asyncIterator: unique symbol;
 }
 
+
 interface Promise<T> extends Thenable<T> {
     catch<ResT = void>(func: (err: unknown) => ResT): Promise<ResT>;
     finally(func: () => void): Promise<T>;
+    constructor: PromiseConstructor;
 }
-interface PromiseConstructor {
+interface PromiseConstructorLike {
+    new <T>(func: (res: (val: T) => void, rej: (err: unknown) => void) => void): Thenable<Awaited<T>>;
+}
+interface PromiseConstructor extends PromiseConstructorLike {
     prototype: Promise<any>;
 
     new <T>(func: (res: (val: T) => void, rej: (err: unknown) => void) => void): Promise<Awaited<T>>;

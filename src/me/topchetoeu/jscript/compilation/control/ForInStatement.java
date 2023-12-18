@@ -44,11 +44,10 @@ public class ForInStatement extends Statement {
         target.add(Instruction.nop(loc()));
 
         target.add(Instruction.loadMember(varLocation, "value"));
-        target.queueDebug(BreakpointType.STEP_OVER, object.loc());
-        target.add(Instruction.storeVar(varLocation, key));
+        target.add(Instruction.storeVar(object.loc(), key));
+        target.setDebug(BreakpointType.STEP_OVER);
 
-        target.queueDebug(BreakpointType.STEP_OVER, body.loc());
-        body.compile(target, scope, false);
+        body.compile(target, scope, false, BreakpointType.STEP_OVER);
 
         int end = target.size();
 

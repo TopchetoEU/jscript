@@ -42,7 +42,7 @@ public class FunctionStatement extends Statement {
         }
     }
 
-    private long compileBody(CompileTarget target, ScopeRecord scope, boolean polute) {
+    private long compileBody(CompileTarget target, ScopeRecord scope, boolean polute, BreakpointType bp) {
         for (var i = 0; i < args.length; i++) {
             for (var j = 0; j < i; j++) {
                 if (args[i].equals(args[j])) {
@@ -68,6 +68,7 @@ public class FunctionStatement extends Statement {
 
         if (!statement && this.varName != null) {
             subtarget.add(Instruction.storeSelfFunc(loc(), (int)subscope.define(this.varName)));
+            subtarget.setDebug(bp);
         }
 
         body.declare(subscope);
@@ -84,13 +85,13 @@ public class FunctionStatement extends Statement {
         return id;
     }
 
-    public void compile(CompileTarget target, ScopeRecord scope, boolean pollute, String name) {
+    public void compile(CompileTarget target, ScopeRecord scope, boolean pollute, String name, BreakpointType bp) {
         if (this.varName != null) name = this.varName;
 
         var hasVar = this.varName != null && statement;
         var hasName = name != null;
 
-        compileBody(target, scope, pollute || hasVar || hasName);
+        compileBody(target, scope, pollute || hasVar || hasName, bp);
 
         if (hasName) {
             if (pollute || hasVar) target.add(Instruction.dup(loc()));
@@ -106,8 +107,14 @@ public class FunctionStatement extends Statement {
             target.add(Instruction.storeVar(loc(), scope.getKey(this.varName), false));
         }
     }
+    public void compile(CompileTarget target, ScopeRecord scope, boolean pollute, String name) {
+        compile(target, scope, pollute, name, BreakpointType.NONE);
+    }
+    @Override public void compile(CompileTarget target, ScopeRecord scope, boolean pollute, BreakpointType bp) {
+        compile(target, scope, pollute, (String)null, bp);
+    }
     @Override public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {
-        compile(target, scope, pollute, BreakpointType.NONE);
+        compile(target, scope, pollute, (String)null, BreakpointType.NONE);
     }
 
     public FunctionStatement(Location loc, Location end, String varName, String[] args, boolean statement, CompoundStatement body) {
@@ -124,5 +131,9 @@ public class FunctionStatement extends Statement {
     public static void compileWithName(Statement stm, CompileTarget target, ScopeRecord scope, boolean pollute, String name) {
         if (stm instanceof FunctionStatement) ((FunctionStatement)stm).compile(target, scope, pollute, name);
         else stm.compile(target, scope, pollute);
+    }
+    public static void compileWithName(Statement stm, CompileTarget target, ScopeRecord scope, boolean pollute, String name, BreakpointType bp) {
+        if (stm instanceof FunctionStatement) ((FunctionStatement)stm).compile(target, scope, pollute, name, bp);
+        else stm.compile(target, scope, pollute, bp);
     }
 }

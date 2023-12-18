@@ -198,6 +198,7 @@ public class CodeFrame {
 
                 if (instr == null) returnValue = null;
                 else {
+                // System.out.println(instr + "@" + instr.location);
                     ctx.engine.onInstruction(ctx, this, instr, Runners.NO_RETURN, null, false);
 
                     if (instr.location != null) prevLoc = instr.location;

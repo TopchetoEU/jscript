@@ -46,8 +46,8 @@ public class TryStatement extends Statement {
             target.add(Instruction.tryEnd(loc()));
         }
 
-        target.queueDebug(BreakpointType.STEP_OVER);
         target.set(start - 1, Instruction.tryStart(loc(), catchStart, finallyStart, target.size() - start));
+        target.setDebug(start - 1, BreakpointType.STEP_OVER);
         if (pollute) target.add(Instruction.loadValue(loc(), null));
     }
 

@@ -1,5 +1,8 @@
 package me.topchetoeu.jscript.compilation;
 
+import java.util.List;
+import java.util.Vector;
+
 import me.topchetoeu.jscript.Location;
 import me.topchetoeu.jscript.compilation.Instruction.BreakpointType;
 import me.topchetoeu.jscript.compilation.values.FunctionStatement;
@@ -25,19 +28,21 @@ public class CompoundStatement extends Statement {
 
     @Override
     public void compile(CompileTarget target, ScopeRecord scope, boolean pollute, BreakpointType type) {
-        if (separateFuncs) for (var stm : statements) {
+        List<Statement> statements = new Vector<Statement>();
+        if (separateFuncs) for (var stm : this.statements) {
             if (stm instanceof FunctionStatement && ((FunctionStatement)stm).statement) {
                 stm.compile(target, scope, false);
             }
+            else statements.add(stm);
         }
+        else statements = List.of(this.statements);
 
         var polluted = false;
 
-        for (var i = 0; i < statements.length; i++) {
-            var stm = statements[i];
+        for (var i = 0; i < statements.size(); i++) {
+            var stm = statements.get(i);
 
-            if (separateFuncs && stm instanceof FunctionStatement) continue;
-            if (i != statements.length - 1) stm.compile(target, scope, false, BreakpointType.STEP_OVER);
+            if (i != statements.size() - 1) stm.compile(target, scope, false, BreakpointType.STEP_OVER);
             else stm.compile(target, scope, polluted = pollute, BreakpointType.STEP_OVER);
         }
 

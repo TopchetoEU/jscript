@@ -15,15 +15,9 @@ public class CompileTarget {
     public final Map<Long, FunctionBody> functions;
     public final TreeSet<Location> breakpoints;
     private final HashMap<Location, Instruction> bpToInstr = new HashMap<>();
-    private BreakpointType queueType = BreakpointType.NONE;
-    private Location queueLoc = null;
 
     public Instruction add(Instruction instr) {
         target.add(instr);
-        if (queueType != BreakpointType.NONE) setDebug(queueType);
-        if (queueLoc != null) instr.locate(queueLoc);
-        queueType = BreakpointType.NONE;
-        queueLoc = null;
         return instr;
     }
     public Instruction set(int i, Instruction instr) {
@@ -54,13 +48,6 @@ public class CompileTarget {
     public Location lastLoc(Location fallback) {
         if (target.size() == 0) return fallback;
         else return target.get(target.size() - 1).location;
-    }
-
-    public void queueDebug(BreakpointType type) {
-        queueType = type;
-    }
-    public void queueDebug(BreakpointType type, Location loc) {
-        queueType = type;
     }
 
     public Instruction[] array() { return target.toArray(Instruction[]::new); }
