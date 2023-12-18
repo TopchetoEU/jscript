@@ -8,13 +8,17 @@ import me.topchetoeu.jscript.compilation.Instruction;
 import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.frame.CodeFrame;
 import me.topchetoeu.jscript.exceptions.EngineException;
+import me.topchetoeu.jscript.mapping.SourceMap;
 
 public interface DebugController {
     /**
      * Called when a script has been loaded
-     * @param breakpoints 
+     * @param filename The name of the source
+     * @param source The name of the source
+     * @param breakpoints A set of all the breakpointable locations in this source
+     * @param map The source map associated with this file. null if this source map isn't mapped
      */
-    void onSource(Filename filename, String source, TreeSet<Location> breakpoints);
+    void onSource(Filename filename, String source, TreeSet<Location> breakpoints, SourceMap map);
 
     /**
      * Called immediatly before an instruction is executed, as well as after an instruction, if it has threw or returned.
@@ -30,6 +34,13 @@ public interface DebugController {
      */
     boolean onInstruction(Context ctx, CodeFrame frame, Instruction instruction, Object returnVal, EngineException error, boolean caught);
 
+    /**
+     * Called immediatly before a frame has been pushed on the frame stack.
+     * This function might pause in order to await debugging commands.
+     * @param ctx The context of execution
+     * @param frame The code frame which was pushed
+     */
+    void onFramePush(Context ctx, CodeFrame frame);
     /**
      * Called immediatly after a frame has been popped out of the frame stack.
      * This function might pause in order to await debugging commands.

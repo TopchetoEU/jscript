@@ -9,13 +9,13 @@ import me.topchetoeu.jscript.engine.scope.ScopeRecord;
 public class RegexStatement extends Statement {
     public final String pattern, flags;
 
-    @Override
-    public boolean pure() { return true; }
+    // Not really pure, since a function is called, but can be ignored.
+    @Override public boolean pure() { return true; }
 
     @Override
     public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {
-        target.add(Instruction.loadRegex(pattern, flags).locate(loc()));
-        if (!pollute) target.add(Instruction.discard().locate(loc()));
+        target.add(Instruction.loadRegex(loc(), pattern, flags));
+        if (!pollute) target.add(Instruction.discard(loc()));
     }
 
     public RegexStatement(Location loc, String pattern, String flags) {

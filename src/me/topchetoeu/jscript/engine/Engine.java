@@ -15,6 +15,7 @@ import me.topchetoeu.jscript.events.Awaitable;
 import me.topchetoeu.jscript.events.DataNotifier;
 import me.topchetoeu.jscript.exceptions.EngineException;
 import me.topchetoeu.jscript.exceptions.InterruptException;
+import me.topchetoeu.jscript.mapping.SourceMap;
 
 public class Engine implements DebugController {
     private class UncompiledFunction extends FunctionValue {
@@ -66,22 +67,36 @@ public class Engine implements DebugController {
 
     private final HashMap<Filename, String> sources = new HashMap<>();
     private final HashMap<Filename, TreeSet<Location>> bpts = new HashMap<>();
+    private final HashMap<Filename, SourceMap> maps = new HashMap<>();
+
+    public Location mapToCompiled(Location location) {
+        var map = maps.get(location.filename());
+        if (map == null) return location;
+        return map.toCompiled(location);
+    }
+    public Location mapToOriginal(Location location) {
+        var map = maps.get(location.filename());
+        if (map == null) return location;
+        return map.toOriginal(location);
+    }
 
     private DebugController debugger;
     private Thread thread;
     private PriorityBlockingQueue<Task> tasks = new PriorityBlockingQueue<>();
 
-    public boolean attachDebugger(DebugController debugger) {
+    public synchronized boolean attachDebugger(DebugController debugger) {
         if (!debugging || this.debugger != null) return false;
 
-        for (var source : sources.entrySet()) {
-            debugger.onSource(source.getKey(), source.getValue(), bpts.get(source.getKey()));
-        }
+        for (var source : sources.entrySet()) debugger.onSource(
+            source.getKey(), source.getValue(),
+            bpts.get(source.getKey()),
+            maps.get(source.getKey())
+        );
 
         this.debugger = debugger;
         return true;
     }
-    public boolean detachDebugger() {
+    public synchronized boolean detachDebugger() {
         if (!debugging || this.debugger == null) return false;
         this.debugger = null;
         return true;
@@ -122,7 +137,7 @@ public class Engine implements DebugController {
     public boolean inExecThread() {
         return Thread.currentThread() == thread;
     }
-    public boolean isRunning() {
+    public synchronized boolean isRunning() {
         return this.thread != null;
     }
 
@@ -135,6 +150,10 @@ public class Engine implements DebugController {
         return pushMsg(micro, ctx, new UncompiledFunction(filename, raw), thisArg, args);
     }
 
+    @Override
+    public void onFramePush(Context ctx, CodeFrame frame) {
+        if (debugging && debugger != null) debugger.onFramePush(ctx, frame);
+    }
     @Override public void onFramePop(Context ctx, CodeFrame frame) {
         if (debugging && debugger != null) debugger.onFramePop(ctx, frame);
     }
@@ -142,11 +161,12 @@ public class Engine implements DebugController {
         if (debugging && debugger != null) return debugger.onInstruction(ctx, frame, instruction, returnVal, error, caught);
         else return false;
     }
-    @Override public void onSource(Filename filename, String source, TreeSet<Location> breakpoints) {
+    @Override public void onSource(Filename filename, String source, TreeSet<Location> breakpoints, SourceMap map) {
         if (!debugging) return;
-        if (debugger != null) debugger.onSource(filename, source, breakpoints);
+        if (debugger != null) debugger.onSource(filename, source, breakpoints, map);
         sources.put(filename, source);
         bpts.put(filename, breakpoints);
+        maps.put(filename, map);
     }
 
     public Engine(boolean debugging) {

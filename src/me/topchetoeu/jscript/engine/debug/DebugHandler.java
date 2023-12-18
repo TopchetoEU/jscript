@@ -4,7 +4,6 @@ public interface DebugHandler {
     void enable(V8Message msg);
     void disable(V8Message msg);
 
-    void setBreakpoint(V8Message msg);
     void setBreakpointByUrl(V8Message msg);
     void removeBreakpoint(V8Message msg);
     void continueToLocation(V8Message msg);

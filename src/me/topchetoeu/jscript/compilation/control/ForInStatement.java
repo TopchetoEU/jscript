@@ -4,6 +4,7 @@ import me.topchetoeu.jscript.Location;
 import me.topchetoeu.jscript.compilation.CompileTarget;
 import me.topchetoeu.jscript.compilation.Instruction;
 import me.topchetoeu.jscript.compilation.Statement;
+import me.topchetoeu.jscript.compilation.Instruction.BreakpointType;
 import me.topchetoeu.jscript.engine.Operation;
 import me.topchetoeu.jscript.engine.scope.ScopeRecord;
 
@@ -25,39 +26,38 @@ public class ForInStatement extends Statement {
         var key = scope.getKey(varName);
 
         int first = target.size();
-        if (key instanceof String) target.add(Instruction.makeVar((String)key));
+        if (key instanceof String) target.add(Instruction.makeVar(loc(), (String)key));
 
         if (varValue != null) {
             varValue.compile(target, scope, true);
-            target.add(Instruction.storeVar(scope.getKey(varName)));
+            target.add(Instruction.storeVar(loc(), scope.getKey(varName)));
         }
 
-        object.compileWithDebug(target, scope, true);
-        target.add(Instruction.keys(true));
+        object.compile(target, scope, true, BreakpointType.STEP_OVER);
+        target.add(Instruction.keys(loc(), true));
 
         int start = target.size();
-        target.add(Instruction.dup());
-        target.add(Instruction.loadValue(null));
-        target.add(Instruction.operation(Operation.EQUALS));
+        target.add(Instruction.dup(loc()));
+        target.add(Instruction.loadValue(loc(), null));
+        target.add(Instruction.operation(loc(), Operation.EQUALS));
         int mid = target.size();
-        target.add(Instruction.nop());
+        target.add(Instruction.nop(loc()));
 
-        target.add(Instruction.loadMember("value").locate(varLocation));
-        target.setDebug();
-        target.add(Instruction.storeVar(key));
+        target.add(Instruction.loadMember(varLocation, "value"));
+        target.add(Instruction.storeVar(object.loc(), key));
+        target.setDebug(BreakpointType.STEP_OVER);
 
-        body.compileWithDebug(target, scope, false);
+        body.compile(target, scope, false, BreakpointType.STEP_OVER);
 
         int end = target.size();
 
         WhileStatement.replaceBreaks(target, label, mid + 1, end, start, end + 1);
 
-        target.add(Instruction.jmp(start - end));
-        target.add(Instruction.discard());
-        target.set(mid, Instruction.jmpIf(end - mid + 1));
-        if (pollute) target.add(Instruction.loadValue(null));
+        target.add(Instruction.jmp(loc(), start - end));
+        target.add(Instruction.discard(loc()));
+        target.set(mid, Instruction.jmpIf(loc(), end - mid + 1));
+        if (pollute) target.add(Instruction.loadValue(loc(), null));
         target.get(first).locate(loc());
-        target.setDebug(first);
     }
 
     public ForInStatement(Location loc, Location varLocation, String label, boolean isDecl, String varName, Statement varValue, Statement object, Statement body) {

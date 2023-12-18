@@ -11,8 +11,8 @@ public class BreakStatement extends Statement {
 
     @Override
     public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {
-        target.add(Instruction.nop("break", label).locate(loc()));
-        if (pollute) target.add(Instruction.loadValue(null).locate(loc()));
+        target.add(Instruction.nop(loc(), "break", label));
+        if (pollute) target.add(Instruction.loadValue(loc(), null));
     }
 
     public BreakStatement(Location loc, String label) {

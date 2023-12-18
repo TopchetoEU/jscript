@@ -97,46 +97,33 @@ public class Runners {
             obj.defineProperty(ctx, "value", el);
             frame.push(ctx, obj);
         }
-        // var arr = new ObjectValue();
 
-        // var members = Values.getMembers(ctx, val, false, false);
-        // Collections.reverse(members);
-        // for (var el : members) {
-        //     if (el instanceof Symbol) continue;
-        //     arr.defineProperty(ctx, i++, el);
-        // }
-
-        // arr.defineProperty(ctx, "length", i);
-
-        // frame.push(ctx, arr);
         frame.codePtr++;
         return NO_RETURN;
     }
 
-    public static Object execTry(Context ctx, Instruction instr, CodeFrame frame) {
-        frame.addTry(instr.get(0), instr.get(1), instr.get(2));
+    public static Object execTryStart(Context ctx, Instruction instr, CodeFrame frame) {
+        int start = frame.codePtr + 1;
+        int catchStart = (int)instr.get(0);
+        int finallyStart = (int)instr.get(1);
+        if (finallyStart >= 0) finallyStart += start;
+        if (catchStart >= 0) catchStart += start;
+        int end = (int)instr.get(2) + start;
+        frame.addTry(start, end, catchStart, finallyStart);
         frame.codePtr++;
+        return NO_RETURN;
+    }
+    public static Object execTryEnd(Context ctx, Instruction instr, CodeFrame frame) {
+        frame.popTryFlag = true;
         return NO_RETURN;
     }
 
     public static Object execDup(Context ctx, Instruction instr, CodeFrame frame) {
-        int offset = instr.get(0), count = instr.get(1);
+        int count = instr.get(0);
 
         for (var i = 0; i < count; i++) {
-            frame.push(ctx, frame.peek(offset + count - 1));
+            frame.push(ctx, frame.peek(count - 1));
         }
-
-        frame.codePtr++;
-        return NO_RETURN;
-    }
-    public static Object execMove(Context ctx, Instruction instr, CodeFrame frame) {
-        int offset = instr.get(0), count = instr.get(1);
-
-        var tmp = frame.take(offset);
-        var res = frame.take(count);
-
-        for (var i = 0; i < offset; i++) frame.push(ctx, tmp[i]);
-        for (var i = 0; i < count; i++) frame.push(ctx, res[i]);
 
         frame.codePtr++;
         return NO_RETURN;
@@ -179,16 +166,13 @@ public class Runners {
     }
     public static Object execLoadFunc(Context ctx, Instruction instr, CodeFrame frame) {
         long id = (Long)instr.get(0);
-        int localsN = (Integer)instr.get(1);
-        int len = (Integer)instr.get(2);
-        var captures = new ValueVariable[instr.params.length - 3];
+        var captures = new ValueVariable[instr.params.length - 1];
 
-        for (var i = 3; i < instr.params.length; i++) {
-            captures[i - 3] = frame.scope.get(instr.get(i));
+        for (var i = 1; i < instr.params.length; i++) {
+            captures[i - 1] = frame.scope.get(instr.get(i));
         }
 
-        var body = Engine.functions.get(id);
-        var func = new CodeFunction(ctx.environment(), "", localsN, len, captures, body);
+        var func = new CodeFunction(ctx.environment(), "", Engine.functions.get(id), captures);
 
         frame.push(ctx, func);
 
@@ -306,7 +290,6 @@ public class Runners {
         var val = frame.pop();
 
         if (!Values.deleteMember(ctx, val, key)) throw EngineException.ofSyntax("Can't delete member '" + key + "'.");
-        frame.push(ctx, true);
         frame.codePtr++;
         return NO_RETURN;
     }
@@ -330,10 +313,10 @@ public class Runners {
             case THROW_SYNTAX: return execThrowSyntax(ctx, instr, frame);
             case CALL: return execCall(ctx, instr, frame);
             case CALL_NEW: return execCallNew(ctx, instr, frame);
-            case TRY: return execTry(ctx, instr, frame);
+            case TRY_START: return execTryStart(ctx, instr, frame);
+            case TRY_END: return execTryEnd(ctx, instr, frame);
 
             case DUP: return execDup(ctx, instr, frame);
-            case MOVE: return execMove(ctx, instr, frame);
             case LOAD_VALUE: return execLoadValue(ctx, instr, frame);
             case LOAD_VAR: return execLoadVar(ctx, instr, frame);
             case LOAD_OBJ: return execLoadObj(ctx, instr, frame);

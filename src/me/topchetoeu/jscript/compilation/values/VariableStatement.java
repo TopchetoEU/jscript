@@ -11,8 +11,7 @@ import me.topchetoeu.jscript.engine.scope.ScopeRecord;
 public class VariableStatement extends AssignableStatement {
     public final String name;
 
-    @Override
-    public boolean pure() { return true; }
+    @Override public boolean pure() { return false; }
 
     @Override
     public Statement toAssign(Statement val, Operation operation) {
@@ -22,8 +21,8 @@ public class VariableStatement extends AssignableStatement {
     @Override
     public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {
         var i = scope.getKey(name);
-        target.add(Instruction.loadVar(i).locate(loc()));
-        if (!pollute) target.add(Instruction.discard().locate(loc()));
+        target.add(Instruction.loadVar(loc(), i));
+        if (!pollute) target.add(Instruction.discard(loc()));
     }
 
     public VariableStatement(Location loc, String name) {

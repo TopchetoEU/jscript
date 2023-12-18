@@ -15,22 +15,13 @@ public class Reading {
     }
 
     public static String streamToString(InputStream in) {
-        try {
-            StringBuilder out = new StringBuilder();
-            BufferedReader br = new BufferedReader(new InputStreamReader(in));
-
-            for(var line = br.readLine(); line != null; line = br.readLine()) {
-                out.append(line).append('\n');
-            }
-
-            br.close();
-            return out.toString();
-        }
+        try { return new String(in.readAllBytes()); }
         catch (Throwable e) { throw new UncheckedException(e); }
     }
+    public static InputStream resourceToStream(String name) {
+        return Reading.class.getResourceAsStream("/assets/" + name);
+    }
     public static String resourceToString(String name) {
-        var str = Main.class.getResourceAsStream("/me/topchetoeu/jscript/" + name);
-        if (str == null) return null;
-        return streamToString(str);
+        return streamToString(resourceToStream(name));
     }
 }

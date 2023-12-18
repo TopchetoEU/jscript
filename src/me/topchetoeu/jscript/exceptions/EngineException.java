@@ -12,19 +12,48 @@ import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.engine.values.ObjectValue.PlaceholderProto;
 
 public class EngineException extends RuntimeException {
+    public static class StackElement {
+        public final Location location;
+        public final String function;
+        public final Context ctx;
+
+        public boolean visible() {
+            return ctx == null || ctx.environment() == null || ctx.environment().stackVisible;
+        }
+        public String toString() {
+            var res = "";
+            var loc = location;
+
+            if (loc != null && ctx != null && ctx.engine != null) loc = ctx.engine.mapToCompiled(loc);
+
+            if (loc != null) res += "at " + loc.toString() + " ";
+            if (function != null && !function.equals("")) res += "in " + function + " ";
+
+            return res.trim();
+        }
+
+        public StackElement(Context ctx, Location location, String function) {
+            if (function != null) function = function.trim();
+            if (function.equals("")) function = null;
+
+            if (ctx == null) this.ctx = null;
+            else this.ctx = new Context(ctx.engine).pushEnv(ctx.environment());
+            this.location = location;
+            this.function = function;
+        }
+    }
+
     public final Object value;
     public EngineException cause;
     public Environment env = null;
     public Engine engine = null;
-    public final List<String> stackTrace = new ArrayList<>();
+    public final List<StackElement> stackTrace = new ArrayList<>();
 
-    public EngineException add(String name, Location location) {
-        var res = "";
-
-        if (location != null) res += "at " + location.toString() + " ";
-        if (name != null && !name.equals("")) res += "in " + name + " ";
-
-        this.stackTrace.add(res.trim());
+    public EngineException add(Context ctx, String name, Location location) {
+        var el = new StackElement(ctx, location, name);
+        if (el.function == null && el.location == null) return this;
+        setCtx(ctx.environment(), ctx.engine);
+        stackTrace.add(el);
         return this;
     }
     public EngineException setCause(EngineException cause) {
@@ -46,7 +75,7 @@ public class EngineException extends RuntimeException {
             ss.append("[Error while stringifying]\n");
         }
         for (var line : stackTrace) {
-            ss.append("    ").append(line).append('\n');
+            if (line.visible()) ss.append("    ").append(line.toString()).append("\n");
         }
         if (cause != null) ss.append("Caused by ").append(cause.toString(ctx)).append('\n');
         ss.deleteCharAt(ss.length() - 1);
@@ -74,7 +103,7 @@ public class EngineException extends RuntimeException {
         return new EngineException(err(null, msg, PlaceholderProto.ERROR));
     }
     public static EngineException ofSyntax(SyntaxException e) {
-        return new EngineException(err(null, e.msg, PlaceholderProto.SYNTAX_ERROR)).add(null, e.loc);
+        return new EngineException(err(null, e.msg, PlaceholderProto.SYNTAX_ERROR)).add(null, null, e.loc);
     }
     public static EngineException ofSyntax(String msg) {
         return new EngineException(err(null, msg, PlaceholderProto.SYNTAX_ERROR));

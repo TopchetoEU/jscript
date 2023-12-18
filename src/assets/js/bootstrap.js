@@ -1,8 +1,8 @@
-(function (_arguments) {
-    var ts = _arguments[0];
+(function (ts, env, libs) {
     var src = '', version = 0;
-    var lib = _arguments[2].concat([
-        'declare const exit: never; declare const go: any;',
+    var lib = libs.concat([
+        'declare function exit(): never;',
+        'declare function go(): any;',
         'declare function getTsDeclarations(): string[];'
     ]).join('');
     var libSnapshot = ts.ScriptSnapshot.fromString(lib);
@@ -21,6 +21,7 @@
         forceConsistentCasingInFileNames: true,
         experimentalDecorators: true,
         strict: true,
+        sourceMap: true,
     };
 
     var reg = ts.createDocumentRegistry();
@@ -55,6 +56,8 @@
     service.getEmitOutput("/lib.d.ts");
     log("Loaded libraries!");
 
+    var oldCompile = env.compile;
+
     function compile(code, filename, env) {
         src = code;
         version++;
@@ -82,21 +85,20 @@
             throw new SyntaxError(diagnostics.join("\n"));
         }
 
-        var result = emit.outputFiles[0].text;
-        var declaration = emit.outputFiles[1].text;
-        
+        var map = JSON.parse(emit.outputFiles[0].text);
+        var result = emit.outputFiles[1].text;
+        var declaration = emit.outputFiles[2].text;
+
+        var compiled = oldCompile(result, filename, env);
 
         return {
-            source: result,
-            runner: function(func) {
-                return function() {
-                    var val = func.apply(this, arguments);
-                    if (declaration !== '') {
-                        declSnapshots.push(ts.ScriptSnapshot.fromString(declaration));
-                    }
-                    return val;
-                }
-            }
+            function: function () {
+                var val = compiled.function.apply(this, arguments);
+                if (declaration !== '') declSnapshots.push(ts.ScriptSnapshot.fromString(declaration));
+                return val;
+            },
+            breakpoints: compiled.breakpoints,
+            mapChain: compiled.mapChain.concat(map.mappings),
         };
     }
 
@@ -107,5 +109,5 @@
         }
     }
 
-    apply(_arguments[1]);
-})(arguments);
+    apply(env);
+})(arguments[0], arguments[1], arguments[2]);

@@ -1,23 +1,20 @@
-package me.topchetoeu.jscript.compilation;
+package me.topchetoeu.jscript.compilation.values;
 
 import me.topchetoeu.jscript.Location;
-import me.topchetoeu.jscript.compilation.values.ConstantStatement;
+import me.topchetoeu.jscript.compilation.CompileTarget;
+import me.topchetoeu.jscript.compilation.Instruction;
+import me.topchetoeu.jscript.compilation.Statement;
 import me.topchetoeu.jscript.engine.scope.ScopeRecord;
 
 public class DiscardStatement extends Statement {
     public final Statement value;
 
+    @Override public boolean pure() { return value.pure(); }
+
     @Override
     public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {
         value.compile(target, scope, false);
-        
-    }
-    @Override
-    public Statement optimize() {
-        if (value == null) return this;
-        var val = value.optimize();
-        if (val.pure()) return new ConstantStatement(loc(), null);
-        else return new DiscardStatement(loc(), val);
+        if (pollute) target.add(Instruction.loadValue(loc(), null));
     }
 
     public DiscardStatement(Location loc, Statement val) {

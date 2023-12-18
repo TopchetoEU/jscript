@@ -9,12 +9,11 @@ import me.topchetoeu.jscript.engine.scope.ScopeRecord;
 public class VariableIndexStatement extends Statement {
     public final int index;
 
-    @Override
-    public boolean pure() { return true; }
+    @Override public boolean pure() { return true; }
 
     @Override
     public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {
-        if (pollute) target.add(Instruction.loadVar(index).locate(loc()));
+        if (pollute) target.add(Instruction.loadVar(loc(), index));
     }
 
     public VariableIndexStatement(Location loc, int i) {

@@ -11,6 +11,8 @@ import me.topchetoeu.jscript.engine.Environment;
 import me.topchetoeu.jscript.engine.debug.DebugServer;
 import me.topchetoeu.jscript.engine.debug.SimpleDebugger;
 import me.topchetoeu.jscript.engine.values.ArrayValue;
+import me.topchetoeu.jscript.engine.values.NativeFunction;
+import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.events.Observer;
 import me.topchetoeu.jscript.exceptions.EngineException;
@@ -101,11 +103,11 @@ public class Main {
     private static void initEnv() {
         environment = Internals.apply(environment);
 
-        environment.global.define("exit", _ctx -> {
+        environment.global.define(false, new NativeFunction("exit", (_ctx, th, args) -> {
             exited = true;
             throw new InterruptException();
-        });
-        environment.global.define("go", _ctx -> {
+        }));
+        environment.global.define(false, new NativeFunction("go", (_ctx, th, args) -> {
             try {
                 var f = Path.of("do.js");
                 var func = _ctx.compile(new Filename("do", "do/" + j++ + ".js"), new String(Files.readAllBytes(f)));
@@ -114,7 +116,7 @@ public class Main {
             catch (IOException e) {
                 throw new EngineException("Couldn't open do.js");
             }
-        });
+        }));
 
         environment.filesystem.protocols.put("temp", new MemoryFilesystem(Mode.READ_WRITE));
         environment.filesystem.protocols.put("file", new PhysicalFilesystem(Path.of(".").toAbsolutePath()));
@@ -127,7 +129,10 @@ public class Main {
     private static void initTypescript() {
         try {
             var tsEnv = Internals.apply(new Environment(null, null, null));
+            tsEnv.stackVisible = false;
+            tsEnv.global.define(null, "module", false, new ObjectValue());
             var bsEnv = Internals.apply(new Environment(null, null, null));
+            bsEnv.stackVisible = false;
 
             engine.pushMsg(
                 false, new Context(engine, tsEnv),
@@ -140,7 +145,7 @@ public class Main {
 
             engine.pushMsg(
                 false, ctx,
-                new Filename("jscript", "internals/bootstrap.js"), Reading.resourceToString("js/bootstrap.js"), null,
+                new Filename("jscript", "bootstrap.js"), Reading.resourceToString("js/bootstrap.js"), null,
                 tsEnv.global.get(ctx, "ts"), environment, new ArrayValue(null, Reading.resourceToString("js/lib.d.ts"))
             ).await();
         }

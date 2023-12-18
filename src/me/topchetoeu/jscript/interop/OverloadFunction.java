@@ -83,11 +83,11 @@ public class OverloadFunction extends FunctionValue {
             catch (InvocationTargetException e) {
                 var loc = Location.INTERNAL;
                 if (e.getTargetException() instanceof EngineException) {
-                    throw ((EngineException)e.getTargetException()).add(name, loc);
+                    throw ((EngineException)e.getTargetException()).add(ctx, name, loc);
                 }
                 else if (e.getTargetException() instanceof NullPointerException) {
                     e.printStackTrace();
-                    throw EngineException.ofType("Unexpected value of 'undefined'.").add(name, loc);
+                    throw EngineException.ofType("Unexpected value of 'undefined'.").add(ctx, name, loc);
                 }
                 else if (e.getTargetException() instanceof InterruptException || e.getTargetException() instanceof InterruptedException) {
                     throw new InterruptException();
@@ -100,11 +100,11 @@ public class OverloadFunction extends FunctionValue {
                     err.defineProperty(ctx, "message", target.getMessage());
                     err.defineProperty(ctx, "name", NativeWrapperProvider.getName(targetClass));
 
-                    throw new EngineException(err).add(name, loc);
+                    throw new EngineException(err).add(ctx, name, loc);
                 }
             }
             catch (ReflectiveOperationException e) {
-                throw EngineException.ofError(e.getMessage()).add(name, Location.INTERNAL);
+                throw EngineException.ofError(e.getMessage()).add(ctx, name, Location.INTERNAL);
             }
         }
 

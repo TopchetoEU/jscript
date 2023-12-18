@@ -1,18 +1,24 @@
 package me.topchetoeu.jscript.engine;
 
 import java.util.HashMap;
+import java.util.stream.Collectors;
 
+import me.topchetoeu.jscript.Filename;
+import me.topchetoeu.jscript.Location;
 import me.topchetoeu.jscript.engine.scope.GlobalScope;
+import me.topchetoeu.jscript.engine.values.ArrayValue;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
 import me.topchetoeu.jscript.engine.values.NativeFunction;
 import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.engine.values.Symbol;
+import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.exceptions.EngineException;
 import me.topchetoeu.jscript.filesystem.RootFilesystem;
 import me.topchetoeu.jscript.interop.Native;
 import me.topchetoeu.jscript.interop.NativeGetter;
 import me.topchetoeu.jscript.interop.NativeSetter;
 import me.topchetoeu.jscript.interop.NativeWrapperProvider;
+import me.topchetoeu.jscript.parsing.Parsing;
 import me.topchetoeu.jscript.permissions.Permission;
 import me.topchetoeu.jscript.permissions.PermissionsProvider;
 
@@ -29,9 +35,31 @@ public class Environment implements PermissionsProvider {
 
     private static int nextId = 0;
 
+    @Native public boolean stackVisible = true;
     @Native public int id = ++nextId;
 
-    @Native public FunctionValue compile;
+    @Native public FunctionValue compile = new NativeFunction("compile", (ctx, thisArg, args) -> {
+        var source = Values.toString(ctx, args[0]);
+        var filename = Values.toString(ctx, args[1]);
+        var isDebug = Values.toBoolean(args[2]);
+
+        var env = Values.wrapper(args[2], Environment.class);
+        var res = new ObjectValue();
+
+        var target = Parsing.compile(env, Filename.parse(filename), source);
+        Engine.functions.putAll(target.functions);
+        Engine.functions.remove(0l);
+
+        res.defineProperty(ctx, "function", target.func(env));
+        res.defineProperty(ctx, "mapChain", new ArrayValue());
+
+
+        if (isDebug) {
+            res.defineProperty(ctx, "breakpoints", ArrayValue.of(ctx, target.breakpoints.stream().map(Location::toString).collect(Collectors.toList())));
+        }
+
+        return res;
+    });
     @Native public FunctionValue regexConstructor = new NativeFunction("RegExp", (ctx, thisArg, args) -> {
         throw EngineException.ofError("Regular expressions not supported.").setCtx(ctx.environment(), ctx.engine);
     });
@@ -49,12 +77,7 @@ public class Environment implements PermissionsProvider {
     }
 
     @Native public Symbol symbol(String name) {
-        if (symbols.containsKey(name)) return symbols.get(name);
-        else {
-            var res = new Symbol(name);
-            symbols.put(name, res);
-            return res;
-        }
+        return getSymbol(name);
     }
 
     @NativeGetter("global") public ObjectValue getGlobal() {
@@ -88,13 +111,21 @@ public class Environment implements PermissionsProvider {
         return new Context(engine).pushEnv(this);
     }
 
+    public static Symbol getSymbol(String name) {
+        if (symbols.containsKey(name)) return symbols.get(name);
+        else {
+            var res = new Symbol(name);
+            symbols.put(name, res);
+            return res;
+        }
+    }
+
     public Environment(FunctionValue compile, WrappersProvider nativeConverter, GlobalScope global) {
-        if (compile == null) compile = new NativeFunction("compile", (ctx, thisArg, args) -> args.length == 0 ? "" : args[0]);
+        if (compile != null) this.compile = compile;
         if (nativeConverter == null) nativeConverter = new NativeWrapperProvider(this);
         if (global == null) global = new GlobalScope();
 
         this.wrappers = nativeConverter;
-        this.compile = compile;
         this.global = global;
     }
 }

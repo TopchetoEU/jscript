@@ -10,10 +10,7 @@ import me.topchetoeu.jscript.engine.values.Values;
 public class LazyAndStatement extends Statement {
     public final Statement first, second;
 
-    @Override
-    public boolean pure() {
-        return first.pure() && second.pure();
-    }
+    @Override public boolean pure() { return first.pure() && second.pure(); }
 
     @Override
     public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {
@@ -26,12 +23,12 @@ public class LazyAndStatement extends Statement {
         }
 
         first.compile(target, scope, true);
-        if (pollute) target.add(Instruction.dup().locate(loc()));
+        if (pollute) target.add(Instruction.dup(loc()));
         int start = target.size();
-        target.add(Instruction.nop());
-        if (pollute) target.add(Instruction.discard().locate(loc()));
+        target.add(Instruction.nop(null));
+        if (pollute) target.add(Instruction.discard(loc()));
         second.compile(target, scope, pollute);
-        target.set(start, Instruction.jmpIfNot(target.size() - start).locate(loc()));
+        target.set(start, Instruction.jmpIfNot(loc(), target.size() - start));
     }
 
     public LazyAndStatement(Location loc, Statement first, Statement second) {

@@ -22,6 +22,9 @@ public class ScopeValue extends ObjectValue {
             return true;
         }
 
+        var proto = getPrototype(ctx);
+        if (proto != null && proto.hasField(ctx, key) && proto.setField(ctx, key, val)) return true;
+
         return super.setField(ctx, key, val);
     }
     @Override

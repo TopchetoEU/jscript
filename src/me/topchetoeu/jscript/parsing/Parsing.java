@@ -17,8 +17,7 @@ import me.topchetoeu.jscript.compilation.control.SwitchStatement.SwitchCase;
 import me.topchetoeu.jscript.compilation.values.*;
 import me.topchetoeu.jscript.engine.Environment;
 import me.topchetoeu.jscript.engine.Operation;
-import me.topchetoeu.jscript.engine.scope.ValueVariable;
-import me.topchetoeu.jscript.engine.values.CodeFunction;
+import me.topchetoeu.jscript.engine.scope.LocalScopeRecord;
 import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.exceptions.SyntaxException;
 import me.topchetoeu.jscript.parsing.ParseRes.State;
@@ -89,7 +88,6 @@ public class Parsing {
         reserved.add("self");
         // We allow yield and await, because they're part of the custom async and generator functions
     }
-
 
     public static boolean isDigit(char c) {
         return c >= '0' && c <= '9';
@@ -396,7 +394,7 @@ public class Parsing {
         return tokens;
     }
 
-    private static int fromHex(char c) {
+    public static int fromHex(char c) {
         if (c >= 'A' && c <= 'F') return c - 'A' + 10;
         if (c >= 'a' && c <= 'f') return c - 'a' + 10;
         if (c >= '0' && c <= '9') return c - '0';
@@ -807,9 +805,11 @@ public class Parsing {
         if (!res.isSuccess()) return ParseRes.error(loc, "Expected a compound statement for property accessor.", res);
         n += res.n;
 
+        var end = getLoc(filename, tokens, i + n - 1);
+
         return ParseRes.res(new ObjProp(
             name, access,
-            new FunctionStatement(loc, access + " " + name.toString(), argsRes.result.toArray(String[]::new), res.result)
+            new FunctionStatement(loc, end, access + " " + name.toString(), argsRes.result.toArray(String[]::new), false, res.result)
         ), n);
     }
     public static ParseRes<ObjectStatement> parseObject(Filename filename, List<Token> tokens, int i) {
@@ -869,7 +869,7 @@ public class Parsing {
 
         return ParseRes.res(new ObjectStatement(loc, values, getters, setters), n);
     }
-    public static ParseRes<NewStatement> parseNew(Filename filename, List<Token> tokens, int i) {
+    public static ParseRes<CallStatement> parseNew(Filename filename, List<Token> tokens, int i) {
         var loc = getLoc(filename, tokens, i);
         var n = 0;
         if (!isIdentifier(tokens, i + n++, "new")) return ParseRes.failed();
@@ -880,10 +880,10 @@ public class Parsing {
         var callRes = parseCall(filename, tokens, i + n, valRes.result, 0);
         n += callRes.n;
         if (callRes.isError()) return callRes.transform();
-        else if (callRes.isFailed()) return ParseRes.res(new NewStatement(loc, valRes.result), n);
+        else if (callRes.isFailed()) return ParseRes.res(new CallStatement(loc, true, valRes.result), n);
         var call = (CallStatement)callRes.result;
 
-        return ParseRes.res(new NewStatement(loc, call.func, call.args), n);
+        return ParseRes.res(new CallStatement(loc, true, call.func, call.args), n);
     }
     public static ParseRes<TypeofStatement> parseTypeof(Filename filename, List<Token> tokens, int i) {
         var loc = getLoc(filename, tokens, i);
@@ -896,7 +896,7 @@ public class Parsing {
 
         return ParseRes.res(new TypeofStatement(loc, valRes.result), n);
     }
-    public static ParseRes<VoidStatement> parseVoid(Filename filename, List<Token> tokens, int i) {
+    public static ParseRes<DiscardStatement> parseVoid(Filename filename, List<Token> tokens, int i) {
         var loc = getLoc(filename, tokens, i);
         var n = 0;
         if (!isIdentifier(tokens, i + n++, "void")) return ParseRes.failed();
@@ -905,7 +905,7 @@ public class Parsing {
         if (!valRes.isSuccess()) return ParseRes.error(loc, "Expected a value after 'void' keyword.", valRes);
         n += valRes.n;
 
-        return ParseRes.res(new VoidStatement(loc, valRes.result), n);
+        return ParseRes.res(new DiscardStatement(loc, valRes.result), n);
     }
     public static ParseRes<? extends Statement> parseDelete(Filename filename, List<Token> tokens, int i) {
         var loc = getLoc(filename, tokens, i);
@@ -966,8 +966,9 @@ public class Parsing {
 
         var res = parseCompound(filename, tokens, i + n);
         n += res.n;
+        var end = getLoc(filename, tokens, i + n - 1);
 
-        if (res.isSuccess()) return ParseRes.res(new FunctionStatement(loc, name, args.toArray(String[]::new), res.result), n);
+        if (res.isSuccess()) return ParseRes.res(new FunctionStatement(loc, end, name, args.toArray(String[]::new), statement, res.result), n);
         else return ParseRes.error(loc, "Expected a compound statement for function.", res);
     }
 
@@ -1187,7 +1188,7 @@ public class Parsing {
             else return ParseRes.failed();
         }
 
-        return ParseRes.res(new CallStatement(loc, prev, args.toArray(Statement[]::new)), n);
+        return ParseRes.res(new CallStatement(loc, false, prev, args.toArray(Statement[]::new)), n);
     }
     public static ParseRes<ChangeStatement> parsePostfixChange(Filename filename, List<Token> tokens, int i, Statement prev, int precedence) {
         var loc = getLoc(filename, tokens, i);
@@ -1233,7 +1234,7 @@ public class Parsing {
 
         return ParseRes.res(new OperationStatement(loc, Operation.IN, prev, valRes.result), n);
     }
-    public static ParseRes<CommaStatement> parseComma(Filename filename, List<Token> tokens, int i, Statement prev, int precedence) {
+    public static ParseRes<CompoundStatement> parseComma(Filename filename, List<Token> tokens, int i, Statement prev, int precedence) {
         var loc = getLoc(filename, tokens, i);
         var n = 0;
 
@@ -1244,7 +1245,7 @@ public class Parsing {
         if (!res.isSuccess()) return ParseRes.error(loc, "Expected a value after the comma.", res);
         n += res.n;
 
-        return ParseRes.res(new CommaStatement(loc, prev, res.result), n);
+        return ParseRes.res(new CompoundStatement(loc, false, prev, res.result), n);
     }
     public static ParseRes<IfStatement> parseTernary(Filename filename, List<Token> tokens, int i, Statement prev, int precedence) {
         var loc = getLoc(filename, tokens, i);
@@ -1510,7 +1511,7 @@ public class Parsing {
             statements.add(res.result);
         }
 
-        return ParseRes.res(new CompoundStatement(loc, statements.toArray(Statement[]::new)).setEnd(getLoc(filename, tokens, i + n - 1)), n);
+        return ParseRes.res(new CompoundStatement(loc, true, statements.toArray(Statement[]::new)).setEnd(getLoc(filename, tokens, i + n - 1)), n);
     }
     public static ParseRes<String> parseLabel(List<Token> tokens, int i) {
         int n = 0;
@@ -1691,7 +1692,7 @@ public class Parsing {
 
         if (isOperator(tokens, i + n, Operator.SEMICOLON)) {
             n++;
-            decl = new CompoundStatement(loc);
+            decl = new CompoundStatement(loc, false);
         }
         else {
             var declRes = ParseRes.any(
@@ -1717,7 +1718,7 @@ public class Parsing {
 
         if (isOperator(tokens, i + n, Operator.PAREN_CLOSE)) {
             n++;
-            inc = new CompoundStatement(loc);
+            inc = new CompoundStatement(loc, false);
         }
         else {
             var incRes = parseValue(filename, tokens, i + n, 0);
@@ -1830,7 +1831,7 @@ public class Parsing {
     }
 
     public static ParseRes<? extends Statement> parseStatement(Filename filename, List<Token> tokens, int i) {
-        if (isOperator(tokens, i, Operator.SEMICOLON)) return ParseRes.res(new CompoundStatement(getLoc(filename, tokens, i)), 1);
+        if (isOperator(tokens, i, Operator.SEMICOLON)) return ParseRes.res(new CompoundStatement(getLoc(filename, tokens, i), false), 1);
         if (isIdentifier(tokens, i, "with")) return ParseRes.error(getLoc(filename, tokens, i), "'with' statements are not allowed.");
         return ParseRes.any(
             parseVariableDeclare(filename, tokens, i),
@@ -1873,38 +1874,30 @@ public class Parsing {
         return list.toArray(Statement[]::new);
     }
 
-    public static CodeFunction compile(HashMap<Long, FunctionBody> funcs, TreeSet<Location> breakpoints, Environment environment, Statement ...statements) {
-        var target = environment.global.globalChild();
-        var subscope = target.child();
-        var res = new CompileTarget(funcs, breakpoints);
-        var body = new CompoundStatement(null, statements);
-        if (body instanceof CompoundStatement) body = (CompoundStatement)body;
-        else body = new CompoundStatement(null, new Statement[] { body });
+    public static CompileTarget compile(Environment environment, Statement ...statements) {
+        var subscope = new LocalScopeRecord();
+        var target = new CompileTarget(new HashMap<>(), new TreeSet<>());
+        var stm = new CompoundStatement(null, true, statements);
 
         subscope.define("this");
         subscope.define("arguments");
 
-        body.declare(target);
-
         try {
-            body.compile(res, subscope, true);
-            FunctionStatement.checkBreakAndCont(res, 0);
+            stm.compile(target, subscope, true);
+            FunctionStatement.checkBreakAndCont(target, 0);
         }
         catch (SyntaxException e) {
-            res.target.clear();
-            res.add(Instruction.throwSyntax(e));
+            target.target.clear();
+            target.add(Instruction.throwSyntax(e.loc, e));
         }
 
-        res.add(Instruction.ret());
+        target.add(Instruction.ret(stm.loc()));
+        target.functions.put(0l, new FunctionBody(subscope.localsCount(), 0, target.array(), subscope.captures(), subscope.locals()));
 
-        return new CodeFunction(environment, "", subscope.localsCount(), 0, new ValueVariable[0], new FunctionBody(res.array(), subscope.captures(), subscope.locals()));
+        return target;
     }
-    public static CodeFunction compile(HashMap<Long, FunctionBody> funcs, TreeSet<Location> breakpoints, Environment environment, Filename filename, String raw) {
-        try {
-            return compile(funcs, breakpoints, environment, parse(filename, raw));
-        }
-        catch (SyntaxException e) {
-            return new CodeFunction(environment, null, 2, 0, new ValueVariable[0], new FunctionBody(new Instruction[] { Instruction.throwSyntax(e).locate(e.loc) }));
-        }
+    public static CompileTarget compile(Environment environment, Filename filename, String raw) {
+        try { return compile(environment, parse(filename, raw)); }
+        catch (SyntaxException e) { return compile(environment, new ThrowSyntaxStatement(e)); }
     }
 }

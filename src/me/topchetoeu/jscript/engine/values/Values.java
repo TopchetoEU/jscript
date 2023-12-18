@@ -70,8 +70,7 @@ public class Values {
 
     @SuppressWarnings("unchecked")
     public static <T> T wrapper(Object val, Class<T> clazz) { 
-        if (!isWrapper(val)) return null;
-
+        if (!isWrapper(val)) val = new NativeWrapper(val);
         var res = (NativeWrapper)val;
         if (res != null && clazz.isInstance(res.wrapped)) return (T)res.wrapped;
         else return null;

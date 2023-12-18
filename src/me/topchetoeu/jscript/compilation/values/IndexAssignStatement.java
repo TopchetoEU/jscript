@@ -4,6 +4,7 @@ import me.topchetoeu.jscript.Location;
 import me.topchetoeu.jscript.compilation.CompileTarget;
 import me.topchetoeu.jscript.compilation.Instruction;
 import me.topchetoeu.jscript.compilation.Statement;
+import me.topchetoeu.jscript.compilation.Instruction.BreakpointType;
 import me.topchetoeu.jscript.engine.Operation;
 import me.topchetoeu.jscript.engine.scope.ScopeRecord;
 
@@ -18,22 +19,22 @@ public class IndexAssignStatement extends Statement {
         if (operation != null) {
             object.compile(target, scope, true);
             index.compile(target, scope, true);
-            target.add(Instruction.dup(2, 0).locate(loc()));
+            target.add(Instruction.dup(loc(), 2));
 
-            target.add(Instruction.loadMember().locate(loc()));
+            target.add(Instruction.loadMember(loc()));
             value.compile(target, scope, true);
-            target.add(Instruction.operation(operation).locate(loc()));
+            target.add(Instruction.operation(loc(), operation));
 
-            target.add(Instruction.storeMember(pollute).locate(loc()));
-            target.setDebug();
+            target.add(Instruction.storeMember(loc(), pollute));
+            target.setDebug(BreakpointType.STEP_IN);
         }
         else {
             object.compile(target, scope, true);
             index.compile(target, scope, true);
             value.compile(target, scope, true);
 
-            target.add(Instruction.storeMember(pollute).locate(loc()));
-            target.setDebug();
+            target.add(Instruction.storeMember(loc(), pollute));
+            target.setDebug(BreakpointType.STEP_IN);
         }
     }
 

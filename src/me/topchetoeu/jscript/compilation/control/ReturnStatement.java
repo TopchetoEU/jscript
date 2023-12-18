@@ -11,9 +11,9 @@ public class ReturnStatement extends Statement {
 
     @Override
     public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {
-        if (value == null) target.add(Instruction.loadValue(null).locate(loc()));
+        if (value == null) target.add(Instruction.loadValue(loc(), null));
         else value.compile(target, scope, true);
-        target.add(Instruction.ret().locate(loc()));
+        target.add(Instruction.ret(loc()));
     }
 
     public ReturnStatement(Location loc, Statement value) {

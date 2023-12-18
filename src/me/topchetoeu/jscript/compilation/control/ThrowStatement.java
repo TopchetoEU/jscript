@@ -12,7 +12,7 @@ public class ThrowStatement extends Statement {
     @Override
     public void compile(CompileTarget target, ScopeRecord scope, boolean pollute) {
         value.compile(target, scope, true);
-        target.add(Instruction.throwInstr().locate(loc()));
+        target.add(Instruction.throwInstr(loc()));
     }
 
     public ThrowStatement(Location loc, Statement value) {

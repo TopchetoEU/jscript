@@ -37,21 +37,6 @@ public class JSON {
         if (val instanceof Number) return JSONElement.number(((Number)val).doubleValue());
         if (val instanceof String) return JSONElement.string((String)val);
         if (val == Values.NULL) return JSONElement.NULL;
-        if (val instanceof ObjectValue) {
-            if (prev.contains(val)) throw new EngineException("Circular dependency in JSON.");
-            prev.add(val);
-
-            var res = new JSONMap();
-
-            for (var el : ((ObjectValue)val).keys(false)) {
-                var jsonEl = fromJs(ctx, ((ObjectValue)val).getMember(ctx, el), prev);
-                if (jsonEl == null) continue;
-                if (el instanceof String || el instanceof Number) res.put(el.toString(), jsonEl);
-            }
-
-            prev.remove(val);
-            return JSONElement.of(res);
-        }
         if (val instanceof ArrayValue) {
             if (prev.contains(val)) throw new EngineException("Circular dependency in JSON.");
             prev.add(val);
@@ -62,6 +47,21 @@ public class JSON {
                 var jsonEl = fromJs(ctx, el, prev);
                 if (jsonEl == null) jsonEl = JSONElement.NULL;
                 res.add(jsonEl);
+            }
+
+            prev.remove(val);
+            return JSONElement.of(res);
+        }
+        if (val instanceof ObjectValue) {
+            if (prev.contains(val)) throw new EngineException("Circular dependency in JSON.");
+            prev.add(val);
+
+            var res = new JSONMap();
+
+            for (var el : ((ObjectValue)val).keys(false)) {
+                var jsonEl = fromJs(ctx, ((ObjectValue)val).getMember(ctx, el), prev);
+                if (jsonEl == null) continue;
+                if (el instanceof String || el instanceof Number) res.put(el.toString(), jsonEl);
             }
 
             prev.remove(val);

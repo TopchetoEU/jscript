@@ -1,5 +1,7 @@
 package me.topchetoeu.jscript.filesystem;
 
+import me.topchetoeu.jscript.Buffer;
+
 public interface File {
     int read(byte[] buff);
     void write(byte[] buff);
@@ -21,7 +23,7 @@ public interface File {
         return new String(res);
     }
     default String readLine() {
-        var res = new Buffer(new byte[0]);
+        var res = new Buffer();
         var buff = new byte[1];
 
         while (true) {
