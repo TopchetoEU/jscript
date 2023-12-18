@@ -35,6 +35,7 @@ public class Environment implements PermissionsProvider {
 
     private static int nextId = 0;
 
+    @Native public boolean stackVisible = true;
     @Native public int id = ++nextId;
 
     @Native public FunctionValue compile = new NativeFunction("compile", (ctx, thisArg, args) -> {

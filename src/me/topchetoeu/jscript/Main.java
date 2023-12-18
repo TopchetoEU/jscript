@@ -129,8 +129,10 @@ public class Main {
     private static void initTypescript() {
         try {
             var tsEnv = Internals.apply(new Environment(null, null, null));
+            tsEnv.stackVisible = false;
             tsEnv.global.define(null, "module", false, new ObjectValue());
             var bsEnv = Internals.apply(new Environment(null, null, null));
+            bsEnv.stackVisible = false;
 
             engine.pushMsg(
                 false, new Context(engine, tsEnv),

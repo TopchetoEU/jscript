@@ -15,8 +15,12 @@ public class EngineException extends RuntimeException {
     public static class StackElement {
         public final Location location;
         public final String function;
+        public final Context ctx;
 
-        public String toString(Context ctx) {
+        public boolean visible() {
+            return ctx == null || ctx.environment() == null || ctx.environment().stackVisible;
+        }
+        public String toString() {
             var res = "";
             var loc = location;
 
@@ -27,14 +31,13 @@ public class EngineException extends RuntimeException {
 
             return res.trim();
         }
-        @Override public String toString() {
-            return toString(null);
-        }
 
-        public StackElement(Location location, String function) {
+        public StackElement(Context ctx, Location location, String function) {
             if (function != null) function = function.trim();
             if (function.equals("")) function = null;
 
+            if (ctx == null) this.ctx = null;
+            else this.ctx = new Context(ctx.engine).pushEnv(ctx.environment());
             this.location = location;
             this.function = function;
         }
@@ -46,9 +49,10 @@ public class EngineException extends RuntimeException {
     public Engine engine = null;
     public final List<StackElement> stackTrace = new ArrayList<>();
 
-    public EngineException add(String name, Location location) {
-        var el = new StackElement(location, name);
+    public EngineException add(Context ctx, String name, Location location) {
+        var el = new StackElement(ctx, location, name);
         if (el.function == null && el.location == null) return this;
+        setCtx(ctx.environment(), ctx.engine);
         stackTrace.add(el);
         return this;
     }
@@ -71,7 +75,7 @@ public class EngineException extends RuntimeException {
             ss.append("[Error while stringifying]\n");
         }
         for (var line : stackTrace) {
-            ss.append("    ").append(line.toString(ctx)).append("\n");
+            if (line.visible()) ss.append("    ").append(line.toString()).append("\n");
         }
         if (cause != null) ss.append("Caused by ").append(cause.toString(ctx)).append('\n');
         ss.deleteCharAt(ss.length() - 1);
@@ -99,7 +103,7 @@ public class EngineException extends RuntimeException {
         return new EngineException(err(null, msg, PlaceholderProto.ERROR));
     }
     public static EngineException ofSyntax(SyntaxException e) {
-        return new EngineException(err(null, e.msg, PlaceholderProto.SYNTAX_ERROR)).add(null, e.loc);
+        return new EngineException(err(null, e.msg, PlaceholderProto.SYNTAX_ERROR)).add(null, null, e.loc);
     }
     public static EngineException ofSyntax(String msg) {
         return new EngineException(err(null, msg, PlaceholderProto.SYNTAX_ERROR));

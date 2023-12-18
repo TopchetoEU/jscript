@@ -208,7 +208,7 @@ public class CodeFrame {
                         returnValue = Runners.exec(ctx, instr, this);
                     }
                     catch (EngineException e) {
-                        error = e.add(function.name, prevLoc).setCtx(function.environment, ctx.engine);
+                        error = e.add(ctx, function.name, prevLoc);
                     }
                 }
             }
