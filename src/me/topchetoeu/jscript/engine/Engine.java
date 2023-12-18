@@ -69,6 +69,17 @@ public class Engine implements DebugController {
     private final HashMap<Filename, TreeSet<Location>> bpts = new HashMap<>();
     private final HashMap<Filename, SourceMap> maps = new HashMap<>();
 
+    public Location mapToCompiled(Location location) {
+        var map = maps.get(location.filename());
+        if (map == null) return location;
+        return map.toCompiled(location);
+    }
+    public Location mapToOriginal(Location location) {
+        var map = maps.get(location.filename());
+        if (map == null) return location;
+        return map.toOriginal(location);
+    }
+
     private DebugController debugger;
     private Thread thread;
     private PriorityBlockingQueue<Task> tasks = new PriorityBlockingQueue<>();

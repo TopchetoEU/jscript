@@ -67,14 +67,12 @@ public class SimpleDebugger implements Debugger {
         public final Filename filename;
         public final String source;
         public final TreeSet<Location> breakpoints;
-        public final SourceMap map;
 
-        public Source(int id, Filename filename, String source, TreeSet<Location> breakpoints, SourceMap map) {
+        public Source(int id, Filename filename, String source, TreeSet<Location> breakpoints) {
             this.id = id;
             this.filename = filename;
             this.source = source;
             this.breakpoints = breakpoints;
-            this.map = map;
         }
     }
     private static class Breakpoint {
@@ -232,21 +230,6 @@ public class SimpleDebugger implements Debugger {
 
     private int nextId() {
         return nextId++;
-    }
-
-    private Location toCompiled(Location location) {
-        var id = filenameToId.get(location.filename());
-        if (id == null) return location;
-        var map = idToSource.get(id).map;
-        if (map == null) return location;
-        return map.toCompiled(location);
-    }
-    private Location toOriginal(Location location) {
-        var id = filenameToId.get(location.filename());
-        if (id == null) return location;
-        var map = idToSource.get(id).map;
-        if (map == null) return location;
-        return map.toOriginal(location);
     }
 
     private synchronized void updateFrames(Context ctx) {
@@ -858,7 +841,7 @@ public class SimpleDebugger implements Debugger {
 
     @Override public void onSource(Filename filename, String source, TreeSet<Location> locations, SourceMap map) {
         int id = nextId();
-        var src = new Source(id, filename, source, locations, map);
+        var src = new Source(id, filename, source, locations);
 
         idToSource.put(id, src);
         filenameToId.put(filename, id);
@@ -887,7 +870,7 @@ public class SimpleDebugger implements Debugger {
 
             if (!frame.debugData) return false;
 
-            if (instruction.location != null) frame.updateLoc(toCompiled(instruction.location));
+            if (instruction.location != null) frame.updateLoc(ctx.engine.mapToCompiled(instruction.location));
             loc = frame.location;
             isBreakpointable = loc != null && (instruction.breakpoint.shouldStepIn());
 

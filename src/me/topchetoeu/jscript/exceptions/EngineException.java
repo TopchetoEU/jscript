@@ -12,19 +12,44 @@ import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.engine.values.ObjectValue.PlaceholderProto;
 
 public class EngineException extends RuntimeException {
+    public static class StackElement {
+        public final Location location;
+        public final String function;
+
+        public String toString(Context ctx) {
+            var res = "";
+            var loc = location;
+
+            if (loc != null && ctx != null && ctx.engine != null) loc = ctx.engine.mapToCompiled(loc);
+
+            if (loc != null) res += "at " + loc.toString() + " ";
+            if (function != null && !function.equals("")) res += "in " + function + " ";
+
+            return res.trim();
+        }
+        @Override public String toString() {
+            return toString(null);
+        }
+
+        public StackElement(Location location, String function) {
+            if (function != null) function = function.trim();
+            if (function.equals("")) function = null;
+
+            this.location = location;
+            this.function = function;
+        }
+    }
+
     public final Object value;
     public EngineException cause;
     public Environment env = null;
     public Engine engine = null;
-    public final List<String> stackTrace = new ArrayList<>();
+    public final List<StackElement> stackTrace = new ArrayList<>();
 
     public EngineException add(String name, Location location) {
-        var res = "";
-
-        if (location != null) res += "at " + location.toString() + " ";
-        if (name != null && !name.equals("")) res += "in " + name + " ";
-
-        this.stackTrace.add(res.trim());
+        var el = new StackElement(location, name);
+        if (el.function == null && el.location == null) return this;
+        stackTrace.add(el);
         return this;
     }
     public EngineException setCause(EngineException cause) {
@@ -46,7 +71,7 @@ public class EngineException extends RuntimeException {
             ss.append("[Error while stringifying]\n");
         }
         for (var line : stackTrace) {
-            ss.append("    ").append(line).append('\n');
+            ss.append("    ").append(line.toString(ctx)).append("\n");
         }
         if (cause != null) ss.append("Caused by ").append(cause.toString(ctx)).append('\n');
         ss.deleteCharAt(ss.length() - 1);
