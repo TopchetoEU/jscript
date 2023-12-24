@@ -119,7 +119,6 @@ public class Context {
     }
     public Context(Engine engine, Environment env) {
         this(engine);
-        this.pushEnv(env);
-        
+        if (env != null) this.pushEnv(env);
     }
 }

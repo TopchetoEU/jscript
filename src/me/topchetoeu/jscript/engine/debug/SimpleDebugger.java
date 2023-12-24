@@ -483,7 +483,7 @@ public class SimpleDebugger implements Debugger {
         env.global = new GlobalScope(codeFrame.local);
 
         var ctx = new Context(engine).pushEnv(env);
-        var awaiter = engine.pushMsg(false, ctx, new Filename("jscript", "eval"), code, codeFrame.frame.thisArg, codeFrame.frame.args);
+        var awaiter = engine.pushMsg(false, ctx.environment(), new Filename("jscript", "eval"), code, codeFrame.frame.thisArg, codeFrame.frame.args);
 
         engine.run(true);
 

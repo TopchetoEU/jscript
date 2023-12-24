@@ -53,7 +53,6 @@ public class Environment implements PermissionsProvider {
         res.defineProperty(ctx, "function", target.func(env));
         res.defineProperty(ctx, "mapChain", new ArrayValue());
 
-
         if (isDebug) {
             res.defineProperty(ctx, "breakpoints", ArrayValue.of(ctx, target.breakpoints.stream().map(Location::toString).collect(Collectors.toList())));
         }
@@ -127,5 +126,8 @@ public class Environment implements PermissionsProvider {
 
         this.wrappers = nativeConverter;
         this.global = global;
+    }
+    public Environment() {
+        this(null, null, null);
     }
 }

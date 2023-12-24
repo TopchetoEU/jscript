@@ -57,7 +57,7 @@ public class Main {
                         var file = Path.of(arg);
                         var raw = Files.readString(file);
                         var res = engine.pushMsg(
-                            false, new Context(engine, environment),
+                            false, environment,
                             Filename.fromFile(file.toFile()),
                             raw, null
                         ).await();
@@ -73,7 +73,7 @@ public class Main {
 
                     if (raw == null) break;
                     var res = engine.pushMsg(
-                        false, new Context(engine, environment),
+                        false, environment,
                         new Filename("jscript", "repl/" + i + ".js"),
                         raw, null
                     ).await();
@@ -135,18 +135,16 @@ public class Main {
             bsEnv.stackVisible = false;
 
             engine.pushMsg(
-                false, new Context(engine, tsEnv),
+                false, tsEnv,
                 new Filename("jscript", "ts.js"),
                 Reading.resourceToString("js/ts.js"), null
             ).await();
             System.out.println("Loaded typescript!");
 
-            var ctx = new Context(engine, bsEnv);
-
             engine.pushMsg(
-                false, ctx,
+                false, bsEnv,
                 new Filename("jscript", "bootstrap.js"), Reading.resourceToString("js/bootstrap.js"), null,
-                tsEnv.global.get(ctx, "ts"), environment, new ArrayValue(null, Reading.resourceToString("js/lib.d.ts"))
+                tsEnv.global.get(new Context(engine, bsEnv), "ts"), environment, new ArrayValue(null, Reading.resourceToString("js/lib.d.ts"))
             ).await();
         }
         catch (EngineException e) {
