@@ -69,6 +69,9 @@ public class ParseRes<T> {
 
     @SafeVarargs
     public static <T> ParseRes<? extends T> any(ParseRes<? extends T> ...parsers) {
+        return any(List.of(parsers));
+    }
+    public static <T> ParseRes<? extends T> any(List<ParseRes<? extends T>> parsers) {
         ParseRes<? extends T> best = null;
         ParseRes<? extends T> error = ParseRes.failed();
 

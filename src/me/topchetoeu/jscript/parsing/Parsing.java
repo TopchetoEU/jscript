@@ -216,8 +216,10 @@ public class Parsing {
                     currToken.append(c);
                     continue;
                 case CURR_SCIENTIFIC_NOT:
-                    if (c == '-') currStage = CURR_NEG_SCIENTIFIC_NOT;
-                    else if (!isDigit(c)) {
+                    if (c == '-') {
+                        if (currToken.toString().endsWith("e")) currStage = CURR_NEG_SCIENTIFIC_NOT;
+                    }
+                    if (currStage == CURR_SCIENTIFIC_NOT && !isDigit(c)) {
                         i--; start--;
                         break;
                     }
@@ -565,7 +567,8 @@ public class Parsing {
     }
     private static double parseNumber(Location loc, String value) {
         var res = parseNumber(false, value);
-        if (res == null) throw new SyntaxException(loc, "Invalid number format.");
+        if (res == null)
+            throw new SyntaxException(loc, "Invalid number format.");
         else return res;
     }
 
@@ -1022,9 +1025,8 @@ public class Parsing {
 
         return ParseRes.res(res.result, n);
     }
-    @SuppressWarnings("all")
     public static ParseRes<? extends Statement> parseSimple(Filename filename, List<Token> tokens, int i, boolean statement) {
-        var res = new ArrayList<>();
+        var res = new ArrayList<ParseRes<? extends Statement>>();
 
         if (!statement) {
             res.add(parseObject(filename, tokens, i));
@@ -1047,7 +1049,7 @@ public class Parsing {
             parseDelete(filename, tokens, i)
         ));
 
-        return ParseRes.any(res.toArray(ParseRes[]::new));
+        return ParseRes.any(res);
     }
 
     public static ParseRes<VariableStatement> parseVariable(Filename filename, List<Token> tokens, int i) {
