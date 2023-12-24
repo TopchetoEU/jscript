@@ -2,16 +2,8 @@ const { spawn } = require('child_process');
 const fs = require('fs/promises');
 const pt = require('path');
 const { argv, exit } = require('process');
+const { Readable } = require('stream');
 
-const conf = {
-    name: "java-jscript",
-    author: "TopchetoEU",
-    javahome: "",
-    version: argv[3]
-};
-
-if (conf.version.startsWith('refs/tags/')) conf.version = conf.version.substring(10);
-if (conf.version.startsWith('v')) conf.version = conf.version.substring(1);
 
 async function* find(src, dst, wildcard) {
     const stat = await fs.stat(src);
@@ -36,9 +28,9 @@ async function copy(src, dst, wildcard) {
     await Promise.all(promises);
 }
 
-function run(cmd, ...args) {
+function run(suppressOutput, cmd, ...args) {
     return new Promise((res, rej) => {
-        const proc = spawn(cmd, args, { stdio: 'inherit' });
+        const proc = spawn(cmd, args, { stdio: suppressOutput ? 'ignore' : 'inherit' });
         proc.once('exit', code => {
             if (code === 0) res(code);
             else rej(new Error(`Process ${cmd} exited with code ${code}.`));
@@ -46,7 +38,84 @@ function run(cmd, ...args) {
     })
 }
 
-async function compileJava() {
+async function downloadTypescript(outFile) {
+    try {
+        // Import the required libraries, without the need of a package.json
+        console.log('Importing modules...');
+        await run(true, 'npm', 'i', 'tar', 'zlib', 'uglify-js');
+        await fs.mkdir(pt.dirname(outFile), { recursive: true });
+        await fs.mkdir('tmp', { recursive: true });
+
+        const tar = require('tar');
+        const zlib = require('zlib');
+        const { minify } = await import('uglify-js');
+
+        // Download the package.json file of typescript
+        const packageDesc = await (await fetch('https://registry.npmjs.org/typescript/latest')).json();
+        const url = packageDesc.dist.tarball;
+
+        console.log('Extracting typescript...');
+        await new Promise(async (res, rej) => Readable.fromWeb((await fetch(url)).body)
+            .pipe(zlib.createGunzip())
+            .pipe(tar.x({ cwd: 'tmp', filter: v => v === 'package/lib/typescript.js' }))
+            .on('end', res)
+            .on('error', rej)
+        );
+
+        console.log('Compiling typescript to ES5...');
+
+        const ts = require('./tmp/package/lib/typescript');
+        const program = ts.createProgram([ 'tmp/package/lib/typescript.js' ], {
+            outFile: "tmp/typescript-es5.js",
+            target: ts.ScriptTarget.ES5,
+            module: ts.ModuleKind.None,
+            downlevelIteration: true,
+            allowJs: true,
+        });
+        program.emit();
+
+        console.log('Minifying typescript...');
+
+        const minified = { code: (await fs.readFile('tmp/typescript-es5.js')).toString() };
+        // if (minified.error) throw minified.error;
+
+        // Patch unsupported regex syntax
+        minified.code = minified.code.replaceAll('[-/\\\\^$*+?.()|[\\]{}]', '[-/\\\\^$*+?.()|\\[\\]{}]');
+
+        const stream = await fs.open(outFile, 'w');
+
+        // Write typescript's license
+        await stream.write(new TextEncoder().encode(`
+/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+
+The following is a minified version of the unmodified Typescript 5.2
+***************************************************************************** */
+`));
+
+        await stream.write(minified.code);
+        console.log('Typescript bundling done!');
+    }
+    finally {
+        // Clean up all stuff left from typescript bundling
+        await fs.rm('tmp', { recursive: true, force: true });
+        await fs.rm('package.json');
+        await fs.rm('package-lock.json');
+        await fs.rm('node_modules', { recursive: true });
+    }
+}
+async function compileJava(conf) {
     try {
         await fs.writeFile('Metadata.java', (await fs.readFile('src/me/topchetoeu/jscript/Metadata.java')).toString()
             .replace('${VERSION}', conf.version)
@@ -57,8 +126,10 @@ async function compileJava() {
         if (argv[2] === 'debug') args.push('-g');
         args.push('-d', 'dst/classes', 'Metadata.java');
     
+        console.log('Compiling java project...');
         for await (const path of find('src', undefined, v => v.endsWith('.java') && !v.endsWith('Metadata.java'))) args.push(path);
-        await run(conf.javahome + 'javac', ...args);
+        await run(false, conf.javahome + 'javac', ...args);
+        console.log('Compiled java project!');
     }
     finally {
         await fs.rm('Metadata.java');
@@ -67,10 +138,31 @@ async function compileJava() {
 
 (async () => {
     try {
-        try { await fs.rm('dst', { recursive: true }); } catch {}
-        await copy('src', 'dst/classes', v => !v.endsWith('.java'));
-        await compileJava();
-        await run('jar', '-c', '-f', 'dst/jscript.jar', '-e', 'me.topchetoeu.jscript.Main', '-C', 'dst/classes', '.');
+        if (argv[2] === 'init-ts') {
+            await downloadTypescript('src/assets/js/ts.js');
+        }
+        else {
+            const conf = {
+                name: "java-jscript",
+                author: "TopchetoEU",
+                javahome: "",
+                version: argv[3]
+            };
+
+            if (conf.version.startsWith('refs/tags/')) conf.version = conf.version.substring(10);
+            if (conf.version.startsWith('v')) conf.version = conf.version.substring(1);
+
+            try { await fs.rm('dst', { recursive: true }); } catch {}
+
+            await Promise.all([
+                downloadTypescript('dst/classes/assets/js/ts.js'),
+                copy('src', 'dst/classes', v => !v.endsWith('.java')),
+                compileJava(conf),
+            ]);
+
+            await run(true, 'jar', '-c', '-f', 'dst/jscript.jar', '-e', 'me.topchetoeu.jscript.Main', '-C', 'dst/classes', '.');
+            console.log('Done!');
+        }
     }
     catch (e) {
         if (argv[2] === 'debug') throw e;
