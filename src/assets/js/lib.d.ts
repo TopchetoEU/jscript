@@ -105,7 +105,7 @@ interface AsyncIterableIterator<T> extends AsyncIterator<T> {
     [Symbol.asyncIterator](): AsyncIterableIterator<T>;
 }
 
-interface Generator<T = unknown, TReturn = unknown, TNext = unknown> extends Iterator<T, TReturn, TNext> {
+interface Generator<T = unknown, TReturn = void, TNext = unknown> extends Iterator<T, TReturn, TNext> {
     [Symbol.iterator](): Generator<T, TReturn, TNext>;
     return(value: TReturn): IteratorResult<T, TReturn>;
     throw(e: any): IteratorResult<T, TReturn>;
@@ -118,7 +118,7 @@ interface GeneratorFunction {
     readonly prototype: Generator;
 }
 
-interface AsyncGenerator<T = unknown, TReturn = unknown, TNext = unknown> extends AsyncIterator<T, TReturn, TNext> {
+interface AsyncGenerator<T = unknown, TReturn = void, TNext = unknown> extends AsyncIterator<T, TReturn, TNext> {
     return(value: TReturn | Thenable<TReturn>): Promise<IteratorResult<T, TReturn>>;
     throw(e: any): Promise<IteratorResult<T, TReturn>>;
     [Symbol.asyncIterator](): AsyncGenerator<T, TReturn, TNext>;
