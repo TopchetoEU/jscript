@@ -3,6 +3,8 @@
 !/src
 !/src/**/*
 
+/src/assets/js/ts.js
+
 !/tests
 !/tests/**/*
 
@@ -10,6 +12,7 @@
 !/.github/**/*
 
 !/.gitignore
+!/.gitattributes
 !/build.js
 !/LICENSE
 !/README.md
