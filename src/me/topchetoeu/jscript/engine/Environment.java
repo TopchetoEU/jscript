@@ -106,10 +106,6 @@ public class Environment implements PermissionsProvider {
         return permissions == null || permissions.hasPermission(perm);
     }
 
-    public Context context(Engine engine) {
-        return new Context(engine).pushEnv(this);
-    }
-
     public static Symbol getSymbol(String name) {
         if (symbols.containsKey(name)) return symbols.get(name);
         else {

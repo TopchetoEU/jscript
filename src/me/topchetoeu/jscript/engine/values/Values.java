@@ -741,7 +741,7 @@ public class Values {
         try {
             if (err instanceof EngineException) {
                 var ee = ((EngineException)err);
-                System.out.println(prefix + " " + ee.toString(new Context(ee.engine).pushEnv(ee.env)));
+                System.out.println(prefix + " " + ee.toString(new Context(ee.engine, ee.env)));
             }
             else if (err instanceof SyntaxException) {
                 System.out.println("Syntax error:" + ((SyntaxException)err).msg);

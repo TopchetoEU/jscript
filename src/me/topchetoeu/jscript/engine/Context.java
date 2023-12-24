@@ -26,11 +26,11 @@ public class Context {
         return env.empty() ? null : env.peek();
     }
 
-    public Context pushEnv(Environment env) {
+    private Context pushEnv(Environment env) {
         this.env.push(env);
         return this;
     }
-    public void popEnv() {
+    private void popEnv() {
         if (!env.empty()) this.env.pop();
     }
 
