@@ -18,7 +18,7 @@ public interface File {
         setPtr(0, 0);
 
         byte[] res = new byte[(int)len];
-        read(res);
+        len = read(res);
 
         return new String(res);
     }
