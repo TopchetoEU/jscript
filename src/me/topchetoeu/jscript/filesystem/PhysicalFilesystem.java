@@ -10,7 +10,9 @@ public class PhysicalFilesystem implements Filesystem {
     public final Path root;
 
     private Path getPath(String name) {
-        return root.resolve(name.replace("\\", "/")).normalize();
+        var absolutized = Path.of("/" + name.replace("\\", "/")).normalize().toString();
+        var res = Path.of(root.toString() + absolutized).normalize();
+        return res;
     }
 
     private void checkMode(Path path, Mode mode) {
