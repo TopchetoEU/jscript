@@ -22,6 +22,7 @@ import me.topchetoeu.jscript.filesystem.MemoryFilesystem;
 import me.topchetoeu.jscript.filesystem.Mode;
 import me.topchetoeu.jscript.filesystem.PhysicalFilesystem;
 import me.topchetoeu.jscript.lib.Internals;
+import me.topchetoeu.jscript.modules.ModuleRepo;
 
 public class Main {   
     public static class Printer implements Observer<Object> {
@@ -119,7 +120,8 @@ public class Main {
         }));
 
         environment.filesystem.protocols.put("temp", new MemoryFilesystem(Mode.READ_WRITE));
-        environment.filesystem.protocols.put("file", new PhysicalFilesystem(Path.of(".").toAbsolutePath()));
+        environment.filesystem.protocols.put("file", new PhysicalFilesystem("."));
+        environment.modules.repos.put("file", ModuleRepo.ofFilesystem(environment.filesystem));
     }
     private static void initEngine() {
         debugServer.targets.put("target", (ws, req) -> new SimpleDebugger(ws, engine));

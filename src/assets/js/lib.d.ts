@@ -488,14 +488,17 @@ interface FileStat {
 interface File {
     readonly pointer: Promise<number>;
     readonly length: Promise<number>;
-    readonly mode: Promise<'' | 'r' | 'rw'>;
 
     read(n: number): Promise<number[]>;
     write(buff: number[]): Promise<void>;
     close(): Promise<void>;
-    setPointer(val: number): Promise<void>;
+    seek(offset: number, whence: number): Promise<void>;
 }
 interface Filesystem {
+    readonly SEEK_SET: 0;
+    readonly SEEK_CUR: 1;
+    readonly SEEK_END: 2;
+
     open(path: string, mode: 'r' | 'rw'): Promise<File>;
     ls(path: string): AsyncIterableIterator<string>;
     mkdir(path: string): Promise<void>;
@@ -503,6 +506,7 @@ interface Filesystem {
     rm(path: string, recursive?: boolean): Promise<void>;
     stat(path: string): Promise<FileStat>;
     exists(path: string): Promise<boolean>;
+    normalize(...paths: string[]): string;
 }
 
 interface Encoding {
@@ -526,6 +530,7 @@ declare var parseInt: typeof Number.parseInt;
 declare var parseFloat: typeof Number.parseFloat;
 
 declare function log(...vals: any[]): void;
+declare function require(name: string): any;
 
 declare var Array: ArrayConstructor;
 declare var Boolean: BooleanConstructor;
