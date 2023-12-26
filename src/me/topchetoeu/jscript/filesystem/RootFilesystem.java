@@ -23,6 +23,18 @@ public class RootFilesystem implements Filesystem {
         if (mode.writable && perms != null && !canWrite(_path)) throw new FilesystemException(_path, FSCode.NO_PERMISSIONS_RW);
     }
 
+    @Override public String normalize(String path) {
+        var filename = Filename.parse(path);
+        var protocol = protocols.get(filename.protocol);
+        if (protocol == null) return filename.toString();
+        else return new Filename(filename.protocol, protocol.normalize(filename.path)).toString();
+    }
+    @Override public String cwd(String cwd, String path) {
+        var filename = Filename.parse(cwd);
+        var protocol = protocols.get(filename.protocol);
+        if (protocol == null) return filename.toString();
+        else return new Filename(filename.protocol, protocol.cwd(filename.path, path)).toString();
+    }
     @Override public File open(String path, Mode perms) throws FilesystemException {
         var filename = Filename.parse(path);
         var protocol = protocols.get(filename.protocol);

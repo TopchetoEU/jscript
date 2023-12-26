@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 
 import me.topchetoeu.jscript.Buffer;
+import me.topchetoeu.jscript.Filename;
 import me.topchetoeu.jscript.filesystem.FilesystemException.FSCode;
 
 public class MemoryFilesystem implements Filesystem {
@@ -12,66 +13,76 @@ public class MemoryFilesystem implements Filesystem {
     private HashMap<Path, Buffer> files = new HashMap<>();
     private HashSet<Path> folders = new HashSet<>();
 
-    private Path getPath(String name) {
-        return Path.of("/" + name.replace("\\", "/")).normalize();
+    private Path realPath(String path) {
+        return Filename.normalize(path);
     }
 
     @Override
-    public void create(String path, EntryType type) {
-        var _path = getPath(path);
+    public String normalize(String path) {
+        return Paths.normalize(path);
+    }
+
+    @Override
+    public String cwd(String cwd, String path) {
+        return Paths.cwd(cwd, path);
+    }
+
+    @Override
+    public void create(String _path, EntryType type) {
+        var path = realPath(_path);
 
         switch (type) {
             case FILE:
-                if (!folders.contains(_path.getParent())) throw new FilesystemException(path, FSCode.DOESNT_EXIST);
-                if (folders.contains(_path) || files.containsKey(_path)) throw new FilesystemException(path, FSCode.ALREADY_EXISTS);
-                if (folders.contains(_path)) throw new FilesystemException(path, FSCode.ALREADY_EXISTS);
-                files.put(_path, new Buffer());
+                if (!folders.contains(path.getParent())) throw new FilesystemException(path.toString(), FSCode.DOESNT_EXIST);
+                if (folders.contains(path) || files.containsKey(path)) throw new FilesystemException(path.toString(), FSCode.ALREADY_EXISTS);
+                if (folders.contains(path)) throw new FilesystemException(path.toString(), FSCode.ALREADY_EXISTS);
+                files.put(path, new Buffer());
                 break;
             case FOLDER:
-                if (!folders.contains(_path.getParent())) throw new FilesystemException(path, FSCode.DOESNT_EXIST);
-                if (folders.contains(_path) || files.containsKey(_path)) throw new FilesystemException(path, FSCode.ALREADY_EXISTS);
-                folders.add(_path);
+                if (!folders.contains(path.getParent())) throw new FilesystemException(_path, FSCode.DOESNT_EXIST);
+                if (folders.contains(path) || files.containsKey(path)) throw new FilesystemException(path.toString(), FSCode.ALREADY_EXISTS);
+                folders.add(path);
                 break;
             default:
             case NONE:
-                if (!folders.remove(_path) && files.remove(_path) == null) throw new FilesystemException(path, FSCode.DOESNT_EXIST);
+                if (!folders.remove(path) && files.remove(path) == null) throw new FilesystemException(path.toString(), FSCode.DOESNT_EXIST);
         }
     }
 
     @Override
-    public File open(String path, Mode perms) {
-        var _path = getPath(path);
-        var pcount = _path.getNameCount();
+    public File open(String _path, Mode perms) {
+        var path = realPath(_path);
+        var pcount = path.getNameCount();
 
-        if (files.containsKey(_path)) return new MemoryFile(path, files.get(_path), perms);
-        else if (folders.contains(_path)) {
+        if (files.containsKey(path)) return new MemoryFile(path.toString(), files.get(path), perms);
+        else if (folders.contains(path)) {
             var res = new StringBuilder();
             for (var folder : folders) {
                 if (pcount + 1 != folder.getNameCount()) continue;
-                if (!folder.startsWith(_path)) continue;
+                if (!folder.startsWith(path)) continue;
                 res.append(folder.toFile().getName()).append('\n');
             }
             for (var file : files.keySet()) {
                 if (pcount + 1 != file.getNameCount()) continue;
-                if (!file.startsWith(_path)) continue;
+                if (!file.startsWith(path)) continue;
                 res.append(file.toFile().getName()).append('\n');
             }
-            return new MemoryFile(path, new Buffer(res.toString().getBytes()), perms.intersect(Mode.READ));
+            return new MemoryFile(path.toString(), new Buffer(res.toString().getBytes()), perms.intersect(Mode.READ));
         }
-        else throw new FilesystemException(path, FSCode.DOESNT_EXIST);
+        else throw new FilesystemException(path.toString(), FSCode.DOESNT_EXIST);
     }
 
     @Override
-    public FileStat stat(String path) {
-        var _path = getPath(path);
+    public FileStat stat(String _path) {
+        var path = realPath(_path);
 
-        if (files.containsKey(_path)) return new FileStat(mode, EntryType.FILE);
-        else if (folders.contains(_path)) return new FileStat(mode, EntryType.FOLDER);
-        else throw new FilesystemException(path, FSCode.DOESNT_EXIST);
+        if (files.containsKey(path)) return new FileStat(mode, EntryType.FILE);
+        else if (folders.contains(path)) return new FileStat(mode, EntryType.FOLDER);
+        else return new FileStat(Mode.NONE, EntryType.NONE);
     }
 
     public MemoryFilesystem put(String path, byte[] data) {
-        var _path = getPath(path);
+        var _path = realPath(path);
         var _curr = "/";
 
         for (var seg : _path) {
