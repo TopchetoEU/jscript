@@ -12,7 +12,8 @@ public class FilesystemException extends RuntimeException {
         NO_PERMISSIONS_RW(0x5),
         FOLDER_NOT_EMPTY(0x6),
         ALREADY_EXISTS(0x7),
-        FOLDER_EXISTS(0x8);
+        FOLDER_EXISTS(0x8),
+        UNSUPPORTED_OPERATION(0x9);
 
         public final int code;
 
@@ -27,7 +28,8 @@ public class FilesystemException extends RuntimeException {
         "No permissions to read '%s'",
         "No permissions to write '%s'",
         "Can't delete '%s', since it is a full folder.",
-        "'%s' already exists."
+        "'%s' already exists.",
+        "An unsupported operation was performed on the file '%s'."
     };
 
     public final String message, filename;
