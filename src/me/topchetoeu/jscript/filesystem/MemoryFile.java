@@ -27,28 +27,23 @@ public class MemoryFile implements File {
     }
 
     @Override
-    public long getPtr() {
-        if (data == null || !mode.readable) throw new FilesystemException(filename, FSCode.NO_PERMISSIONS_R);
-        return ptr;
-    }
-    @Override
-    public void setPtr(long offset, int pos) {
+    public long seek(long offset, int pos) {
         if (data == null || !mode.readable) throw new FilesystemException(filename, FSCode.NO_PERMISSIONS_R);
 
         if (pos == 0) ptr = (int)offset;
         else if (pos == 1) ptr += (int)offset;
         else if (pos == 2) ptr = data.length() - (int)offset;
+
+        if (ptr < 0) ptr = 0;
+        if (ptr > data.length()) ptr = data.length();
+
+        return pos;
     }
 
     @Override
     public void close() {
         mode = Mode.NONE;
         ptr = 0;
-    }
-    @Override
-    public Mode mode() {
-        if (data == null) return Mode.NONE;
-        return mode;
     }
 
     public MemoryFile(String filename, Buffer buff, Mode mode) {

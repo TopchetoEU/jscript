@@ -21,7 +21,6 @@ import me.topchetoeu.jscript.interop.Native;
         private void next(Context ctx, Object inducedValue, Object inducedError) {
             Object res = null;
             ctx.pushFrame(frame);
-            ctx.pushEnv(frame.function.environment);
 
             awaiting = false;
             while (!awaiting) {

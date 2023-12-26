@@ -141,13 +141,13 @@ public class Engine implements DebugController {
         return this.thread != null;
     }
 
-    public Awaitable<Object> pushMsg(boolean micro, Context ctx, FunctionValue func, Object thisArg, Object ...args) {
-        var msg = new Task(ctx == null ? new Context(this) : ctx, func, thisArg, args, micro);
+    public Awaitable<Object> pushMsg(boolean micro, Environment env, FunctionValue func, Object thisArg, Object ...args) {
+        var msg = new Task(new Context(this, env), func, thisArg, args, micro);
         tasks.add(msg);
         return msg.notifier;
     }
-    public Awaitable<Object> pushMsg(boolean micro, Context ctx, Filename filename, String raw, Object thisArg, Object ...args) {
-        return pushMsg(micro, ctx, new UncompiledFunction(filename, raw), thisArg, args);
+    public Awaitable<Object> pushMsg(boolean micro, Environment env, Filename filename, String raw, Object thisArg, Object ...args) {
+        return pushMsg(micro, env, new UncompiledFunction(filename, raw), thisArg, args);
     }
 
     @Override

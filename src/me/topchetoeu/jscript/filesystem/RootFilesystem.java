@@ -23,6 +23,18 @@ public class RootFilesystem implements Filesystem {
         if (mode.writable && perms != null && !canWrite(_path)) throw new FilesystemException(_path, FSCode.NO_PERMISSIONS_RW);
     }
 
+    @Override public String normalize(String... paths) {
+        if (paths.length == 0) return "file://";
+        else {
+            var filename = Filename.parse(paths[0]);
+            var protocol = protocols.get(filename.protocol);
+            paths[0] = filename.path;
+
+
+            if (protocol == null) return Paths.normalize(paths);
+            else return filename.protocol + "://" + protocol.normalize(paths);
+        }
+    }
     @Override public File open(String path, Mode perms) throws FilesystemException {
         var filename = Filename.parse(path);
         var protocol = protocols.get(filename.protocol);
@@ -45,9 +57,8 @@ public class RootFilesystem implements Filesystem {
         var filename = Filename.parse(path);
         var protocol = protocols.get(filename.protocol);
         if (protocol == null) throw new FilesystemException(filename.toString(), FSCode.DOESNT_EXIST);
-        modeAllowed(filename.toString(), Mode.READ);
 
-        try { return protocol.stat(path); }
+        try { return protocol.stat(filename.path); }
         catch (FilesystemException e) { throw new FilesystemException(filename.toString(), e.code); }
     }
 

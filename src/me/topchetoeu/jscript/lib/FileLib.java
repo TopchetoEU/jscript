@@ -15,7 +15,7 @@ public class FileLib {
     @NativeGetter public PromiseLib pointer(Context ctx) {
         return PromiseLib.await(ctx, () -> {
             try {
-                return file.getPtr();
+                return file.seek(0, 1);
             }
             catch (FilesystemException e) { throw e.toEngineException(); }
         });
@@ -23,19 +23,10 @@ public class FileLib {
     @NativeGetter public PromiseLib length(Context ctx) {
         return PromiseLib.await(ctx, () -> {
             try {
-                long curr = file.getPtr();
-                file.setPtr(0, 2);
-                long res = file.getPtr();
-                file.setPtr(curr, 0);
+                long curr = file.seek(0, 1);
+                long res = file.seek(0, 2);
+                file.seek(curr, 0);
                 return res;
-            }
-            catch (FilesystemException e) { throw e.toEngineException(); }
-        });
-    }
-    @NativeGetter public PromiseLib getMode(Context ctx) {
-        return PromiseLib.await(ctx, () -> {
-            try {
-                return file.mode().name;
             }
             catch (FilesystemException e) { throw e.toEngineException(); }
         });
@@ -73,11 +64,10 @@ public class FileLib {
             return null;
         });
     }
-    @Native public PromiseLib setPointer(Context ctx, long ptr) {
+    @Native public PromiseLib seek(Context ctx, long ptr, int whence) {
         return PromiseLib.await(ctx, () -> {
             try {
-                file.setPtr(ptr, 0);
-                return null;
+                return file.seek(ptr, whence);
             }
             catch (FilesystemException e) { throw e.toEngineException(); }
         });

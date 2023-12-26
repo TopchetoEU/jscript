@@ -253,7 +253,7 @@ import me.topchetoeu.jscript.interop.Native;
                     this.val = val;
                     this.state = STATE_FULFILLED;
 
-                    ctx.engine.pushMsg(true, ctx, new NativeFunction((_ctx, _thisArg, _args) -> {
+                    ctx.engine.pushMsg(true, ctx.environment(), new NativeFunction((_ctx, _thisArg, _args) -> {
                         for (var handle : handles) {
                             handle.fulfilled.call(handle.ctx, null, val);
                         }
@@ -288,7 +288,7 @@ import me.topchetoeu.jscript.interop.Native;
                     this.val = val;
                     this.state = STATE_REJECTED;
 
-                    ctx.engine.pushMsg(true, ctx, new NativeFunction((_ctx, _thisArg, _args) -> {
+                    ctx.engine.pushMsg(true, ctx.environment(), new NativeFunction((_ctx, _thisArg, _args) -> {
                         for (var handle : handles) handle.rejected.call(handle.ctx, null, val);
                         if (!handled) {
                             Values.printError(new EngineException(val).setCtx(ctx.environment(), ctx.engine), "(in promise)");
@@ -305,9 +305,9 @@ import me.topchetoeu.jscript.interop.Native;
     }
 
     private void handle(Context ctx, FunctionValue fulfill, FunctionValue reject) {
-        if (state == STATE_FULFILLED) ctx.engine.pushMsg(true, ctx, fulfill, null, val);
+        if (state == STATE_FULFILLED) ctx.engine.pushMsg(true, ctx.environment(), fulfill, null, val);
         else if (state == STATE_REJECTED) {
-            ctx.engine.pushMsg(true, ctx, reject, null, val);
+            ctx.engine.pushMsg(true, ctx.environment(), reject, null, val);
             handled = true;
         }
         else handles.add(new Handle(ctx, fulfill, reject));

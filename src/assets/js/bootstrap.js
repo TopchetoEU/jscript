@@ -63,7 +63,7 @@
         version++;
 
         if (!environments[env.id]) environments[env.id] = []
-        declSnapshots = environments[env.id];
+        var decls = declSnapshots = environments[env.id];
         var emit = service.getEmitOutput("/src.ts");
 
         var diagnostics = []
@@ -94,7 +94,7 @@
         return {
             function: function () {
                 var val = compiled.function.apply(this, arguments);
-                if (declaration !== '') declSnapshots.push(ts.ScriptSnapshot.fromString(declaration));
+                if (declaration !== '') decls.push(ts.ScriptSnapshot.fromString(declaration));
                 return val;
             },
             breakpoints: compiled.breakpoints,

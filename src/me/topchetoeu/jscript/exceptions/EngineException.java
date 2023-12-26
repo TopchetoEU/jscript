@@ -37,7 +37,7 @@ public class EngineException extends RuntimeException {
             if (function.equals("")) function = null;
 
             if (ctx == null) this.ctx = null;
-            else this.ctx = new Context(ctx.engine).pushEnv(ctx.environment());
+            else this.ctx = new Context(ctx.engine, ctx.environment());
             this.location = location;
             this.function = function;
         }

@@ -57,18 +57,15 @@ import me.topchetoeu.jscript.interop.NativeGetter;
     @Native(thisArg = true) public static String charAt(Context ctx, Object thisArg, int i) {
         return passThis(ctx, "charAt", thisArg).charAt(i) + "";
     }
-    // @Native(thisArg = true) public static int charCodeAt(Context ctx, Object thisArg, int i) {
-    //     return passThis(ctx, "charCodeAt", thisArg).charAt(i);
-    // }
-    // @Native(thisArg = true) public static String charAt(Context ctx, Object thisArg, int i) {
-    //     var str = passThis(ctx, "charAt", thisArg);
-    //     if (i < 0 || i >= str.length()) return "";
-    //     else return str.charAt(i) + "";
-    // }
     @Native(thisArg = true) public static double charCodeAt(Context ctx, Object thisArg, int i) {
         var str = passThis(ctx, "charCodeAt", thisArg);
         if (i < 0 || i >= str.length()) return Double.NaN;
         else return str.charAt(i);
+    }
+    @Native(thisArg = true) public static double codePointAt(Context ctx, Object thisArg, int i) {
+        var str = passThis(ctx, "codePointAt", thisArg);
+        if (i < 0 || i >= str.length()) return Double.NaN;
+        else return str.codePointAt(i);
     }
 
     @Native(thisArg = true) public static boolean startsWith(Context ctx, Object thisArg, String term, int pos) {
@@ -105,7 +102,7 @@ import me.topchetoeu.jscript.interop.NativeGetter;
     }
 
     @Native(thisArg = true) public static boolean includes(Context ctx, Object thisArg, Object term, int pos) {
-        return lastIndexOf(ctx, passThis(ctx, "includes", thisArg), term, pos) >= 0;
+        return indexOf(ctx, passThis(ctx, "includes", thisArg), term, pos) >= 0;
     }
 
     @Native(thisArg = true) public static String replace(Context ctx, Object thisArg, Object term, Object replacement) {
@@ -237,6 +234,12 @@ import me.topchetoeu.jscript.interop.NativeGetter;
     }
     @Native(thisArg = true) public static String trim(Context ctx, Object thisArg) {
         return passThis(ctx, "trim", thisArg).trim();
+    }
+    @Native(thisArg = true) public static String trimStart(Context ctx, Object thisArg) {
+        return passThis(ctx, "trimStart", thisArg).replaceAll("^\\s+", "");
+    }
+    @Native(thisArg = true) public static String trimEnd(Context ctx, Object thisArg) {
+        return passThis(ctx, "trimEnd", thisArg).replaceAll("\\s+$", "");
     }
 
     @NativeConstructor(thisArg = true) public static Object constructor(Context ctx, Object thisArg, Object val) {

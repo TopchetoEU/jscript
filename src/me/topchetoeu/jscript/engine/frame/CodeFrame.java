@@ -254,6 +254,7 @@ public class CodeFrame {
                 break;
             }
             else {
+                popTryFlag = false;
                 if (tryCtx.state == TryState.CATCH) scope.catchVars.remove(scope.catchVars.size() - 1);
 
                 if (tryCtx.state != TryState.FINALLY && tryCtx.hasFinally()) {

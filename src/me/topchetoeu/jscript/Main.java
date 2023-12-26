@@ -22,6 +22,7 @@ import me.topchetoeu.jscript.filesystem.MemoryFilesystem;
 import me.topchetoeu.jscript.filesystem.Mode;
 import me.topchetoeu.jscript.filesystem.PhysicalFilesystem;
 import me.topchetoeu.jscript.lib.Internals;
+import me.topchetoeu.jscript.modules.ModuleRepo;
 
 public class Main {   
     public static class Printer implements Observer<Object> {
@@ -57,7 +58,7 @@ public class Main {
                         var file = Path.of(arg);
                         var raw = Files.readString(file);
                         var res = engine.pushMsg(
-                            false, new Context(engine, environment),
+                            false, environment,
                             Filename.fromFile(file.toFile()),
                             raw, null
                         ).await();
@@ -73,7 +74,7 @@ public class Main {
 
                     if (raw == null) break;
                     var res = engine.pushMsg(
-                        false, new Context(engine, environment),
+                        false, environment,
                         new Filename("jscript", "repl/" + i + ".js"),
                         raw, null
                     ).await();
@@ -119,7 +120,8 @@ public class Main {
         }));
 
         environment.filesystem.protocols.put("temp", new MemoryFilesystem(Mode.READ_WRITE));
-        environment.filesystem.protocols.put("file", new PhysicalFilesystem(Path.of(".").toAbsolutePath()));
+        environment.filesystem.protocols.put("file", new PhysicalFilesystem("."));
+        environment.modules.repos.put("file", ModuleRepo.ofFilesystem(environment.filesystem));
     }
     private static void initEngine() {
         debugServer.targets.put("target", (ws, req) -> new SimpleDebugger(ws, engine));
@@ -135,18 +137,16 @@ public class Main {
             bsEnv.stackVisible = false;
 
             engine.pushMsg(
-                false, new Context(engine, tsEnv),
+                false, tsEnv,
                 new Filename("jscript", "ts.js"),
                 Reading.resourceToString("js/ts.js"), null
             ).await();
             System.out.println("Loaded typescript!");
 
-            var ctx = new Context(engine, bsEnv);
-
             engine.pushMsg(
-                false, ctx,
+                false, bsEnv,
                 new Filename("jscript", "bootstrap.js"), Reading.resourceToString("js/bootstrap.js"), null,
-                tsEnv.global.get(ctx, "ts"), environment, new ArrayValue(null, Reading.resourceToString("js/lib.d.ts"))
+                tsEnv.global.get(new Context(engine, bsEnv), "ts"), environment, new ArrayValue(null, Reading.resourceToString("js/lib.d.ts"))
             ).await();
         }
         catch (EngineException e) {

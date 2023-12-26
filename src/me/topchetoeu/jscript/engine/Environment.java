@@ -18,10 +18,12 @@ import me.topchetoeu.jscript.interop.Native;
 import me.topchetoeu.jscript.interop.NativeGetter;
 import me.topchetoeu.jscript.interop.NativeSetter;
 import me.topchetoeu.jscript.interop.NativeWrapperProvider;
+import me.topchetoeu.jscript.modules.RootModuleRepo;
 import me.topchetoeu.jscript.parsing.Parsing;
 import me.topchetoeu.jscript.permissions.Permission;
 import me.topchetoeu.jscript.permissions.PermissionsProvider;
 
+// TODO: Remove hardcoded extensions form environment
 public class Environment implements PermissionsProvider {
     private HashMap<String, ObjectValue> prototypes = new HashMap<>();
 
@@ -30,8 +32,11 @@ public class Environment implements PermissionsProvider {
 
     public GlobalScope global;
     public WrappersProvider wrappers;
+
     public PermissionsProvider permissions = null;
     public final RootFilesystem filesystem = new RootFilesystem(this);
+    public final RootModuleRepo modules = new RootModuleRepo();
+    public String moduleCwd = "/";
 
     private static int nextId = 0;
 
@@ -53,7 +58,6 @@ public class Environment implements PermissionsProvider {
         res.defineProperty(ctx, "function", target.func(env));
         res.defineProperty(ctx, "mapChain", new ArrayValue());
 
-
         if (isDebug) {
             res.defineProperty(ctx, "breakpoints", ArrayValue.of(ctx, target.breakpoints.stream().map(Location::toString).collect(Collectors.toList())));
         }
@@ -63,11 +67,6 @@ public class Environment implements PermissionsProvider {
     @Native public FunctionValue regexConstructor = new NativeFunction("RegExp", (ctx, thisArg, args) -> {
         throw EngineException.ofError("Regular expressions not supported.").setCtx(ctx.environment(), ctx.engine);
     });
-
-    public Environment addData(Data data) {
-        this.data.addAll(data);
-        return this;
-    }
 
     @Native public ObjectValue proto(String name) {
         return prototypes.get(name);
@@ -97,6 +96,9 @@ public class Environment implements PermissionsProvider {
     @Native public Environment child() {
         var res = fork();
         res.global = res.global.globalChild();
+        res.permissions = this.permissions;
+        res.filesystem.protocols.putAll(this.filesystem.protocols);
+        res.modules.repos.putAll(this.modules.repos);
         return res;
     }
 
@@ -108,7 +110,7 @@ public class Environment implements PermissionsProvider {
     }
 
     public Context context(Engine engine) {
-        return new Context(engine).pushEnv(this);
+        return new Context(engine, this);
     }
 
     public static Symbol getSymbol(String name) {
@@ -127,5 +129,8 @@ public class Environment implements PermissionsProvider {
 
         this.wrappers = nativeConverter;
         this.global = global;
+    }
+    public Environment() {
+        this(null, null, null);
     }
 }

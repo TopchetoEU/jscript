@@ -267,13 +267,11 @@ public class NativeWrapperProvider implements WrappersProvider {
             else return null;
         }));
         proto.defineProperty(null, "name", new NativeFunction("name", (ctx, thisArg, args) -> getName(thisArg.getClass())));
+        proto.defineProperty(null, "toString", new NativeFunction("toString", (ctx, thisArg, args) -> thisArg.toString()));
 
         var constr = makeConstructor(null, Throwable.class);
         proto.defineProperty(null, "constructor", constr, true, false, false);
         constr.defineProperty(null, "prototype", proto, true, false, false);
-
-        proto.setPrototype(null, getProto(Object.class));
-        constr.setPrototype(null, getConstr(Object.class));
 
         setProto(Throwable.class, proto);
         setConstr(Throwable.class, constr);

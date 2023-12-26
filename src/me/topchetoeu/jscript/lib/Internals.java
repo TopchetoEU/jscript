@@ -20,6 +20,12 @@ public class Internals {
     private static final DataKey<HashMap<Integer, Thread>> THREADS = new DataKey<>();
     private static final DataKey<Integer> I = new DataKey<>();
 
+    @Native public static Object require(Context ctx, String name) {
+        var env = ctx.environment();
+        var res = env.modules.getModule(ctx, env.moduleCwd, name);
+        res.load(ctx);
+        return res.value();
+    }
 
     @Native public static Object log(Context ctx, Object ...args) {
         for (var arg : args) {
@@ -51,7 +57,7 @@ public class Internals {
             }
             catch (InterruptedException e) { return; }
 
-            ctx.engine.pushMsg(false, ctx, func, null, args);
+            ctx.engine.pushMsg(false, ctx.environment(), func, null, args);
         });
         thread.start();
 
@@ -71,7 +77,7 @@ public class Internals {
                 }
                 catch (InterruptedException e) { return; }
     
-                ctx.engine.pushMsg(false, ctx, func, null, args);
+                ctx.engine.pushMsg(false, ctx.environment(), func, null, args);
             }
         });
         thread.start();
