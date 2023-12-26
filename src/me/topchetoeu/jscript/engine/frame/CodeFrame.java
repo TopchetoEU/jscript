@@ -6,6 +6,7 @@ import java.util.Stack;
 import me.topchetoeu.jscript.Location;
 import me.topchetoeu.jscript.compilation.Instruction;
 import me.topchetoeu.jscript.engine.Context;
+import me.topchetoeu.jscript.engine.debug.DebugContext;
 import me.topchetoeu.jscript.engine.scope.LocalScope;
 import me.topchetoeu.jscript.engine.scope.ValueVariable;
 import me.topchetoeu.jscript.engine.values.ArrayValue;
@@ -198,8 +199,7 @@ public class CodeFrame {
 
                 if (instr == null) returnValue = null;
                 else {
-                // System.out.println(instr + "@" + instr.location);
-                    ctx.engine.onInstruction(ctx, this, instr, Runners.NO_RETURN, null, false);
+                    DebugContext.get(ctx).onInstruction(ctx, this, instr, Runners.NO_RETURN, null, false);
 
                     if (instr.location != null) prevLoc = instr.location;
 
@@ -291,11 +291,11 @@ public class CodeFrame {
                 }
             }
 
-            ctx.engine.onInstruction(ctx, this, instr, null, error, caught);
+            DebugContext.get(ctx).onInstruction(ctx, this, instr, null, error, caught);
             throw error;
         }
         if (returnValue != Runners.NO_RETURN) {
-            ctx.engine.onInstruction(ctx, this, instr, returnValue, null, false);
+            DebugContext.get(ctx).onInstruction(ctx, this, instr, returnValue, null, false);
             return returnValue;
         }
 

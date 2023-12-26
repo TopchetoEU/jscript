@@ -191,7 +191,7 @@ import me.topchetoeu.jscript.interop.NativeConstructor;
         return thisArg;
     }
     @Native(thisArg = true) public static String toString(Context ctx, Object thisArg) {
-        var name = Values.getMember(ctx, thisArg, ctx.environment().symbol("Symbol.typeName"));
+        var name = Values.getMember(ctx, thisArg, Symbol.get("Symbol.typeName"));
         if (name == null) name = "Unknown";
         else name = Values.toString(ctx, name);
 

@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 import me.topchetoeu.jscript.engine.Context;
+import me.topchetoeu.jscript.engine.Environment;
 import me.topchetoeu.jscript.engine.Operation;
 import me.topchetoeu.jscript.engine.frame.ConvertHint;
 import me.topchetoeu.jscript.exceptions.ConvertException;
@@ -346,10 +347,10 @@ public class Values {
         if (isObject(obj)) return object(obj).getPrototype(ctx);
         if (ctx == null) return null;
 
-        if (obj instanceof String) return ctx.environment().proto("string");
-        else if (obj instanceof Number) return ctx.environment().proto("number");
-        else if (obj instanceof Boolean) return ctx.environment().proto("bool");
-        else if (obj instanceof Symbol) return ctx.environment().proto("symbol");
+        if (obj instanceof String) return ctx.environment().get(Environment.STRING_PROTO);
+        else if (obj instanceof Number) return ctx.environment().get(Environment.NUMBER_PROTO);
+        else if (obj instanceof Boolean) return ctx.environment().get(Environment.BOOL_PROTO);
+        else if (obj instanceof Symbol) return ctx.environment().get(Environment.SYMBOL_PROTO);
 
         return null;
     }
@@ -550,7 +551,7 @@ public class Values {
     public static Iterable<Object> fromJSIterator(Context ctx, Object obj) {
         return () -> {
             try {
-                var symbol = ctx.environment().symbol("Symbol.iterator");
+                var symbol = Symbol.get("Symbol.iterator");
 
                 var iteratorFunc = getMember(ctx, obj, symbol);
                 if (!isFunction(iteratorFunc)) return Collections.emptyIterator();
@@ -604,7 +605,7 @@ public class Values {
         var res = new ObjectValue();
 
         try {
-            var key = getMember(ctx, getMember(ctx, ctx.environment().proto("symbol"), "constructor"), "iterator");
+            var key = getMember(ctx, getMember(ctx, ctx.environment().get(Environment.SYMBOL_PROTO), "constructor"), "iterator");
             res.defineProperty(ctx, key, new NativeFunction("", (_ctx, thisArg, args) -> thisArg));
         }
         catch (IllegalArgumentException | NullPointerException e) { }
@@ -629,7 +630,7 @@ public class Values {
         var res = new ObjectValue();
 
         try {
-            var key = getMemberPath(ctx, ctx.environment().proto("symbol"), "constructor", "asyncIterator");
+            var key = getMemberPath(ctx, ctx.environment().get(Environment.SYMBOL_PROTO), "constructor", "asyncIterator");
             res.defineProperty(ctx, key, new NativeFunction("", (_ctx, thisArg, args) -> thisArg));
         }
         catch (IllegalArgumentException | NullPointerException e) { }

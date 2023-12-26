@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 import me.topchetoeu.jscript.engine.Context;
+import me.topchetoeu.jscript.engine.Environment;
 
 public class ObjectValue {
     public static enum PlaceholderProto {
@@ -146,13 +147,13 @@ public class ObjectValue {
 
     public ObjectValue getPrototype(Context ctx) {
         try {
-            if (prototype == OBJ_PROTO) return ctx.environment().proto("object");
-            if (prototype == ARR_PROTO) return ctx.environment().proto("array");
-            if (prototype == FUNC_PROTO) return ctx.environment().proto("function");
-            if (prototype == ERR_PROTO) return ctx.environment().proto("error");
-            if (prototype == RANGE_ERR_PROTO) return ctx.environment().proto("rangeErr");
-            if (prototype == SYNTAX_ERR_PROTO) return ctx.environment().proto("syntaxErr");
-            if (prototype == TYPE_ERR_PROTO) return ctx.environment().proto("typeErr");
+            if (prototype == OBJ_PROTO) return ctx.environment().get(Environment.OBJECT_PROTO);
+            if (prototype == ARR_PROTO) return ctx.environment().get(Environment.ARRAY_PROTO);
+            if (prototype == FUNC_PROTO) return ctx.environment().get(Environment.FUNCTION_PROTO);
+            if (prototype == ERR_PROTO) return ctx.environment().get(Environment.ERROR_PROTO);
+            if (prototype == RANGE_ERR_PROTO) return ctx.environment().get(Environment.RANGE_ERR_PROTO);
+            if (prototype == SYNTAX_ERR_PROTO) return ctx.environment().get(Environment.SYNTAX_ERR_PROTO);
+            if (prototype == TYPE_ERR_PROTO) return ctx.environment().get(Environment.TYPE_ERR_PROTO);
         }
         catch (NullPointerException e) { return null; }
 
@@ -170,13 +171,13 @@ public class ObjectValue {
             var obj = Values.object(val);
 
             if (ctx != null && ctx.environment() != null) {
-                if (obj == ctx.environment().proto("object")) prototype = OBJ_PROTO;
-                else if (obj == ctx.environment().proto("array")) prototype = ARR_PROTO;
-                else if (obj == ctx.environment().proto("function")) prototype = FUNC_PROTO;
-                else if (obj == ctx.environment().proto("error")) prototype = ERR_PROTO;
-                else if (obj == ctx.environment().proto("syntaxErr")) prototype = SYNTAX_ERR_PROTO;
-                else if (obj == ctx.environment().proto("typeErr")) prototype = TYPE_ERR_PROTO;
-                else if (obj == ctx.environment().proto("rangeErr")) prototype = RANGE_ERR_PROTO;
+                if (obj == ctx.environment().get(Environment.OBJECT_PROTO)) prototype = OBJ_PROTO;
+                else if (obj == ctx.environment().get(Environment.ARRAY_PROTO)) prototype = ARR_PROTO;
+                else if (obj == ctx.environment().get(Environment.FUNCTION_PROTO)) prototype = FUNC_PROTO;
+                else if (obj == ctx.environment().get(Environment.ERROR_PROTO)) prototype = ERR_PROTO;
+                else if (obj == ctx.environment().get(Environment.SYNTAX_ERR_PROTO)) prototype = SYNTAX_ERR_PROTO;
+                else if (obj == ctx.environment().get(Environment.TYPE_ERR_PROTO)) prototype = TYPE_ERR_PROTO;
+                else if (obj == ctx.environment().get(Environment.RANGE_ERR_PROTO)) prototype = RANGE_ERR_PROTO;
                 else prototype = obj;
             }
             else prototype = obj;

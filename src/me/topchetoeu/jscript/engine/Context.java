@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 
 import me.topchetoeu.jscript.Filename;
 import me.topchetoeu.jscript.Location;
+import me.topchetoeu.jscript.engine.debug.DebugContext;
 import me.topchetoeu.jscript.engine.frame.CodeFrame;
 import me.topchetoeu.jscript.engine.values.ArrayValue;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
@@ -17,10 +18,15 @@ import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.exceptions.EngineException;
 import me.topchetoeu.jscript.mapping.SourceMap;
 
-public class Context {
+public class Context extends ExtensionStack {
     private final Stack<Environment> env = new Stack<>();
     private final ArrayList<CodeFrame> frames = new ArrayList<>();
     public final Engine engine;
+
+    @Override
+    protected Extensions[] extensionStack() {
+        return new Extensions[] { environment(), engine.globalEnvironment };
+    }
 
     public Environment environment() {
         return env.empty() ? null : env.peek();
@@ -36,7 +42,7 @@ public class Context {
 
     public FunctionValue compile(Filename filename, String raw) {
         var env = environment();
-        var result = env.compile.call(this, null, raw, filename.toString(), env);
+        var result = Environment.compileFunc(this).call(this, null, raw, filename.toString(), env);
 
         var function = (FunctionValue)Values.getMember(this, result, "function");
         if (!engine.debugging) return function;
@@ -62,24 +68,23 @@ public class Context {
             breakpoints = newBreakpoints;
         }
 
-        engine.onSource(filename, raw, breakpoints, map);
+        DebugContext.get(this).onSource(filename, raw, breakpoints, map);
 
         return function;
     }
-
 
     public void pushFrame(CodeFrame frame) {
         frames.add(frame);
         if (frames.size() > engine.maxStackFrames) throw EngineException.ofRange("Stack overflow!");
         pushEnv(frame.function.environment);
-        engine.onFramePush(this, frame);
+        DebugContext.get(this).onFramePush(this, frame);
     }
     public boolean popFrame(CodeFrame frame) {
         if (frames.size() == 0) return false;
         if (frames.get(frames.size() - 1) != frame) return false;
         frames.remove(frames.size() - 1);
         popEnv();
-        engine.onFramePop(this, frame);
+        DebugContext.get(this).onFramePop(this, frame);
         return true;
     }
     public CodeFrame peekFrame() {

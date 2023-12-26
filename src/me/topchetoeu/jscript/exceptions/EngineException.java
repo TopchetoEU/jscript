@@ -7,6 +7,7 @@ import me.topchetoeu.jscript.Location;
 import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.Engine;
 import me.topchetoeu.jscript.engine.Environment;
+import me.topchetoeu.jscript.engine.debug.DebugContext;
 import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.engine.values.ObjectValue.PlaceholderProto;
@@ -18,13 +19,13 @@ public class EngineException extends RuntimeException {
         public final Context ctx;
 
         public boolean visible() {
-            return ctx == null || ctx.environment() == null || ctx.environment().stackVisible;
+            return ctx == null || ctx.environment() == null || !ctx.environment().get(Environment.HIDE_STACK, false);
         }
         public String toString() {
             var res = "";
             var loc = location;
 
-            if (loc != null && ctx != null && ctx.engine != null) loc = ctx.engine.mapToCompiled(loc);
+            if (loc != null && ctx != null && ctx.engine != null) loc = DebugContext.get(ctx).mapToCompiled(loc);
 
             if (loc != null) res += "at " + loc.toString() + " ";
             if (function != null && !function.equals("")) res += "in " + function + " ";

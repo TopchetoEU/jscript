@@ -10,6 +10,7 @@ import me.topchetoeu.jscript.engine.DataKey;
 import me.topchetoeu.jscript.engine.Environment;
 import me.topchetoeu.jscript.engine.scope.GlobalScope;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
+import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.exceptions.EngineException;
 import me.topchetoeu.jscript.interop.Native;
@@ -17,9 +18,6 @@ import me.topchetoeu.jscript.interop.NativeGetter;
 import me.topchetoeu.jscript.parsing.Parsing;
 
 public class Internals {
-    private static final DataKey<HashMap<Integer, Thread>> THREADS = new DataKey<>();
-    private static final DataKey<Integer> I = new DataKey<>();
-
     @Native public static Object require(Context ctx, String name) {
         var env = ctx.environment();
         var res = env.modules.getModule(ctx, env.moduleCwd, name);
@@ -47,7 +45,7 @@ public class Internals {
         }
     }
 
-    @Native public static int setTimeout(Context ctx, FunctionValue func, int delay, Object ...args) {
+    @Native public static Thread setTimeout(Context ctx, FunctionValue func, int delay, Object ...args) {
         var thread = new Thread(() -> {
             var ms = (long)delay;
             var ns = (int)((delay - ms) * 10000000);
@@ -61,12 +59,9 @@ public class Internals {
         });
         thread.start();
 
-        int i = ctx.environment().data.increase(I, 1, 0);
-        var threads = ctx.environment().data.get(THREADS, new HashMap<>());
-        threads.put(++i, thread);
-        return i;
+        return thread;
     }
-    @Native public static int setInterval(Context ctx, FunctionValue func, int delay, Object ...args) {
+    @Native public static Thread setInterval(Context ctx, FunctionValue func, int delay, Object ...args) {
         var thread = new Thread(() -> {
             var ms = (long)delay;
             var ns = (int)((delay - ms) * 10000000);
@@ -76,26 +71,19 @@ public class Internals {
                     Thread.sleep(ms, ns);
                 }
                 catch (InterruptedException e) { return; }
-    
+
                 ctx.engine.pushMsg(false, ctx.environment(), func, null, args);
             }
         });
-        thread.start();
 
-        int i = ctx.environment().data.increase(I, 1, 0);
-        var threads = ctx.environment().data.get(THREADS, new HashMap<>());
-        threads.put(++i, thread);
-        return i;
+        return thread;
     }
 
-    @Native public static void clearTimeout(Context ctx, int i) {
-        var threads = ctx.environment().data.get(THREADS, new HashMap<>());
-
-        var thread = threads.remove(i);
-        if (thread != null) thread.interrupt();
+    @Native public static void clearTimeout(Context ctx, Thread t) {
+        t.interrupt();
     }
-    @Native public static void clearInterval(Context ctx, int i) {
-        clearTimeout(ctx, i);
+    @Native public static void clearInterval(Context ctx, Thread t) {
+        t.interrupt();
     }
 
     @Native public static double parseInt(Context ctx, String val) {
@@ -205,22 +193,22 @@ public class Internals {
         glob.define(false, wp.getConstr(TypeErrorLib.class));
         glob.define(false, wp.getConstr(RangeErrorLib.class));
 
-        env.setProto("object", wp.getProto(ObjectLib.class));
-        env.setProto("function", wp.getProto(FunctionLib.class));
-        env.setProto("array", wp.getProto(ArrayLib.class));
+        env.add(Environment.OBJECT_PROTO, wp.getProto(ObjectLib.class));
+        env.add(Environment.FUNCTION_PROTO, wp.getProto(FunctionLib.class));
+        env.add(Environment.ARRAY_PROTO, wp.getProto(ArrayLib.class));
 
-        env.setProto("bool", wp.getProto(BooleanLib.class));
-        env.setProto("number", wp.getProto(NumberLib.class));
-        env.setProto("string", wp.getProto(StringLib.class));
-        env.setProto("symbol", wp.getProto(SymbolLib.class));
+        env.add(Environment.BOOL_PROTO, wp.getProto(BooleanLib.class));
+        env.add(Environment.NUMBER_PROTO, wp.getProto(NumberLib.class));
+        env.add(Environment.STRING_PROTO, wp.getProto(StringLib.class));
+        env.add(Environment.SYMBOL_PROTO, wp.getProto(SymbolLib.class));
 
-        env.setProto("error", wp.getProto(ErrorLib.class));
-        env.setProto("syntaxErr", wp.getProto(SyntaxErrorLib.class));
-        env.setProto("typeErr", wp.getProto(TypeErrorLib.class));
-        env.setProto("rangeErr", wp.getProto(RangeErrorLib.class));
+        env.add(Environment.ERROR_PROTO, wp.getProto(ErrorLib.class));
+        env.add(Environment.SYNTAX_ERR_PROTO, wp.getProto(SyntaxErrorLib.class));
+        env.add(Environment.TYPE_ERR_PROTO, wp.getProto(TypeErrorLib.class));
+        env.add(Environment.RANGE_ERR_PROTO, wp.getProto(RangeErrorLib.class));
 
         wp.getProto(ObjectLib.class).setPrototype(null, null);
-        env.regexConstructor = wp.getConstr(RegExpLib.class);
+        env.add(Environment.REGEX_CONSTR, wp.getConstr(RegExpLib.class));
 
         return env;
     }

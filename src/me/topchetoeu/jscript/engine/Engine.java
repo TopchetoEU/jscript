@@ -17,7 +17,7 @@ import me.topchetoeu.jscript.exceptions.EngineException;
 import me.topchetoeu.jscript.exceptions.InterruptException;
 import me.topchetoeu.jscript.mapping.SourceMap;
 
-public class Engine implements DebugController {
+public class Engine {
     private class UncompiledFunction extends FunctionValue {
         public final Filename filename;
         public final String raw;
@@ -61,46 +61,14 @@ public class Engine implements DebugController {
     private static int nextId = 0;
     public static final HashMap<Long, FunctionBody> functions = new HashMap<>();
 
+    public final Environment globalEnvironment = new Environment();
+
     public final int id = ++nextId;
     public final boolean debugging;
     public int maxStackFrames = 10000;
 
-    private final HashMap<Filename, String> sources = new HashMap<>();
-    private final HashMap<Filename, TreeSet<Location>> bpts = new HashMap<>();
-    private final HashMap<Filename, SourceMap> maps = new HashMap<>();
-
-    public Location mapToCompiled(Location location) {
-        var map = maps.get(location.filename());
-        if (map == null) return location;
-        return map.toCompiled(location);
-    }
-    public Location mapToOriginal(Location location) {
-        var map = maps.get(location.filename());
-        if (map == null) return location;
-        return map.toOriginal(location);
-    }
-
-    private DebugController debugger;
     private Thread thread;
     private PriorityBlockingQueue<Task> tasks = new PriorityBlockingQueue<>();
-
-    public synchronized boolean attachDebugger(DebugController debugger) {
-        if (!debugging || this.debugger != null) return false;
-
-        for (var source : sources.entrySet()) debugger.onSource(
-            source.getKey(), source.getValue(),
-            bpts.get(source.getKey()),
-            maps.get(source.getKey())
-        );
-
-        this.debugger = debugger;
-        return true;
-    }
-    public synchronized boolean detachDebugger() {
-        if (!debugging || this.debugger == null) return false;
-        this.debugger = null;
-        return true;
-    }
 
     private void runTask(Task task) {
         try {
@@ -148,25 +116,6 @@ public class Engine implements DebugController {
     }
     public Awaitable<Object> pushMsg(boolean micro, Environment env, Filename filename, String raw, Object thisArg, Object ...args) {
         return pushMsg(micro, env, new UncompiledFunction(filename, raw), thisArg, args);
-    }
-
-    @Override
-    public void onFramePush(Context ctx, CodeFrame frame) {
-        if (debugging && debugger != null) debugger.onFramePush(ctx, frame);
-    }
-    @Override public void onFramePop(Context ctx, CodeFrame frame) {
-        if (debugging && debugger != null) debugger.onFramePop(ctx, frame);
-    }
-    @Override public boolean onInstruction(Context ctx, CodeFrame frame, Instruction instruction, Object returnVal, EngineException error, boolean caught) {
-        if (debugging && debugger != null) return debugger.onInstruction(ctx, frame, instruction, returnVal, error, caught);
-        else return false;
-    }
-    @Override public void onSource(Filename filename, String source, TreeSet<Location> breakpoints, SourceMap map) {
-        if (!debugging) return;
-        if (debugger != null) debugger.onSource(filename, source, breakpoints, map);
-        sources.put(filename, source);
-        bpts.put(filename, breakpoints);
-        maps.put(filename, map);
     }
 
     public Engine(boolean debugging) {

@@ -4,6 +4,7 @@ import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.Environment;
 import me.topchetoeu.jscript.engine.values.ArrayValue;
 import me.topchetoeu.jscript.engine.values.ObjectValue;
+import me.topchetoeu.jscript.engine.values.Symbol;
 import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.engine.values.ObjectValue.PlaceholderProto;
 import me.topchetoeu.jscript.interop.InitType;
@@ -35,7 +36,7 @@ import me.topchetoeu.jscript.interop.NativeInit;
         if (thisArg instanceof ObjectValue) {
             var stack = Values.getMember(ctx, thisArg, "stack");
             if (!(stack instanceof ArrayValue)) stack = null;
-            var cause = Values.getMember(ctx, thisArg, ctx.environment().symbol("Symbol.cause"));
+            var cause = Values.getMember(ctx, thisArg, Symbol.get("Symbol.cause"));
             return toString(ctx,
                 thisArg == cause,
                 cause,

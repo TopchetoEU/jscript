@@ -8,6 +8,7 @@ import me.topchetoeu.jscript.engine.WrappersProvider;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
 import me.topchetoeu.jscript.engine.values.NativeFunction;
 import me.topchetoeu.jscript.engine.values.ObjectValue;
+import me.topchetoeu.jscript.engine.values.Symbol;
 import me.topchetoeu.jscript.exceptions.EngineException;
 import me.topchetoeu.jscript.exceptions.UncheckedException;
 
@@ -28,7 +29,7 @@ public class NativeWrapperProvider implements WrappersProvider {
                 if (nat.thisArg() && !member || !nat.thisArg() && !memberMatch) continue;
 
                 Object name = nat.value();
-                if (((String)name).startsWith("@@")) name = env.symbol(((String)name).substring(2));
+                if (name.toString().startsWith("@@")) name = Symbol.get(name.toString().substring(2));
                 else if (name.equals("")) name = method.getName();
 
                 var val = target.values.get(name);
@@ -42,7 +43,7 @@ public class NativeWrapperProvider implements WrappersProvider {
                     if (get.thisArg() && !member || !get.thisArg() && !memberMatch) continue;
 
                     Object name = get.value();
-                    if (((String)name).startsWith("@@")) name = env.symbol(((String)name).substring(2));
+                    if (((String)name).startsWith("@@")) name = Symbol.get(((String)name).substring(2));
                     else if (name.equals("")) name = method.getName();
 
                     var prop = target.properties.get(name);
@@ -59,7 +60,7 @@ public class NativeWrapperProvider implements WrappersProvider {
                     if (set.thisArg() && !member || !set.thisArg() && !memberMatch) continue;
 
                     Object name = set.value();
-                    if (((String)name).startsWith("@@")) name = env.symbol(((String)name).substring(2));
+                    if (((String)name).startsWith("@@")) name = Symbol.get(((String)name).substring(2));
                     else if (name.equals("")) name = method.getName();
 
                     var prop = target.properties.get(name);
@@ -82,7 +83,7 @@ public class NativeWrapperProvider implements WrappersProvider {
 
             if (nat != null) {
                 Object name = nat.value();
-                if (((String)name).startsWith("@@")) name = env.symbol(((String)name).substring(2));
+                if (((String)name).startsWith("@@")) name = Symbol.get(((String)name).substring(2));
                 else if (name.equals("")) name = field.getName();
     
                 var getter = OverloadFunction.of("get " + name, Overload.getterFromField(field));
@@ -98,7 +99,7 @@ public class NativeWrapperProvider implements WrappersProvider {
 
             if (nat != null) {
                 Object name = nat.value();
-                if (((String)name).startsWith("@@")) name = env.symbol(((String)name).substring(2));
+                if (((String)name).startsWith("@@")) name = Symbol.get(((String)name).substring(2));
                 else if (name.equals("")) name = cl.getName();
 
                 var getter = new NativeFunction("get " + name, (ctx, thisArg, args) -> cl);
@@ -123,7 +124,7 @@ public class NativeWrapperProvider implements WrappersProvider {
     public static ObjectValue makeProto(Environment ctx, Class<?> clazz) {
         var res = new ObjectValue();
 
-        res.defineProperty(null, ctx.symbol("Symbol.typeName"), getName(clazz));
+        res.defineProperty(null, Symbol.get("Symbol.typeName"), getName(clazz));
 
         for (var overload : clazz.getDeclaredMethods()) {
             var init = overload.getAnnotation(NativeInit.class);

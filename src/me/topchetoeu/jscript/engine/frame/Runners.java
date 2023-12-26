@@ -5,6 +5,7 @@ import java.util.Collections;
 import me.topchetoeu.jscript.compilation.Instruction;
 import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.Engine;
+import me.topchetoeu.jscript.engine.Environment;
 import me.topchetoeu.jscript.engine.Operation;
 import me.topchetoeu.jscript.engine.scope.ValueVariable;
 import me.topchetoeu.jscript.engine.values.ArrayValue;
@@ -197,7 +198,13 @@ public class Runners {
         return execLoadMember(ctx, instr, frame);
     }
     public static Object execLoadRegEx(Context ctx, Instruction instr, CodeFrame frame) {
-        frame.push(ctx, ctx.environment().regexConstructor.call(ctx, null, instr.get(0), instr.get(1)));
+        var env = ctx.environment();
+        if (env.has(Environment.REGEX_CONSTR)) {
+            frame.push(ctx, Values.callNew(ctx, env.get(Environment.REGEX_CONSTR)));
+        }
+        else {
+            throw EngineException.ofSyntax("Regex is not supported.");
+        }
         frame.codePtr++;
         return NO_RETURN;
     }

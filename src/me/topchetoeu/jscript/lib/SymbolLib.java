@@ -10,20 +10,19 @@ import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.exceptions.EngineException;
 import me.topchetoeu.jscript.interop.Native;
 import me.topchetoeu.jscript.interop.NativeConstructor;
-import me.topchetoeu.jscript.interop.NativeGetter;
 
 @Native("Symbol") public class SymbolLib {
     private static final Map<String, Symbol> symbols = new HashMap<>();
 
-    @NativeGetter public static Symbol typeName(Context ctx) { return ctx.environment().symbol("Symbol.typeName"); }
-    @NativeGetter public static Symbol replace(Context ctx) { return ctx.environment().symbol("Symbol.replace"); }
-    @NativeGetter public static Symbol match(Context ctx) { return ctx.environment().symbol("Symbol.match"); }
-    @NativeGetter public static Symbol matchAll(Context ctx) { return ctx.environment().symbol("Symbol.matchAll"); }
-    @NativeGetter public static Symbol split(Context ctx) { return ctx.environment().symbol("Symbol.split"); }
-    @NativeGetter public static Symbol search(Context ctx) { return ctx.environment().symbol("Symbol.search"); }
-    @NativeGetter public static Symbol iterator(Context ctx) { return ctx.environment().symbol("Symbol.iterator"); }
-    @NativeGetter public static Symbol asyncIterator(Context ctx) { return ctx.environment().symbol("Symbol.asyncIterator"); }
-    @NativeGetter public static Symbol cause(Context ctx) { return ctx.environment().symbol("Symbol.cause"); }
+    @Native public static final Symbol typeName = Symbol.get("Symbol.typeName");
+    @Native public static final Symbol replace = Symbol.get("Symbol.replace");
+    @Native public static final Symbol match = Symbol.get("Symbol.match");
+    @Native public static final Symbol matchAll = Symbol.get("Symbol.matchAll");
+    @Native public static final Symbol split = Symbol.get("Symbol.split");
+    @Native public static final Symbol search = Symbol.get("Symbol.search");
+    @Native public static final Symbol iterator = Symbol.get("Symbol.iterator");
+    @Native public static final Symbol asyncIterator = Symbol.get("Symbol.asyncIterator");
+    @Native public static final Symbol cause = Symbol.get("Symbol.cause");
 
     public final Symbol value;
 

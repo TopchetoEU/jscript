@@ -15,6 +15,7 @@ import me.topchetoeu.jscript.compilation.Instruction;
 import me.topchetoeu.jscript.compilation.Instruction.Type;
 import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.Engine;
+import me.topchetoeu.jscript.engine.Environment;
 import me.topchetoeu.jscript.engine.frame.CodeFrame;
 import me.topchetoeu.jscript.engine.frame.Runners;
 import me.topchetoeu.jscript.engine.scope.GlobalScope;
@@ -341,7 +342,7 @@ public class SimpleDebugger implements Debugger {
                 try {
                     defaultToString =
                         Values.getMember(ctx, obj, "toString") ==
-                        Values.getMember(ctx, ctx.environment().proto("object"), "toString");
+                        Values.getMember(ctx, ctx.environment().get(Environment.OBJECT_PROTO), "toString");
                 }
                 catch (Exception e) { }
 
@@ -495,7 +496,7 @@ public class SimpleDebugger implements Debugger {
         var res = new ArrayValue();
         var passed = new HashSet<String>();
         var tildas = "~";
-        if (target == null) target = ctx.environment().getGlobal();
+        if (target == null) target = ctx.environment().global;
 
         for (var proto = target; proto != null && proto != Values.NULL; proto = Values.getPrototype(ctx, proto)) {
             for (var el : Values.getMembers(ctx, proto, true, true)) {
@@ -870,7 +871,7 @@ public class SimpleDebugger implements Debugger {
 
             if (!frame.debugData) return false;
 
-            if (instruction.location != null) frame.updateLoc(ctx.engine.mapToCompiled(instruction.location));
+            if (instruction.location != null) frame.updateLoc(DebugContext.get(ctx).mapToCompiled(instruction.location));
             loc = frame.location;
             isBreakpointable = loc != null && (instruction.breakpoint.shouldStepIn());
 
@@ -953,12 +954,12 @@ public class SimpleDebugger implements Debugger {
     }
 
     @Override public synchronized void connect() {
-        if (!target.attachDebugger(this)) {
+        if (!DebugContext.get(target.globalEnvironment).attachDebugger(this)) {
             ws.send(new V8Error("A debugger is already attached to this engine."));
         }
     }
     @Override public synchronized void disconnect() {
-        target.detachDebugger();
+        DebugContext.get(target.globalEnvironment).detachDebugger();
         enabled = false;
         updateNotifier.next();
     }
