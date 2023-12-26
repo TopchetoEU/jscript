@@ -20,6 +20,10 @@ import me.topchetoeu.jscript.interop.Native;
 
 @Native("Filesystem")
 public class FilesystemLib {
+    @Native public static final int SEEK_SET = 0;
+    @Native public static final int SEEK_CUR = 1;
+    @Native public static final int SEEK_END = 2;
+
     private static Filesystem fs(Context ctx) {
         var env = ctx.environment();
         if (env != null) {
@@ -29,24 +33,28 @@ public class FilesystemLib {
         throw EngineException.ofError("Current environment doesn't have a file system.");
     }
 
+    @Native public static String normalize(Context ctx, String... paths) {
+        return fs(ctx).normalize(paths);
+    }
+
     @Native public static PromiseLib open(Context ctx, String _path, String mode) {
-        var filename = Filename.parse(_path);
+        var path = fs(ctx).normalize(_path);
         var _mode = Mode.parse(mode);
 
         return PromiseLib.await(ctx, () -> {
             try {
-                if (fs(ctx).stat(filename.path).type != EntryType.FILE) {
-                    throw new FilesystemException(filename.toString(), FSCode.NOT_FILE);
+                if (fs(ctx).stat(path).type != EntryType.FILE) {
+                    throw new FilesystemException(path, FSCode.NOT_FILE);
                 }
 
-                var file = fs(ctx).open(filename.path, _mode);
+                var file = fs(ctx).open(path, _mode);
                 return new FileLib(file);
             }
             catch (FilesystemException e) { throw e.toEngineException(); }
         });
     }
     @Native public static ObjectValue ls(Context ctx, String _path) throws IOException {
-        var filename = Filename.parse(_path);
+        var path = fs(ctx).normalize(_path);
 
         return Values.toJSAsyncIterator(ctx, new Iterator<>() {
             private boolean failed, done;
@@ -57,11 +65,11 @@ public class FilesystemLib {
                 if (done) return;
                 if (!failed) {
                     if (file == null) {
-                        if (fs(ctx).stat(filename.path).type != EntryType.FOLDER) {
-                            throw new FilesystemException(filename.toString(), FSCode.NOT_FOLDER);
+                        if (fs(ctx).stat(path).type != EntryType.FOLDER) {
+                            throw new FilesystemException(path, FSCode.NOT_FOLDER);
                         }
 
-                        file = fs(ctx).open(filename.path, Mode.READ);
+                        file = fs(ctx).open(path, Mode.READ);
                     }
 
                     if (nextLine == null) {
@@ -108,34 +116,34 @@ public class FilesystemLib {
         });
 
     }
-    @Native public static PromiseLib mkfile(Context ctx, String _path) throws IOException {
+    @Native public static PromiseLib mkfile(Context ctx, String path) throws IOException {
         return PromiseLib.await(ctx, () -> {
             try {
-                fs(ctx).create(Filename.parse(_path).toString(), EntryType.FILE);
+                fs(ctx).create(path, EntryType.FILE);
                 return null;
             }
             catch (FilesystemException e) { throw e.toEngineException(); }
         });
     }
-    @Native public static PromiseLib rm(Context ctx, String _path, boolean recursive) throws IOException {
+    @Native public static PromiseLib rm(Context ctx, String path, boolean recursive) throws IOException {
         return PromiseLib.await(ctx, () -> {
             try {
-                if (!recursive) fs(ctx).create(Filename.parse(_path).toString(), EntryType.NONE);
+                if (!recursive) fs(ctx).create(path, EntryType.NONE);
                 else {
                     var stack = new Stack<String>();
-                    stack.push(_path);
+                    stack.push(path);
 
                     while (!stack.empty()) {
-                        var path = Filename.parse(stack.pop()).toString();
+                        var currPath = stack.pop();
                         FileStat stat;
 
-                        try { stat = fs(ctx).stat(path); }
+                        try { stat = fs(ctx).stat(currPath); }
                         catch (FilesystemException e) { continue; }
 
                         if (stat.type == EntryType.FOLDER) {
-                            for (var el : fs(ctx).open(path, Mode.READ).readToString().split("\n")) stack.push(el);
+                            for (var el : fs(ctx).open(currPath, Mode.READ).readToString().split("\n")) stack.push(el);
                         }
-                        else fs(ctx).create(path, EntryType.NONE);
+                        else fs(ctx).create(currPath, EntryType.NONE);
                     }
                 }
                 return null;
@@ -143,10 +151,10 @@ public class FilesystemLib {
             catch (FilesystemException e) { throw e.toEngineException(); }
         });
     }
-    @Native public static PromiseLib stat(Context ctx, String _path) throws IOException {
+    @Native public static PromiseLib stat(Context ctx, String path) throws IOException {
         return PromiseLib.await(ctx, () -> {
             try {
-                var stat = fs(ctx).stat(_path);
+                var stat = fs(ctx).stat(path);
                 var res = new ObjectValue();
 
                 res.defineProperty(ctx, "type", stat.type.name);

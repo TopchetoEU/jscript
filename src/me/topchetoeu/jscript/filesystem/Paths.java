@@ -3,8 +3,8 @@ package me.topchetoeu.jscript.filesystem;
 import java.util.ArrayList;
 
 public class Paths {
-    public static String normalize(String path) {
-        var parts = path.split("[\\\\/]");
+    public static String normalize(String... path) {
+        var parts = String.join("/", path).split("[\\\\/]");
         var res = new ArrayList<String>();
 
         for (var part : parts) {
@@ -12,14 +12,15 @@ public class Paths {
             else if (part.equals("..")) {
                 if (res.size() > 0) res.remove(res.size() - 1);
             }
-            else if (!part.equals(".")) res.add(part);
+            else if (!part.equals(".") && !part.isEmpty()) res.add(part);
         }
 
         var sb = new StringBuilder();
 
         for (var el : res) sb.append("/").append(el);
 
-        return sb.toString();
+        if (sb.isEmpty()) return "/";
+        else return sb.toString();
     }
 
     public static String chroot(String root, String path) {

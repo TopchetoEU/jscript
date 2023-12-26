@@ -18,13 +18,8 @@ public class MemoryFilesystem implements Filesystem {
     }
 
     @Override
-    public String normalize(String path) {
+    public String normalize(String... path) {
         return Paths.normalize(path);
-    }
-
-    @Override
-    public String cwd(String cwd, String path) {
-        return Paths.cwd(cwd, path);
     }
 
     @Override

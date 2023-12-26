@@ -1,6 +1,7 @@
 package me.topchetoeu.jscript;
 
 import java.io.File;
+import java.nio.file.Path;
 
 public class Filename {
     public final String protocol;
@@ -40,9 +41,7 @@ public class Filename {
         return true;
     }
 
-    public static Filename fromFile(File file) {
-        return new Filename("file", file.getAbsolutePath());
-    }
+
 
 
     public Filename(String protocol, String path) {
@@ -56,5 +55,11 @@ public class Filename {
         var i = val.indexOf("://");
         if (i >= 0) return new Filename(val.substring(0, i).trim(), val.substring(i + 3).trim());
         else return new Filename("file", val.trim());
+    }
+    public static Path normalize(String path) {
+        return Path.of(Path.of("/" + path.trim().replace("\\", "/")).normalize().toString().substring(1));
+    }
+    public static Filename fromFile(File file) {
+        return new Filename("file", file.getAbsolutePath());
     }
 }

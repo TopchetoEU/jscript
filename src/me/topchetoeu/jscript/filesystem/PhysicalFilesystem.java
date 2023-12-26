@@ -11,9 +11,9 @@ public class PhysicalFilesystem implements Filesystem {
 
     private void checkMode(Path path, Mode mode) {
         if (!path.startsWith(root)) throw new FilesystemException(path.toString(), FSCode.NO_PERMISSIONS_R);
-        var stat = stat(path.toString());
-        if (mode.readable && !stat.mode.readable) throw new FilesystemException(path.toString(), FSCode.NO_PERMISSIONS_R);
-        if (mode.writable && !stat.mode.writable) throw new FilesystemException(path.toString(), FSCode.NO_PERMISSIONS_RW);
+
+        if (mode.readable && !Files.isReadable(path)) throw new FilesystemException(path.toString(), FSCode.NO_PERMISSIONS_R);
+        if (mode.writable && !Files.isWritable(path)) throw new FilesystemException(path.toString(), FSCode.NO_PERMISSIONS_RW);
     }
 
     private Path realPath(String path) {
@@ -21,24 +21,20 @@ public class PhysicalFilesystem implements Filesystem {
     }
 
     @Override
-    public String normalize(String path) {
-        return Paths.normalize(path);
-    }
-
-    @Override
-    public String cwd(String cwd, String path) {
-        return Paths.cwd(cwd, path);
+    public String normalize(String... paths) {
+        return Paths.normalize(paths);
     }
 
     @Override
     public File open(String _path, Mode perms) {
+        _path = normalize(_path);
         var path = realPath(_path);
 
         checkMode(path, perms);
 
-        try { 
-            if (Files.isDirectory(path)) return new ListFile(path);
-            else return new PhysicalFile(path.toString(), perms);
+        try {
+            if (Files.isDirectory(path)) return new ListFile(_path, Files.list(path).map((v -> v.getFileName().toString())));
+            else return new PhysicalFile(_path, path.toString(), perms);
         }
         catch (IOException e) { throw new FilesystemException(path.toString(), FSCode.DOESNT_EXIST); }
     }
