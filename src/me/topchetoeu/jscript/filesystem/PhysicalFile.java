@@ -25,19 +25,14 @@ public class PhysicalFile implements File {
     }
 
     @Override
-    public long getPtr() {
-        if (file == null || !perms.readable) throw new FilesystemException(filename, FSCode.NO_PERMISSIONS_R);
-        else try { return file.getFilePointer(); }
-        catch (IOException e) { throw new FilesystemException(filename, FSCode.NO_PERMISSIONS_R); }
-    }
-    @Override
-    public void setPtr(long offset, int pos) {
+    public long seek(long offset, int pos) {
         if (file == null || !perms.readable) throw new FilesystemException(filename, FSCode.NO_PERMISSIONS_R);
 
         try {
             if (pos == 1) offset += file.getFilePointer();
             else if (pos == 2) offset += file.length();
             file.seek(offset);
+            return offset;
         }
         catch (IOException e) { throw new FilesystemException(filename, FSCode.NO_PERMISSIONS_R); }
     }
@@ -50,8 +45,6 @@ public class PhysicalFile implements File {
         file = null;
         perms = Mode.NONE;
     }
-    @Override
-    public Mode mode() { return perms; }
 
     public PhysicalFile(String path, Mode mode) throws FileNotFoundException {
         if (mode == Mode.NONE) file = null;

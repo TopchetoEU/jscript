@@ -5,17 +5,13 @@ import me.topchetoeu.jscript.Buffer;
 public interface File {
     int read(byte[] buff);
     void write(byte[] buff);
-    long getPtr();
-    void setPtr(long offset, int pos);
+    long seek(long offset, int pos);
     void close();
-    Mode mode();
 
     default String readToString() {
-        setPtr(0, 2);
-        long len = getPtr();
+        long len = seek(0, 2);
         if (len < 0) return null;
-
-        setPtr(0, 0);
+        seek(0, 0);
 
         byte[] res = new byte[(int)len];
         len = read(res);
