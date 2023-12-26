@@ -19,7 +19,7 @@ public class Paths {
 
         for (var el : res) sb.append("/").append(el);
 
-        if (sb.isEmpty()) return "/";
+        if (sb.length() == 0) return "/";
         else return sb.toString();
     }
 
