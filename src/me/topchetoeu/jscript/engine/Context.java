@@ -94,7 +94,7 @@ public class Context implements Extensions {
             private Context curr = self;
 
             private void update() {
-                while (curr.frame == null && curr != null) curr = curr.parent;
+                while (curr != null && curr.frame == null) curr = curr.parent;
             }
 
             @Override public boolean hasNext() {

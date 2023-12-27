@@ -30,6 +30,7 @@ import me.topchetoeu.jscript.interop.Native;
         Object res = null;
         state = 0;
 
+        frame.onPush();
         while (state == 0) {
             try {
                 res = frame.next(inducedValue, inducedReturn, inducedError == Runners.NO_RETURN ? null : new EngineException(inducedError));
@@ -47,6 +48,7 @@ import me.topchetoeu.jscript.interop.Native;
                 break;
             }
         }
+        frame.onPop();
 
         if (state == 1) {
             PromiseLib.then(ctx, frame.pop(), new NativeFunction(this::fulfill), new NativeFunction(this::reject));

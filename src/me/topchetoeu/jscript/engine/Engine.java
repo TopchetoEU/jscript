@@ -57,7 +57,6 @@ public class Engine {
     public final Environment globalEnvironment = new Environment();
 
     public final int id = ++nextId;
-    public final boolean debugging;
     public int maxStackFrames = 10000;
 
     private Thread thread;
@@ -111,7 +110,6 @@ public class Engine {
         return pushMsg(micro, env, new UncompiledFunction(filename, raw), thisArg, args);
     }
 
-    public Engine(boolean debugging) {
-        this.debugging = debugging;
+    public Engine() {
     }
 }

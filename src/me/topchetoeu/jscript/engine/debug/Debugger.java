@@ -1,6 +1,5 @@
 package me.topchetoeu.jscript.engine.debug;
 
 public interface Debugger extends DebugHandler, DebugController {
-    void connect();
-    void disconnect();
+    void close();
 }

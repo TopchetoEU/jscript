@@ -303,6 +303,13 @@ public class CodeFrame {
         return Runners.NO_RETURN;
     }
 
+    public void onPush() {
+        DebugContext.get(ctx).onFramePush(ctx, this);
+    }
+    public void onPop() {
+        DebugContext.get(ctx.parent).onFramePop(ctx.parent, this);
+    }
+
     public CodeFrame(Context ctx, Object thisArg, Object[] args, CodeFunction func) {
         this.args = args.clone();
         this.scope = new LocalScope(func.localsN, func.captures);

@@ -33,9 +33,16 @@ public class CodeFunction extends FunctionValue {
     public Object call(Context ctx, Object thisArg, Object ...args) {
         var frame = new CodeFrame(ctx, thisArg, args, this);
 
-        while (true) {
-            var res = frame.next(Runners.NO_RETURN, Runners.NO_RETURN, null);
-            if (res != Runners.NO_RETURN) return res;
+        frame.onPush();
+
+        try {
+            while (true) {
+                var res = frame.next(Runners.NO_RETURN, Runners.NO_RETURN, null);
+                if (res != Runners.NO_RETURN) return res;
+            }
+        }
+        finally {
+            frame.onPop();
         }
     }
 

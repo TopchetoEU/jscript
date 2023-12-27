@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.Engine;
 import me.topchetoeu.jscript.engine.Environment;
+import me.topchetoeu.jscript.engine.debug.DebugContext;
 import me.topchetoeu.jscript.engine.debug.DebugServer;
 import me.topchetoeu.jscript.engine.debug.SimpleDebugger;
 import me.topchetoeu.jscript.engine.values.ArrayValue;
@@ -46,7 +47,7 @@ public class Main {
     }
 
     static Thread engineTask, debugTask;
-    static Engine engine = new Engine(true);
+    static Engine engine = new Engine();
     static DebugServer debugServer = new DebugServer();
     static Environment environment = new Environment();
 
@@ -133,7 +134,10 @@ public class Main {
         environment.add(ModuleRepo.ENV_KEY, ModuleRepo.ofFilesystem(fs));
     }
     private static void initEngine() {
-        debugServer.targets.put("target", (ws, req) -> new SimpleDebugger(ws, engine));
+        var ctx = new DebugContext();
+        // engine.globalEnvironment.add(DebugContext.ENV_KEY, ctx);
+
+        debugServer.targets.put("target", (ws, req) -> new SimpleDebugger(ws).attach(ctx));
         engineTask = engine.start();
         debugTask = debugServer.start(new InetSocketAddress("127.0.0.1", 9229), true);
     }

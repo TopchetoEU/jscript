@@ -26,6 +26,7 @@ import me.topchetoeu.jscript.interop.Native;
         Object res = null;
         yielding = false;
 
+        frame.onPush();
         while (!yielding) {
             try {
                 res = frame.next(inducedValue, inducedReturn, inducedError == Runners.NO_RETURN ? null : new EngineException(inducedError));
@@ -40,6 +41,7 @@ import me.topchetoeu.jscript.interop.Native;
                 throw e;
             }
         }
+        frame.onPop();
 
         if (done) frame = null;
         else res = frame.pop();

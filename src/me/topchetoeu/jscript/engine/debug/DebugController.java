@@ -50,7 +50,7 @@ public interface DebugController {
     void onFramePop(Context ctx, CodeFrame frame);
 
     public static DebugController empty() {
-        return new DebugController() {
+        return new DebugController () {
             @Override public void onFramePop(Context ctx, CodeFrame frame) { }
             @Override public void onFramePush(Context ctx, CodeFrame frame) { }
             @Override public boolean onInstruction(Context ctx, CodeFrame frame, Instruction instruction, Object returnVal, EngineException error, boolean caught) {

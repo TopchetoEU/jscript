@@ -25,9 +25,6 @@ public interface DebugHandler {
     void getProperties(V8Message msg);
     void releaseObjectGroup(V8Message msg);
     void releaseObject(V8Message msg);
-    /**
-     * This method might not execute the actual code for well-known requests
-     */
     void callFunctionOn(V8Message msg);
 
     void runtimeEnable(V8Message msg);

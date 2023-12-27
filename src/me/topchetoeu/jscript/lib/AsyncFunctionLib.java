@@ -21,6 +21,7 @@ import me.topchetoeu.jscript.interop.Native;
         private void next(Context ctx, Object inducedValue, Object inducedError) {
             Object res = null;
 
+            frame.onPush();
             awaiting = false;
             while (!awaiting) {
                 try {
@@ -36,6 +37,7 @@ import me.topchetoeu.jscript.interop.Native;
                     break;
                 }
             }
+            frame.onPop();
 
             if (awaiting) {
                 PromiseLib.then(ctx, frame.pop(), new NativeFunction(this::fulfill), new NativeFunction(this::reject));

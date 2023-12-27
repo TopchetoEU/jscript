@@ -174,7 +174,6 @@ public class SimpleDebugger implements Debugger {
     public State state = State.RESUMED;
 
     public final WebSocket ws;
-    public final Engine target;
 
     private ObjectValue emptyObject = new ObjectValue();
 
@@ -477,7 +476,7 @@ public class SimpleDebugger implements Debugger {
 
     private RunResult run(Frame codeFrame, String code) {
         if (codeFrame == null) return new RunResult(null, code, new EngineException("Invalid code frame!"));
-        var engine = new Engine(false);
+        var engine = new Engine();
         var env = codeFrame.func.environment.fork();
 
         env.global = new GlobalScope(codeFrame.local);
@@ -574,8 +573,36 @@ public class SimpleDebugger implements Debugger {
         updateNotifier.next();
     }
     @Override public synchronized void disable(V8Message msg) {
-        enabled = false;
+        close();
         ws.send(msg.respond());
+    }
+    public synchronized void close() {
+        enabled = false;
+        execptionType = CatchType.NONE;
+        state = State.RESUMED;
+
+        idToBptCand.clear();
+
+        idToBreakpoint.clear();
+        locToBreakpoint.clear();
+        tmpBreakpts.clear();
+
+        filenameToId.clear();
+        idToSource.clear();
+        pendingSources.clear();
+
+        idToFrame.clear();
+        codeFrameToFrame.clear();
+
+        idToObject.clear();
+        objectToId.clear();
+        objectGroups.clear();
+
+        pendingPause = false;
+
+        stepOutFrame = currFrame = null;
+        stepOutPtr = 0;
+
         updateNotifier.next();
     }
 
@@ -952,19 +979,12 @@ public class SimpleDebugger implements Debugger {
         }
     }
 
-    @Override public synchronized void connect() {
-        if (!DebugContext.get(target.globalEnvironment).attachDebugger(this)) {
-            ws.send(new V8Error("A debugger is already attached to this engine."));
-        }
-    }
-    @Override public synchronized void disconnect() {
-        DebugContext.get(target.globalEnvironment).detachDebugger();
-        enabled = false;
-        updateNotifier.next();
+    public SimpleDebugger attach(DebugContext ctx) {
+        ctx.attachDebugger(this);
+        return this;
     }
 
-    public SimpleDebugger(WebSocket ws, Engine target) {
+    public SimpleDebugger(WebSocket ws) {
         this.ws = ws;
-        this.target = target;
     }
 }
