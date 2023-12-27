@@ -15,7 +15,6 @@ import me.topchetoeu.jscript.engine.values.ArrayValue;
 import me.topchetoeu.jscript.engine.values.NativeFunction;
 import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.engine.values.Values;
-import me.topchetoeu.jscript.events.Observer;
 import me.topchetoeu.jscript.exceptions.EngineException;
 import me.topchetoeu.jscript.exceptions.InterruptException;
 import me.topchetoeu.jscript.exceptions.SyntaxException;
@@ -30,22 +29,7 @@ import me.topchetoeu.jscript.modules.ModuleRepo;
 import me.topchetoeu.jscript.permissions.PermissionsManager;
 import me.topchetoeu.jscript.permissions.PermissionsProvider;
 
-public class Main {   
-    public static class Printer implements Observer<Object> {
-        public void next(Object data) {
-            Values.printValue(null, data);
-            System.out.println();
-        }
-
-        public void error(RuntimeException err) {
-            Values.printError(err, null);
-        }
-
-        public void finish() {
-            engineTask.interrupt();
-        }
-    }
-
+public class Main {
     static Thread engineTask, debugTask;
     static Engine engine = new Engine();
     static DebugServer debugServer = new DebugServer();
