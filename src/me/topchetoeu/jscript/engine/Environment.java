@@ -13,14 +13,12 @@ import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.engine.values.Symbol;
 import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.exceptions.EngineException;
-import me.topchetoeu.jscript.interop.Native;
 import me.topchetoeu.jscript.interop.NativeWrapperProvider;
 import me.topchetoeu.jscript.parsing.Parsing;
 
 // TODO: Remove hardcoded extensions form environment
 @SuppressWarnings("unchecked")
 public class Environment implements Extensions {
-    private static int nextId = 0;
 
     public static final HashMap<String, Symbol> symbols = new HashMap<>();
 
@@ -48,8 +46,6 @@ public class Environment implements Extensions {
     public GlobalScope global;
     public WrappersProvider wrappers;
 
-    @Native public int id = ++nextId;
-
     @Override public <T> void add(Symbol key, T obj) {
         data.put(key, obj);
     }
@@ -73,7 +69,7 @@ public class Environment implements Extensions {
             var filename = Values.toString(ctx, args[1]);
             var isDebug = Values.toBoolean(args[2]);
 
-            var env = Values.wrapper(args[2], Environment.class);
+            var env = Values.wrapper(Values.getMember(ctx, args[2], Symbol.get("env")), Environment.class);
             var res = new ObjectValue();
 
             var target = Parsing.compile(env, Filename.parse(filename), source);

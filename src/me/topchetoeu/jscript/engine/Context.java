@@ -16,6 +16,7 @@ import me.topchetoeu.jscript.engine.values.ArrayValue;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
 import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.exceptions.EngineException;
+import me.topchetoeu.jscript.lib.EnvironmentLib;
 import me.topchetoeu.jscript.mapping.SourceMap;
 
 public class Context extends ExtensionStack {
@@ -42,7 +43,7 @@ public class Context extends ExtensionStack {
 
     public FunctionValue compile(Filename filename, String raw) {
         var env = environment();
-        var result = Environment.compileFunc(this).call(this, null, raw, filename.toString(), env);
+        var result = Environment.compileFunc(this).call(this, null, raw, filename.toString(), new EnvironmentLib(env));
 
         var function = (FunctionValue)Values.getMember(this, result, "function");
         if (!has(DebugContext.ENV_KEY)) return function;

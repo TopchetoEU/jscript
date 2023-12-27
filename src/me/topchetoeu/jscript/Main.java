@@ -23,6 +23,7 @@ import me.topchetoeu.jscript.filesystem.MemoryFilesystem;
 import me.topchetoeu.jscript.filesystem.Mode;
 import me.topchetoeu.jscript.filesystem.PhysicalFilesystem;
 import me.topchetoeu.jscript.filesystem.RootFilesystem;
+import me.topchetoeu.jscript.lib.EnvironmentLib;
 import me.topchetoeu.jscript.lib.Internals;
 import me.topchetoeu.jscript.modules.ModuleRepo;
 import me.topchetoeu.jscript.permissions.PermissionsManager;
@@ -151,10 +152,13 @@ public class Main {
             ).await();
             System.out.println("Loaded typescript!");
 
+            var typescript = tsEnv.global.get(new Context(engine, bsEnv), "ts");
+            var libs = new ArrayValue(null, Reading.resourceToString("js/lib.d.ts"));
+
             engine.pushMsg(
                 false, bsEnv,
                 new Filename("jscript", "bootstrap.js"), Reading.resourceToString("js/bootstrap.js"), null,
-                tsEnv.global.get(new Context(engine, bsEnv), "ts"), environment, new ArrayValue(null, Reading.resourceToString("js/lib.d.ts"))
+                typescript, new EnvironmentLib(environment), libs
             ).await();
         }
         catch (EngineException e) {

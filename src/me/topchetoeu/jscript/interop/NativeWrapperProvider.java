@@ -43,7 +43,7 @@ public class NativeWrapperProvider implements WrappersProvider {
                     if (get.thisArg() && !member || !get.thisArg() && !memberMatch) continue;
 
                     Object name = get.value();
-                    if (((String)name).startsWith("@@")) name = Symbol.get(((String)name).substring(2));
+                    if (name.toString().startsWith("@@")) name = Symbol.get(name.toString().substring(2));
                     else if (name.equals("")) name = method.getName();
 
                     var prop = target.properties.get(name);
@@ -60,7 +60,7 @@ public class NativeWrapperProvider implements WrappersProvider {
                     if (set.thisArg() && !member || !set.thisArg() && !memberMatch) continue;
 
                     Object name = set.value();
-                    if (((String)name).startsWith("@@")) name = Symbol.get(((String)name).substring(2));
+                    if (name.toString().startsWith("@@")) name = Symbol.get(name.toString().substring(2));
                     else if (name.equals("")) name = method.getName();
 
                     var prop = target.properties.get(name);
@@ -83,7 +83,7 @@ public class NativeWrapperProvider implements WrappersProvider {
 
             if (nat != null) {
                 Object name = nat.value();
-                if (((String)name).startsWith("@@")) name = Symbol.get(((String)name).substring(2));
+                if (name.toString().startsWith("@@")) name = Symbol.get(name.toString().substring(2));
                 else if (name.equals("")) name = field.getName();
     
                 var getter = OverloadFunction.of("get " + name, Overload.getterFromField(field));
@@ -99,7 +99,7 @@ public class NativeWrapperProvider implements WrappersProvider {
 
             if (nat != null) {
                 Object name = nat.value();
-                if (((String)name).startsWith("@@")) name = Symbol.get(((String)name).substring(2));
+                if (name.toString().startsWith("@@")) name = Symbol.get(name.toString().substring(2));
                 else if (name.equals("")) name = cl.getName();
 
                 var getter = new NativeFunction("get " + name, (ctx, thisArg, args) -> cl);
