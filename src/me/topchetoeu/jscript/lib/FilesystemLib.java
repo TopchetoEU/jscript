@@ -25,11 +25,8 @@ public class FilesystemLib {
     @Native public static final int SEEK_END = 2;
 
     private static Filesystem fs(Context ctx) {
-        var env = ctx.environment();
-        if (env != null) {
-            var fs = ctx.environment().filesystem;
-            if (fs != null) return fs;
-        }
+        var fs = Filesystem.get(ctx);
+        if (fs != null) return fs;
         throw EngineException.ofError("Current environment doesn't have a file system.");
     }
 
