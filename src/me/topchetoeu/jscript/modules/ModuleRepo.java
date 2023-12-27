@@ -4,10 +4,15 @@ import java.util.HashMap;
 
 import me.topchetoeu.jscript.Filename;
 import me.topchetoeu.jscript.engine.Context;
+import me.topchetoeu.jscript.engine.Extensions;
+import me.topchetoeu.jscript.engine.values.Symbol;
 import me.topchetoeu.jscript.filesystem.Filesystem;
 import me.topchetoeu.jscript.filesystem.Mode;
 
 public interface ModuleRepo {
+    public static final Symbol ENV_KEY = Symbol.get("Environment.modules");
+    public static final Symbol CWD = Symbol.get("Environment.moduleCwd");
+
     public Module getModule(Context ctx, String cwd, String name);
 
     public static ModuleRepo ofFilesystem(Filesystem fs) {
@@ -21,12 +26,19 @@ public interface ModuleRepo {
             if (modules.containsKey(name)) return modules.get(name);
 
             var env = ctx.environment().child();
-            env.moduleCwd = fs.normalize(name, "..");
+            env.add(CWD, fs.normalize(name, ".."));
 
             var mod = new SourceModule(filename, src, env);
             modules.put(name, mod);
 
             return mod;
         };
+    }
+
+    public static String cwd(Extensions exts) {
+        return exts.init(CWD, "/");
+    }
+    public static ModuleRepo get(Extensions exts) {
+        return exts.get(ENV_KEY);
     }
 }

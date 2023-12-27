@@ -45,7 +45,7 @@ public class Context extends ExtensionStack {
         var result = Environment.compileFunc(this).call(this, null, raw, filename.toString(), env);
 
         var function = (FunctionValue)Values.getMember(this, result, "function");
-        if (!engine.debugging) return function;
+        if (!has(DebugContext.ENV_KEY)) return function;
 
         var rawMapChain = ((ArrayValue)Values.getMember(this, result, "mapChain")).toArray();
         var breakpoints = new TreeSet<>(

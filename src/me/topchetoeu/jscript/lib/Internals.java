@@ -1,28 +1,31 @@
 package me.topchetoeu.jscript.lib;
 
 import java.io.IOException;
-import java.util.HashMap;
 
 import me.topchetoeu.jscript.Buffer;
 import me.topchetoeu.jscript.Reading;
 import me.topchetoeu.jscript.engine.Context;
-import me.topchetoeu.jscript.engine.DataKey;
 import me.topchetoeu.jscript.engine.Environment;
 import me.topchetoeu.jscript.engine.scope.GlobalScope;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
-import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.exceptions.EngineException;
 import me.topchetoeu.jscript.interop.Native;
 import me.topchetoeu.jscript.interop.NativeGetter;
+import me.topchetoeu.jscript.modules.ModuleRepo;
 import me.topchetoeu.jscript.parsing.Parsing;
 
 public class Internals {
     @Native public static Object require(Context ctx, String name) {
-        var env = ctx.environment();
-        var res = env.modules.getModule(ctx, env.moduleCwd, name);
-        res.load(ctx);
-        return res.value();
+        var repo = ModuleRepo.get(ctx);
+
+        if (repo != null) {
+            var res = repo.getModule(ctx, ModuleRepo.cwd(ctx), name);
+            res.load(ctx);
+            return res.value();
+        }
+
+        else throw EngineException.ofError("Modules are not supported.");
     }
 
     @Native public static Object log(Context ctx, Object ...args) {

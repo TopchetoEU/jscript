@@ -14,7 +14,7 @@ import me.topchetoeu.jscript.exceptions.EngineException;
 import me.topchetoeu.jscript.mapping.SourceMap;
 
 public class DebugContext implements DebugController {
-    public static final Symbol DEBUG_CTX = Symbol.get("Engine.debug");
+    public static final Symbol ENV_KEY = Symbol.get("Engine.debug");
 
     private HashMap<Filename, String> sources;
     private HashMap<Filename, TreeSet<Location>> bpts;
@@ -90,7 +90,7 @@ public class DebugContext implements DebugController {
     }
 
     public static DebugContext get(Extensions exts) {
-        if (exts.has(DEBUG_CTX)) return exts.get(DEBUG_CTX);
+        if (exts.has(ENV_KEY)) return exts.get(ENV_KEY);
         else return new DebugContext(false);
     }
 }
