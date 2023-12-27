@@ -40,7 +40,7 @@ public class Internals {
     }
     @Native public static String readline(Context ctx) {
         try {
-            return Reading.read();
+            return Reading.readline();
         }
         catch (IOException e) {
             e.printStackTrace();

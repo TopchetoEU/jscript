@@ -231,9 +231,9 @@ public class DebugServer {
 
     public DebugServer() {
         try {
-            this.favicon = Reading.resourceToStream("debugger/favicon.png").readAllBytes();
-            this.protocol = Reading.resourceToStream("debugger/protocol.json").readAllBytes();
-            this.index = Reading.resourceToString("debugger/index.html")
+            this.favicon = Reading.resourceToStream("assets/debugger/favicon.png").readAllBytes();
+            this.protocol = Reading.resourceToStream("assets/debugger/protocol.json").readAllBytes();
+            this.index = Reading.resourceToString("assets/debugger/index.html")
                 .replace("${NAME}", Metadata.name())
                 .replace("${VERSION}", Metadata.version())
                 .replace("${AUTHOR}", Metadata.author())

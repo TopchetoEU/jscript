@@ -60,7 +60,7 @@ public class Main {
             }
             for (var i = 0; ; i++) {
                 try {
-                    var raw = Reading.read();
+                    var raw = Reading.readline();
 
                     if (raw == null) break;
                     var res = engine.pushMsg(
@@ -136,16 +136,16 @@ public class Main {
             engine.pushMsg(
                 false, tsEnv,
                 new Filename("jscript", "ts.js"),
-                Reading.resourceToString("js/ts.js"), null
+                Reading.resourceToString("assets/js/ts.js"), null
             ).await();
             System.out.println("Loaded typescript!");
 
             var typescript = tsEnv.global.get(new Context(engine, bsEnv), "ts");
-            var libs = new ArrayValue(null, Reading.resourceToString("js/lib.d.ts"));
+            var libs = new ArrayValue(null, Reading.resourceToString("assets/js/lib.d.ts"));
 
             engine.pushMsg(
                 false, bsEnv,
-                new Filename("jscript", "bootstrap.js"), Reading.resourceToString("js/bootstrap.js"), null,
+                new Filename("jscript", "bootstrap.js"), Reading.resourceToString("assets/js/bootstrap.js"), null,
                 typescript, new EnvironmentLib(environment), libs
             ).await();
         }
