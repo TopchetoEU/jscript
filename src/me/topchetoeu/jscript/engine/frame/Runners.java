@@ -50,7 +50,7 @@ public class Runners {
 
     public static Object execMakeVar(Context ctx, Instruction instr, CodeFrame frame) {
         var name = (String)instr.get(0);
-        ctx.environment().global.define(name);
+        ctx.environment.global.define(name);
         frame.codePtr++;
         return NO_RETURN;
     }
@@ -142,7 +142,7 @@ public class Runners {
     public static Object execLoadVar(Context ctx, Instruction instr, CodeFrame frame) {
         var i = instr.get(0);
 
-        if (i instanceof String) frame.push(ctx, ctx.environment().global.get(ctx, (String)i));
+        if (i instanceof String) frame.push(ctx, ctx.environment.global.get(ctx, (String)i));
         else frame.push(ctx, frame.scope.get((int)i).get(ctx));
 
         frame.codePtr++;
@@ -154,7 +154,7 @@ public class Runners {
         return NO_RETURN;
     }
     public static Object execLoadGlob(Context ctx, Instruction instr, CodeFrame frame) {
-        frame.push(ctx, ctx.environment().global.obj);
+        frame.push(ctx, ctx.environment.global.obj);
         frame.codePtr++;
         return NO_RETURN;
     }
@@ -173,7 +173,7 @@ public class Runners {
             captures[i - 1] = frame.scope.get(instr.get(i));
         }
 
-        var func = new CodeFunction(ctx.environment(), "", Engine.functions.get(id), captures);
+        var func = new CodeFunction(ctx.environment, "", Engine.functions.get(id), captures);
 
         frame.push(ctx, func);
 
@@ -227,7 +227,7 @@ public class Runners {
         var val = (boolean)instr.get(1) ? frame.peek() : frame.pop();
         var i = instr.get(0);
 
-        if (i instanceof String) ctx.environment().global.set(ctx, (String)i, val);
+        if (i instanceof String) ctx.environment.global.set(ctx, (String)i, val);
         else frame.scope.get((int)i).set(ctx, val);
 
         frame.codePtr++;
@@ -274,8 +274,8 @@ public class Runners {
         Object obj;
 
         if (name != null) {
-            if (ctx.environment().global.has(ctx, name)) {
-                obj = ctx.environment().global.get(ctx, name);
+            if (ctx.environment.global.has(ctx, name)) {
+                obj = ctx.environment.global.get(ctx, name);
             }
             else obj = null;
         }

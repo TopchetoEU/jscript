@@ -94,6 +94,7 @@ public class CodeFrame {
     public final Object[] args;
     public final Stack<TryCtx> tryStack = new Stack<>();
     public final CodeFunction function;
+    public final Context ctx;
     public Object[] stack = new Object[32];
     public int stackPtr = 0;
     public int codePtr = 0;
@@ -187,7 +188,7 @@ public class CodeFrame {
         stack[stackPtr++] = Values.normalize(ctx, val);
     }
 
-    public Object next(Context ctx, Object value, Object returnValue, EngineException error) {
+    public Object next(Object value, Object returnValue, EngineException error) {
         if (value != Runners.NO_RETURN) push(ctx, value);
 
         Instruction instr = null;
@@ -314,5 +315,6 @@ public class CodeFrame {
 
         this.thisArg = thisArg;
         this.function = func;
+        this.ctx = ctx.pushFrame(this);
     }
 }

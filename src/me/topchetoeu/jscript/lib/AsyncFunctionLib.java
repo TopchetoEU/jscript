@@ -20,12 +20,11 @@ import me.topchetoeu.jscript.interop.Native;
 
         private void next(Context ctx, Object inducedValue, Object inducedError) {
             Object res = null;
-            ctx.pushFrame(frame);
 
             awaiting = false;
             while (!awaiting) {
                 try {
-                    res = frame.next(ctx, inducedValue, Runners.NO_RETURN, inducedError == Runners.NO_RETURN ? null : new EngineException(inducedError));
+                    res = frame.next(inducedValue, Runners.NO_RETURN, inducedError == Runners.NO_RETURN ? null : new EngineException(inducedError));
                     inducedValue = inducedError = Runners.NO_RETURN;
                     if (res != Runners.NO_RETURN) {
                         promise.fulfill(ctx, res);
@@ -37,8 +36,6 @@ import me.topchetoeu.jscript.interop.Native;
                     break;
                 }
             }
-
-            ctx.popFrame(frame);
 
             if (awaiting) {
                 PromiseLib.then(ctx, frame.pop(), new NativeFunction(this::fulfill), new NativeFunction(this::reject));

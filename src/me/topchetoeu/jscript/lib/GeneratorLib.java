@@ -24,12 +24,11 @@ import me.topchetoeu.jscript.interop.Native;
         }
 
         Object res = null;
-        ctx.pushFrame(frame);
         yielding = false;
 
         while (!yielding) {
             try {
-                res = frame.next(ctx, inducedValue, inducedReturn, inducedError == Runners.NO_RETURN ? null : new EngineException(inducedError));
+                res = frame.next(inducedValue, inducedReturn, inducedError == Runners.NO_RETURN ? null : new EngineException(inducedError));
                 inducedReturn = inducedError = Runners.NO_RETURN;
                 if (res != Runners.NO_RETURN) {
                     done = true;
@@ -42,7 +41,6 @@ import me.topchetoeu.jscript.interop.Native;
             }
         }
 
-        ctx.popFrame(frame);
         if (done) frame = null;
         else res = frame.pop();
 

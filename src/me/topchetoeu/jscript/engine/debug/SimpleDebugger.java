@@ -234,7 +234,7 @@ public class SimpleDebugger implements Debugger {
     }
 
     private synchronized void updateFrames(Context ctx) {
-        var frame = ctx.peekFrame();
+        var frame = ctx.frame;
         if (frame == null) return;
 
         if (!codeFrameToFrame.containsKey(frame)) {
@@ -249,10 +249,9 @@ public class SimpleDebugger implements Debugger {
     }
     private JSONList serializeFrames(Context ctx) {
         var res = new JSONList();
-        var frames = ctx.frames();
 
-        for (var i = frames.size() - 1; i >= 0; i--) {
-            var frame = codeFrameToFrame.get(frames.get(i));
+        for (var el : ctx.frames()) {
+            var frame = codeFrameToFrame.get(el);
             if (frame.location == null) continue;
             frame.serialized.set("location", serializeLocation(frame.location));
             if (frame.location != null) res.add(frame.serialized);
@@ -484,7 +483,7 @@ public class SimpleDebugger implements Debugger {
         env.global = new GlobalScope(codeFrame.local);
 
         var ctx = new Context(engine, env);
-        var awaiter = engine.pushMsg(false, ctx.environment(), new Filename("jscript", "eval"), code, codeFrame.frame.thisArg, codeFrame.frame.args);
+        var awaiter = engine.pushMsg(false, ctx.environment, new Filename("jscript", "eval"), code, codeFrame.frame.thisArg, codeFrame.frame.args);
 
         engine.run(true);
 
@@ -496,7 +495,7 @@ public class SimpleDebugger implements Debugger {
         var res = new ArrayValue();
         var passed = new HashSet<String>();
         var tildas = "~";
-        if (target == null) target = ctx.environment().global;
+        if (target == null) target = ctx.environment.global;
 
         for (var proto = target; proto != null && proto != Values.NULL; proto = Values.getPrototype(ctx, proto)) {
             for (var el : Values.getMembers(ctx, proto, true, true)) {
@@ -944,7 +943,7 @@ public class SimpleDebugger implements Debugger {
         try { idToFrame.remove(codeFrameToFrame.remove(frame).id); }
         catch (NullPointerException e) { }
 
-        if (ctx.frames().size() == 0) {
+        if (ctx.stackSize == 0) {
             if (state == State.PAUSED_EXCEPTION || state == State.PAUSED_NORMAL) resume(State.RESUMED);
         }
         else if (stepOutFrame != null && stepOutFrame.frame == frame && state == State.STEPPING_OUT) {

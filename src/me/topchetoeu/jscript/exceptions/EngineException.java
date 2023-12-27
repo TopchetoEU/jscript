@@ -38,7 +38,7 @@ public class EngineException extends RuntimeException {
             if (function.equals("")) function = null;
 
             if (ctx == null) this.ctx = null;
-            else this.ctx = new Context(ctx.engine, ctx.environment());
+            else this.ctx = new Context(ctx.engine, ctx.environment);
             this.location = location;
             this.function = function;
         }
@@ -53,7 +53,7 @@ public class EngineException extends RuntimeException {
     public EngineException add(Context ctx, String name, Location location) {
         var el = new StackElement(ctx, location, name);
         if (el.function == null && el.location == null) return this;
-        setCtx(ctx.environment(), ctx.engine);
+        setCtx(ctx.environment, ctx.engine);
         stackTrace.add(el);
         return this;
     }

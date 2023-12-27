@@ -28,12 +28,11 @@ import me.topchetoeu.jscript.interop.Native;
         }
 
         Object res = null;
-        ctx.pushFrame(frame);
         state = 0;
 
         while (state == 0) {
             try {
-                res = frame.next(ctx, inducedValue, inducedReturn, inducedError == Runners.NO_RETURN ? null : new EngineException(inducedError));
+                res = frame.next(inducedValue, inducedReturn, inducedError == Runners.NO_RETURN ? null : new EngineException(inducedError));
                 inducedValue = inducedReturn = inducedError = Runners.NO_RETURN;
                 if (res != Runners.NO_RETURN) {
                     var obj = new ObjectValue();
@@ -48,8 +47,6 @@ import me.topchetoeu.jscript.interop.Native;
                 break;
             }
         }
-
-        ctx.popFrame(frame);
 
         if (state == 1) {
             PromiseLib.then(ctx, frame.pop(), new NativeFunction(this::fulfill), new NativeFunction(this::reject));

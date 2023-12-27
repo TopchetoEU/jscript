@@ -477,7 +477,7 @@ public class Values {
 
         if (val instanceof Class) {
             if (ctx == null) return null;
-            else return ctx.environment().wrappers.getConstr((Class<?>)val);
+            else return ctx.environment.wrappers.getConstr((Class<?>)val);
         }
 
         return new NativeWrapper(val);

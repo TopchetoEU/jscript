@@ -58,7 +58,7 @@ public class Internals {
             }
             catch (InterruptedException e) { return; }
 
-            ctx.engine.pushMsg(false, ctx.environment(), func, null, args);
+            ctx.engine.pushMsg(false, ctx.environment, func, null, args);
         });
         thread.start();
 
@@ -75,7 +75,7 @@ public class Internals {
                 }
                 catch (InterruptedException e) { return; }
 
-                ctx.engine.pushMsg(false, ctx.environment(), func, null, args);
+                ctx.engine.pushMsg(false, ctx.environment, func, null, args);
             }
         });
 

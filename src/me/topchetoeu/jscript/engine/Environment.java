@@ -88,7 +88,7 @@ public class Environment implements Extensions {
     }
     public static FunctionValue regexConstructor(Extensions ext) {
         return ext.init(COMPILE_FUNC, new NativeFunction("RegExp", (ctx, thisArg, args) -> {
-            throw EngineException.ofError("Regular expressions not supported.").setCtx(ctx.environment(), ctx.engine);
+            throw EngineException.ofError("Regular expressions not supported.").setCtx(ctx.environment, ctx.engine);
         }));
     }
 
