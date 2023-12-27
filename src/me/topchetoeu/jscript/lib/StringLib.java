@@ -140,8 +140,8 @@ import me.topchetoeu.jscript.interop.NativeGetter;
         try {
             var _match = Values.getMember(ctx, term, Symbol.get("Symbol.match"));
             if (_match instanceof FunctionValue) match = (FunctionValue)_match;
-            else if (ctx.environment().has(Environment.REGEX_CONSTR)) {
-                var regex = Values.callNew(ctx, ctx.environment().get(Environment.REGEX_CONSTR), Values.toString(ctx, term), "");
+            else if (ctx.has(Environment.REGEX_CONSTR)) {
+                var regex = Values.callNew(ctx, ctx.get(Environment.REGEX_CONSTR), Values.toString(ctx, term), "");
                 _match = Values.getMember(ctx, regex, Symbol.get("Symbol.match"));
                 if (_match instanceof FunctionValue) match = (FunctionValue)_match;
                 else throw EngineException.ofError("Regular expressions don't support matching.");
@@ -165,8 +165,8 @@ import me.topchetoeu.jscript.interop.NativeGetter;
         }
         catch (IllegalArgumentException e) { }
 
-        if (match == null && ctx.environment().has(Environment.REGEX_CONSTR)) {
-            var regex = Values.callNew(ctx, ctx.environment().get(Environment.REGEX_CONSTR), Values.toString(ctx, term), "g");
+        if (match == null && ctx.has(Environment.REGEX_CONSTR)) {
+            var regex = Values.callNew(ctx, ctx.get(Environment.REGEX_CONSTR), Values.toString(ctx, term), "g");
             var _match = Values.getMember(ctx, regex, Symbol.get("Symbol.matchAll"));
             if (_match instanceof FunctionValue) match = (FunctionValue)_match;
             else throw EngineException.ofError("Regular expressions don't support matching.");

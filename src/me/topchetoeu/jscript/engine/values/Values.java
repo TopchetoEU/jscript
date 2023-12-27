@@ -347,10 +347,10 @@ public class Values {
         if (isObject(obj)) return object(obj).getPrototype(ctx);
         if (ctx == null) return null;
 
-        if (obj instanceof String) return ctx.environment().get(Environment.STRING_PROTO);
-        else if (obj instanceof Number) return ctx.environment().get(Environment.NUMBER_PROTO);
-        else if (obj instanceof Boolean) return ctx.environment().get(Environment.BOOL_PROTO);
-        else if (obj instanceof Symbol) return ctx.environment().get(Environment.SYMBOL_PROTO);
+        if (obj instanceof String) return ctx.get(Environment.STRING_PROTO);
+        else if (obj instanceof Number) return ctx.get(Environment.NUMBER_PROTO);
+        else if (obj instanceof Boolean) return ctx.get(Environment.BOOL_PROTO);
+        else if (obj instanceof Symbol) return ctx.get(Environment.SYMBOL_PROTO);
 
         return null;
     }
@@ -605,7 +605,7 @@ public class Values {
         var res = new ObjectValue();
 
         try {
-            var key = getMember(ctx, getMember(ctx, ctx.environment().get(Environment.SYMBOL_PROTO), "constructor"), "iterator");
+            var key = getMember(ctx, getMember(ctx, ctx.get(Environment.SYMBOL_PROTO), "constructor"), "iterator");
             res.defineProperty(ctx, key, new NativeFunction("", (_ctx, thisArg, args) -> thisArg));
         }
         catch (IllegalArgumentException | NullPointerException e) { }
@@ -630,7 +630,7 @@ public class Values {
         var res = new ObjectValue();
 
         try {
-            var key = getMemberPath(ctx, ctx.environment().get(Environment.SYMBOL_PROTO), "constructor", "asyncIterator");
+            var key = getMemberPath(ctx, ctx.get(Environment.SYMBOL_PROTO), "constructor", "asyncIterator");
             res.defineProperty(ctx, key, new NativeFunction("", (_ctx, thisArg, args) -> thisArg));
         }
         catch (IllegalArgumentException | NullPointerException e) { }

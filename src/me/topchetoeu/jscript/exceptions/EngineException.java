@@ -19,7 +19,7 @@ public class EngineException extends RuntimeException {
         public final Context ctx;
 
         public boolean visible() {
-            return ctx == null || ctx.environment() == null || !ctx.environment().get(Environment.HIDE_STACK, false);
+            return ctx == null || !ctx.get(Environment.HIDE_STACK, false);
         }
         public String toString() {
             var res = "";

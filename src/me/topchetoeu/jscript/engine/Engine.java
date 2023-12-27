@@ -1,21 +1,14 @@
 package me.topchetoeu.jscript.engine;
 
 import java.util.HashMap;
-import java.util.TreeSet;
 import java.util.concurrent.PriorityBlockingQueue;
 
 import me.topchetoeu.jscript.Filename;
-import me.topchetoeu.jscript.Location;
 import me.topchetoeu.jscript.compilation.FunctionBody;
-import me.topchetoeu.jscript.compilation.Instruction;
-import me.topchetoeu.jscript.engine.debug.DebugController;
-import me.topchetoeu.jscript.engine.frame.CodeFrame;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
 import me.topchetoeu.jscript.events.Awaitable;
 import me.topchetoeu.jscript.events.DataNotifier;
-import me.topchetoeu.jscript.exceptions.EngineException;
 import me.topchetoeu.jscript.exceptions.InterruptException;
-import me.topchetoeu.jscript.mapping.SourceMap;
 
 public class Engine {
     private class UncompiledFunction extends FunctionValue {

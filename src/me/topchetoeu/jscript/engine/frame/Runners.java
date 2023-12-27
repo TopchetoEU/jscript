@@ -198,9 +198,8 @@ public class Runners {
         return execLoadMember(ctx, instr, frame);
     }
     public static Object execLoadRegEx(Context ctx, Instruction instr, CodeFrame frame) {
-        var env = ctx.environment();
-        if (env.has(Environment.REGEX_CONSTR)) {
-            frame.push(ctx, Values.callNew(ctx, env.get(Environment.REGEX_CONSTR)));
+        if (ctx.has(Environment.REGEX_CONSTR)) {
+            frame.push(ctx, Values.callNew(ctx, ctx.get(Environment.REGEX_CONSTR)));
         }
         else {
             throw EngineException.ofSyntax("Regex is not supported.");

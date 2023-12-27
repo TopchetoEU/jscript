@@ -342,7 +342,7 @@ public class SimpleDebugger implements Debugger {
                 try {
                     defaultToString =
                         Values.getMember(ctx, obj, "toString") ==
-                        Values.getMember(ctx, ctx.environment().get(Environment.OBJECT_PROTO), "toString");
+                        Values.getMember(ctx, ctx.get(Environment.OBJECT_PROTO), "toString");
                 }
                 catch (Exception e) { }
 
