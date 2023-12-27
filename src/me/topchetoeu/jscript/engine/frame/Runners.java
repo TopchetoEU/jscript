@@ -199,7 +199,7 @@ public class Runners {
     }
     public static Object execLoadRegEx(Context ctx, Instruction instr, CodeFrame frame) {
         if (ctx.has(Environment.REGEX_CONSTR)) {
-            frame.push(ctx, Values.callNew(ctx, ctx.get(Environment.REGEX_CONSTR)));
+            frame.push(ctx, Values.callNew(ctx, ctx.get(Environment.REGEX_CONSTR), instr.get(0), instr.get(1)));
         }
         else {
             throw EngineException.ofSyntax("Regex is not supported.");
