@@ -35,8 +35,8 @@ public class GlobalScope implements ScopeRecord {
     }
     public void define(String name, Variable val) {
         obj.defineProperty(null, name,
-            new NativeFunction("get " + name, (ctx, th, a) -> val.get(ctx)),
-            new NativeFunction("set " + name, (ctx, th, args) -> { val.set(ctx, args.length > 0 ? args[0] : null); return null; }),
+            new NativeFunction("get " + name, args -> val.get(args.ctx)),
+            new NativeFunction("set " + name, args -> { val.set(args.ctx, args.get(0)); return null; }),
             true, true
         );
     }

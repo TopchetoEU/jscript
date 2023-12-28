@@ -94,15 +94,15 @@ public class Main {
     private static void initEnv() {
         environment = Internals.apply(environment);
 
-        environment.global.define(false, new NativeFunction("exit", (_ctx, th, args) -> {
+        environment.global.define(false, new NativeFunction("exit", args -> {
             exited = true;
             throw new InterruptException();
         }));
-        environment.global.define(false, new NativeFunction("go", (_ctx, th, args) -> {
+        environment.global.define(false, new NativeFunction("go", args -> {
             try {
                 var f = Path.of("do.js");
-                var func = _ctx.compile(new Filename("do", "do/" + j++ + ".js"), new String(Files.readAllBytes(f)));
-                return func.call(_ctx);
+                var func = args.ctx.compile(new Filename("do", "do/" + j++ + ".js"), new String(Files.readAllBytes(f)));
+                return func.call(args.ctx);
             }
             catch (IOException e) {
                 throw new EngineException("Couldn't open do.js");
@@ -119,7 +119,7 @@ public class Main {
     }
     private static void initEngine() {
         var ctx = new DebugContext();
-        // engine.globalEnvironment.add(DebugContext.ENV_KEY, ctx);
+        engine.globalEnvironment.add(DebugContext.ENV_KEY, ctx);
 
         debugServer.targets.put("target", (ws, req) -> new SimpleDebugger(ws).attach(ctx));
         engineTask = engine.start();

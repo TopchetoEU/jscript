@@ -5,6 +5,7 @@ import java.util.stream.Collectors;
 
 import me.topchetoeu.jscript.Filename;
 import me.topchetoeu.jscript.Location;
+import me.topchetoeu.jscript.engine.debug.DebugContext;
 import me.topchetoeu.jscript.engine.scope.GlobalScope;
 import me.topchetoeu.jscript.engine.values.ArrayValue;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
@@ -16,7 +17,6 @@ import me.topchetoeu.jscript.exceptions.EngineException;
 import me.topchetoeu.jscript.interop.NativeWrapperProvider;
 import me.topchetoeu.jscript.parsing.Parsing;
 
-// TODO: Remove hardcoded extensions form environment
 @SuppressWarnings("unchecked")
 public class Environment implements Extensions {
 
@@ -64,31 +64,31 @@ public class Environment implements Extensions {
     }
 
     public static FunctionValue compileFunc(Extensions ext) {
-        return ext.init(COMPILE_FUNC, new NativeFunction("compile", (ctx, thisArg, args) -> {
-            var source = Values.toString(ctx, args[0]);
-            var filename = Values.toString(ctx, args[1]);
-            var isDebug = Values.toBoolean(args[2]);
-
-            var env = Values.wrapper(Values.getMember(ctx, args[2], Symbol.get("env")), Environment.class);
+        return ext.init(COMPILE_FUNC, new NativeFunction("compile", args -> {
+            var source = args.getString(0);
+            var filename = args.getString(1);
+            var env = Values.wrapper(args.get(2, ObjectValue.class).getMember(args.ctx, Symbol.get("env")), Environment.class);
+            var isDebug = args.ctx.has(DebugContext.ENV_KEY);
             var res = new ObjectValue();
 
             var target = Parsing.compile(env, Filename.parse(filename), source);
             Engine.functions.putAll(target.functions);
             Engine.functions.remove(0l);
 
-            res.defineProperty(ctx, "function", target.func(env));
-            res.defineProperty(ctx, "mapChain", new ArrayValue());
+            res.defineProperty(args.ctx, "function", target.func(env));
+            res.defineProperty(args.ctx, "mapChain", new ArrayValue());
 
-            if (isDebug) {
-                res.defineProperty(ctx, "breakpoints", ArrayValue.of(ctx, target.breakpoints.stream().map(Location::toString).collect(Collectors.toList())));
-            }
+            if (isDebug) res.defineProperty(
+                args.ctx, "breakpoints",
+                ArrayValue.of(args.ctx, target.breakpoints.stream().map(Location::toString).collect(Collectors.toList()))
+            );
 
             return res;
         }));
     }
     public static FunctionValue regexConstructor(Extensions ext) {
-        return ext.init(COMPILE_FUNC, new NativeFunction("RegExp", (ctx, thisArg, args) -> {
-            throw EngineException.ofError("Regular expressions not supported.").setCtx(ctx.environment, ctx.engine);
+        return ext.init(COMPILE_FUNC, new NativeFunction("RegExp", args -> {
+            throw EngineException.ofError("Regular expressions not supported.").setCtx(args.ctx.environment, args.ctx.engine);
         }));
     }
 

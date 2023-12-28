@@ -7,7 +7,8 @@ import java.lang.annotation.Target;
 
 @Target({ ElementType.METHOD })
 @Retention(RetentionPolicy.RUNTIME)
-public @interface NativeConstructor {
-    public boolean thisArg() default false;
+public @interface Expose {
+    public String value() default "";
+    public ExposeType type() default ExposeType.METHOD;
+    public ExposeTarget target() default ExposeTarget.MEMBER;
 }
-
