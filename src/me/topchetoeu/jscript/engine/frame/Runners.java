@@ -198,7 +198,7 @@ public class Runners {
         return execLoadMember(ctx, instr, frame);
     }
     public static Object execLoadRegEx(Context ctx, Instruction instr, CodeFrame frame) {
-        if (ctx.has(Environment.REGEX_CONSTR)) {
+        if (ctx.hasNotNull(Environment.REGEX_CONSTR)) {
             frame.push(ctx, Values.callNew(ctx, ctx.get(Environment.REGEX_CONSTR), instr.get(0), instr.get(1)));
         }
         else {

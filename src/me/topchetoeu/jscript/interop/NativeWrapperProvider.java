@@ -1,6 +1,7 @@
 package me.topchetoeu.jscript.interop;
 
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
@@ -50,7 +51,7 @@ public class NativeWrapperProvider implements WrappersProvider {
         }
     }
     private static FunctionValue create(String name, Method method) {
-        return new NativeFunction(name, args -> call(args.ctx, name, method, args.thisArg, args));
+        return new NativeFunction(name, args -> call(args.ctx, name, method, args.self, args));
     }
     private static void checkSignature(Method method, boolean forceStatic, Class<?> ...params) {
         if (forceStatic && !Modifier.isStatic(method.getModifiers())) throw new IllegalArgumentException(String.format(
@@ -82,6 +83,28 @@ public class NativeWrapperProvider implements WrappersProvider {
         else return clazz.getSimpleName();
     }
 
+    private static void checkUnderscore(Member member) {
+        if (!member.getName().startsWith("__")) {
+            System.out.println("WARNING: The name of the exposed member '%s.%s' doesn't start with '__'.".formatted(
+                member.getDeclaringClass().getName(),
+                member.getName()
+            ));
+        }
+    }
+    private static String getName(Member member, String overrideName) {
+        if (overrideName == null) overrideName = "";
+        if (overrideName.isBlank()) {
+            var res = member.getName();
+            if (res.startsWith("__")) res = res.substring(2);
+            return res;
+        }
+        else return overrideName.trim();
+    }
+    private static Object getKey(String name) {
+        if (name.startsWith("@@")) return Symbol.get(name.substring(2));
+        else return name;
+    }
+
     private static void apply(ObjectValue obj, Environment env, ExposeTarget target, Class<?> clazz) {
         var getters = new HashMap<Object, FunctionValue>();
         var setters = new HashMap<Object, FunctionValue>();
@@ -92,11 +115,9 @@ public class NativeWrapperProvider implements WrappersProvider {
             for (var annotation : method.getAnnotationsByType(Expose.class)) {
                 if (!annotation.target().shouldApply(target)) continue;
 
-                Object key = annotation.value();
-                if (key.toString().startsWith("@@")) key = Symbol.get(key.toString().substring(2));
-                else if (key.equals("")) key = method.getName();
-                var name = key.toString();
-
+                checkUnderscore(method);
+                var name = getName(method, annotation.value());
+                var key = getKey(name);
                 var repeat = false;
 
                 switch (annotation.type()) {
@@ -107,19 +128,11 @@ public class NativeWrapperProvider implements WrappersProvider {
                         );
                         call(null, null, method, obj, null, env);
                         break;
-                    case FIELD:
-                        if (props.contains(key) || nonProps.contains(key)) repeat = true;
-                        else {
-                            checkSignature(method, true, Environment.class);
-                            obj.defineProperty(null, key, call(new Context(null, env), name, method, null, env));
-                            nonProps.add(key);
-                        }
-                        break;
                     case METHOD:
                         if (props.contains(key) || nonProps.contains(key)) repeat = true;
                         else {
                             checkSignature(method, false, Arguments.class);
-                            obj.defineProperty(null, key, create(name, method));
+                            obj.defineProperty(null, key, create(name, method), true, true, false);
                             nonProps.add(key);
                         }
                         break;
@@ -147,9 +160,55 @@ public class NativeWrapperProvider implements WrappersProvider {
                     name, clazz.getName(), target.toString()
                 ));
             }
+            for (var annotation : method.getAnnotationsByType(ExposeField.class)) {
+                if (!annotation.target().shouldApply(target)) continue;
+
+                checkUnderscore(method);
+                var name = getName(method, annotation.value());
+                var key = getKey(name);
+                var repeat = false;
+
+                if (props.contains(key) || nonProps.contains(key)) repeat = true;
+                else {
+                    checkSignature(method, true, Environment.class);
+                    obj.defineProperty(null, key, call(new Context(null, env), name, method, null, env), true, true, false);
+                    nonProps.add(key);
+                }
+
+                if (repeat)
+                    throw new IllegalArgumentException(String.format(
+                    "A member '%s' in the wrapper for '%s' of type '%s' is already present.",
+                    name, clazz.getName(), target.toString()
+                ));
+            }
+        }
+        for (var field : clazz.getDeclaredFields()) {
+            for (var annotation : field.getAnnotationsByType(ExposeField.class)) {
+                if (!annotation.target().shouldApply(target)) continue;
+
+                checkUnderscore(field);
+                var name = getName(field, annotation.value());
+                var key = getKey(name);
+                var repeat = false;
+
+                if (props.contains(key) || nonProps.contains(key)) repeat = true;
+                else {
+                    try {
+                        obj.defineProperty(null, key, Values.normalize(new Context(null, env), field.get(null)), true, true, false);
+                        nonProps.add(key);
+                    }
+                    catch (IllegalArgumentException | IllegalAccessException e) { }
+                }
+
+                if (repeat)
+                    throw new IllegalArgumentException(String.format(
+                    "A member '%s' in the wrapper for '%s' of type '%s' is already present.",
+                    name, clazz.getName(), target.toString()
+                ));
+            }
         }
 
-        for (var key : props) obj.defineProperty(null, key, getters.get(key), setters.get(key), true, true);
+        for (var key : props) obj.defineProperty(null, key, getters.get(key), setters.get(key), true, false);
     }
 
     private static Method getConstructor(Environment env, Class<?> clazz) {
@@ -186,6 +245,8 @@ public class NativeWrapperProvider implements WrappersProvider {
         FunctionValue res = constr == null ?
             new NativeFunction(getName(clazz), args -> { throw EngineException.ofError("This constructor is not invokable."); }) :
             create(getName(clazz), constr);
+
+        res.special = true;
 
         apply(res, ctx, ExposeTarget.CONSTRUCTOR, clazz);
 
@@ -267,11 +328,11 @@ public class NativeWrapperProvider implements WrappersProvider {
     private void initError() {
         var proto = new ObjectValue();
         proto.defineProperty(null, "message", new NativeFunction("message", args -> {
-            if (args.thisArg instanceof Throwable) return ((Throwable)args.thisArg).getMessage();
+            if (args.self instanceof Throwable) return ((Throwable)args.self).getMessage();
             else return null;
         }));
-        proto.defineProperty(null, "name", new NativeFunction("name", args -> getName(args.thisArg.getClass())));
-        proto.defineProperty(null, "toString", new NativeFunction("toString", args -> args.thisArg.toString()));
+        proto.defineProperty(null, "name", new NativeFunction("name", args -> getName(args.self.getClass())));
+        proto.defineProperty(null, "toString", new NativeFunction("toString", args -> args.self.toString()));
 
         var constr = makeConstructor(null, Throwable.class);
         proto.defineProperty(null, "constructor", constr, true, false, false);

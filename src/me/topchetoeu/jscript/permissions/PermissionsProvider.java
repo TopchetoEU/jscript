@@ -19,11 +19,11 @@ public interface PermissionsProvider {
     public static PermissionsProvider get(Extensions exts) {
         return new PermissionsProvider() {
             @Override public boolean hasPermission(Permission perm) {
-                if (exts.has(ENV_KEY)) return ((PermissionsProvider)exts.get(ENV_KEY)).hasPermission(perm);
+                if (exts.hasNotNull(ENV_KEY)) return ((PermissionsProvider)exts.get(ENV_KEY)).hasPermission(perm);
                 else return true;
             }
             @Override public boolean hasPermission(Permission perm, char delim) {
-                if (exts.has(ENV_KEY)) return ((PermissionsProvider)exts.get(ENV_KEY)).hasPermission(perm, delim);
+                if (exts.hasNotNull(ENV_KEY)) return ((PermissionsProvider)exts.get(ENV_KEY)).hasPermission(perm, delim);
                 else return true;
             }
         };

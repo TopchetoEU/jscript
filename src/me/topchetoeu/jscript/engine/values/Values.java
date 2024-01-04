@@ -523,9 +523,6 @@ public class Values {
             );
             return (T)res;
         }
-        if (clazz.isAssignableFrom(NativeWrapper.class)) {
-            return (T)new NativeWrapper(obj);
-        }
 
         if (clazz == String.class) return (T)toString(ctx, obj);
         if (clazz == Boolean.class || clazz == Boolean.TYPE) return (T)(Boolean)toBoolean(obj);
@@ -547,6 +544,9 @@ public class Values {
 
         if (obj == null) return null;
         if (clazz.isInstance(obj)) return (T)obj;
+        if (clazz.isAssignableFrom(NativeWrapper.class)) {
+            return (T)new NativeWrapper(obj);
+        }
 
         throw new ConvertException(type(obj), clazz.getSimpleName());
     }
@@ -609,7 +609,7 @@ public class Values {
 
         try {
             var key = getMember(ctx, getMember(ctx, ctx.get(Environment.SYMBOL_PROTO), "constructor"), "iterator");
-            res.defineProperty(ctx, key, new NativeFunction("", args -> args.thisArg));
+            res.defineProperty(ctx, key, new NativeFunction("", args -> args.self));
         }
         catch (IllegalArgumentException | NullPointerException e) { }
 
@@ -634,12 +634,12 @@ public class Values {
 
         try {
             var key = getMemberPath(ctx, ctx.get(Environment.SYMBOL_PROTO), "constructor", "asyncIterator");
-            res.defineProperty(ctx, key, new NativeFunction("", args -> args.thisArg));
+            res.defineProperty(ctx, key, new NativeFunction("", args -> args.self));
         }
         catch (IllegalArgumentException | NullPointerException e) { }
 
         res.defineProperty(ctx, "next", new NativeFunction("", args -> {
-            return PromiseLib.await(ctx, () -> {
+            return PromiseLib.await(args.ctx, () -> {
                 if (!it.hasNext()) return new ObjectValue(ctx, Map.of("done", true));
                 else {
                     var obj = new ObjectValue();

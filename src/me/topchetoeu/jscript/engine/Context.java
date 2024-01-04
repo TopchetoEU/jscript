@@ -6,6 +6,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import me.topchetoeu.jscript.Filename;
 import me.topchetoeu.jscript.Location;
@@ -28,25 +30,35 @@ public class Context implements Extensions {
 
     @Override public <T> void add(Symbol key, T obj) {
         if (environment != null) environment.add(key, obj);
-        else if (engine != null) engine.globalEnvironment.add(key, obj);
+        else if (engine != null) engine.add(key, obj);
     }
     @Override public <T> T get(Symbol key) {
         if (environment != null && environment.has(key)) return environment.get(key);
-        else if (engine != null && engine.globalEnvironment.has(key)) return engine.globalEnvironment.get(key);
+        else if (engine != null && engine.has(key)) return engine.get(key);
         return null;
     }
     @Override public boolean has(Symbol key) {
         return
             environment != null && environment.has(key) ||
-            engine != null && engine.globalEnvironment.has(key);
+            engine != null && engine.has(key);
     }
     @Override public boolean remove(Symbol key) {
         var res = false;
 
         if (environment != null) res |= environment.remove(key);
-        else if (engine != null) res |= engine.globalEnvironment.remove(key);
+        else if (engine != null) res |= engine.remove(key);
 
         return res;
+    }
+    @Override public Iterable<Symbol> keys() {
+        if (engine == null && environment == null) return List.of();
+        if (engine == null) return environment.keys();
+        if (environment == null) return engine.keys();
+
+        return () -> Stream.concat(
+            StreamSupport.stream(engine.keys().spliterator(), false),
+            StreamSupport.stream(environment.keys().spliterator(), false)
+        ).distinct().iterator();
     }
 
     public FunctionValue compile(Filename filename, String raw) {
@@ -54,7 +66,7 @@ public class Context implements Extensions {
         var result = Environment.compileFunc(this).call(this, null, raw, filename.toString(), new EnvironmentLib(env));
 
         var function = (FunctionValue)Values.getMember(this, result, "function");
-        if (!has(DebugContext.ENV_KEY)) return function;
+        if (!DebugContext.enabled(this)) return function;
 
         var rawMapChain = ((ArrayValue)Values.getMember(this, result, "mapChain")).toArray();
         var breakpoints = new TreeSet<>(
@@ -139,7 +151,9 @@ public class Context implements Extensions {
         this.engine = engine;
         this.stackSize = stackSize;
 
-        if (engine != null && stackSize > engine.maxStackFrames) throw EngineException.ofRange("Stack overflow!");
+        if (hasNotNull(Environment.MAX_STACK_COUNT) && stackSize > (int)get(Environment.MAX_STACK_COUNT)) {
+            throw EngineException.ofRange("Stack overflow!");
+        }
     }
 
     public Context(Engine engine) {

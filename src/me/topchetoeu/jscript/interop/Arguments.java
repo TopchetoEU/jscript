@@ -7,17 +7,28 @@ import me.topchetoeu.jscript.engine.values.NativeWrapper;
 import me.topchetoeu.jscript.engine.values.Values;
 
 public class Arguments {
-    public final Object thisArg;
+    public final Object self;
     public final Object[] args;
     public final Context ctx;
 
-    public <T> T get(int i, Class<T> type) {
+    public int n() {
+        return args.length;
+    }
+
+    public boolean has(int i) {
+        return i == -1 || i >= 0 && i < args.length;
+    }
+
+    public <T> T self(Class<T> type) {
+        return convert(-1, type);
+    }
+    public <T> T convert(int i, Class<T> type) {
         return Values.convert(ctx, get(i), type);
     }
     public Object get(int i, boolean unwrap) {
         Object res = null;
 
-        if (i == -1) res = thisArg;
+        if (i == -1) res = self;
         if (i >= 0 && i < args.length) res = args[i];
         if (unwrap && res instanceof NativeWrapper) res = ((NativeWrapper)res).wrapped;
 
@@ -26,70 +37,85 @@ public class Arguments {
     public Object get(int i) {
         return get(i, false);
     }
+    public Object getOrDefault(int i, Object def) {
+        if (i < 0 || i >= args.length) return def;
+        else return get(i);
+    }
+
+    public Arguments slice(int start) {
+        var res = new Object[Math.max(0, args.length - start)];
+        for (int j = start; j < args.length; j++) res[j - start] = get(j);
+        return new Arguments(ctx, args, res);
+    }
 
     @SuppressWarnings("unchecked")
-    public <T> T[] slice(int i, Class<T> type) {
-        var res = Array.newInstance(type, Math.max(0, args.length - i));
-        for (; i < args.length; i++) Array.set(res, i - args.length, get(i, type));
-        return ((T[])res);
+    public <T> T[] convert(Class<T> type) {
+        var res = Array.newInstance(type, args.length);
+        for (int i = 0; i < args.length; i++) Array.set(res, i, convert(i, type));
+        return (T[])res;
     }
-    public Object slice(int i, boolean unwrap) {
-        var res = new Object[Math.max(0, args.length - i)];
-        for (; i < args.length; i++) res[i - args.length] = get(i, unwrap);
+    public int[] convertInt() {
+        var res = new int[args.length];
+        for (int i = 0; i < args.length; i++) res[i] = convert(i, Integer.class);
         return res;
     }
-    public Object slice(int i) {
-        return slice(i, false);
-    }
-
-    public int[] sliceInt(int i) {
-        var res = new int[Math.max(0, args.length - i)];
-        for (; i < args.length; i++) res[i - args.length] = get(i, Integer.class);
+    public long[] convertLong() {
+        var res = new long[Math.max(0, args.length)];
+        for (int i = 0; i < args.length; i++) res[i] = convert(i, Long.class);
         return res;
     }
-    public long[] sliceLong(int i) {
-        var res = new long[Math.max(0, args.length - i)];
-        for (; i < args.length; i++) res[i - args.length] = get(i, Long.class);
+    public short[] sliceShort() {
+        var res = new short[Math.max(0, args.length)];
+        for (int i = 0; i < args.length; i++) res[i] = convert(i, Short.class);
         return res;
     }
-    public short[] sliceShort(int i) {
-        var res = new short[Math.max(0, args.length - i)];
-        for (; i < args.length; i++) res[i - args.length] = get(i, Short.class);
+    public float[] sliceFloat() {
+        var res = new float[Math.max(0, args.length)];
+        for (int i = 0; i < args.length; i++) res[i] = convert(i, Float.class);
         return res;
     }
-    public float[] sliceFloat(int i) {
-        var res = new float[Math.max(0, args.length - i)];
-        for (; i < args.length; i++) res[i - args.length] = get(i, Float.class);
+    public double[] sliceDouble() {
+        var res = new double[Math.max(0, args.length)];
+        for (int i = 0; i < args.length; i++) res[i] = convert(i, Double.class);
         return res;
     }
-    public double[] sliceDouble(int i) {
-        var res = new double[Math.max(0, args.length - i)];
-        for (; i < args.length; i++) res[i - args.length] = get(i, Double.class);
+    public byte[] sliceByte() {
+        var res = new byte[Math.max(0, args.length)];
+        for (int i = 0; i < args.length; i++) res[i] = convert(i, Byte.class);
         return res;
     }
-    public byte[] sliceByte(int i) {
-        var res = new byte[Math.max(0, args.length - i)];
-        for (; i < args.length; i++) res[i - args.length] = get(i, Byte.class);
+    public char[] sliceChar() {
+        var res = new char[Math.max(0, args.length)];
+        for (int i = 0; i < args.length; i++) res[i] = convert(i, Character.class);
         return res;
     }
-    public char[] sliceChar(int i) {
-        var res = new char[Math.max(0, args.length - i)];
-        for (; i < args.length; i++) res[i - args.length] = get(i, Character.class);
-        return res;
-    }
-    public boolean[] sliceBool(int i) {
-        var res = new boolean[Math.max(0, args.length - i)];
-        for (; i < args.length; i++) res[i - args.length] = get(i, Boolean.class);
+    public boolean[] sliceBool() {
+        var res = new boolean[Math.max(0, args.length)];
+        for (int i = 0; i < args.length; i++) res[i] = convert(i, Boolean.class);
         return res;
     }
 
     public String getString(int i) { return Values.toString(ctx, get(i)); }
     public boolean getBoolean(int i) { return Values.toBoolean(get(i)); }
     public int getInt(int i) { return (int)Values.toNumber(ctx, get(i)); }
+    public long getLong(int i) { return (long)Values.toNumber(ctx, get(i)); }
+    public double getDouble(int i) { return Values.toNumber(ctx, get(i)); }
+    public float getFloat(int i) { return (float)Values.toNumber(ctx, get(i)); }
+
+    public int getInt(int i, int def) {
+        var res = get(i);
+        if (res == null) return def;
+        else return (int)Values.toNumber(ctx, res);
+    }
+    public String getString(int i, String def) {
+        var res = get(i);
+        if (res == null) return def;
+        else return Values.toString(ctx, res);
+    }
 
     public Arguments(Context ctx, Object thisArg, Object... args) {
         this.ctx = ctx;
         this.args = args;
-        this.thisArg = thisArg;
+        this.self = thisArg;
     }
 }

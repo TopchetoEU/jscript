@@ -66,6 +66,11 @@ public class EngineException extends RuntimeException {
         if (this.engine == null) this.engine = engine;
         return this;
     }
+    public EngineException setCtx(Context ctx) {
+        if (this.env == null) this.env = ctx.environment;
+        if (this.engine == null) this.engine = ctx.engine;
+        return this;
+    }
 
     public String toString(Context ctx) {
         var ss = new StringBuilder();

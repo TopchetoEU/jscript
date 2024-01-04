@@ -119,19 +119,18 @@ public class Main {
     }
     private static void initEngine() {
         var ctx = new DebugContext();
-        engine.globalEnvironment.add(DebugContext.ENV_KEY, ctx);
+        engine.add(DebugContext.ENV_KEY, ctx);
 
         debugServer.targets.put("target", (ws, req) -> new SimpleDebugger(ws).attach(ctx));
         engineTask = engine.start();
         debugTask = debugServer.start(new InetSocketAddress("127.0.0.1", 9229), true);
     }
     private static void initTypescript() {
+        var tsEnv = Internals.apply(new Environment());
+        var bsEnv = Internals.apply(new Environment());
+
         try {
-            var tsEnv = Internals.apply(new Environment());
-            tsEnv.add(Environment.HIDE_STACK, true);
             tsEnv.global.define(null, "module", false, new ObjectValue());
-            var bsEnv = Internals.apply(new Environment());
-            bsEnv.add(Environment.HIDE_STACK, true);
 
             engine.pushMsg(
                 false, tsEnv,
@@ -152,6 +151,9 @@ public class Main {
         catch (EngineException e) {
             Values.printError(e, "(while initializing TS)");
         }
+
+        bsEnv.add(Environment.HIDE_STACK, true);
+        tsEnv.add(Environment.HIDE_STACK, true);
     }
 
     public static void main(String args[]) {

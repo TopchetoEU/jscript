@@ -27,6 +27,7 @@ public class Environment implements Extensions {
 
     public static final Symbol REGEX_CONSTR = Symbol.get("Environment.regexConstructor");
     public static final Symbol STACK = Symbol.get("Environment.stack");
+    public static final Symbol MAX_STACK_COUNT = Symbol.get("Environment.maxStackCount");
     public static final Symbol HIDE_STACK = Symbol.get("Environment.hideStack");
 
     public static final Symbol OBJECT_PROTO = Symbol.get("Environment.objectPrototype");
@@ -62,13 +63,16 @@ public class Environment implements Extensions {
     @Override public boolean has(Symbol key) {
         return data.containsKey(key);
     }
+    @Override public Iterable<Symbol> keys() {
+        return data.keySet();
+    }
 
     public static FunctionValue compileFunc(Extensions ext) {
         return ext.init(COMPILE_FUNC, new NativeFunction("compile", args -> {
             var source = args.getString(0);
             var filename = args.getString(1);
-            var env = Values.wrapper(args.get(2, ObjectValue.class).getMember(args.ctx, Symbol.get("env")), Environment.class);
-            var isDebug = args.ctx.has(DebugContext.ENV_KEY);
+            var env = Values.wrapper(args.convert(2, ObjectValue.class).getMember(args.ctx, Symbol.get("env")), Environment.class);
+            var isDebug = DebugContext.enabled(args.ctx);
             var res = new ObjectValue();
 
             var target = Parsing.compile(env, Filename.parse(filename), source);
@@ -92,7 +96,7 @@ public class Environment implements Extensions {
         }));
     }
 
-    public Environment fork() {
+    public Environment copy() {
         var res = new Environment(null, global);
 
         res.wrappers = wrappers.fork(res);
@@ -102,7 +106,7 @@ public class Environment implements Extensions {
         return res;
     }
     public Environment child() {
-        var res = fork();
+        var res = copy();
         res.global = res.global.globalChild();
         return res;
     }

@@ -301,6 +301,8 @@ public class SimpleDebugger implements Debugger {
     }
     private JSONMap serializeObj(Context ctx, Object val, boolean byValue) {
         val = Values.normalize(null, val);
+        ctx = new Context(ctx.engine.copy(), ctx.environment);
+        ctx.engine.add(DebugContext.IGNORE, true);
 
         if (val == Values.NULL) {
             return new JSONMap()
@@ -477,7 +479,7 @@ public class SimpleDebugger implements Debugger {
     private RunResult run(Frame codeFrame, String code) {
         if (codeFrame == null) return new RunResult(null, code, new EngineException("Invalid code frame!"));
         var engine = new Engine();
-        var env = codeFrame.func.environment.fork();
+        var env = codeFrame.func.environment.copy();
 
         env.global = new GlobalScope(codeFrame.local);
 

@@ -15,6 +15,7 @@ import me.topchetoeu.jscript.mapping.SourceMap;
 
 public class DebugContext implements DebugController {
     public static final Symbol ENV_KEY = Symbol.get("Engine.debug");
+    public static final Symbol IGNORE = Symbol.get("Engine.ignoreDebug");
 
     private HashMap<Filename, String> sources;
     private HashMap<Filename, TreeSet<Location>> bpts;
@@ -89,8 +90,11 @@ public class DebugContext implements DebugController {
         this(true);
     }
 
+    public static boolean enabled(Extensions exts) {
+        return exts.hasNotNull(ENV_KEY) && !exts.has(IGNORE);
+    }
     public static DebugContext get(Extensions exts) {
-        if (exts.has(ENV_KEY)) return exts.get(ENV_KEY);
+        if (enabled(exts)) return exts.get(ENV_KEY);
         else return new DebugContext(false);
     }
 }
