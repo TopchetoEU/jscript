@@ -238,6 +238,10 @@ public class DateLib {
         return normal.getTime().toString();
     }
 
+    @Override public String toString() {
+        return __toString();
+    }
+
     public DateLib(long timestamp) {
         normal = Calendar.getInstance();
         utc = Calendar.getInstance();

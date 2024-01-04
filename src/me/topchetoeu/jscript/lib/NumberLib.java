@@ -31,6 +31,12 @@ public class NumberLib {
 
     public final double value;
 
+    @Override public String toString() { return value + ""; }
+
+    public NumberLib(double val) {
+        this.value = val;
+    }
+
     @Expose(target = ExposeTarget.STATIC)
     public static boolean __isFinite(Arguments args) { return Double.isFinite(args.getDouble(0)); }
     @Expose(target = ExposeTarget.STATIC)
@@ -59,11 +65,7 @@ public class NumberLib {
         return Values.toString(args.ctx, args.getDouble(0));
     }
     @Expose public static double __valueOf(Arguments args) {
-        if (args.self instanceof NumberLib) return args.self(NumberLib.class).value;
+        if (Values.isWrapper(args.self, NumberLib.class)) return Values.wrapper(args.self, NumberLib.class).value;
         else return Values.toNumber(args.ctx, args.self);
-    }
-
-    public NumberLib(double val) {
-        this.value = val;
     }
 }

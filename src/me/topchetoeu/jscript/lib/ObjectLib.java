@@ -80,8 +80,8 @@ public class ObjectLib {
         var obj = args.convert(0, ObjectValue.class);
         var attrib = args.convert(1, ObjectValue.class);
 
-        for (var key : Values.getMembers(null, obj, false, false)) {
-            obj.defineProperty(args.ctx, key, attrib.getMember(args.ctx, key));
+        for (var key : Values.getMembers(null, attrib, false, false)) {
+            __defineProperty(new Arguments(args.ctx, null, obj, key, attrib.getMember(args.ctx, key)));
         }
 
         return obj;
@@ -89,7 +89,7 @@ public class ObjectLib {
 
     @Expose(target = ExposeTarget.STATIC)
     public static ArrayValue __keys(Arguments args) {
-        var obj = args.convert(0, ObjectValue.class);
+        var obj = args.get(0);
         var all = args.getBoolean(1);
         var res = new ArrayValue();
 
@@ -102,7 +102,7 @@ public class ObjectLib {
     @Expose(target = ExposeTarget.STATIC)
     public static ArrayValue __entries(Arguments args) {
         var res = new ArrayValue();
-        var obj = args.convert(0, ObjectValue.class);
+        var obj = args.get(0);
         var all = args.getBoolean(1);
 
         for (var key : Values.getMembers(args.ctx, obj, true, false)) {
@@ -114,11 +114,11 @@ public class ObjectLib {
     @Expose(target = ExposeTarget.STATIC)
     public static ArrayValue __values(Arguments args) {
         var res = new ArrayValue();
-        var obj = args.convert(0, ObjectValue.class);
+        var obj = args.get(0);
         var all = args.getBoolean(1);
 
         for (var key : Values.getMembers(args.ctx, obj, true, false)) {
-            if (all || key instanceof String) res.set(args.ctx, res.size(), Values.getMember(args.ctx, obj, key));
+            if (all || !(key instanceof Symbol)) res.set(args.ctx, res.size(), Values.getMember(args.ctx, obj, key));
         }
 
         return res;
@@ -139,9 +139,9 @@ public class ObjectLib {
     }
 
     @Expose(target = ExposeTarget.STATIC)
-    public static ArrayValue    __getOwnPropertyNames(Arguments args) {
+    public static ArrayValue __getOwnPropertyNames(Arguments args) {
         var res = new ArrayValue();
-        var obj = args.convert(0, ObjectValue.class);
+        var obj = args.get(0);
         var all = args.getBoolean(1);
 
         for (var key : Values.getMembers(args.ctx, obj, true, true)) {
@@ -152,7 +152,7 @@ public class ObjectLib {
     }
     @Expose(target = ExposeTarget.STATIC)
     public static ArrayValue __getOwnPropertySymbols(Arguments args) {
-        var obj = args.convert(0, ObjectValue.class);
+        var obj = args.get(0);
         var res = new ArrayValue();
 
         for (var key : Values.getMembers(args.ctx, obj, true, true)) {
@@ -208,17 +208,20 @@ public class ObjectLib {
     @Expose(target = ExposeTarget.STATIC)
     public static boolean __isExtensible(Arguments args) {
         var obj = args.get(0);
-        return obj instanceof ObjectValue && ((ObjectValue)obj).extensible();
+        if (!(obj instanceof ObjectValue)) return false;
+        return ((ObjectValue)obj).extensible();
     }
     @Expose(target = ExposeTarget.STATIC)
     public static boolean __isSealed(Arguments args) {
         var obj = args.get(0);
 
-        if (obj instanceof ObjectValue && ((ObjectValue)obj).extensible()) {
-            var _obj = (ObjectValue)obj;
-            for (var key : _obj.keys(true)) {
-                if (_obj.memberConfigurable(key)) return false;
-            }
+        if (!(obj instanceof ObjectValue)) return true;
+        var _obj = (ObjectValue)obj;
+
+        if (_obj.extensible()) return false;
+
+        for (var key : _obj.keys(true)) {
+            if (_obj.memberConfigurable(key)) return false;
         }
 
         return true;
@@ -227,12 +230,14 @@ public class ObjectLib {
     public static boolean __isFrozen(Arguments args) {
         var obj = args.get(0);
 
-        if (obj instanceof ObjectValue && ((ObjectValue)obj).extensible()) {
-            var _obj = (ObjectValue)obj;
-            for (var key : _obj.keys(true)) {
-                if (_obj.memberConfigurable(key)) return false;
-                if (_obj.memberWritable(key)) return false;
-            }
+        if (!(obj instanceof ObjectValue)) return true;
+        var _obj = (ObjectValue)obj;
+
+        if (_obj.extensible()) return false;
+
+        for (var key : _obj.keys(true)) {
+            if (_obj.memberConfigurable(key)) return false;
+            if (_obj.memberWritable(key)) return false;
         }
 
         return true;

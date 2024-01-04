@@ -19,6 +19,6 @@ public class JSONLib {
     }
     @Expose(target = ExposeTarget.STATIC)
     public static String __stringify(Arguments args) {
-        return me.topchetoeu.jscript.json.JSON.stringify(JSON.fromJs(args.ctx, args.get(0)));
+        return JSON.stringify(JSON.fromJs(args.ctx, args.get(0)));
     }
 }

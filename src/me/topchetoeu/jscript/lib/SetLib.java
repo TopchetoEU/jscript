@@ -24,13 +24,13 @@ public class SetLib {
     }
 
     @Expose public ObjectValue __entries(Arguments args) {
-        return ArrayValue.of(args.ctx, set.stream().map(v -> new ArrayValue(args.ctx, v, v)).collect(Collectors.toList()));
+        return Values.toJSIterator(args.ctx, set.stream().map(v -> new ArrayValue(args.ctx, v, v)).collect(Collectors.toList()));
     }
     @Expose public ObjectValue __keys(Arguments args) {
-        return ArrayValue.of(args.ctx, set);
+        return Values.toJSIterator(args.ctx, set);
     }
     @Expose public ObjectValue __values(Arguments args) {
-        return ArrayValue.of(args.ctx, set);
+        return Values.toJSIterator(args.ctx, set);
     }
 
     @Expose public Object __add(Arguments args) {

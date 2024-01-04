@@ -8,6 +8,7 @@ import me.topchetoeu.jscript.exceptions.ConvertException;
 import me.topchetoeu.jscript.interop.WrapperName;
 import me.topchetoeu.jscript.interop.Arguments;
 import me.topchetoeu.jscript.interop.Expose;
+import me.topchetoeu.jscript.interop.ExposeConstructor;
 import me.topchetoeu.jscript.interop.ExposeField;
 
 @WrapperName("Error")
@@ -36,7 +37,7 @@ public class ErrorLib {
         else return "[Invalid error]";
     }
 
-    @Expose public static ObjectValue __constructor(Arguments args) {
+    @ExposeConstructor public static ObjectValue __constructor(Arguments args) {
         var target = new ObjectValue();
         var message = args.getString(0, "");
 

@@ -37,7 +37,7 @@ public class MapLib {
     }
 
     @Expose public ObjectValue __entries(Arguments args) {
-        return ArrayValue.of(args.ctx, map
+        return Values.toJSIterator(args.ctx, map
             .entrySet()
             .stream()
             .map(v -> new ArrayValue(args.ctx, v.getKey(), v.getValue()))
@@ -45,10 +45,10 @@ public class MapLib {
         );
     }
     @Expose public ObjectValue __keys(Arguments args) {
-        return ArrayValue.of(args.ctx, map.keySet());
+        return Values.toJSIterator(args.ctx, map.keySet());
     }
     @Expose public ObjectValue __values(Arguments args) {
-        return ArrayValue.of(args.ctx, map.values());
+        return Values.toJSIterator(args.ctx, map.values());
     }
 
     @Expose public Object __get(Arguments args) {

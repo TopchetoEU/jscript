@@ -5,6 +5,7 @@ import java.util.Map;
 
 import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.engine.values.Symbol;
+import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.exceptions.EngineException;
 import me.topchetoeu.jscript.interop.Arguments;
 import me.topchetoeu.jscript.interop.Expose;
@@ -40,7 +41,7 @@ public class SymbolLib {
 
     private static Symbol passThis(Arguments args, String funcName) {
         var val = args.self;
-        if (val instanceof SymbolLib) return ((SymbolLib)val).value;
+        if (Values.isWrapper(val, SymbolLib.class)) return Values.wrapper(val, SymbolLib.class).value;
         else if (val instanceof Symbol) return (Symbol)val;
         else throw EngineException.ofType(String.format("'%s' may only be called upon object and primitve symbols.", funcName));
     }
@@ -75,6 +76,6 @@ public class SymbolLib {
     }
     @Expose(target = ExposeTarget.STATIC)
     public static String __keyFor(Arguments args) {
-        return passThis(args.slice(-1), "keyFor").value;
+        return passThis(new Arguments(args.ctx, args.get(0)), "keyFor").value;
     }
 }

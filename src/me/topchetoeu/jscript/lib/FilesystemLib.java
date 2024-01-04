@@ -18,13 +18,17 @@ import me.topchetoeu.jscript.filesystem.FilesystemException.FSCode;
 import me.topchetoeu.jscript.interop.Arguments;
 import me.topchetoeu.jscript.interop.Expose;
 import me.topchetoeu.jscript.interop.ExposeField;
+import me.topchetoeu.jscript.interop.ExposeTarget;
 import me.topchetoeu.jscript.interop.WrapperName;
 
 @WrapperName("Filesystem")
 public class FilesystemLib {
-    @ExposeField public static final int __SEEK_SET = 0;
-    @ExposeField public static final int __SEEK_CUR = 1;
-    @ExposeField public static final int __SEEK_END = 2;
+    @ExposeField(target = ExposeTarget.STATIC)
+    public static final int __SEEK_SET = 0;
+    @ExposeField(target = ExposeTarget.STATIC)
+    public static final int __SEEK_CUR = 1;
+    @ExposeField(target = ExposeTarget.STATIC)
+    public static final int __SEEK_END = 2;
 
     private static Filesystem fs(Context ctx) {
         var fs = Filesystem.get(ctx);
@@ -32,11 +36,13 @@ public class FilesystemLib {
         throw EngineException.ofError("Current environment doesn't have a file system.");
     }
 
-    @Expose public static String __normalize(Arguments args) {
+    @Expose(target = ExposeTarget.STATIC)
+    public static String __normalize(Arguments args) {
         return fs(args.ctx).normalize(args.convert(String.class));
     }
 
-    @Expose public static PromiseLib __open(Arguments args) {
+    @Expose(target = ExposeTarget.STATIC)
+    public static PromiseLib __open(Arguments args) {
         return PromiseLib.await(args.ctx, () -> {
             var fs = fs(args.ctx);
             var path = fs.normalize(args.getString(0));
@@ -53,7 +59,8 @@ public class FilesystemLib {
             catch (FilesystemException e) { throw e.toEngineException(); }
         });
     }
-    @Expose public static ObjectValue __ls(Arguments args) {
+    @Expose(target = ExposeTarget.STATIC)
+    public static ObjectValue __ls(Arguments args) {
 
         return Values.toJSAsyncIterator(args.ctx, new Iterator<>() {
             private boolean failed, done;
@@ -108,7 +115,8 @@ public class FilesystemLib {
             }
         });
     }
-    @Expose public static PromiseLib __mkdir(Arguments args) throws IOException {
+    @Expose(target = ExposeTarget.STATIC)
+    public static PromiseLib __mkdir(Arguments args) throws IOException {
         return PromiseLib.await(args.ctx, () -> {
             try {
                 fs(args.ctx).create(args.getString(0), EntryType.FOLDER);
@@ -118,7 +126,8 @@ public class FilesystemLib {
         });
 
     }
-    @Expose public static PromiseLib __mkfile(Arguments args) throws IOException {
+    @Expose(target = ExposeTarget.STATIC)
+    public static PromiseLib __mkfile(Arguments args) throws IOException {
         return PromiseLib.await(args.ctx, () -> {
             try {
                 fs(args.ctx).create(args.getString(0), EntryType.FILE);
@@ -127,7 +136,8 @@ public class FilesystemLib {
             catch (FilesystemException e) { throw e.toEngineException(); }
         });
     }
-    @Expose public static PromiseLib __rm(Arguments args) throws IOException {
+    @Expose(target = ExposeTarget.STATIC)
+    public static PromiseLib __rm(Arguments args) throws IOException {
         return PromiseLib.await(args.ctx, () -> {
             try {
                 var fs = fs(args.ctx);
@@ -157,7 +167,8 @@ public class FilesystemLib {
             catch (FilesystemException e) { throw e.toEngineException(); }
         });
     }
-    @Expose public static PromiseLib __stat(Arguments args) throws IOException {
+    @Expose(target = ExposeTarget.STATIC)
+    public static PromiseLib __stat(Arguments args) throws IOException {
         return PromiseLib.await(args.ctx, () -> {
             try {
                 var fs = fs(args.ctx);
@@ -172,7 +183,8 @@ public class FilesystemLib {
             catch (FilesystemException e) { throw e.toEngineException(); }
         });
     }
-    @Expose public static PromiseLib __exists(Arguments args) throws IOException {
+    @Expose(target = ExposeTarget.STATIC)
+    public static PromiseLib __exists(Arguments args) throws IOException {
         return PromiseLib.await(args.ctx, () -> {
             try { fs(args.ctx).stat(args.getString(0)); return true; }
             catch (FilesystemException e) { return false; }

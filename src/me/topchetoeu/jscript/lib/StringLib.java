@@ -21,9 +21,15 @@ import me.topchetoeu.jscript.interop.WrapperName;
 public class StringLib {
     public final String value;
 
+    @Override public String toString() { return value; }
+
+    public StringLib(String val) {
+        this.value = val;
+    }
+
     private static String passThis(Arguments args, String funcName) {
         var val = args.self;
-        if (val instanceof StringLib) return ((StringLib)val).value;
+        if (Values.isWrapper(val, StringLib.class)) return Values.wrapper(val, StringLib.class).value;
         else if (val instanceof String) return (String)val;
         else throw EngineException.ofType(String.format("'%s' may only be called upon object and primitve strings.", funcName));
     }
@@ -43,16 +49,22 @@ public class StringLib {
 
     @Expose public static String __substring(Arguments args) {
         var val = passThis(args, "substring");
-        var start = normalizeI(args.getInt(0), val.length(), true);
-        var end = normalizeI(args.getInt(1, val.length()), val.length(), true);
+        var start = Math.max(0, Math.min(val.length(), args.getInt(0)));
+        var end = Math.max(0, Math.min(val.length(), args.getInt(1, val.length())));
+
+        if (end < start) {
+            var tmp = end;
+            end = start;
+            start = tmp;
+        }
 
         return val.substring(start, end);
     }
     @Expose public static String __substr(Arguments args) {
         var val = passThis(args, "substr");
         var start = normalizeI(args.getInt(0), val.length(), true);
-        int len = normalizeI(args.getInt(0), val.length() - start, true);
-        return val.substring(start, start + len);
+        int end = normalizeI(args.getInt(1, val.length() - start) + start, val.length(), true);
+        return val.substring(start, end);
     }
 
     @Expose public static String __toLowerCase(Arguments args) {
@@ -206,6 +218,7 @@ public class StringLib {
         var pattern = Pattern.quote(Values.toString(args.ctx, term));
 
         if (lim == null) parts = val.split(pattern);
+        else if ((double)lim < 1) return new ArrayValue();
         else if (sensible) parts = val.split(pattern, (int)(double)lim);
         else {
             var limit = (int)(double)lim;
@@ -232,8 +245,11 @@ public class StringLib {
     }
 
     @Expose public static String __slice(Arguments args) {
-        passThis(args, "slice");
-        return __substring(args);
+        var self = passThis(args, "slice");
+        var start = normalizeI(args.getInt(0), self.length(), false);
+        var end = normalizeI(args.getInt(1, self.length()), self.length(), false);
+
+        return __substring(new Arguments(args.ctx, self, start, end));
     }
 
     @Expose public static String __concat(Arguments args) {
@@ -254,7 +270,7 @@ public class StringLib {
     }
 
     @ExposeConstructor public static Object __constructor(Arguments args) {
-        var val = args.getString(0);
+        var val = args.getString(0, "");
         if (args.self instanceof ObjectValue) return new StringLib(val);
         else return val;
     }
@@ -271,9 +287,5 @@ public class StringLib {
         char[] arr = new char[val.length];
         for (var i = 0; i < val.length; i++) arr[i] = (char)val[i];
         return new String(arr);
-    }
-
-    public StringLib(String val) {
-        this.value = val;
     }
 }
