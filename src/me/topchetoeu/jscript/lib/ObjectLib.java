@@ -1,171 +1,219 @@
 package me.topchetoeu.jscript.lib;
 
-import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.values.ArrayValue;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
 import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.engine.values.Symbol;
 import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.exceptions.EngineException;
-import me.topchetoeu.jscript.interop.Native;
-import me.topchetoeu.jscript.interop.NativeConstructor;
+import me.topchetoeu.jscript.interop.Arguments;
+import me.topchetoeu.jscript.interop.Expose;
+import me.topchetoeu.jscript.interop.ExposeConstructor;
+import me.topchetoeu.jscript.interop.ExposeTarget;
+import me.topchetoeu.jscript.interop.WrapperName;
 
-@Native("Object") public class ObjectLib {
-    @Native public static ObjectValue assign(Context ctx, ObjectValue dst, Object... src) {
-        for (var obj : src) {
-            for (var key : Values.getMembers(ctx, obj, true, true)) {
-                Values.setMember(ctx, dst, key, Values.getMember(ctx, obj, key));
+@WrapperName("Object")
+public class ObjectLib {
+    @Expose(target = ExposeTarget.STATIC)
+    public static Object __assign(Arguments args) {
+        for (var obj : args.slice(1).args) {
+            for (var key : Values.getMembers(args.ctx, obj, true, true)) {
+                Values.setMember(args.ctx, args.get(0), key, Values.getMember(args.ctx, obj, key));
             }
         }
-        return dst;
+        return args.get(0);
     }
-    @Native public static ObjectValue create(Context ctx, ObjectValue proto, ObjectValue props) {
+    @Expose(target = ExposeTarget.STATIC)
+    public static ObjectValue __create(Arguments args) {
         var obj = new ObjectValue();
-        obj.setPrototype(ctx, proto);
-        return defineProperties(ctx, obj, props);
+        obj.setPrototype(args.ctx, args.get(0));
+
+        if (args.n() >= 1) {
+            var newArgs = new Object[args.n()];
+            System.arraycopy(args.args, 1, args, 1, args.n() - 1);
+            newArgs[0] = obj;
+
+            __defineProperties(new Arguments(args.ctx, null, newArgs));
+        }
+
+        return obj;
     }
 
-    @Native public static ObjectValue defineProperty(Context ctx, ObjectValue obj, Object key, ObjectValue attrib) {
-        var hasVal = attrib.hasMember(ctx, "value", false);
-        var hasGet = attrib.hasMember(ctx, "get", false);
-        var hasSet = attrib.hasMember(ctx, "set", false);
+    @Expose(target = ExposeTarget.STATIC)
+    public static ObjectValue __defineProperty(Arguments args) {
+        var obj = args.convert(0, ObjectValue.class);
+        var key = args.get(1);
+        var attrib = args.convert(2, ObjectValue.class);
+
+        var hasVal = attrib.hasMember(args.ctx, "value", false);
+        var hasGet = attrib.hasMember(args.ctx, "get", false);
+        var hasSet = attrib.hasMember(args.ctx, "set", false);
 
         if (hasVal) {
             if (hasGet || hasSet) throw EngineException.ofType("Cannot specify a value and accessors for a property.");
             if (!obj.defineProperty(
-                ctx, key,
-                attrib.getMember(ctx, "value"),
-                Values.toBoolean(attrib.getMember(ctx, "writable")),
-                Values.toBoolean(attrib.getMember(ctx, "configurable")),
-                Values.toBoolean(attrib.getMember(ctx, "enumerable"))
+                args.ctx, key,
+                attrib.getMember(args.ctx, "value"),
+                Values.toBoolean(attrib.getMember(args.ctx, "writable")),
+                Values.toBoolean(attrib.getMember(args.ctx, "configurable")),
+                Values.toBoolean(attrib.getMember(args.ctx, "enumerable"))
             )) throw EngineException.ofType("Can't define property '" + key + "'.");
         }
         else {
-            var get = attrib.getMember(ctx, "get");
-            var set = attrib.getMember(ctx, "set");
+            var get = attrib.getMember(args.ctx, "get");
+            var set = attrib.getMember(args.ctx, "set");
             if (get != null && !(get instanceof FunctionValue)) throw EngineException.ofType("Get accessor must be a function.");
             if (set != null && !(set instanceof FunctionValue)) throw EngineException.ofType("Set accessor must be a function.");
 
             if (!obj.defineProperty(
-                ctx, key,
+                args.ctx, key,
                 (FunctionValue)get, (FunctionValue)set,
-                Values.toBoolean(attrib.getMember(ctx, "configurable")),
-                Values.toBoolean(attrib.getMember(ctx, "enumerable"))
+                Values.toBoolean(attrib.getMember(args.ctx, "configurable")),
+                Values.toBoolean(attrib.getMember(args.ctx, "enumerable"))
             )) throw EngineException.ofType("Can't define property '" + key + "'.");
         }
 
         return obj;
     }
-    @Native public static ObjectValue defineProperties(Context ctx, ObjectValue obj, ObjectValue attrib) {
+    @Expose(target = ExposeTarget.STATIC)
+    public static ObjectValue __defineProperties(Arguments args) {
+        var obj = args.convert(0, ObjectValue.class);
+        var attrib = args.convert(1, ObjectValue.class);
+
         for (var key : Values.getMembers(null, obj, false, false)) {
-            obj.defineProperty(ctx, key, attrib.getMember(ctx, key));
+            obj.defineProperty(args.ctx, key, attrib.getMember(args.ctx, key));
         }
 
         return obj;
     }
 
-    @Native public static ArrayValue keys(Context ctx, Object obj, Object all) {
+    @Expose(target = ExposeTarget.STATIC)
+    public static ArrayValue __keys(Arguments args) {
+        var obj = args.convert(0, ObjectValue.class);
+        var all = args.getBoolean(1);
         var res = new ArrayValue();
-        var _all = Values.toBoolean(all);
 
-        for (var key : Values.getMembers(ctx, obj, true, false)) {
-            if (_all || !(key instanceof Symbol)) res.set(ctx, res.size(), key);
+        for (var key : Values.getMembers(args.ctx, obj, true, false)) {
+            if (all || !(key instanceof Symbol)) res.set(args.ctx, res.size(), key);
         }
 
         return res;
     }
-    @Native public static ArrayValue entries(Context ctx, Object obj, Object all) {
+    @Expose(target = ExposeTarget.STATIC)
+    public static ArrayValue __entries(Arguments args) {
         var res = new ArrayValue();
-        var _all = Values.toBoolean(all);
+        var obj = args.convert(0, ObjectValue.class);
+        var all = args.getBoolean(1);
 
-        for (var key : Values.getMembers(ctx, obj, true, false)) {
-            if (_all || !(key instanceof Symbol)) res.set(ctx, res.size(), new ArrayValue(ctx, key, Values.getMember(ctx, obj, key)));
+        for (var key : Values.getMembers(args.ctx, obj, true, false)) {
+            if (all || !(key instanceof Symbol)) res.set(args.ctx, res.size(), new ArrayValue(args.ctx, key, Values.getMember(args.ctx, obj, key)));
         }
 
         return res;
     }
-    @Native public static ArrayValue values(Context ctx, Object obj, Object all) {
+    @Expose(target = ExposeTarget.STATIC)
+    public static ArrayValue __values(Arguments args) {
         var res = new ArrayValue();
-        var _all = Values.toBoolean(all);
+        var obj = args.convert(0, ObjectValue.class);
+        var all = args.getBoolean(1);
 
-        for (var key : Values.getMembers(ctx, obj, true, false)) {
-            if (_all || key instanceof String) res.set(ctx, res.size(), Values.getMember(ctx, obj, key));
+        for (var key : Values.getMembers(args.ctx, obj, true, false)) {
+            if (all || key instanceof String) res.set(args.ctx, res.size(), Values.getMember(args.ctx, obj, key));
         }
 
         return res;
     }
-
-    @Native public static ObjectValue getOwnPropertyDescriptor(Context ctx, Object obj, Object key) {
-        return Values.getMemberDescriptor(ctx, obj, key);
+ 
+    @Expose(target = ExposeTarget.STATIC)
+    public static ObjectValue __getOwnPropertyDescriptor(Arguments args) {
+        return Values.getMemberDescriptor(args.ctx, args.get(0), args.get(1));
     }
-    @Native public static ObjectValue getOwnPropertyDescriptors(Context ctx, Object obj) {
+    @Expose(target = ExposeTarget.STATIC)
+    public static ObjectValue __getOwnPropertyDescriptors(Arguments args) {
         var res = new ObjectValue();
-        for (var key : Values.getMembers(ctx, obj, true, true)) {
-            res.defineProperty(ctx, key, getOwnPropertyDescriptor(ctx, obj, key));
+        var obj = args.get(0);
+        for (var key : Values.getMembers(args.ctx, obj, true, true)) {
+            res.defineProperty(args.ctx, key, __getOwnPropertyDescriptor(new Arguments(args.ctx, null, obj, key)));
         }
         return res;
     }
 
-    @Native public static ArrayValue getOwnPropertyNames(Context ctx, Object obj, Object all) {
+    @Expose(target = ExposeTarget.STATIC)
+    public static ArrayValue    __getOwnPropertyNames(Arguments args) {
         var res = new ArrayValue();
-        var _all = Values.toBoolean(all);
+        var obj = args.convert(0, ObjectValue.class);
+        var all = args.getBoolean(1);
 
-        for (var key : Values.getMembers(ctx, obj, true, true)) {
-            if (_all || !(key instanceof Symbol)) res.set(ctx, res.size(), key);
+        for (var key : Values.getMembers(args.ctx, obj, true, true)) {
+            if (all || !(key instanceof Symbol)) res.set(args.ctx, res.size(), key);
         }
 
         return res;
     }
-    @Native public static ArrayValue getOwnPropertySymbols(Context ctx, Object obj) {
+    @Expose(target = ExposeTarget.STATIC)
+    public static ArrayValue __getOwnPropertySymbols(Arguments args) {
+        var obj = args.convert(0, ObjectValue.class);
         var res = new ArrayValue();
 
-        for (var key : Values.getMembers(ctx, obj, true, true)) {
-            if (key instanceof Symbol) res.set(ctx, res.size(), key);
+        for (var key : Values.getMembers(args.ctx, obj, true, true)) {
+            if (key instanceof Symbol) res.set(args.ctx, res.size(), key);
         }
 
         return res;
     }
-    @Native public static boolean hasOwn(Context ctx, Object obj, Object key) {
-        return Values.hasMember(ctx, obj, key, true);
+    @Expose(target = ExposeTarget.STATIC)
+    public static boolean __hasOwn(Arguments args) {
+        return Values.hasMember(args.ctx, args.get(0), args.get(1), true);
     }
 
-    @Native public static ObjectValue getPrototypeOf(Context ctx, Object obj) {
-        return Values.getPrototype(ctx, obj);
+    @Expose(target = ExposeTarget.STATIC)
+    public static ObjectValue __getPrototypeOf(Arguments args) {
+        return Values.getPrototype(args.ctx, args.get(0));
     }
-    @Native public static Object setPrototypeOf(Context ctx, Object obj, Object proto) {
-        Values.setPrototype(ctx, obj, proto);
-        return obj;
+    @Expose(target = ExposeTarget.STATIC)
+    public static Object __setPrototypeOf(Arguments args) {
+        Values.setPrototype(args.ctx, args.get(0), args.get(1));
+        return args.get(0);
     }
 
-    @Native public static ObjectValue fromEntries(Context ctx, Object iterable) {
+    @Expose(target = ExposeTarget.STATIC)
+    public static ObjectValue __fromEntries(Arguments args) {
         var res = new ObjectValue();
 
-        for (var el : Values.fromJSIterator(ctx, iterable)) {
+        for (var el : Values.fromJSIterator(args.ctx, args.get(0))) {
             if (el instanceof ArrayValue) {
-                res.defineProperty(ctx, ((ArrayValue)el).get(0), ((ArrayValue)el).get(1));
+                res.defineProperty(args.ctx, ((ArrayValue)el).get(0), ((ArrayValue)el).get(1));
             }
         }
 
         return res;
     }
 
-    @Native public static Object preventExtensions(Context ctx, Object obj) {
-        if (obj instanceof ObjectValue) ((ObjectValue)obj).preventExtensions();
-        return obj;
+    @Expose(target = ExposeTarget.STATIC)
+    public static Object __preventExtensions(Arguments args) {
+        if (args.get(0) instanceof ObjectValue) args.convert(0, ObjectValue.class).preventExtensions();
+        return args.get(0);
     }
-    @Native public static Object seal(Context ctx, Object obj) {
-        if (obj instanceof ObjectValue) ((ObjectValue)obj).seal();
-        return obj;
+    @Expose(target = ExposeTarget.STATIC)
+    public static Object __seal(Arguments args) {
+        if (args.get(0) instanceof ObjectValue) args.convert(0, ObjectValue.class).seal();
+        return args.get(0);
     }
-    @Native public static Object freeze(Context ctx, Object obj) {
-        if (obj instanceof ObjectValue) ((ObjectValue)obj).freeze();
-        return obj;
+    @Expose(target = ExposeTarget.STATIC)
+    public static Object __freeze(Arguments args) {
+        if (args.get(0) instanceof ObjectValue) args.convert(0, ObjectValue.class).freeze();
+        return args.get(0);
     }
 
-    @Native public static boolean isExtensible(Context ctx, Object obj) {
+    @Expose(target = ExposeTarget.STATIC)
+    public static boolean __isExtensible(Arguments args) {
+        var obj = args.get(0);
         return obj instanceof ObjectValue && ((ObjectValue)obj).extensible();
     }
-    @Native public static boolean isSealed(Context ctx, Object obj) {
+    @Expose(target = ExposeTarget.STATIC)
+    public static boolean __isSealed(Arguments args) {
+        var obj = args.get(0);
+
         if (obj instanceof ObjectValue && ((ObjectValue)obj).extensible()) {
             var _obj = (ObjectValue)obj;
             for (var key : _obj.keys(true)) {
@@ -175,7 +223,10 @@ import me.topchetoeu.jscript.interop.NativeConstructor;
 
         return true;
     }
-    @Native public static boolean isFrozen(Context ctx, Object obj) {
+    @Expose(target = ExposeTarget.STATIC)
+    public static boolean __isFrozen(Arguments args) {
+        var obj = args.get(0);
+
         if (obj instanceof ObjectValue && ((ObjectValue)obj).extensible()) {
             var _obj = (ObjectValue)obj;
             for (var key : _obj.keys(true)) {
@@ -187,26 +238,31 @@ import me.topchetoeu.jscript.interop.NativeConstructor;
         return true;
     }
 
-    @Native(thisArg = true) public static Object valueOf(Context ctx, Object thisArg) {
-        return thisArg;
+    @Expose
+    public static Object __valueOf(Arguments args) {
+        return args.self;
     }
-    @Native(thisArg = true) public static String toString(Context ctx, Object thisArg) {
-        var name = Values.getMember(ctx, thisArg, Symbol.get("Symbol.typeName"));
+    @Expose
+    public static String __toString(Arguments args) {
+        var name = Values.getMember(args.ctx, args.self, Symbol.get("Symbol.typeName"));
         if (name == null) name = "Unknown";
-        else name = Values.toString(ctx, name);
+        else name = Values.toString(args.ctx, name);
 
         return "[object " + name + "]";
     }
-    @Native(thisArg = true) public static boolean hasOwnProperty(Context ctx, Object thisArg, Object key) {
-        return ObjectLib.hasOwn(ctx, thisArg, Values.convert(ctx, key, String.class));
+    @Expose
+    public static boolean __hasOwnProperty(Arguments args) {
+        return Values.hasMember(args.ctx, args.self, args.get(0), true);
     }
 
-    @NativeConstructor(thisArg = true) public static Object constructor(Context ctx, Object thisArg, Object arg) {
+    @ExposeConstructor
+    public static Object __constructor(Arguments args) {
+        var arg = args.get(0);
         if (arg == null || arg == Values.NULL) return new ObjectValue();
-        else if (arg instanceof Boolean) return BooleanLib.constructor(ctx, thisArg, arg);
-        else if (arg instanceof Number) return NumberLib.constructor(ctx, thisArg, arg);
-        else if (arg instanceof String) return StringLib.constructor(ctx, thisArg, arg);
-        // else if (arg instanceof Symbol) return SymbolPolyfill.constructor(ctx, thisArg, arg);
+        else if (arg instanceof Boolean) return new BooleanLib((boolean)arg);
+        else if (arg instanceof Number) return new NumberLib(((Number)arg).doubleValue());
+        else if (arg instanceof String) return new StringLib((String)arg);
+        else if (arg instanceof Symbol) return new SymbolLib((Symbol)arg);
         else return arg;
     }
 }

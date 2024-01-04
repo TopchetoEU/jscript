@@ -3,28 +3,34 @@ package me.topchetoeu.jscript.lib;
 import me.topchetoeu.jscript.engine.Environment;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
 import me.topchetoeu.jscript.engine.values.ObjectValue;
-import me.topchetoeu.jscript.interop.Native;
-import me.topchetoeu.jscript.interop.NativeGetter;
-import me.topchetoeu.jscript.interop.NativeSetter;
+import me.topchetoeu.jscript.interop.Arguments;
+import me.topchetoeu.jscript.interop.Expose;
+import me.topchetoeu.jscript.interop.ExposeType;
+import me.topchetoeu.jscript.interop.WrapperName;
 
-@Native("Environment")
+@WrapperName("Environment")
 public class EnvironmentLib {
     private Environment env;
 
-    @NativeGetter("@@env") public Environment env() { return env; }
+    @Expose(value = "@@env", type = ExposeType.GETTER)
+    public Environment __env() { return env; }
 
-    @NativeGetter public int id() {
+    @Expose(type = ExposeType.GETTER)
+    public int __id(Arguments args) {
         return env.hashCode();
     }
-    @NativeGetter public ObjectValue global() {
+    @Expose(type = ExposeType.GETTER)
+    public ObjectValue __global(Arguments args) {
         return env.global.obj;
     }
 
-    @NativeGetter public FunctionValue compile() {
+    @Expose(type = ExposeType.GETTER)
+    public FunctionValue __compile() {
         return Environment.compileFunc(env);
     }
-    @NativeSetter public void compile(FunctionValue func) {
-        env.add(Environment.COMPILE_FUNC, func);
+    @Expose(type = ExposeType.SETTER)
+    public void __compile(Arguments args) {
+        env.add(Environment.COMPILE_FUNC, args.convert(0, FunctionValue.class));
     }
 
     public EnvironmentLib(Environment env) {

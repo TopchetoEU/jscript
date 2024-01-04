@@ -7,55 +7,60 @@ import me.topchetoeu.jscript.engine.values.CodeFunction;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
 import me.topchetoeu.jscript.engine.values.NativeFunction;
 import me.topchetoeu.jscript.exceptions.EngineException;
-import me.topchetoeu.jscript.interop.Native;
+import me.topchetoeu.jscript.interop.Arguments;
+import me.topchetoeu.jscript.interop.WrapperName;
+import me.topchetoeu.jscript.lib.PromiseLib.Handle;
 
-@Native("AsyncFunction") public class AsyncFunctionLib extends FunctionValue {
+@WrapperName("AsyncFunction")
+public class AsyncFunctionLib extends FunctionValue {
     public final FunctionValue factory;
 
-    public static class AsyncHelper {
+    private static class AsyncHelper {
         public PromiseLib promise = new PromiseLib();
         public CodeFrame frame;
 
         private boolean awaiting = false;
 
-        private void next(Context ctx, Object inducedValue, Object inducedError) {
+        private void next(Context ctx, Object inducedValue, EngineException inducedError) {
             Object res = null;
 
             frame.onPush();
             awaiting = false;
             while (!awaiting) {
                 try {
-                    res = frame.next(inducedValue, Runners.NO_RETURN, inducedError == Runners.NO_RETURN ? null : new EngineException(inducedError));
-                    inducedValue = inducedError = Runners.NO_RETURN;
+                    res = frame.next(inducedValue, Runners.NO_RETURN, inducedError);
+                    inducedValue = Runners.NO_RETURN;
+                    inducedError = null;
+
                     if (res != Runners.NO_RETURN) {
                         promise.fulfill(ctx, res);
                         break;
                     }
                 }
                 catch (EngineException e) {
-                    promise.reject(ctx, e.value);
+                    promise.reject(ctx, e);
                     break;
                 }
             }
             frame.onPop();
 
             if (awaiting) {
-                PromiseLib.then(ctx, frame.pop(), new NativeFunction(this::fulfill), new NativeFunction(this::reject));
+                PromiseLib.handle(ctx, frame.pop(), new Handle() {
+                    @Override
+                    public void onFulfil(Object val) {
+                        next(ctx, val, null);
+                    }
+                    @Override
+                    public void onReject(EngineException err) {
+                        next(ctx, Runners.NO_RETURN, err);
+                    }
+                });
             }
         }
 
-        public Object fulfill(Context ctx, Object thisArg, Object ...args) {
-            next(ctx, args.length > 0 ? args[0] : null, Runners.NO_RETURN);
-            return null;
-        }
-        public Object reject(Context ctx, Object thisArg, Object ...args) {
-            next(ctx, Runners.NO_RETURN, args.length > 0 ? args[0] : null);
-            return null;
-        }
-
-        public Object await(Context ctx, Object thisArg, Object[] args) {
+        public Object await(Arguments args) {
             this.awaiting = true;
-            return args.length > 0 ? args[0] : null;
+            return args.get(0);
         }
     }
 
@@ -65,7 +70,7 @@ import me.topchetoeu.jscript.interop.Native;
         var func = factory.call(ctx, thisArg, new NativeFunction("await", handler::await));
         if (!(func instanceof CodeFunction)) throw EngineException.ofType("Return value of argument must be a js function.");
         handler.frame = new CodeFrame(ctx, thisArg, args, (CodeFunction)func);
-        handler.next(ctx, Runners.NO_RETURN, Runners.NO_RETURN);
+        handler.next(ctx, Runners.NO_RETURN, null);
         return handler.promise;
     }
 

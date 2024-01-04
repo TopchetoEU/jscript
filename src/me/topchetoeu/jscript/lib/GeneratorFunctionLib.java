@@ -6,13 +6,13 @@ import me.topchetoeu.jscript.engine.values.CodeFunction;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
 import me.topchetoeu.jscript.engine.values.NativeFunction;
 import me.topchetoeu.jscript.exceptions.EngineException;
-import me.topchetoeu.jscript.interop.Native;
+import me.topchetoeu.jscript.interop.WrapperName;
 
-@Native("GeneratorFunction") public class GeneratorFunctionLib extends FunctionValue {
+@WrapperName("GeneratorFunction")
+public class GeneratorFunctionLib extends FunctionValue {
     public final FunctionValue factory;
 
-    @Override
-    public Object call(Context ctx, Object thisArg, Object ...args) {
+    @Override public Object call(Context ctx, Object thisArg, Object ...args) {
         var handler = new GeneratorLib();
         var func = factory.call(ctx, thisArg, new NativeFunction("yield", handler::yield));
         if (!(func instanceof CodeFunction)) throw EngineException.ofType("Return value of argument must be a js function.");

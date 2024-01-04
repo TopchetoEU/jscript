@@ -6,55 +6,64 @@ import java.util.stream.Collectors;
 
 import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.values.ArrayValue;
-import me.topchetoeu.jscript.engine.values.FunctionValue;
 import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.engine.values.Values;
-import me.topchetoeu.jscript.interop.Native;
-import me.topchetoeu.jscript.interop.NativeGetter;
+import me.topchetoeu.jscript.interop.Arguments;
+import me.topchetoeu.jscript.interop.Expose;
+import me.topchetoeu.jscript.interop.ExposeConstructor;
+import me.topchetoeu.jscript.interop.ExposeType;
+import me.topchetoeu.jscript.interop.WrapperName;
 
-@Native("Set") public class SetLib {
+@WrapperName("Set")
+public class SetLib {
     private LinkedHashSet<Object> set = new LinkedHashSet<>();
 
-    @Native("@@Symbol.typeName") public final String name = "Set";
-    @Native("@@Symbol.iterator") public ObjectValue iterator(Context ctx) {
-        return this.values(ctx);
+    @Expose("@@Symbol.iterator")
+    public ObjectValue __iterator(Arguments args) {
+        return this.__values(args);
     }
 
-    @Native public ObjectValue entries(Context ctx) {
-        return ArrayValue.of(ctx, set.stream().map(v -> new ArrayValue(ctx, v, v)).collect(Collectors.toList()));
+    @Expose public ObjectValue __entries(Arguments args) {
+        return ArrayValue.of(args.ctx, set.stream().map(v -> new ArrayValue(args.ctx, v, v)).collect(Collectors.toList()));
     }
-    @Native public ObjectValue keys(Context ctx) {
-        return ArrayValue.of(ctx, set);
+    @Expose public ObjectValue __keys(Arguments args) {
+        return ArrayValue.of(args.ctx, set);
     }
-    @Native public ObjectValue values(Context ctx) {
-        return ArrayValue.of(ctx, set);
-    }
-
-    @Native public Object add(Object key) {
-        return set.add(key);
-    }
-    @Native public boolean delete(Object key) {
-        return set.remove(key);
-    }
-    @Native public boolean has(Object key) {
-        return set.contains(key);
+    @Expose public ObjectValue __values(Arguments args) {
+        return ArrayValue.of(args.ctx, set);
     }
 
-    @Native public void clear() {
+    @Expose public Object __add(Arguments args) {
+        return set.add(args.get(0));
+    }
+    @Expose public boolean __delete(Arguments args) {
+        return set.remove(args.get(0));
+    }
+    @Expose public boolean __has(Arguments args) {
+        return set.contains(args.get(0));
+    }
+
+    @Expose public void __clear() {
         set.clear();
     }
 
-    @NativeGetter public int size() {
+    @Expose(type = ExposeType.GETTER)
+    public int __size() {
         return set.size();
     }
 
-    @Native public void forEach(Context ctx, FunctionValue func, Object thisArg) {
+    @Expose public void __forEach(Arguments args) {
         var keys = new ArrayList<>(set);
 
-        for (var el : keys) func.call(ctx, thisArg, el, el, this);
+        for (var el : keys) Values.call(args.ctx, args.get(0), args.get(1), el, el, this);
     }
 
-    @Native public SetLib(Context ctx, Object iterable) {
-        for (var el : Values.fromJSIterator(ctx, iterable)) add(el);
+    public SetLib(Context ctx, Object iterable) {
+        for (var el : Values.fromJSIterator(ctx, iterable)) set.add(el);
+    }
+
+    @ExposeConstructor
+    public static SetLib __constructor(Arguments args) {
+        return new SetLib(args.ctx, args.get(0));
     }
 }

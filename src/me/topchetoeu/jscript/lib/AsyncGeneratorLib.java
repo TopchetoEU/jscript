@@ -5,21 +5,23 @@ import java.util.Map;
 import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.frame.CodeFrame;
 import me.topchetoeu.jscript.engine.frame.Runners;
-import me.topchetoeu.jscript.engine.values.NativeFunction;
 import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.exceptions.EngineException;
-import me.topchetoeu.jscript.interop.Native;
+import me.topchetoeu.jscript.interop.Arguments;
+import me.topchetoeu.jscript.interop.Expose;
+import me.topchetoeu.jscript.interop.WrapperName;
+import me.topchetoeu.jscript.lib.PromiseLib.Handle;
 
-@Native("AsyncGenerator") public class AsyncGeneratorLib {
-    @Native("@@Symbol.typeName") public final String name = "AsyncGenerator";
+@WrapperName("AsyncGenerator")
+public class AsyncGeneratorLib {
     private int state = 0;
     private boolean done = false;
     private PromiseLib currPromise;
     public CodeFrame frame;
 
-    private void next(Context ctx, Object inducedValue, Object inducedReturn, Object inducedError) {
+    private void next(Context ctx, Object inducedValue, Object inducedReturn, EngineException inducedError) {
         if (done) {
-            if (inducedError != Runners.NO_RETURN) throw new EngineException(inducedError);
+            if (inducedError != null) throw inducedError;
             currPromise.fulfill(ctx, new ObjectValue(ctx, Map.of(
                 "done", true,
                 "value", inducedReturn == Runners.NO_RETURN ? null : inducedReturn
@@ -33,8 +35,10 @@ import me.topchetoeu.jscript.interop.Native;
         frame.onPush();
         while (state == 0) {
             try {
-                res = frame.next(inducedValue, inducedReturn, inducedError == Runners.NO_RETURN ? null : new EngineException(inducedError));
-                inducedValue = inducedReturn = inducedError = Runners.NO_RETURN;
+                res = frame.next(inducedValue, inducedReturn, inducedError);
+                inducedValue = inducedReturn = Runners.NO_RETURN;
+                inducedError = null;
+
                 if (res != Runners.NO_RETURN) {
                     var obj = new ObjectValue();
                     obj.defineProperty(ctx, "done", true);
@@ -44,14 +48,21 @@ import me.topchetoeu.jscript.interop.Native;
                 }
             }
             catch (EngineException e) {
-                currPromise.reject(ctx, e.value);
+                currPromise.reject(ctx, e);
                 break;
             }
         }
         frame.onPop();
 
         if (state == 1) {
-            PromiseLib.then(ctx, frame.pop(), new NativeFunction(this::fulfill), new NativeFunction(this::reject));
+            PromiseLib.handle(ctx, frame.pop(), new Handle() {
+                @Override public void onFulfil(Object val) {
+                    next(ctx, val, Runners.NO_RETURN, null);
+                }
+                @Override public void onReject(EngineException err) {
+                    next(ctx, Runners.NO_RETURN, Runners.NO_RETURN, err);
+                }
+            });
         }
         else if (state == 2) {
             var obj = new ObjectValue();
@@ -68,42 +79,29 @@ import me.topchetoeu.jscript.interop.Native;
         return "Generator [running]";
     }
 
-    public Object fulfill(Context ctx, Object thisArg, Object ...args) {
-        next(ctx, args.length > 0 ? args[0] : null, Runners.NO_RETURN, Runners.NO_RETURN);
-        return null;
-    }
-    public Object reject(Context ctx, Object thisArg, Object ...args) {
-        next(ctx, Runners.NO_RETURN, args.length > 0 ? args[0] : null, Runners.NO_RETURN);
-        return null;
-    }
-
-    @Native
-    public PromiseLib next(Context ctx, Object ...args) {
-        this.currPromise = new PromiseLib();
-        if (args.length == 0) next(ctx, Runners.NO_RETURN, Runners.NO_RETURN, Runners.NO_RETURN);
-        else next(ctx, args[0], Runners.NO_RETURN, Runners.NO_RETURN);
-        return this.currPromise;
-    }
-    @Native("throw")
-    public PromiseLib _throw(Context ctx, Object error) {
-        this.currPromise = new PromiseLib();
-        next(ctx, Runners.NO_RETURN, Runners.NO_RETURN, error);
-        return this.currPromise;
-    }
-    @Native("return")
-    public PromiseLib _return(Context ctx, Object value) {
-        this.currPromise = new PromiseLib();
-        next(ctx, Runners.NO_RETURN, value, Runners.NO_RETURN);
-        return this.currPromise;
-    }
-
-
-    public Object await(Context ctx, Object thisArg, Object[] args) {
+    public Object await(Arguments args) {
         this.state = 1;
-        return args.length > 0 ? args[0] : null;
+        return args.get(0);
     }
-    public Object yield(Context ctx, Object thisArg, Object[] args) {
+    public Object yield(Arguments args) {
         this.state = 2;
-        return args.length > 0 ? args[0] : null;
+        return args.get(0);
+    }
+
+    @Expose public PromiseLib __next(Arguments args) {
+        this.currPromise = new PromiseLib();
+        if (args.has(0)) next(args.ctx, args.get(0), Runners.NO_RETURN, null);
+        else next(args.ctx, Runners.NO_RETURN, Runners.NO_RETURN, null);
+        return this.currPromise;
+    }
+    @Expose public PromiseLib __return(Arguments args) {
+        this.currPromise = new PromiseLib();
+        next(args.ctx, Runners.NO_RETURN, args.get(0), null);
+        return this.currPromise;
+    }
+    @Expose public PromiseLib __throw(Arguments args) {
+        this.currPromise = new PromiseLib();
+        next(args.ctx, Runners.NO_RETURN, Runners.NO_RETURN, new EngineException(args.get(0)).setCtx(args.ctx));
+        return this.currPromise;
     }
 }

@@ -5,18 +5,19 @@ import me.topchetoeu.jscript.engine.frame.CodeFrame;
 import me.topchetoeu.jscript.engine.frame.Runners;
 import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.exceptions.EngineException;
-import me.topchetoeu.jscript.interop.Native;
+import me.topchetoeu.jscript.interop.Arguments;
+import me.topchetoeu.jscript.interop.Expose;
+import me.topchetoeu.jscript.interop.WrapperName;
 
-@Native("Generator") public class GeneratorLib {
+@WrapperName("Generator")
+public class GeneratorLib {
     private boolean yielding = true;
     private boolean done = false;
     public CodeFrame frame;
 
-    @Native("@@Symbol.typeName") public final String name = "Generator";
-
-    private ObjectValue next(Context ctx, Object inducedValue, Object inducedReturn, Object inducedError) {
+    private ObjectValue next(Context ctx, Object inducedValue, Object inducedReturn, EngineException inducedError) {
         if (done) {
-            if (inducedError != Runners.NO_RETURN) throw new EngineException(inducedError);
+            if (inducedError != Runners.NO_RETURN) throw inducedError;
             var res = new ObjectValue();
             res.defineProperty(ctx, "done", true);
             res.defineProperty(ctx, "value", inducedReturn == Runners.NO_RETURN ? null : inducedReturn);
@@ -29,8 +30,9 @@ import me.topchetoeu.jscript.interop.Native;
         frame.onPush();
         while (!yielding) {
             try {
-                res = frame.next(inducedValue, inducedReturn, inducedError == Runners.NO_RETURN ? null : new EngineException(inducedError));
-                inducedReturn = inducedError = Runners.NO_RETURN;
+                res = frame.next(inducedValue, inducedReturn, inducedError);
+                inducedReturn = Runners.NO_RETURN;
+                inducedError = null;
                 if (res != Runners.NO_RETURN) {
                     done = true;
                     break;
@@ -52,29 +54,25 @@ import me.topchetoeu.jscript.interop.Native;
         return obj;
     }
 
-    @Native
-    public ObjectValue next(Context ctx, Object ...args) {
-        if (args.length == 0) return next(ctx, Runners.NO_RETURN, Runners.NO_RETURN, Runners.NO_RETURN);
-        else return next(ctx, args[0], Runners.NO_RETURN, Runners.NO_RETURN);
+    @Expose public ObjectValue __next(Arguments args) {
+        if (args.n() == 0) return next(args.ctx, Runners.NO_RETURN, Runners.NO_RETURN, null);
+        else return next(args.ctx, args.get(0), Runners.NO_RETURN, null);
     }
-    @Native("throw")
-    public ObjectValue _throw(Context ctx, Object error) {
-        return next(ctx, Runners.NO_RETURN, Runners.NO_RETURN, error);
+    @Expose public ObjectValue __throw(Arguments args) {
+        return next(args.ctx, Runners.NO_RETURN, Runners.NO_RETURN, new EngineException(args.get(0)).setCtx(args.ctx));
     }
-    @Native("return")
-    public ObjectValue _return(Context ctx, Object value) {
-        return next(ctx, Runners.NO_RETURN, value, Runners.NO_RETURN);
+    @Expose public ObjectValue __return(Arguments args) {
+        return next(args.ctx, Runners.NO_RETURN, args.get(0), null);
     }
 
-    @Override
-    public String toString() {
+    @Override public String toString() {
         if (done) return "Generator [closed]";
         if (yielding) return "Generator [suspended]";
         return "Generator [running]";
     }
 
-    public Object yield(Context ctx, Object thisArg, Object[] args) {
+    public Object yield(Arguments args) {
         this.yielding = true;
-        return args.length > 0 ? args[0] : null;
+        return args.get(0);
     }
 }

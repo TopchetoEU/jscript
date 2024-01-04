@@ -2,355 +2,314 @@ package me.topchetoeu.jscript.lib;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import me.topchetoeu.jscript.engine.Context;
+import me.topchetoeu.jscript.engine.EventLoop;
 import me.topchetoeu.jscript.engine.values.ArrayValue;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
 import me.topchetoeu.jscript.engine.values.NativeFunction;
-import me.topchetoeu.jscript.engine.values.NativeWrapper;
 import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.exceptions.EngineException;
-import me.topchetoeu.jscript.interop.Native;
+import me.topchetoeu.jscript.interop.Arguments;
+import me.topchetoeu.jscript.interop.Expose;
+import me.topchetoeu.jscript.interop.ExposeConstructor;
+import me.topchetoeu.jscript.interop.ExposeTarget;
+import me.topchetoeu.jscript.interop.WrapperName;
+import me.topchetoeu.jscript.ResultRunnable;
 
-@Native("Promise") public class PromiseLib {
-    public static interface PromiseRunner {
-        Object run();
-    }
-    private static class Handle {
-        public final Context ctx;
-        public final FunctionValue fulfilled;
-        public final FunctionValue rejected;
+@WrapperName("Promise")
+public class PromiseLib {
+    public static interface Handle {
+        void onFulfil(Object val);
+        void onReject(EngineException err);
 
-        public Handle(Context ctx, FunctionValue fulfilled, FunctionValue rejected) {
-            this.ctx = ctx;
-            this.fulfilled = fulfilled;
-            this.rejected = rejected;
+        default Handle defer(EventLoop loop) {
+            var self = this;
+            return new Handle() {
+                @Override public void onFulfil(Object val) {
+                    loop.pushMsg(() -> self.onFulfil(val), true);
+                }
+                @Override public void onReject(EngineException val) {
+                    loop.pushMsg(() -> self.onReject(val), true);
+                }
+            };
         }
     }
-
-    @Native("resolve")
-    public static PromiseLib ofResolved(Context ctx, Object val) {
-        var res = new PromiseLib();
-        res.fulfill(ctx, val);
-        return res;
-    }
-    @Native("reject")
-    public static PromiseLib ofRejected(Context ctx, Object val) {
-        var res = new PromiseLib();
-        res.reject(ctx, val);
-        return res;
-    }
-
-    @Native public static PromiseLib any(Context ctx, Object _promises) {
-        if (!Values.isArray(_promises)) throw EngineException.ofType("Expected argument for any to be an array.");
-        var promises = Values.array(_promises); 
-        if (promises.size() == 0) return ofResolved(ctx, new ArrayValue());
-        var n = new int[] { promises.size() };
-        var res = new PromiseLib();
-
-        var errors = new ArrayValue();
-
-        for (var i = 0; i < promises.size(); i++) {
-            var index = i;
-            var val = promises.get(i);
-            then(ctx, val,
-                new NativeFunction(null, (e, th, args) -> { res.fulfill(e, args[0]); return null; }),
-                new NativeFunction(null, (e, th, args) -> {
-                    errors.set(ctx, index, args[0]);
-                    n[0]--;
-                    if (n[0] <= 0) res.reject(e, errors);
-                    return null;
-                })
-            );
-        }
-
-        return res;
-    }
-    @Native public static PromiseLib race(Context ctx, Object _promises)  {
-        if (!Values.isArray(_promises)) throw EngineException.ofType("Expected argument for any to be an array.");
-        var promises = Values.array(_promises); 
-        if (promises.size() == 0) return ofResolved(ctx, new ArrayValue());
-        var res = new PromiseLib();
-
-        for (var i = 0; i < promises.size(); i++) {
-            var val = promises.get(i);
-            then(ctx, val,
-                new NativeFunction(null, (e, th, args) -> { res.fulfill(e, args[0]); return null; }),
-                new NativeFunction(null, (e, th, args) -> { res.reject(e, args[0]); return null; })
-            );
-        }
-
-        return res;
-    }
-    @Native public static PromiseLib all(Context ctx, Object _promises)  {
-        if (!Values.isArray(_promises)) throw EngineException.ofType("Expected argument for any to be an array.");
-        var promises = Values.array(_promises); 
-        if (promises.size() == 0) return ofResolved(ctx, new ArrayValue());
-        var n = new int[] { promises.size() };
-        var res = new PromiseLib();
-
-        var result = new ArrayValue();
-
-        for (var i = 0; i < promises.size(); i++) {
-            var index = i;
-            var val = promises.get(i);
-            then(ctx, val,
-                new NativeFunction(null, (e, th, args) -> {
-                    result.set(ctx, index, args[0]);
-                    n[0]--;
-                    if (n[0] <= 0) res.fulfill(e, result);
-                    return null;
-                }),
-                new NativeFunction(null, (e, th, args) -> { res.reject(e, args[0]); return null; })
-            );
-        }
-
-        if (n[0] <= 0) res.fulfill(ctx, result);
-
-        return res;
-    }
-    @Native public static PromiseLib allSettled(Context ctx, Object _promises)  {
-        if (!Values.isArray(_promises)) throw EngineException.ofType("Expected argument for any to be an array.");
-        var promises = Values.array(_promises); 
-        if (promises.size() == 0) return ofResolved(ctx, new ArrayValue());
-        var n = new int[] { promises.size() };
-        var res = new PromiseLib();
-
-        var result = new ArrayValue();
-
-        for (var i = 0; i < promises.size(); i++) {
-            var index = i;
-            var val = promises.get(i);
-            then(ctx, val,
-                new NativeFunction(null, (e, th, args) -> {
-                    result.set(ctx, index, new ObjectValue(ctx, Map.of(
-                        "status", "fulfilled",
-                        "value", args[0]
-                    )));
-                    n[0]--;
-                    if (n[0] <= 0) res.fulfill(e, result);
-                    return null;
-                }),
-                new NativeFunction(null, (e, th, args) -> {
-                    result.set(ctx, index, new ObjectValue(ctx, Map.of(
-                        "status", "rejected",
-                        "reason", args[0]
-                    )));
-                    n[0]--;
-                    if (n[0] <= 0) res.fulfill(e, result);
-                    return null;
-                })
-            );
-        }
-
-        if (n[0] <= 0) res.fulfill(ctx, result);
-
-        return res;
-    }
-
-    /**
-     * Thread safe - you can call this from anywhere
-     * HOWEVER, it's strongly recommended to use this only in javascript
-     */
-    @Native(thisArg=true) public static Object then(Context ctx, Object _thisArg, Object _onFulfill, Object _onReject) {
-        var onFulfill = _onFulfill instanceof FunctionValue ? ((FunctionValue)_onFulfill) : null;
-        var onReject = _onReject instanceof FunctionValue ? ((FunctionValue)_onReject) : null;
-
-        var res = new PromiseLib();
-
-        var fulfill = onFulfill == null ? new NativeFunction((_ctx, _0, _args) -> _args.length > 0 ? _args[0] : null) : (FunctionValue)onFulfill;
-        var reject = onReject == null ? new NativeFunction((_ctx, _0, _args) -> {
-            throw new EngineException(_args.length > 0 ? _args[0] : null);
-        }) : (FunctionValue)onReject;
-
-        var thisArg = _thisArg instanceof NativeWrapper && ((NativeWrapper)_thisArg).wrapped instanceof PromiseLib ?
-            ((NativeWrapper)_thisArg).wrapped :
-            _thisArg;
-
-        var fulfillHandle = new NativeFunction(null, (_ctx, th, a) -> {
-            try { res.fulfill(ctx, Values.convert(ctx, fulfill.call(ctx, null, a[0]), Object.class)); }
-            catch (EngineException err) { res.reject(ctx, err.value); }
-            return null;
-        });
-        var rejectHandle = new NativeFunction(null, (_ctx, th, a) -> {
-            try { res.fulfill(ctx, reject.call(ctx, null, a[0])); }
-            catch (EngineException err) { res.reject(ctx, err.value); }
-            if (thisArg instanceof PromiseLib) ((PromiseLib)thisArg).handled = true;
-            return null;
-        });
-
-        if (thisArg instanceof PromiseLib) ((PromiseLib)thisArg).handle(ctx, fulfillHandle, rejectHandle);
-        else {
-            Object next;
-            try { next = Values.getMember(ctx, thisArg, "then"); }
-            catch (IllegalArgumentException e) { next = null; }
-
-            try {
-                if (next instanceof FunctionValue) ((FunctionValue)next).call(ctx, thisArg, fulfillHandle, rejectHandle);
-                else res.fulfill(ctx, fulfill.call(ctx, null, thisArg));
-            }
-            catch (EngineException err) {
-                res.reject(ctx, fulfill.call(ctx, null, err.value));
-            }
-        }
-
-        return res;
-    }
-    /**
-     * Thread safe - you can call this from anywhere
-     * HOWEVER, it's strongly recommended to use this only in javascript
-     */
-    @Native(value="catch", thisArg=true) public static Object _catch(Context ctx, Object thisArg, Object _onReject) {
-        return then(ctx, thisArg, null, _onReject);
-    }
-    /**
-     * Thread safe - you can call this from anywhere
-     * HOWEVER, it's strongly recommended to use this only in javascript
-     */
-    @Native(value="finally", thisArg=true) public static Object _finally(Context ctx, Object thisArg, Object _handle) {
-        return then(ctx, thisArg,
-            new NativeFunction(null, (e, th, _args) -> {
-                if (_handle instanceof FunctionValue) ((FunctionValue)_handle).call(ctx);
-                return _args.length > 0 ? _args[0] : null;
-            }),
-            new NativeFunction(null, (e, th, _args) -> {
-                if (_handle instanceof FunctionValue) ((FunctionValue)_handle).call(ctx);
-                throw new EngineException(_args.length > 0 ? _args[0] : null);
-            })
-        );
-    }
-
-    private List<Handle> handles = new ArrayList<>();
 
     private static final int STATE_PENDING = 0;
     private static final int STATE_FULFILLED = 1;
     private static final int STATE_REJECTED = 2;
 
-    private int state = STATE_PENDING;
-    private boolean handled = false;
-    private Object val;
+    @Expose(value = "resolve", target = ExposeTarget.STATIC)
+    public static PromiseLib __ofResolved(Arguments args) {
+        return ofResolved(args.ctx, args.get(0));
+    }
+    @Expose(value = "reject", target = ExposeTarget.STATIC)
+    public static PromiseLib __ofRejected(Arguments args) {
+        return ofRejected(args.ctx, new EngineException(args.get(0)).setCtx(args.ctx));
+    }
 
-    public synchronized void fulfill(Context ctx, Object val) {
-        if (this.state != STATE_PENDING) return;
+    @Expose(target = ExposeTarget.STATIC)
+    private static PromiseLib __any(Arguments args) {
+        if (!(args.get(0) instanceof ArrayValue)) throw EngineException.ofType("Expected argument for any to be an array.");
+        var promises = args.convert(0, ArrayValue.class); 
 
-        if (val instanceof PromiseLib) ((PromiseLib)val).handle(ctx,
-            new NativeFunction(null, (e, th, a) -> { this.fulfill(ctx, a[0]); return null; }),
-            new NativeFunction(null, (e, th, a) -> { this.reject(ctx, a[0]); return null; })
-        );
-        else {
-            Object then;
-            try { then = Values.getMember(ctx, val, "then"); }
-            catch (IllegalArgumentException e) { then = null; }
+        if (promises.size() == 0) return ofRejected(args.ctx, EngineException.ofError("No promises passed to 'Promise.any'.").setCtx(args.ctx));
+        var n = new int[] { promises.size() };
+        var res = new PromiseLib();
+        var errors = new ArrayValue();
 
-            try {
-                if (then instanceof FunctionValue) ((FunctionValue)then).call(ctx, val,
-                    new NativeFunction((e, _thisArg, a) -> { this.fulfill(ctx, a.length > 0 ? a[0] : null); return null; }),
-                    new NativeFunction((e, _thisArg, a) -> { this.reject(ctx, a.length > 0 ? a[0] : null); return null; })
-                );
-                else {
-                    this.val = val;
-                    this.state = STATE_FULFILLED;
+        for (var i = 0; i < promises.size(); i++) {
+            var index = i;
+            var val = promises.get(i);
+            if (res.state != STATE_PENDING) break;
 
-                    ctx.engine.pushMsg(true, ctx.environment, new NativeFunction((_ctx, _thisArg, _args) -> {
-                        for (var handle : handles) {
-                            handle.fulfilled.call(handle.ctx, null, val);
-                        }
-                        handles = null;
-                        return null;
-                    }), null);
+            handle(args.ctx, val, new Handle() {
+                public void onFulfil(Object val) { res.fulfill(args.ctx, val); }
+                public void onReject(EngineException err) {
+                    errors.set(args.ctx, index, err.value);
+                    n[0]--;
+                    if (n[0] <= 0) res.reject(args.ctx, new EngineException(errors).setCtx(args.ctx));
                 }
-            }
-            catch (EngineException err) {
-                this.reject(ctx, err.value);
-            }
+            });
         }
+
+        return res;
     }
-    public synchronized void reject(Context ctx, Object val) {
-        if (this.state != STATE_PENDING) return;
+    @Expose(target = ExposeTarget.STATIC)
+    private static PromiseLib __race(Arguments args) {
+        if (!(args.get(0) instanceof ArrayValue)) throw EngineException.ofType("Expected argument for any to be an array.");
+        var promises = args.convert(0, ArrayValue.class);
+        var res = new PromiseLib();
 
-        if (val instanceof PromiseLib) ((PromiseLib)val).handle(ctx,
-            new NativeFunction(null, (e, th, a) -> { this.reject(ctx, a[0]); return null; }),
-            new NativeFunction(null, (e, th, a) -> { this.reject(ctx, a[0]); return null; })
-        );
-        else {
-            Object then;
-            try { then = Values.getMember(ctx, val, "then"); }
-            catch (IllegalArgumentException e) { then = null; }
+        for (var i = 0; i < promises.size(); i++) {
+            var val = promises.get(i);
+            if (res.state != STATE_PENDING) break;
 
-            try {
-                if (then instanceof FunctionValue) ((FunctionValue)then).call(ctx, val,
-                    new NativeFunction((e, _thisArg, a) -> { this.reject(ctx, a.length > 0 ? a[0] : null); return null; }),
-                    new NativeFunction((e, _thisArg, a) -> { this.reject(ctx, a.length > 0 ? a[0] : null); return null; })
-                );
-                else {
-                    this.val = val;
-                    this.state = STATE_REJECTED;
+            handle(args.ctx, val, new Handle() {
+                @Override public void onFulfil(Object val) { res.fulfill(args.ctx, val); }
+                @Override public void onReject(EngineException err) { res.reject(args.ctx, err); }
+            });
+        }
 
-                    ctx.engine.pushMsg(true, ctx.environment, new NativeFunction((_ctx, _thisArg, _args) -> {
-                        for (var handle : handles) handle.rejected.call(handle.ctx, null, val);
-                        if (!handled) {
-                            Values.printError(new EngineException(val).setCtx(ctx.environment, ctx.engine), "(in promise)");
-                        }
-                        handles = null;
-                        return null;
-                    }), null);
+        return res;
+    }
+    @Expose(target = ExposeTarget.STATIC)
+    private static PromiseLib __all(Arguments args) {
+        if (!(args.get(0) instanceof ArrayValue)) throw EngineException.ofType("Expected argument for any to be an array.");
+        var promises = args.convert(0, ArrayValue.class); 
+        var n = new int[] { promises.size() };
+        var res = new PromiseLib();
+        var result = new ArrayValue();
+
+        for (var i = 0; i < promises.size(); i++) {
+            if (res.state != STATE_PENDING) break;
+
+            var index = i;
+            var val = promises.get(i);
+
+            handle(args.ctx, val, new Handle() {
+                @Override public void onFulfil(Object val) {
+                    result.set(args.ctx, index, val);
+                    n[0]--;
+                    if (n[0] <= 0) res.fulfill(args.ctx, result);
                 }
-            }
-            catch (EngineException err) {
-                this.reject(ctx, err.value);
-            }
+                @Override public void onReject(EngineException err) {
+                    res.reject(args.ctx, err);
+                }
+            });
         }
-    }
 
-    private void handle(Context ctx, FunctionValue fulfill, FunctionValue reject) {
-        if (state == STATE_FULFILLED) ctx.engine.pushMsg(true, ctx.environment, fulfill, null, val);
-        else if (state == STATE_REJECTED) {
-            ctx.engine.pushMsg(true, ctx.environment, reject, null, val);
-            handled = true;
+        if (n[0] <= 0) res.fulfill(args.ctx, result);
+
+        return res;
+    }
+    @Expose(target = ExposeTarget.STATIC)
+    private static PromiseLib __allSettled(Arguments args) {
+        if (!(args.get(0) instanceof ArrayValue)) throw EngineException.ofType("Expected argument for any to be an array.");
+        var promises = args.convert(0, ArrayValue.class); 
+        var n = new int[] { promises.size() };
+        var res = new PromiseLib();
+        var result = new ArrayValue();
+
+        for (var i = 0; i < promises.size(); i++) {
+            if (res.state != STATE_PENDING) break;
+
+            var index = i;
+
+            handle(args.ctx, promises.get(i), new Handle() {
+                @Override public void onFulfil(Object val) {
+                    var desc = new ObjectValue();
+                    desc.defineProperty(args.ctx, "status", "fulfilled");
+                    desc.defineProperty(args.ctx, "value", val);
+
+                    result.set(args.ctx, index, desc);
+
+                    n[0]--;
+                    if (n[0] <= 0) res.fulfill(args.ctx, res);
+                }
+                @Override public void onReject(EngineException err) {
+                    var desc = new ObjectValue();
+                    desc.defineProperty(args.ctx, "status", "reject");
+                    desc.defineProperty(args.ctx, "value", err.value);
+
+                    result.set(args.ctx, index, desc);
+
+                    n[0]--;
+                    if (n[0] <= 0) res.fulfill(args.ctx, res);
+                }
+            });
         }
-        else handles.add(new Handle(ctx, fulfill, reject));
+
+        if (n[0] <= 0) res.fulfill(args.ctx, result);
+
+        return res;
     }
 
-    @Override @Native public String toString() {
-        if (state == STATE_PENDING) return "Promise (pending)";
-        else if (state == STATE_FULFILLED) return "Promise (fulfilled)";
-        else return "Promise (rejected)";
+    @Expose
+    private static Object __then(Arguments args) {
+        var onFulfill = args.get(0) instanceof FunctionValue ? args.convert(0, FunctionValue.class) : null;
+        var onReject = args.get(1) instanceof FunctionValue ? args.convert(1, FunctionValue.class) : null;
+
+        var res = new PromiseLib();
+
+        handle(args.ctx, args.self, new Handle() {
+            @Override public void onFulfil(Object val) {
+                try { res.fulfill(args.ctx, onFulfill.call(args.ctx, null, val)); }
+                catch (EngineException e) { res.reject(args.ctx, e); }
+            }
+            @Override public void onReject(EngineException err) {
+                try { res.fulfill(args.ctx, onReject.call(args.ctx, null, err.value)); }
+                catch (EngineException e) { res.reject(args.ctx, e); }
+            }
+        }.defer(args.ctx.engine));
+
+        return res;
+    }
+    @Expose
+    private static Object __catch(Arguments args) {
+        return __then(new Arguments(args.ctx, args.self, null, args.get(0)));
+    }
+    @Expose
+    private static Object __finally(Arguments args) {
+        var func = args.get(0) instanceof FunctionValue ? args.convert(0, FunctionValue.class) : null;
+
+        var res = new PromiseLib();
+
+        handle(args.ctx, args.self, new Handle() {
+            @Override public void onFulfil(Object val) {
+                try {
+                    func.call(args.ctx);
+                    res.fulfill(args.ctx, val);
+                }
+                catch (EngineException e) { res.reject(args.ctx, e); }
+            }
+            @Override public void onReject(EngineException err) {
+                try {
+                    func.call(args.ctx);
+                    res.reject(args.ctx, err);
+                }
+                catch (EngineException e) { res.reject(args.ctx, e); }
+            }
+        }.defer(args.ctx.engine));
+
+        return res;
     }
 
-    /**
-     * NOT THREAD SAFE - must be called from the engine executor thread
-     */
-    @Native public PromiseLib(Context ctx, FunctionValue func) {
-        if (!(func instanceof FunctionValue)) throw EngineException.ofType("A function must be passed to the promise constructor.");
+    @ExposeConstructor
+    private static PromiseLib __constructor(Arguments args) {
+        var func = args.convert(0, FunctionValue.class);
+        var res = new PromiseLib();
+
         try {
             func.call(
-                ctx, null,
-                new NativeFunction(null, (e, th, args) -> {
-                    fulfill(e, args.length > 0 ? args[0] : null);
+                args.ctx, null,
+                new NativeFunction(null, _args -> {
+                    res.fulfill(_args.ctx, _args.get(0));
                     return null;
                 }),
-                new NativeFunction(null, (e, th, args) -> {
-                    reject(e, args.length > 0 ? args[0] : null);
+                new NativeFunction(null, _args -> {
+                    res.reject(_args.ctx, new EngineException(_args.get(0)).setCtx(_args.ctx));
                     return null;
                 })
             );
         }
         catch (EngineException e) {
-            reject(ctx, e.value);
+            res.reject(args.ctx, e);
         }
+
+        return res;
     }
 
-    private PromiseLib(int state, Object val) {
-        this.state = state;
-        this.val = val;
+    private List<Handle> handles = new ArrayList<>();
+
+    private int state = STATE_PENDING;
+    private boolean handled = false;
+    private Object val;
+
+    private void resolveSynchronized(Context ctx, Object val, int newState) {
+        ctx.engine.pushMsg(() -> {
+            this.val = val;
+            this.state = newState;
+
+            for (var handle : handles) {
+                if (newState == STATE_FULFILLED) handle.onFulfil(val);
+                if (newState == STATE_REJECTED) {
+                    handle.onReject((EngineException)val);
+                    handled = true;
+                }
+            }
+
+            if (state == STATE_REJECTED && !handled) {
+                Values.printError(new EngineException(val).setCtx(ctx.environment, ctx.engine), "(in promise)");
+            }
+
+            handles = null;
+        }, true);
+        
     }
+    private synchronized void resolve(Context ctx, Object val, int newState) {
+        if (this.state != STATE_PENDING || newState == STATE_PENDING) return;
+
+        handle(ctx, val, new Handle() {
+            @Override public void onFulfil(Object val) {
+                resolveSynchronized(ctx, val, newState);
+            }
+            @Override public void onReject(EngineException err) {
+                resolveSynchronized(ctx, val, STATE_REJECTED);
+            }
+        });
+    }
+
+    public synchronized void fulfill(Context ctx, Object val) {
+        resolve(ctx, val, STATE_FULFILLED);
+    }
+    public synchronized void reject(Context ctx, EngineException val) {
+        resolve(ctx, val, STATE_REJECTED);
+    }
+
+    private void handle(Handle handle) {
+        if (state == STATE_FULFILLED) handle.onFulfil(val);
+        else if (state == STATE_REJECTED) {
+            handle.onReject((EngineException)val);
+            handled = true;
+        }
+        else handles.add(handle);
+    }
+
+    @Override public String toString() {
+        if (state == STATE_PENDING) return "Promise (pending)";
+        else if (state == STATE_FULFILLED) return "Promise (fulfilled)";
+        else return "Promise (rejected)";
+    }
+
     public PromiseLib() {
-        this(STATE_PENDING, null);
+        this.state = STATE_PENDING;
+        this.val = null;
     }
 
-    public static PromiseLib await(Context ctx, PromiseRunner runner) {
+    public static PromiseLib await(Context ctx, ResultRunnable<Object> runner) {
         var res = new PromiseLib();
 
         new Thread(() -> {
@@ -358,10 +317,70 @@ import me.topchetoeu.jscript.interop.Native;
                 res.fulfill(ctx, runner.run());
             }
             catch (EngineException e) {
-                res.reject(ctx, e.value);
+                res.reject(ctx, e);
             }
         }, "Promisifier").start();
 
+        return res;
+    }
+    public static PromiseLib await(Context ctx, Runnable runner) {
+        return await(ctx, () -> {
+            runner.run();
+            return null;
+        });
+    }
+
+    public static void handle(Context ctx, Object obj, Handle handle) {
+        if (Values.isWrapper(obj, PromiseLib.class)) {
+            var promise = Values.wrapper(obj, PromiseLib.class);
+            handle(ctx, promise, handle);
+            return;
+        }
+        if (obj instanceof PromiseLib) {
+            ((PromiseLib)obj).handle(handle);
+            return;
+        }
+
+        var rethrow = new boolean[1];
+
+        try {
+            var then = Values.getMember(ctx, obj, "then");
+            Values.call(ctx, then, obj,
+                new NativeFunction(args -> {
+                    try { handle.onFulfil(args.get(0)); }
+                    catch (Exception e) {
+                        rethrow[0] = true;
+                        throw e;
+                    }
+                    return null;
+                }),
+                new NativeFunction(args -> {
+                    try { handle.onReject(new EngineException(args.get(0))); }
+                    catch (Exception e) {
+                        rethrow[0] = true;
+                        throw e;
+                    }
+                    return null;
+                })
+            );
+
+            return;
+        }
+        catch (Exception e) {
+            if (rethrow[0]) throw e;
+        }
+
+        handle.onFulfil(obj);
+    }
+
+    public static PromiseLib ofResolved(Context ctx, Object value) {
+        var res = new PromiseLib();
+        res.fulfill(ctx, value);
+        return res;
+    }
+    public static PromiseLib ofRejected(Context ctx, EngineException value) {
+        var res = new PromiseLib();
+        res.reject(ctx, value);
         return res;
     }
 }
