@@ -38,8 +38,10 @@ public class CodeFrame {
             return ptr >= start && ptr < end;
         }
 
+        public void setCause(EngineException target) {
+            if (error != null) target.setCause(error);
+        }
         public TryCtx _catch(EngineException e) {
-            if (error != null) e.setCause(error);
             return new TryCtx(TryState.CATCH, e, result, restoreStackPtr, start, end, -1, finallyStart);
         }
         public TryCtx _finally(PendingResult res) {
@@ -221,6 +223,7 @@ public class CodeFrame {
             TryCtx newCtx = null;
 
             if (error != null) {
+                tryCtx.setCause(error);
                 if (tryCtx.hasCatch()) newCtx = tryCtx._catch(error);
                 else if (tryCtx.hasFinally()) newCtx = tryCtx._finally(PendingResult.ofThrow(error, instr));
             }
@@ -269,15 +272,17 @@ public class CodeFrame {
                     tryStack.pop();
                     codePtr = tryCtx.end;
                     if (tryCtx.result.instruction != null) instr = tryCtx.result.instruction;
-                    if (tryCtx.result.isJump) {
-                        codePtr = tryCtx.result.ptr;
-                        jumpFlag = true;
+                    if (!jumpFlag && returnValue == Runners.NO_RETURN && error == null) {
+                        if (tryCtx.result.isJump) {
+                            codePtr = tryCtx.result.ptr;
+                            jumpFlag = true;
+                        }
+                        if (tryCtx.result.isReturn) returnValue = tryCtx.result.value;
+                        if (error == null && tryCtx.result.isThrow) {
+                            error = tryCtx.result.error;
+                        }
                     }
-                    if (tryCtx.result.isReturn) returnValue = tryCtx.result.value;
-                    if (tryCtx.result.isThrow) {
-                        error = tryCtx.result.error;
-                    }
-                    if (error != null) error.setCause(tryCtx.error);
+                    if (error != null) tryCtx.setCause(error);
                     continue;
                 }
             }
