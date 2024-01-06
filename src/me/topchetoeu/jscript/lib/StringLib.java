@@ -37,14 +37,14 @@ public class StringLib {
         if (i < 0) i += len;
         if (clamp) {
             if (i < 0) i = 0;
-            if (i >= len) i = len;
+            if (i > len) i = len;
         }
         return i;
     }
 
     @Expose(type = ExposeType.GETTER)
     public static int __length(Arguments args) {
-        return passThis(args, "substring").length();
+        return passThis(args, "length").length();
     }
 
     @Expose public static String __substring(Arguments args) {
