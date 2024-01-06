@@ -6,7 +6,6 @@ import java.util.stream.Collectors;
 
 import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.values.ArrayValue;
-import me.topchetoeu.jscript.engine.values.FunctionValue;
 import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.interop.Arguments;
@@ -68,12 +67,9 @@ public class MapLib {
     }
 
     @Expose public void __forEach(Arguments args) {
-        var func = args.convert(0, FunctionValue.class);
-        var thisArg = args.get(1);
-
         var keys = new ArrayList<>(map.keySet());
 
-        for (var el : keys) func.call(args.ctx, thisArg, map.get(el), el,this);
+        for (var el : keys) Values.call(args.ctx, args.get(0), args.get(1), map.get(el), el, args.self);
     }
 
     public MapLib(Context ctx, Object iterable) {

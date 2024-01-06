@@ -55,7 +55,7 @@ public class SetLib {
     @Expose public void __forEach(Arguments args) {
         var keys = new ArrayList<>(set);
 
-        for (var el : keys) Values.call(args.ctx, args.get(0), args.get(1), el, el, this);
+        for (var el : keys) Values.call(args.ctx, args.get(0), args.get(1), el, el, args.self);
     }
 
     public SetLib(Context ctx, Object iterable) {
