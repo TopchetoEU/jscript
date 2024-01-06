@@ -2,8 +2,8 @@ package me.topchetoeu.jscript.lib;
 
 import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.frame.CodeFrame;
-import me.topchetoeu.jscript.engine.frame.Runners;
 import me.topchetoeu.jscript.engine.values.ObjectValue;
+import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.exceptions.EngineException;
 import me.topchetoeu.jscript.interop.Arguments;
 import me.topchetoeu.jscript.interop.Expose;
@@ -17,10 +17,10 @@ public class GeneratorLib {
 
     private ObjectValue next(Context ctx, Object inducedValue, Object inducedReturn, EngineException inducedError) {
         if (done) {
-            if (inducedError != Runners.NO_RETURN) throw inducedError;
+            if (inducedError != Values.NO_RETURN) throw inducedError;
             var res = new ObjectValue();
             res.defineProperty(ctx, "done", true);
-            res.defineProperty(ctx, "value", inducedReturn == Runners.NO_RETURN ? null : inducedReturn);
+            res.defineProperty(ctx, "value", inducedReturn == Values.NO_RETURN ? null : inducedReturn);
             return res;
         }
 
@@ -31,9 +31,9 @@ public class GeneratorLib {
         while (!yielding) {
             try {
                 res = frame.next(inducedValue, inducedReturn, inducedError);
-                inducedReturn = Runners.NO_RETURN;
+                inducedReturn = Values.NO_RETURN;
                 inducedError = null;
-                if (res != Runners.NO_RETURN) {
+                if (res != Values.NO_RETURN) {
                     done = true;
                     break;
                 }
@@ -55,14 +55,14 @@ public class GeneratorLib {
     }
 
     @Expose public ObjectValue __next(Arguments args) {
-        if (args.n() == 0) return next(args.ctx, Runners.NO_RETURN, Runners.NO_RETURN, null);
-        else return next(args.ctx, args.get(0), Runners.NO_RETURN, null);
+        if (args.n() == 0) return next(args.ctx, Values.NO_RETURN, Values.NO_RETURN, null);
+        else return next(args.ctx, args.get(0), Values.NO_RETURN, null);
     }
     @Expose public ObjectValue __throw(Arguments args) {
-        return next(args.ctx, Runners.NO_RETURN, Runners.NO_RETURN, new EngineException(args.get(0)).setCtx(args.ctx));
+        return next(args.ctx, Values.NO_RETURN, Values.NO_RETURN, new EngineException(args.get(0)).setCtx(args.ctx));
     }
     @Expose public ObjectValue __return(Arguments args) {
-        return next(args.ctx, Runners.NO_RETURN, args.get(0), null);
+        return next(args.ctx, Values.NO_RETURN, args.get(0), null);
     }
 
     @Override public String toString() {

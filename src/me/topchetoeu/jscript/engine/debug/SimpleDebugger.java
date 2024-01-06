@@ -17,7 +17,6 @@ import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.Engine;
 import me.topchetoeu.jscript.engine.Environment;
 import me.topchetoeu.jscript.engine.frame.CodeFrame;
-import me.topchetoeu.jscript.engine.frame.Runners;
 import me.topchetoeu.jscript.engine.scope.GlobalScope;
 import me.topchetoeu.jscript.engine.values.ArrayValue;
 import me.topchetoeu.jscript.engine.values.CodeFunction;
@@ -906,7 +905,7 @@ public class SimpleDebugger implements Debugger {
             if (error != null && (execptionType == CatchType.ALL || execptionType == CatchType.UNCAUGHT && !caught)) {
                 pauseException(ctx);
             }
-            else if (loc != null && (state == State.STEPPING_IN || state == State.STEPPING_OVER) && returnVal != Runners.NO_RETURN && stepOutFrame == frame) {
+            else if (loc != null && (state == State.STEPPING_IN || state == State.STEPPING_OVER) && returnVal != Values.NO_RETURN && stepOutFrame == frame) {
                 pauseDebug(ctx, null);
             }
             else if (isBreakpointable && locToBreakpoint.containsKey(loc)) {
@@ -935,7 +934,7 @@ public class SimpleDebugger implements Debugger {
                     case STEPPING_IN:
                     case STEPPING_OVER:
                         if (stepOutFrame.frame == frame.frame) {
-                            if (returnVal != Runners.NO_RETURN || error != null) {
+                            if (returnVal != Values.NO_RETURN || error != null) {
                                 state = State.STEPPING_OUT;
                                 continue;
                             }

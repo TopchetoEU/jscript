@@ -4,8 +4,8 @@ import java.util.Map;
 
 import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.frame.CodeFrame;
-import me.topchetoeu.jscript.engine.frame.Runners;
 import me.topchetoeu.jscript.engine.values.ObjectValue;
+import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.exceptions.EngineException;
 import me.topchetoeu.jscript.interop.Arguments;
 import me.topchetoeu.jscript.interop.Expose;
@@ -24,7 +24,7 @@ public class AsyncGeneratorLib {
             if (inducedError != null) throw inducedError;
             currPromise.fulfill(ctx, new ObjectValue(ctx, Map.of(
                 "done", true,
-                "value", inducedReturn == Runners.NO_RETURN ? null : inducedReturn
+                "value", inducedReturn == Values.NO_RETURN ? null : inducedReturn
             )));
             return;
         }
@@ -36,10 +36,10 @@ public class AsyncGeneratorLib {
         while (state == 0) {
             try {
                 res = frame.next(inducedValue, inducedReturn, inducedError);
-                inducedValue = inducedReturn = Runners.NO_RETURN;
+                inducedValue = inducedReturn = Values.NO_RETURN;
                 inducedError = null;
 
-                if (res != Runners.NO_RETURN) {
+                if (res != Values.NO_RETURN) {
                     var obj = new ObjectValue();
                     obj.defineProperty(ctx, "done", true);
                     obj.defineProperty(ctx, "value", res);
@@ -57,10 +57,10 @@ public class AsyncGeneratorLib {
         if (state == 1) {
             PromiseLib.handle(ctx, frame.pop(), new Handle() {
                 @Override public void onFulfil(Object val) {
-                    next(ctx, val, Runners.NO_RETURN, null);
+                    next(ctx, val, Values.NO_RETURN, null);
                 }
                 @Override public void onReject(EngineException err) {
-                    next(ctx, Runners.NO_RETURN, Runners.NO_RETURN, err);
+                    next(ctx, Values.NO_RETURN, Values.NO_RETURN, err);
                 }
             });
         }
@@ -90,18 +90,18 @@ public class AsyncGeneratorLib {
 
     @Expose public PromiseLib __next(Arguments args) {
         this.currPromise = new PromiseLib();
-        if (args.has(0)) next(args.ctx, args.get(0), Runners.NO_RETURN, null);
-        else next(args.ctx, Runners.NO_RETURN, Runners.NO_RETURN, null);
+        if (args.has(0)) next(args.ctx, args.get(0), Values.NO_RETURN, null);
+        else next(args.ctx, Values.NO_RETURN, Values.NO_RETURN, null);
         return this.currPromise;
     }
     @Expose public PromiseLib __return(Arguments args) {
         this.currPromise = new PromiseLib();
-        next(args.ctx, Runners.NO_RETURN, args.get(0), null);
+        next(args.ctx, Values.NO_RETURN, args.get(0), null);
         return this.currPromise;
     }
     @Expose public PromiseLib __throw(Arguments args) {
         this.currPromise = new PromiseLib();
-        next(args.ctx, Runners.NO_RETURN, Runners.NO_RETURN, new EngineException(args.get(0)).setCtx(args.ctx));
+        next(args.ctx, Values.NO_RETURN, Values.NO_RETURN, new EngineException(args.get(0)).setCtx(args.ctx));
         return this.currPromise;
     }
 }

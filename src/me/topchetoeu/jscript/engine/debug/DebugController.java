@@ -27,7 +27,7 @@ public interface DebugController {
      * @param frame The frame in which execution is occuring
      * @param instruction The instruction which was or will be executed
      * @param loc The most recent location the code frame has been at
-     * @param returnVal The return value of the instruction, Runners.NO_RETURN if none
+     * @param returnVal The return value of the instruction, Values.NO_RETURN if none
      * @param error The error that the instruction threw, null if none
      * @param caught Whether or not the error has been caught
      * @return Whether or not the frame should restart

@@ -167,7 +167,7 @@ public class ObjectValue {
             prototype = null;
             return true;
         }
-        else if (Values.isObject(val)) {
+        else if (val instanceof ObjectValue) {
             var obj = Values.object(val);
 
             if (ctx != null) {

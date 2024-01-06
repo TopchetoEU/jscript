@@ -191,18 +191,18 @@ public class CodeFrame {
     }
 
     public Object next(Object value, Object returnValue, EngineException error) {
-        if (value != Runners.NO_RETURN) push(ctx, value);
+        if (value != Values.NO_RETURN) push(ctx, value);
 
         Instruction instr = null;
         if (codePtr >= 0 && codePtr < function.body.length) instr = function.body[codePtr];
 
-        if (returnValue == Runners.NO_RETURN && error == null) {
+        if (returnValue == Values.NO_RETURN && error == null) {
             try {
                 if (Thread.currentThread().isInterrupted()) throw new InterruptException();
 
                 if (instr == null) returnValue = null;
                 else {
-                    DebugContext.get(ctx).onInstruction(ctx, this, instr, Runners.NO_RETURN, null, false);
+                    DebugContext.get(ctx).onInstruction(ctx, this, instr, Values.NO_RETURN, null, false);
 
                     if (instr.location != null) prevLoc = instr.location;
 
@@ -227,7 +227,7 @@ public class CodeFrame {
                 if (tryCtx.hasCatch()) newCtx = tryCtx._catch(error);
                 else if (tryCtx.hasFinally()) newCtx = tryCtx._finally(PendingResult.ofThrow(error, instr));
             }
-            else if (returnValue != Runners.NO_RETURN) {
+            else if (returnValue != Values.NO_RETURN) {
                 if (tryCtx.hasFinally()) newCtx = tryCtx._finally(PendingResult.ofReturn(returnValue, instr));
             }
             else if (jumpFlag && !tryCtx.inBounds(codePtr)) {
@@ -254,7 +254,7 @@ public class CodeFrame {
                     tryStack.push(newCtx);
                 }
                 error = null;
-                returnValue = Runners.NO_RETURN;
+                returnValue = Values.NO_RETURN;
                 break;
             }
             else {
@@ -272,7 +272,7 @@ public class CodeFrame {
                     tryStack.pop();
                     codePtr = tryCtx.end;
                     if (tryCtx.result.instruction != null) instr = tryCtx.result.instruction;
-                    if (!jumpFlag && returnValue == Runners.NO_RETURN && error == null) {
+                    if (!jumpFlag && returnValue == Values.NO_RETURN && error == null) {
                         if (tryCtx.result.isJump) {
                             codePtr = tryCtx.result.ptr;
                             jumpFlag = true;
@@ -300,12 +300,12 @@ public class CodeFrame {
             DebugContext.get(ctx).onInstruction(ctx, this, instr, null, error, caught);
             throw error;
         }
-        if (returnValue != Runners.NO_RETURN) {
+        if (returnValue != Values.NO_RETURN) {
             DebugContext.get(ctx).onInstruction(ctx, this, instr, returnValue, null, false);
             return returnValue;
         }
 
-        return Runners.NO_RETURN;
+        return Values.NO_RETURN;
     }
 
     public void onPush() {

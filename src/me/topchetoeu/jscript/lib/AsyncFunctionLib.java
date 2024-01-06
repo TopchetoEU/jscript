@@ -2,10 +2,10 @@ package me.topchetoeu.jscript.lib;
 
 import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.frame.CodeFrame;
-import me.topchetoeu.jscript.engine.frame.Runners;
 import me.topchetoeu.jscript.engine.values.CodeFunction;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
 import me.topchetoeu.jscript.engine.values.NativeFunction;
+import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.exceptions.EngineException;
 import me.topchetoeu.jscript.interop.Arguments;
 import me.topchetoeu.jscript.interop.WrapperName;
@@ -28,11 +28,11 @@ public class AsyncFunctionLib extends FunctionValue {
             awaiting = false;
             while (!awaiting) {
                 try {
-                    res = frame.next(inducedValue, Runners.NO_RETURN, inducedError);
-                    inducedValue = Runners.NO_RETURN;
+                    res = frame.next(inducedValue, Values.NO_RETURN, inducedError);
+                    inducedValue = Values.NO_RETURN;
                     inducedError = null;
 
-                    if (res != Runners.NO_RETURN) {
+                    if (res != Values.NO_RETURN) {
                         promise.fulfill(ctx, res);
                         break;
                     }
@@ -52,7 +52,7 @@ public class AsyncFunctionLib extends FunctionValue {
                     }
                     @Override
                     public void onReject(EngineException err) {
-                        next(ctx, Runners.NO_RETURN, err);
+                        next(ctx, Values.NO_RETURN, err);
                     }
                 });
             }
@@ -70,7 +70,7 @@ public class AsyncFunctionLib extends FunctionValue {
         var func = factory.call(ctx, thisArg, new NativeFunction("await", handler::await));
         if (!(func instanceof CodeFunction)) throw EngineException.ofType("Return value of argument must be a js function.");
         handler.frame = new CodeFrame(ctx, thisArg, args, (CodeFunction)func);
-        handler.next(ctx, Runners.NO_RETURN, null);
+        handler.next(ctx, Values.NO_RETURN, null);
         return handler.promise;
     }
 

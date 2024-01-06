@@ -40,10 +40,8 @@ public class Values {
     }
 
     public static final Object NULL = new Object();
+    public static final Object NO_RETURN = new Object();
 
-    public static boolean isObject(Object val) { return val instanceof ObjectValue; }
-    public static boolean isFunction(Object val) { return val instanceof FunctionValue; }
-    public static boolean isArray(Object val) { return val instanceof ArrayValue; }
     public static boolean isWrapper(Object val) { return val instanceof NativeWrapper; }
     public static boolean isWrapper(Object val, Class<?> clazz) {
         if (!isWrapper(val)) return false;
@@ -90,8 +88,8 @@ public class Values {
     private static Object tryCallConvertFunc(Context ctx, Object obj, String name) {
         var func = getMember(ctx, obj, name);
 
-        if (func != null) {
-            var res = ((FunctionValue)func).call(ctx, obj);
+        if (func instanceof FunctionValue) {
+            var res = Values.call(ctx, func, obj);
             if (isPrimitive(res)) return res;
         }
 
@@ -285,7 +283,7 @@ public class Values {
         obj = normalize(ctx, obj); key = normalize(ctx, key);
         if (obj == null) throw new IllegalArgumentException("Tried to access member of undefined.");
         if (obj == NULL) throw new IllegalArgumentException("Tried to access member of null.");
-        if (isObject(obj)) return object(obj).getMember(ctx, key);
+        if (obj instanceof ObjectValue) return object(obj).getMember(ctx, key);
 
         if (obj instanceof String && key instanceof Number) {
             var i = number(key);
@@ -311,7 +309,7 @@ public class Values {
         if (obj == null) throw EngineException.ofType("Tried to access member of undefined.");
         if (obj == NULL) throw EngineException.ofType("Tried to access member of null.");
         if (key != null && "__proto__".equals(key)) return setPrototype(ctx, obj, val);
-        if (isObject(obj)) return object(obj).setMember(ctx, key, val, false);
+        if (obj instanceof ObjectValue) return object(obj).setMember(ctx, key, val, false);
 
         var proto = getPrototype(ctx, obj);
         return proto.setMember(ctx, key, val, obj, true);
@@ -321,7 +319,7 @@ public class Values {
         obj = normalize(ctx, obj); key = normalize(ctx, key);
 
         if ("__proto__".equals(key)) return true;
-        if (isObject(obj)) return object(obj).hasMember(ctx, key, own);
+        if (obj instanceof ObjectValue) return object(obj).hasMember(ctx, key, own);
 
         if (obj instanceof String && key instanceof Number) {
             var i = number(key);
@@ -338,13 +336,13 @@ public class Values {
         if (obj == null || obj == NULL) return false;
         obj = normalize(ctx, obj); key = normalize(ctx, key);
 
-        if (isObject(obj)) return object(obj).deleteMember(ctx, key);
+        if (obj instanceof ObjectValue) return object(obj).deleteMember(ctx, key);
         else return false;
     }
     public static ObjectValue getPrototype(Context ctx, Object obj) {
         if (obj == null || obj == NULL) return null;
         obj = normalize(ctx, obj);
-        if (isObject(obj)) return object(obj).getPrototype(ctx);
+        if (obj instanceof ObjectValue) return object(obj).getPrototype(ctx);
         if (ctx == null) return null;
 
         if (obj instanceof String) return ctx.get(Environment.STRING_PROTO);
@@ -356,12 +354,12 @@ public class Values {
     }
     public static boolean setPrototype(Context ctx, Object obj, Object proto) {
         obj = normalize(ctx, obj);
-        return isObject(obj) && object(obj).setPrototype(ctx, proto);
+        return obj instanceof ObjectValue && object(obj).setPrototype(ctx, proto);
     }
     public static List<Object> getMembers(Context ctx, Object obj, boolean own, boolean includeNonEnumerable) {  
         List<Object> res = new ArrayList<>();
 
-        if (isObject(obj)) res = object(obj).keys(includeNonEnumerable);
+        if (obj instanceof ObjectValue) res = object(obj).keys(includeNonEnumerable);
         if (obj instanceof String) {
             for (var i = 0; i < ((String)obj).length(); i++) res.add((double)i);
         }
@@ -397,7 +395,7 @@ public class Values {
     }
 
     public static Object call(Context ctx, Object func, Object thisArg, Object ...args) {
-        if (!isFunction(func)) throw EngineException.ofType("Tried to call a non-function value.");
+        if (!(func instanceof FunctionValue)) throw EngineException.ofType("Tried to call a non-function value.");
         return function(func).call(ctx, thisArg, args);
     }
     public static Object callNew(Context ctx, Object func, Object ...args) {
@@ -557,13 +555,13 @@ public class Values {
                 var symbol = Symbol.get("Symbol.iterator");
 
                 var iteratorFunc = getMember(ctx, obj, symbol);
-                if (!isFunction(iteratorFunc)) return Collections.emptyIterator();
+                if (!(iteratorFunc instanceof FunctionValue)) return Collections.emptyIterator();
                 var iterator = iteratorFunc instanceof FunctionValue ?
                     ((FunctionValue)iteratorFunc).call(ctx, obj, obj) :
                     iteratorFunc;
                 var nextFunc = getMember(ctx, call(ctx, iteratorFunc, obj), "next");
 
-                if (!isFunction(nextFunc)) return Collections.emptyIterator();
+                if (!(nextFunc instanceof FunctionValue)) return Collections.emptyIterator();
 
                 return new Iterator<Object>() {
                     private Object value = null;

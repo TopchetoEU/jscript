@@ -10,14 +10,13 @@ import me.topchetoeu.jscript.engine.Operation;
 import me.topchetoeu.jscript.engine.scope.ValueVariable;
 import me.topchetoeu.jscript.engine.values.ArrayValue;
 import me.topchetoeu.jscript.engine.values.CodeFunction;
+import me.topchetoeu.jscript.engine.values.FunctionValue;
 import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.engine.values.Symbol;
 import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.exceptions.EngineException;
 
 public class Runners {
-    public static final Object NO_RETURN = new Object();
-
     public static Object execReturn(Context ctx, Instruction instr, CodeFrame frame) {
         return frame.pop();
     }
@@ -36,7 +35,7 @@ public class Runners {
         frame.push(ctx, Values.call(ctx, func, thisArg, callArgs));
 
         frame.codePtr++;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
     public static Object execCallNew(Context ctx, Instruction instr, CodeFrame frame) {
         var callArgs = frame.take(instr.get(0));
@@ -45,14 +44,14 @@ public class Runners {
         frame.push(ctx, Values.callNew(ctx, funcObj, callArgs));
 
         frame.codePtr++;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
 
     public static Object execMakeVar(Context ctx, Instruction instr, CodeFrame frame) {
         var name = (String)instr.get(0);
         ctx.environment.global.define(name);
         frame.codePtr++;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
     public static Object execDefProp(Context ctx, Instruction instr, CodeFrame frame) {
         var setter = frame.pop();
@@ -60,14 +59,14 @@ public class Runners {
         var name = frame.pop();
         var obj = frame.pop();
 
-        if (getter != null && !Values.isFunction(getter)) throw EngineException.ofType("Getter must be a function or undefined.");
-        if (setter != null && !Values.isFunction(setter)) throw EngineException.ofType("Setter must be a function or undefined.");
-        if (!Values.isObject(obj)) throw EngineException.ofType("Property apply target must be an object.");
+        if (getter != null && !(getter instanceof FunctionValue)) throw EngineException.ofType("Getter must be a function or undefined.");
+        if (setter != null && !(setter instanceof FunctionValue)) throw EngineException.ofType("Setter must be a function or undefined.");
+        if (!(obj instanceof ObjectValue)) throw EngineException.ofType("Property apply target must be an object.");
         Values.object(obj).defineProperty(ctx, name, Values.function(getter), Values.function(setter), false, false);
 
         frame.push(ctx, obj);
         frame.codePtr++;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
     public static Object execInstanceof(Context ctx, Instruction instr, CodeFrame frame) {
         var type = frame.pop();
@@ -82,7 +81,7 @@ public class Runners {
         }
 
         frame.codePtr++;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
     public static Object execKeys(Context ctx, Instruction instr, CodeFrame frame) {
         var val = frame.pop();
@@ -100,7 +99,7 @@ public class Runners {
         }
 
         frame.codePtr++;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
 
     public static Object execTryStart(Context ctx, Instruction instr, CodeFrame frame) {
@@ -112,11 +111,11 @@ public class Runners {
         int end = (int)instr.get(2) + start;
         frame.addTry(start, end, catchStart, finallyStart);
         frame.codePtr++;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
     public static Object execTryEnd(Context ctx, Instruction instr, CodeFrame frame) {
         frame.popTryFlag = true;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
 
     public static Object execDup(Context ctx, Instruction instr, CodeFrame frame) {
@@ -127,17 +126,17 @@ public class Runners {
         }
 
         frame.codePtr++;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
     public static Object execLoadUndefined(Context ctx, Instruction instr, CodeFrame frame) {
         frame.push(ctx, null);
         frame.codePtr++;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
     public static Object execLoadValue(Context ctx, Instruction instr, CodeFrame frame) {
         frame.push(ctx, instr.get(0));
         frame.codePtr++;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
     public static Object execLoadVar(Context ctx, Instruction instr, CodeFrame frame) {
         var i = instr.get(0);
@@ -146,24 +145,24 @@ public class Runners {
         else frame.push(ctx, frame.scope.get((int)i).get(ctx));
 
         frame.codePtr++;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
     public static Object execLoadObj(Context ctx, Instruction instr, CodeFrame frame) {
         frame.push(ctx, new ObjectValue());
         frame.codePtr++;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
     public static Object execLoadGlob(Context ctx, Instruction instr, CodeFrame frame) {
         frame.push(ctx, ctx.environment.global.obj);
         frame.codePtr++;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
     public static Object execLoadArr(Context ctx, Instruction instr, CodeFrame frame) {
         var res = new ArrayValue();
         res.setSize(instr.get(0));
         frame.push(ctx, res);
         frame.codePtr++;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
     public static Object execLoadFunc(Context ctx, Instruction instr, CodeFrame frame) {
         long id = (Long)instr.get(0);
@@ -178,7 +177,7 @@ public class Runners {
         frame.push(ctx, func);
 
         frame.codePtr++;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
     public static Object execLoadMember(Context ctx, Instruction instr, CodeFrame frame) {
         var key = frame.pop();
@@ -191,7 +190,7 @@ public class Runners {
             throw EngineException.ofType(e.getMessage());
         }
         frame.codePtr++;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
     public static Object execLoadKeyMember(Context ctx, Instruction instr, CodeFrame frame) {
         frame.push(ctx, instr.get(0));
@@ -205,13 +204,13 @@ public class Runners {
             throw EngineException.ofSyntax("Regex is not supported.");
         }
         frame.codePtr++;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
 
     public static Object execDiscard(Context ctx, Instruction instr, CodeFrame frame) {
         frame.pop();
         frame.codePtr++;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
     public static Object execStoreMember(Context ctx, Instruction instr, CodeFrame frame) {
         var val = frame.pop();
@@ -221,7 +220,7 @@ public class Runners {
         if (!Values.setMember(ctx, obj, key, val)) throw EngineException.ofSyntax("Can't set member '" + key + "'.");
         if ((boolean)instr.get(0)) frame.push(ctx, val);
         frame.codePtr++;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
     public static Object execStoreVar(Context ctx, Instruction instr, CodeFrame frame) {
         var val = (boolean)instr.get(1) ? frame.peek() : frame.pop();
@@ -231,18 +230,18 @@ public class Runners {
         else frame.scope.get((int)i).set(ctx, val);
 
         frame.codePtr++;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
     public static Object execStoreSelfFunc(Context ctx, Instruction instr, CodeFrame frame) {
         frame.scope.locals[(int)instr.get(0)].set(ctx, frame.function);
         frame.codePtr++;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
     
     public static Object execJmp(Context ctx, Instruction instr, CodeFrame frame) {
         frame.codePtr += (int)instr.get(0);
         frame.jumpFlag = true;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
     public static Object execJmpIf(Context ctx, Instruction instr, CodeFrame frame) {
         if (Values.toBoolean(frame.pop())) {
@@ -250,7 +249,7 @@ public class Runners {
             frame.jumpFlag = true;
         }
         else frame.codePtr ++;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
     public static Object execJmpIfNot(Context ctx, Instruction instr, CodeFrame frame) {
         if (Values.not(frame.pop())) {
@@ -258,7 +257,7 @@ public class Runners {
             frame.jumpFlag = true;
         }
         else frame.codePtr ++;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
 
     public static Object execIn(Context ctx, Instruction instr, CodeFrame frame) {
@@ -267,7 +266,7 @@ public class Runners {
 
         frame.push(ctx, Values.hasMember(ctx, obj, index, false));
         frame.codePtr++;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
     public static Object execTypeof(Context ctx, Instruction instr, CodeFrame frame) {
         String name = instr.get(0);
@@ -284,11 +283,11 @@ public class Runners {
         frame.push(ctx, Values.type(obj));
 
         frame.codePtr++;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
     public static Object execNop(Context ctx, Instruction instr, CodeFrame frame) {
         frame.codePtr++;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
 
     public static Object execDelete(Context ctx, Instruction instr, CodeFrame frame) {
@@ -297,7 +296,7 @@ public class Runners {
 
         if (!Values.deleteMember(ctx, val, key)) throw EngineException.ofSyntax("Can't delete member '" + key + "'.");
         frame.codePtr++;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
 
     public static Object execOperation(Context ctx, Instruction instr, CodeFrame frame) {
@@ -308,7 +307,7 @@ public class Runners {
 
         frame.push(ctx, Values.operation(ctx, op, args));
         frame.codePtr++;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
 
     public static Object exec(Context ctx, Instruction instr, CodeFrame frame) {
