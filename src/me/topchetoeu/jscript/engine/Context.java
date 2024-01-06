@@ -96,7 +96,6 @@ public class Context implements Extensions {
 
     public Context pushFrame(CodeFrame frame) {
         var res = new Context(this, frame.function.environment, frame, engine, stackSize + 1);
-        DebugContext.get(res).onFramePush(res, frame);
         return res;
     }
 

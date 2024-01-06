@@ -109,34 +109,48 @@ public class SimpleDebugger implements Debugger {
         public ObjectValue local, capture, global, valstack;
         public JSONMap serialized;
         public Location location;
-        public boolean debugData = false;
 
         public void updateLoc(Location loc) {
             if (loc == null) return;
             this.location = loc;
         }
 
-        public Frame(Context ctx, CodeFrame frame, int id) {
+        public Frame(CodeFrame frame, int id) {
             this.frame = frame;
             this.func = frame.function;
             this.id = id;
 
             this.global = frame.function.environment.global.obj;
-            this.local = frame.getLocalScope(ctx, true);
-            this.capture = frame.getCaptureScope(ctx, true);
-            this.local.setPrototype(ctx, capture);
-            this.capture.setPrototype(ctx, global);
-            this.valstack = frame.getValStackScope(ctx);
-            debugData = true;
+            this.local = frame.getLocalScope(true);
+            this.capture = frame.getCaptureScope(true);
+            this.local.setPrototype(frame.ctx, capture);
+            this.capture.setPrototype(frame.ctx, global);
+            this.valstack = frame.getValStackScope();
 
             this.serialized = new JSONMap()
                 .set("callFrameId", id + "")
                 .set("functionName", func.name)
                 .set("scopeChain", new JSONList()
-                    .add(new JSONMap().set("type", "local").set("name", "Local Scope").set("object", serializeObj(ctx, local)))
-                    .add(new JSONMap().set("type", "closure").set("name", "Closure").set("object", serializeObj(ctx, capture)))
-                    .add(new JSONMap().set("type", "global").set("name", "Global Scope").set("object", serializeObj(ctx, global)))
-                    .add(new JSONMap().set("type", "other").set("name", "Value Stack").set("object", serializeObj(ctx, valstack)))
+                    .add(new JSONMap()
+                        .set("type", "local")
+                        .set("name", "Local Scope")
+                        .set("object", serializeObj(frame.ctx, local))
+                    )
+                    .add(new JSONMap()
+                        .set("type", "closure")
+                        .set("name", "Closure")
+                        .set("object", serializeObj(frame.ctx, capture))
+                    )
+                    .add(new JSONMap()
+                        .set("type", "global")
+                        .set("name", "Global Scope")
+                        .set("object", serializeObj(frame.ctx, global))
+                    )
+                    .add(new JSONMap()
+                        .set("type", "other")
+                        .set("name", "Value Stack")
+                        .set("object", serializeObj(frame.ctx, valstack))
+                    )
                 );
         }
     }
@@ -231,25 +245,29 @@ public class SimpleDebugger implements Debugger {
         return nextId++;
     }
 
+    private synchronized Frame getFrame(CodeFrame frame) {
+        if (!codeFrameToFrame.containsKey(frame)) {
+            var id = nextId();
+            var fr = new Frame(frame, id);
+
+            idToFrame.put(id, fr);
+            codeFrameToFrame.put(frame, fr);
+
+            return fr;
+        }
+        else return codeFrameToFrame.get(frame);
+    }
     private synchronized void updateFrames(Context ctx) {
         var frame = ctx.frame;
         if (frame == null) return;
 
-        if (!codeFrameToFrame.containsKey(frame)) {
-            var id = nextId();
-            var fr = new Frame(ctx, frame, id);
-
-            idToFrame.put(id, fr);
-            codeFrameToFrame.put(frame, fr);
-        }
-
-        currFrame = codeFrameToFrame.get(frame);
+        currFrame = getFrame(frame);
     }
     private JSONList serializeFrames(Context ctx) {
         var res = new JSONList();
 
         for (var el : ctx.frames()) {
-            var frame = codeFrameToFrame.get(el);
+            var frame = getFrame(el);
             if (frame.location == null) continue;
             frame.serialized.set("location", serializeLocation(frame.location));
             if (frame.location != null) res.add(frame.serialized);
@@ -894,9 +912,7 @@ public class SimpleDebugger implements Debugger {
         Frame frame;
 
         synchronized (this) {
-            frame = codeFrameToFrame.get(cf);
-
-            if (!frame.debugData) return false;
+            frame = getFrame(cf);
 
             if (instruction.location != null) frame.updateLoc(DebugContext.get(ctx).mapToCompiled(instruction.location));
             loc = frame.location;
