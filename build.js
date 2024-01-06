@@ -77,6 +77,7 @@ async function downloadTypescript(outFile) {
         console.log('Minifying typescript...');
 
         const minified = minify((await fs.readFile('tmp/typescript-es5.js')).toString());
+        // const minified = { code: (await fs.readFile('tmp/typescript-es5.js')).toString() };
         if (minified.error) throw minified.error;
 
         // Patch unsupported regex syntax

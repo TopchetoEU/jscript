@@ -8,42 +8,32 @@ import java.nio.file.Path;
 import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.Engine;
 import me.topchetoeu.jscript.engine.Environment;
+import me.topchetoeu.jscript.engine.debug.DebugContext;
 import me.topchetoeu.jscript.engine.debug.DebugServer;
 import me.topchetoeu.jscript.engine.debug.SimpleDebugger;
 import me.topchetoeu.jscript.engine.values.ArrayValue;
 import me.topchetoeu.jscript.engine.values.NativeFunction;
 import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.engine.values.Values;
-import me.topchetoeu.jscript.events.Observer;
 import me.topchetoeu.jscript.exceptions.EngineException;
 import me.topchetoeu.jscript.exceptions.InterruptException;
 import me.topchetoeu.jscript.exceptions.SyntaxException;
+import me.topchetoeu.jscript.filesystem.Filesystem;
 import me.topchetoeu.jscript.filesystem.MemoryFilesystem;
 import me.topchetoeu.jscript.filesystem.Mode;
 import me.topchetoeu.jscript.filesystem.PhysicalFilesystem;
+import me.topchetoeu.jscript.filesystem.RootFilesystem;
+import me.topchetoeu.jscript.lib.EnvironmentLib;
 import me.topchetoeu.jscript.lib.Internals;
 import me.topchetoeu.jscript.modules.ModuleRepo;
+import me.topchetoeu.jscript.permissions.PermissionsManager;
+import me.topchetoeu.jscript.permissions.PermissionsProvider;
 
-public class Main {   
-    public static class Printer implements Observer<Object> {
-        public void next(Object data) {
-            Values.printValue(null, data);
-            System.out.println();
-        }
-
-        public void error(RuntimeException err) {
-            Values.printError(err, null);
-        }
-
-        public void finish() {
-            engineTask.interrupt();
-        }
-    }
-
+public class Main {
     static Thread engineTask, debugTask;
-    static Engine engine = new Engine(true);
+    static Engine engine = new Engine();
     static DebugServer debugServer = new DebugServer();
-    static Environment environment = new Environment(null, null, null);
+    static Environment environment = new Environment();
 
     static int j = 0;
     static boolean exited = false;
@@ -70,7 +60,7 @@ public class Main {
             }
             for (var i = 0; ; i++) {
                 try {
-                    var raw = Reading.read();
+                    var raw = Reading.readline();
 
                     if (raw == null) break;
                     var res = engine.pushMsg(
@@ -104,54 +94,66 @@ public class Main {
     private static void initEnv() {
         environment = Internals.apply(environment);
 
-        environment.global.define(false, new NativeFunction("exit", (_ctx, th, args) -> {
+        environment.global.define(false, new NativeFunction("exit", args -> {
             exited = true;
             throw new InterruptException();
         }));
-        environment.global.define(false, new NativeFunction("go", (_ctx, th, args) -> {
+        environment.global.define(false, new NativeFunction("go", args -> {
             try {
                 var f = Path.of("do.js");
-                var func = _ctx.compile(new Filename("do", "do/" + j++ + ".js"), new String(Files.readAllBytes(f)));
-                return func.call(_ctx);
+                var func = args.ctx.compile(new Filename("do", "do/" + j++ + ".js"), new String(Files.readAllBytes(f)));
+                return func.call(args.ctx);
             }
             catch (IOException e) {
                 throw new EngineException("Couldn't open do.js");
             }
         }));
 
-        environment.filesystem.protocols.put("temp", new MemoryFilesystem(Mode.READ_WRITE));
-        environment.filesystem.protocols.put("file", new PhysicalFilesystem("."));
-        environment.modules.repos.put("file", ModuleRepo.ofFilesystem(environment.filesystem));
+        var fs = new RootFilesystem(PermissionsProvider.get(environment));
+        fs.protocols.put("temp", new MemoryFilesystem(Mode.READ_WRITE));
+        fs.protocols.put("file", new PhysicalFilesystem("."));
+
+        environment.add(PermissionsProvider.ENV_KEY, PermissionsManager.ALL_PERMS);
+        environment.add(Filesystem.ENV_KEY, fs);
+        environment.add(ModuleRepo.ENV_KEY, ModuleRepo.ofFilesystem(fs));
     }
     private static void initEngine() {
-        debugServer.targets.put("target", (ws, req) -> new SimpleDebugger(ws, engine));
+        var ctx = new DebugContext();
+        engine.add(DebugContext.ENV_KEY, ctx);
+
+        debugServer.targets.put("target", (ws, req) -> new SimpleDebugger(ws).attach(ctx));
         engineTask = engine.start();
         debugTask = debugServer.start(new InetSocketAddress("127.0.0.1", 9229), true);
     }
     private static void initTypescript() {
+        var tsEnv = Internals.apply(new Environment());
+        var bsEnv = Internals.apply(new Environment());
+
         try {
-            var tsEnv = Internals.apply(new Environment(null, null, null));
-            tsEnv.stackVisible = false;
             tsEnv.global.define(null, "module", false, new ObjectValue());
-            var bsEnv = Internals.apply(new Environment(null, null, null));
-            bsEnv.stackVisible = false;
 
             engine.pushMsg(
                 false, tsEnv,
                 new Filename("jscript", "ts.js"),
-                Reading.resourceToString("js/ts.js"), null
+                Reading.resourceToString("assets/js/ts.js"), null
             ).await();
             System.out.println("Loaded typescript!");
 
+            var typescript = tsEnv.global.get(new Context(engine, bsEnv), "ts");
+            var libs = new ArrayValue(null, Reading.resourceToString("assets/js/lib.d.ts"));
+
             engine.pushMsg(
                 false, bsEnv,
-                new Filename("jscript", "bootstrap.js"), Reading.resourceToString("js/bootstrap.js"), null,
-                tsEnv.global.get(new Context(engine, bsEnv), "ts"), environment, new ArrayValue(null, Reading.resourceToString("js/lib.d.ts"))
+                new Filename("jscript", "bootstrap.js"), Reading.resourceToString("assets/js/bootstrap.js"), null,
+                typescript, new EnvironmentLib(environment), libs
             ).await();
         }
         catch (EngineException e) {
             Values.printError(e, "(while initializing TS)");
         }
+
+        bsEnv.add(Environment.HIDE_STACK, true);
+        tsEnv.add(Environment.HIDE_STACK, true);
     }
 
     public static void main(String args[]) {

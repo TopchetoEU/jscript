@@ -6,9 +6,10 @@ import me.topchetoeu.jscript.engine.values.CodeFunction;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
 import me.topchetoeu.jscript.engine.values.NativeFunction;
 import me.topchetoeu.jscript.exceptions.EngineException;
-import me.topchetoeu.jscript.interop.Native;
+import me.topchetoeu.jscript.interop.WrapperName;
 
-@Native("AsyncGeneratorFunction") public class AsyncGeneratorFunctionLib extends FunctionValue {
+@WrapperName("AsyncGeneratorFunction")
+public class AsyncGeneratorFunctionLib extends FunctionValue {
     public final FunctionValue factory;
 
     @Override

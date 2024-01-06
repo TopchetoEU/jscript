@@ -3,43 +3,50 @@ package me.topchetoeu.jscript.lib;
 import java.io.IOException;
 import java.util.HashMap;
 
-import me.topchetoeu.jscript.Buffer;
 import me.topchetoeu.jscript.Reading;
-import me.topchetoeu.jscript.engine.Context;
-import me.topchetoeu.jscript.engine.DataKey;
 import me.topchetoeu.jscript.engine.Environment;
 import me.topchetoeu.jscript.engine.scope.GlobalScope;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
+import me.topchetoeu.jscript.engine.values.Symbol;
 import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.exceptions.EngineException;
-import me.topchetoeu.jscript.interop.Native;
-import me.topchetoeu.jscript.interop.NativeGetter;
-import me.topchetoeu.jscript.parsing.Parsing;
+import me.topchetoeu.jscript.interop.Arguments;
+import me.topchetoeu.jscript.interop.Expose;
+import me.topchetoeu.jscript.interop.ExposeField;
+import me.topchetoeu.jscript.interop.ExposeTarget;
+import me.topchetoeu.jscript.modules.ModuleRepo;
 
 public class Internals {
-    private static final DataKey<HashMap<Integer, Thread>> THREADS = new DataKey<>();
-    private static final DataKey<Integer> I = new DataKey<>();
+    private static final Symbol THREADS = new Symbol("Internals.threads");
+    private static final Symbol I = new Symbol("Internals.i");
 
-    @Native public static Object require(Context ctx, String name) {
-        var env = ctx.environment();
-        var res = env.modules.getModule(ctx, env.moduleCwd, name);
-        res.load(ctx);
-        return res.value();
+    @Expose(target = ExposeTarget.STATIC)
+    public static Object __require(Arguments args) {
+        var repo = ModuleRepo.get(args.ctx);
+
+        if (repo != null) {
+            var res = repo.getModule(args.ctx, ModuleRepo.cwd(args.ctx), args.getString(0));
+            res.load(args.ctx);
+            return res.value();
+        }
+
+        else throw EngineException.ofError("Modules are not supported.");
     }
 
-    @Native public static Object log(Context ctx, Object ...args) {
-        for (var arg : args) {
-            Values.printValue(ctx, arg);
+    @Expose(target = ExposeTarget.STATIC)
+    public static Object __log(Arguments args) {
+        for (var arg : args.args) {
+            Values.printValue(args.ctx, arg);
             System.out.print(" ");
         }
         System.out.println();
 
-        if (args.length == 0) return null;
-        else return args[0];
+        return args.get(0);
     }
-    @Native public static String readline(Context ctx) {
+    @Expose(target = ExposeTarget.STATIC)
+    public static String __readline() {
         try {
-            return Reading.read();
+            return Reading.readline();
         }
         catch (IOException e) {
             e.printStackTrace();
@@ -47,26 +54,35 @@ public class Internals {
         }
     }
 
-    @Native public static int setTimeout(Context ctx, FunctionValue func, int delay, Object ...args) {
+    @Expose(target = ExposeTarget.STATIC)
+    public static Thread __setTimeout(Arguments args) {
+        var func = args.convert(0, FunctionValue.class);
+        var delay = args.getDouble(1);
+        var arguments = args.slice(2).args;
+
         var thread = new Thread(() -> {
             var ms = (long)delay;
             var ns = (int)((delay - ms) * 10000000);
 
-            try {
-                Thread.sleep(ms, ns);
-            }
+            try { Thread.sleep(ms, ns); }
             catch (InterruptedException e) { return; }
 
-            ctx.engine.pushMsg(false, ctx.environment(), func, null, args);
+            args.ctx.engine.pushMsg(false, args.ctx.environment, func, null, arguments);
         });
-        thread.start();
 
-        int i = ctx.environment().data.increase(I, 1, 0);
-        var threads = ctx.environment().data.get(THREADS, new HashMap<>());
-        threads.put(++i, thread);
-        return i;
+        thread.start();
+        var i = args.ctx.init(I, 1);
+        args.ctx.add(I, i + 1);
+        args.ctx.init(THREADS, new HashMap<Integer, Thread>()).put(i, thread);
+
+        return thread;
     }
-    @Native public static int setInterval(Context ctx, FunctionValue func, int delay, Object ...args) {
+    @Expose(target = ExposeTarget.STATIC)
+    public static Thread __setInterval(Arguments args) {
+        var func = args.convert(0, FunctionValue.class);
+        var delay = args.getDouble(1);
+        var arguments = args.slice(2).args;
+
         var thread = new Thread(() -> {
             var ms = (long)delay;
             var ns = (int)((delay - ms) * 10000000);
@@ -76,104 +92,77 @@ public class Internals {
                     Thread.sleep(ms, ns);
                 }
                 catch (InterruptedException e) { return; }
-    
-                ctx.engine.pushMsg(false, ctx.environment(), func, null, args);
+
+                args.ctx.engine.pushMsg(false, args.ctx.environment, func, null, arguments);
             }
         });
         thread.start();
+        var i = args.ctx.init(I, 1);
+        args.ctx.add(I, i + 1);
+        args.ctx.init(THREADS, new HashMap<Integer, Thread>()).put(i, thread);
 
-        int i = ctx.environment().data.increase(I, 1, 0);
-        var threads = ctx.environment().data.get(THREADS, new HashMap<>());
-        threads.put(++i, thread);
-        return i;
-    }
-
-    @Native public static void clearTimeout(Context ctx, int i) {
-        var threads = ctx.environment().data.get(THREADS, new HashMap<>());
-
-        var thread = threads.remove(i);
-        if (thread != null) thread.interrupt();
-    }
-    @Native public static void clearInterval(Context ctx, int i) {
-        clearTimeout(ctx, i);
+        return thread;
     }
 
-    @Native public static double parseInt(Context ctx, String val) {
-        return NumberLib.parseInt(ctx, val);
+    @Expose(target = ExposeTarget.STATIC)
+    public static void __clearTimeout(Arguments args) {
+        var i = args.getInt(0);
+        HashMap<Integer, Thread> map = args.ctx.get(THREADS);
+        if (map == null) return;
+
+        var thread = map.get(i);
+        if (thread == null) return;
+
+        thread.interrupt();
+        map.remove(i);
     }
-    @Native public static double parseFloat(Context ctx, String val) {
-        return NumberLib.parseFloat(ctx, val);
+    @Expose(target = ExposeTarget.STATIC)
+    public static void __clearInterval(Arguments args) {
+        __clearTimeout(args);
     }
 
-    @Native public static boolean isNaN(Context ctx, double val) {
-        return NumberLib.isNaN(ctx, val);
+    @Expose(target = ExposeTarget.STATIC)
+    public static double __parseInt(Arguments args) {
+        return NumberLib.__parseInt(args);
     }
-    @Native public static boolean isFinite(Context ctx, double val) {
-        return NumberLib.isFinite(ctx, val);
-    }
-    @Native public static boolean isInfinite(Context ctx, double val) {
-        return NumberLib.isInfinite(ctx, val);
-    }
-
-    @NativeGetter public static double NaN(Context ctx) {
-        return Double.NaN;
-    }
-    @NativeGetter public static double Infinity(Context ctx) {
-        return Double.POSITIVE_INFINITY;
-    }
-    private static final String HEX = "0123456789ABCDEF";
-
-    private static String encodeUriAny(String str, String keepAlphabet) {
-        if (str == null) str = "undefined";
-
-        var bytes = str.getBytes();
-        var sb = new StringBuilder(bytes.length);
-
-        for (byte c : bytes) {
-            if (Parsing.isAlphanumeric((char)c) || Parsing.isAny((char)c, keepAlphabet)) sb.append((char)c);
-            else {
-                sb.append('%');
-                sb.append(HEX.charAt(c / 16));
-                sb.append(HEX.charAt(c % 16));
-            }
-        }
-
-        return sb.toString();
-    }
-    private static String decodeUriAny(String str, String keepAlphabet) {
-        if (str == null) str = "undefined";
-
-        var res = new Buffer();
-        var bytes = str.getBytes();
-
-        for (var i = 0; i < bytes.length; i++) {
-            var c = bytes[i];
-            if (c == '%') {
-                if (i >= bytes.length - 2) throw EngineException.ofError("URIError", "URI malformed.");
-                var b = Parsing.fromHex((char)bytes[i + 1]) * 16 | Parsing.fromHex((char)bytes[i + 2]);
-                if (!Parsing.isAny((char)b, keepAlphabet)) {
-                    i += 2;
-                    res.append((byte)b);
-                    continue;
-                }
-            }
-            res.append(c);
-        }
-
-        return new String(res.data());
+    @Expose(target = ExposeTarget.STATIC)
+    public static double __parseFloat(Arguments args) {
+        return NumberLib.__parseFloat(args);
     }
 
-    @Native public static String encodeURIComponent(String str) {
-        return encodeUriAny(str, ".-_!~*'()");
+    @Expose(target = ExposeTarget.STATIC)
+    public static boolean __isNaN(Arguments args) {
+        return NumberLib.__isNaN(args);
     }
-    @Native public static String decodeURIComponent(String str) {
-        return decodeUriAny(str, "");
+    @Expose(target = ExposeTarget.STATIC)
+    public static boolean __isFinite(Arguments args) {
+        return NumberLib.__isFinite(args);
     }
-    @Native public static String encodeURI(String str) {
-        return encodeUriAny(str, ";,/?:@&=+$#.-_!~*'()");
+    @Expose(target = ExposeTarget.STATIC)
+    public static boolean __isInfinite(Arguments args) {
+        return NumberLib.__isInfinite(args);
     }
-    @Native public static String decodeURI(String str) {
-        return decodeUriAny(str, ",/?:@&=+$#.");
+
+    @ExposeField(target = ExposeTarget.STATIC)
+    public static double __NaN = Double.NaN;
+    @ExposeField(target = ExposeTarget.STATIC)
+    public static double __Infinity = Double.POSITIVE_INFINITY;
+
+    @Expose(target = ExposeTarget.STATIC)
+    public static String __encodeURIComponent(Arguments args) {
+        return EncodingLib.__encodeURIComponent(args);
+    }
+    @Expose(target = ExposeTarget.STATIC)
+    public static String __decodeURIComponent(Arguments args) {
+        return EncodingLib.__decodeURIComponent(args);
+    }
+    @Expose(target = ExposeTarget.STATIC)
+    public static String __encodeURI(Arguments args) {
+        return EncodingLib.__encodeURI(args);
+    }
+    @Expose(target = ExposeTarget.STATIC)
+    public static String __decodeURI(Arguments args) {
+        return EncodingLib.__decodeURI(args);
     }
 
     public static Environment apply(Environment env) {
@@ -205,22 +194,22 @@ public class Internals {
         glob.define(false, wp.getConstr(TypeErrorLib.class));
         glob.define(false, wp.getConstr(RangeErrorLib.class));
 
-        env.setProto("object", wp.getProto(ObjectLib.class));
-        env.setProto("function", wp.getProto(FunctionLib.class));
-        env.setProto("array", wp.getProto(ArrayLib.class));
+        env.add(Environment.OBJECT_PROTO, wp.getProto(ObjectLib.class));
+        env.add(Environment.FUNCTION_PROTO, wp.getProto(FunctionLib.class));
+        env.add(Environment.ARRAY_PROTO, wp.getProto(ArrayLib.class));
 
-        env.setProto("bool", wp.getProto(BooleanLib.class));
-        env.setProto("number", wp.getProto(NumberLib.class));
-        env.setProto("string", wp.getProto(StringLib.class));
-        env.setProto("symbol", wp.getProto(SymbolLib.class));
+        env.add(Environment.BOOL_PROTO, wp.getProto(BooleanLib.class));
+        env.add(Environment.NUMBER_PROTO, wp.getProto(NumberLib.class));
+        env.add(Environment.STRING_PROTO, wp.getProto(StringLib.class));
+        env.add(Environment.SYMBOL_PROTO, wp.getProto(SymbolLib.class));
 
-        env.setProto("error", wp.getProto(ErrorLib.class));
-        env.setProto("syntaxErr", wp.getProto(SyntaxErrorLib.class));
-        env.setProto("typeErr", wp.getProto(TypeErrorLib.class));
-        env.setProto("rangeErr", wp.getProto(RangeErrorLib.class));
+        env.add(Environment.ERROR_PROTO, wp.getProto(ErrorLib.class));
+        env.add(Environment.SYNTAX_ERR_PROTO, wp.getProto(SyntaxErrorLib.class));
+        env.add(Environment.TYPE_ERR_PROTO, wp.getProto(TypeErrorLib.class));
+        env.add(Environment.RANGE_ERR_PROTO, wp.getProto(RangeErrorLib.class));
 
         wp.getProto(ObjectLib.class).setPrototype(null, null);
-        env.regexConstructor = wp.getConstr(RegExpLib.class);
+        env.add(Environment.REGEX_CONSTR, wp.getConstr(RegExpLib.class));
 
         return env;
     }

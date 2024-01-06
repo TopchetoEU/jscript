@@ -1,21 +1,19 @@
 package me.topchetoeu.jscript.lib;
 
-import me.topchetoeu.jscript.engine.Context;
-import me.topchetoeu.jscript.engine.Environment;
 import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.engine.values.ObjectValue.PlaceholderProto;
-import me.topchetoeu.jscript.interop.InitType;
-import me.topchetoeu.jscript.interop.Native;
-import me.topchetoeu.jscript.interop.NativeConstructor;
-import me.topchetoeu.jscript.interop.NativeInit;
+import me.topchetoeu.jscript.interop.WrapperName;
+import me.topchetoeu.jscript.interop.Arguments;
+import me.topchetoeu.jscript.interop.ExposeConstructor;
+import me.topchetoeu.jscript.interop.ExposeField;
 
-@Native("TypeError") public class TypeErrorLib extends ErrorLib {
-    @NativeConstructor(thisArg = true) public static ObjectValue constructor(Context ctx, Object thisArg, Object message) {
-        var target = ErrorLib.constructor(ctx, thisArg, message);
-        target.setPrototype(PlaceholderProto.SYNTAX_ERROR);
+@WrapperName("TypeError")
+public class TypeErrorLib extends ErrorLib {
+    @ExposeField public static final String __name = "TypeError";
+
+    @ExposeConstructor public static ObjectValue __constructor(Arguments args) {
+        var target = ErrorLib.__constructor(args);
+        target.setPrototype(PlaceholderProto.TYPE_ERROR);
         return target;
-    }
-    @NativeInit(InitType.PROTOTYPE) public static void init(Environment env, ObjectValue target) {
-        target.defineProperty(null, "name", "TypeError");
     }
 }

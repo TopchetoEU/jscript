@@ -7,6 +7,7 @@ import me.topchetoeu.jscript.Location;
 import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.Engine;
 import me.topchetoeu.jscript.engine.Environment;
+import me.topchetoeu.jscript.engine.debug.DebugContext;
 import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.engine.values.ObjectValue.PlaceholderProto;
@@ -18,13 +19,13 @@ public class EngineException extends RuntimeException {
         public final Context ctx;
 
         public boolean visible() {
-            return ctx == null || ctx.environment() == null || ctx.environment().stackVisible;
+            return ctx == null || !ctx.get(Environment.HIDE_STACK, false);
         }
         public String toString() {
             var res = "";
             var loc = location;
 
-            if (loc != null && ctx != null && ctx.engine != null) loc = ctx.engine.mapToCompiled(loc);
+            if (loc != null && ctx != null && ctx.engine != null) loc = DebugContext.get(ctx).mapToCompiled(loc);
 
             if (loc != null) res += "at " + loc.toString() + " ";
             if (function != null && !function.equals("")) res += "in " + function + " ";
@@ -37,7 +38,7 @@ public class EngineException extends RuntimeException {
             if (function.equals("")) function = null;
 
             if (ctx == null) this.ctx = null;
-            else this.ctx = new Context(ctx.engine, ctx.environment());
+            else this.ctx = new Context(ctx.engine, ctx.environment);
             this.location = location;
             this.function = function;
         }
@@ -52,7 +53,7 @@ public class EngineException extends RuntimeException {
     public EngineException add(Context ctx, String name, Location location) {
         var el = new StackElement(ctx, location, name);
         if (el.function == null && el.location == null) return this;
-        setCtx(ctx.environment(), ctx.engine);
+        setCtx(ctx.environment, ctx.engine);
         stackTrace.add(el);
         return this;
     }
@@ -63,6 +64,11 @@ public class EngineException extends RuntimeException {
     public EngineException setCtx(Environment env, Engine engine) {
         if (this.env == null) this.env = env;
         if (this.engine == null) this.engine = engine;
+        return this;
+    }
+    public EngineException setCtx(Context ctx) {
+        if (this.env == null) this.env = ctx.environment;
+        if (this.engine == null) this.engine = ctx.engine;
         return this;
     }
 

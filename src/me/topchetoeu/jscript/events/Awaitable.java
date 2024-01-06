@@ -1,25 +1,27 @@
 package me.topchetoeu.jscript.events;
 
-import me.topchetoeu.jscript.exceptions.InterruptException;
-
 public interface Awaitable<T> {
-    T await() throws FinishedException;
+    public static interface ResultHandler<T> {
+        public void onResult(T data);
+    }
+    public static interface ErrorHandler {
+        public void onError(RuntimeException error);
+    }
 
-    default Observable<T> toObservable() {
-        return sub -> {
-            var thread = new Thread(() -> {
-                try {
-                    sub.next(await());
-                    sub.finish();
-                }
-                catch (InterruptException | FinishedException e) { sub.finish(); }
-                catch (RuntimeException e) {
-                    sub.error(e);
-                }
-            }, "Awaiter");
-            thread.start();
+    T await();
 
-            return () -> thread.interrupt();
-        };
+    default void handle(ResultHandler<T> onResult, ErrorHandler onError) {
+        var thread = new Thread(() -> {
+            try {
+                onResult.onResult(await());
+            }
+            catch (RuntimeException e) {
+                onError.onError(e);
+            }
+        }, "Awaiter");
+        thread.start();
+    }
+    default void handle(ResultHandler<T> onResult) {
+        handle(onResult, err -> {});
     }
 }

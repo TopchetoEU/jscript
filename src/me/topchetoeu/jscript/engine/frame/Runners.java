@@ -5,18 +5,18 @@ import java.util.Collections;
 import me.topchetoeu.jscript.compilation.Instruction;
 import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.Engine;
+import me.topchetoeu.jscript.engine.Environment;
 import me.topchetoeu.jscript.engine.Operation;
 import me.topchetoeu.jscript.engine.scope.ValueVariable;
 import me.topchetoeu.jscript.engine.values.ArrayValue;
 import me.topchetoeu.jscript.engine.values.CodeFunction;
+import me.topchetoeu.jscript.engine.values.FunctionValue;
 import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.engine.values.Symbol;
 import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.exceptions.EngineException;
 
 public class Runners {
-    public static final Object NO_RETURN = new Object();
-
     public static Object execReturn(Context ctx, Instruction instr, CodeFrame frame) {
         return frame.pop();
     }
@@ -32,26 +32,26 @@ public class Runners {
         var func = frame.pop();
         var thisArg = frame.pop();
 
-        frame.push(ctx, Values.call(ctx, func, thisArg, callArgs));
+        frame.push(Values.call(ctx, func, thisArg, callArgs));
 
         frame.codePtr++;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
     public static Object execCallNew(Context ctx, Instruction instr, CodeFrame frame) {
         var callArgs = frame.take(instr.get(0));
         var funcObj = frame.pop();
 
-        frame.push(ctx, Values.callNew(ctx, funcObj, callArgs));
+        frame.push(Values.callNew(ctx, funcObj, callArgs));
 
         frame.codePtr++;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
 
     public static Object execMakeVar(Context ctx, Instruction instr, CodeFrame frame) {
         var name = (String)instr.get(0);
-        ctx.environment().global.define(name);
+        ctx.environment.global.define(name);
         frame.codePtr++;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
     public static Object execDefProp(Context ctx, Instruction instr, CodeFrame frame) {
         var setter = frame.pop();
@@ -59,14 +59,14 @@ public class Runners {
         var name = frame.pop();
         var obj = frame.pop();
 
-        if (getter != null && !Values.isFunction(getter)) throw EngineException.ofType("Getter must be a function or undefined.");
-        if (setter != null && !Values.isFunction(setter)) throw EngineException.ofType("Setter must be a function or undefined.");
-        if (!Values.isObject(obj)) throw EngineException.ofType("Property apply target must be an object.");
+        if (getter != null && !(getter instanceof FunctionValue)) throw EngineException.ofType("Getter must be a function or undefined.");
+        if (setter != null && !(setter instanceof FunctionValue)) throw EngineException.ofType("Setter must be a function or undefined.");
+        if (!(obj instanceof ObjectValue)) throw EngineException.ofType("Property apply target must be an object.");
         Values.object(obj).defineProperty(ctx, name, Values.function(getter), Values.function(setter), false, false);
 
-        frame.push(ctx, obj);
+        frame.push(obj);
         frame.codePtr++;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
     public static Object execInstanceof(Context ctx, Instruction instr, CodeFrame frame) {
         var type = frame.pop();
@@ -74,14 +74,14 @@ public class Runners {
 
         if (!Values.isPrimitive(type)) {
             var proto = Values.getMember(ctx, type, "prototype");
-            frame.push(ctx, Values.isInstanceOf(ctx, obj, proto));
+            frame.push(Values.isInstanceOf(ctx, obj, proto));
         }
         else {
-            frame.push(ctx, false);
+            frame.push(false);
         }
 
         frame.codePtr++;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
     public static Object execKeys(Context ctx, Instruction instr, CodeFrame frame) {
         var val = frame.pop();
@@ -89,17 +89,17 @@ public class Runners {
         var members = Values.getMembers(ctx, val, false, false);
         Collections.reverse(members);
 
-        frame.push(ctx, null);
+        frame.push(null);
 
         for (var el : members) {
             if (el instanceof Symbol) continue;
             var obj = new ObjectValue();
             obj.defineProperty(ctx, "value", el);
-            frame.push(ctx, obj);
+            frame.push(obj);
         }
 
         frame.codePtr++;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
 
     public static Object execTryStart(Context ctx, Instruction instr, CodeFrame frame) {
@@ -111,58 +111,58 @@ public class Runners {
         int end = (int)instr.get(2) + start;
         frame.addTry(start, end, catchStart, finallyStart);
         frame.codePtr++;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
     public static Object execTryEnd(Context ctx, Instruction instr, CodeFrame frame) {
         frame.popTryFlag = true;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
 
     public static Object execDup(Context ctx, Instruction instr, CodeFrame frame) {
         int count = instr.get(0);
 
         for (var i = 0; i < count; i++) {
-            frame.push(ctx, frame.peek(count - 1));
+            frame.push(frame.peek(count - 1));
         }
 
         frame.codePtr++;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
     public static Object execLoadUndefined(Context ctx, Instruction instr, CodeFrame frame) {
-        frame.push(ctx, null);
+        frame.push(null);
         frame.codePtr++;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
     public static Object execLoadValue(Context ctx, Instruction instr, CodeFrame frame) {
-        frame.push(ctx, instr.get(0));
+        frame.push(instr.get(0));
         frame.codePtr++;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
     public static Object execLoadVar(Context ctx, Instruction instr, CodeFrame frame) {
         var i = instr.get(0);
 
-        if (i instanceof String) frame.push(ctx, ctx.environment().global.get(ctx, (String)i));
-        else frame.push(ctx, frame.scope.get((int)i).get(ctx));
+        if (i instanceof String) frame.push(ctx.environment.global.get(ctx, (String)i));
+        else frame.push(frame.scope.get((int)i).get(ctx));
 
         frame.codePtr++;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
     public static Object execLoadObj(Context ctx, Instruction instr, CodeFrame frame) {
-        frame.push(ctx, new ObjectValue());
+        frame.push(new ObjectValue());
         frame.codePtr++;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
     public static Object execLoadGlob(Context ctx, Instruction instr, CodeFrame frame) {
-        frame.push(ctx, ctx.environment().global.obj);
+        frame.push(ctx.environment.global.obj);
         frame.codePtr++;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
     public static Object execLoadArr(Context ctx, Instruction instr, CodeFrame frame) {
         var res = new ArrayValue();
         res.setSize(instr.get(0));
-        frame.push(ctx, res);
+        frame.push(res);
         frame.codePtr++;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
     public static Object execLoadFunc(Context ctx, Instruction instr, CodeFrame frame) {
         long id = (Long)instr.get(0);
@@ -172,40 +172,45 @@ public class Runners {
             captures[i - 1] = frame.scope.get(instr.get(i));
         }
 
-        var func = new CodeFunction(ctx.environment(), "", Engine.functions.get(id), captures);
+        var func = new CodeFunction(ctx.environment, "", Engine.functions.get(id), captures);
 
-        frame.push(ctx, func);
+        frame.push(func);
 
         frame.codePtr++;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
     public static Object execLoadMember(Context ctx, Instruction instr, CodeFrame frame) {
         var key = frame.pop();
         var obj = frame.pop();
 
         try {
-            frame.push(ctx, Values.getMember(ctx, obj, key));
+            frame.push(Values.getMember(ctx, obj, key));
         }
         catch (IllegalArgumentException e) {
             throw EngineException.ofType(e.getMessage());
         }
         frame.codePtr++;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
     public static Object execLoadKeyMember(Context ctx, Instruction instr, CodeFrame frame) {
-        frame.push(ctx, instr.get(0));
+        frame.push(instr.get(0));
         return execLoadMember(ctx, instr, frame);
     }
     public static Object execLoadRegEx(Context ctx, Instruction instr, CodeFrame frame) {
-        frame.push(ctx, ctx.environment().regexConstructor.call(ctx, null, instr.get(0), instr.get(1)));
+        if (ctx.hasNotNull(Environment.REGEX_CONSTR)) {
+            frame.push(Values.callNew(ctx, ctx.get(Environment.REGEX_CONSTR), instr.get(0), instr.get(1)));
+        }
+        else {
+            throw EngineException.ofSyntax("Regex is not supported.");
+        }
         frame.codePtr++;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
 
     public static Object execDiscard(Context ctx, Instruction instr, CodeFrame frame) {
         frame.pop();
         frame.codePtr++;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
     public static Object execStoreMember(Context ctx, Instruction instr, CodeFrame frame) {
         var val = frame.pop();
@@ -213,30 +218,30 @@ public class Runners {
         var obj = frame.pop();
 
         if (!Values.setMember(ctx, obj, key, val)) throw EngineException.ofSyntax("Can't set member '" + key + "'.");
-        if ((boolean)instr.get(0)) frame.push(ctx, val);
+        if ((boolean)instr.get(0)) frame.push(val);
         frame.codePtr++;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
     public static Object execStoreVar(Context ctx, Instruction instr, CodeFrame frame) {
         var val = (boolean)instr.get(1) ? frame.peek() : frame.pop();
         var i = instr.get(0);
 
-        if (i instanceof String) ctx.environment().global.set(ctx, (String)i, val);
+        if (i instanceof String) ctx.environment.global.set(ctx, (String)i, val);
         else frame.scope.get((int)i).set(ctx, val);
 
         frame.codePtr++;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
     public static Object execStoreSelfFunc(Context ctx, Instruction instr, CodeFrame frame) {
         frame.scope.locals[(int)instr.get(0)].set(ctx, frame.function);
         frame.codePtr++;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
     
     public static Object execJmp(Context ctx, Instruction instr, CodeFrame frame) {
         frame.codePtr += (int)instr.get(0);
         frame.jumpFlag = true;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
     public static Object execJmpIf(Context ctx, Instruction instr, CodeFrame frame) {
         if (Values.toBoolean(frame.pop())) {
@@ -244,7 +249,7 @@ public class Runners {
             frame.jumpFlag = true;
         }
         else frame.codePtr ++;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
     public static Object execJmpIfNot(Context ctx, Instruction instr, CodeFrame frame) {
         if (Values.not(frame.pop())) {
@@ -252,37 +257,37 @@ public class Runners {
             frame.jumpFlag = true;
         }
         else frame.codePtr ++;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
 
     public static Object execIn(Context ctx, Instruction instr, CodeFrame frame) {
         var obj = frame.pop();
         var index = frame.pop();
 
-        frame.push(ctx, Values.hasMember(ctx, obj, index, false));
+        frame.push(Values.hasMember(ctx, obj, index, false));
         frame.codePtr++;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
     public static Object execTypeof(Context ctx, Instruction instr, CodeFrame frame) {
         String name = instr.get(0);
         Object obj;
 
         if (name != null) {
-            if (ctx.environment().global.has(ctx, name)) {
-                obj = ctx.environment().global.get(ctx, name);
+            if (ctx.environment.global.has(ctx, name)) {
+                obj = ctx.environment.global.get(ctx, name);
             }
             else obj = null;
         }
         else obj = frame.pop();
 
-        frame.push(ctx, Values.type(obj));
+        frame.push(Values.type(obj));
 
         frame.codePtr++;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
     public static Object execNop(Context ctx, Instruction instr, CodeFrame frame) {
         frame.codePtr++;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
 
     public static Object execDelete(Context ctx, Instruction instr, CodeFrame frame) {
@@ -291,7 +296,7 @@ public class Runners {
 
         if (!Values.deleteMember(ctx, val, key)) throw EngineException.ofSyntax("Can't delete member '" + key + "'.");
         frame.codePtr++;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
 
     public static Object execOperation(Context ctx, Instruction instr, CodeFrame frame) {
@@ -300,9 +305,9 @@ public class Runners {
 
         for (var i = op.operands - 1; i >= 0; i--) args[i] = frame.pop();
 
-        frame.push(ctx, Values.operation(ctx, op, args));
+        frame.push(Values.operation(ctx, op, args));
         frame.codePtr++;
-        return NO_RETURN;
+        return Values.NO_RETURN;
     }
 
     public static Object exec(Context ctx, Instruction instr, CodeFrame frame) {

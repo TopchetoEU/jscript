@@ -3,49 +3,70 @@ package me.topchetoeu.jscript.lib;
 import java.util.HashMap;
 import java.util.Map;
 
-import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.engine.values.Symbol;
 import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.exceptions.EngineException;
-import me.topchetoeu.jscript.interop.Native;
-import me.topchetoeu.jscript.interop.NativeConstructor;
-import me.topchetoeu.jscript.interop.NativeGetter;
+import me.topchetoeu.jscript.interop.Arguments;
+import me.topchetoeu.jscript.interop.Expose;
+import me.topchetoeu.jscript.interop.ExposeConstructor;
+import me.topchetoeu.jscript.interop.ExposeField;
+import me.topchetoeu.jscript.interop.ExposeTarget;
+import me.topchetoeu.jscript.interop.WrapperName;
 
-@Native("Symbol") public class SymbolLib {
+@WrapperName("Symbol")
+public class SymbolLib {
     private static final Map<String, Symbol> symbols = new HashMap<>();
 
-    @NativeGetter public static Symbol typeName(Context ctx) { return ctx.environment().symbol("Symbol.typeName"); }
-    @NativeGetter public static Symbol replace(Context ctx) { return ctx.environment().symbol("Symbol.replace"); }
-    @NativeGetter public static Symbol match(Context ctx) { return ctx.environment().symbol("Symbol.match"); }
-    @NativeGetter public static Symbol matchAll(Context ctx) { return ctx.environment().symbol("Symbol.matchAll"); }
-    @NativeGetter public static Symbol split(Context ctx) { return ctx.environment().symbol("Symbol.split"); }
-    @NativeGetter public static Symbol search(Context ctx) { return ctx.environment().symbol("Symbol.search"); }
-    @NativeGetter public static Symbol iterator(Context ctx) { return ctx.environment().symbol("Symbol.iterator"); }
-    @NativeGetter public static Symbol asyncIterator(Context ctx) { return ctx.environment().symbol("Symbol.asyncIterator"); }
-    @NativeGetter public static Symbol cause(Context ctx) { return ctx.environment().symbol("Symbol.cause"); }
+    @ExposeField(target = ExposeTarget.STATIC)
+    public static final Symbol __typeName = Symbol.get("Symbol.typeName");
+    @ExposeField(target = ExposeTarget.STATIC)
+    public static final Symbol __replace = Symbol.get("Symbol.replace");
+    @ExposeField(target = ExposeTarget.STATIC)
+    public static final Symbol __match = Symbol.get("Symbol.match");
+    @ExposeField(target = ExposeTarget.STATIC)
+    public static final Symbol __matchAll = Symbol.get("Symbol.matchAll");
+    @ExposeField(target = ExposeTarget.STATIC)
+    public static final Symbol __split = Symbol.get("Symbol.split");
+    @ExposeField(target = ExposeTarget.STATIC)
+    public static final Symbol __search = Symbol.get("Symbol.search");
+    @ExposeField(target = ExposeTarget.STATIC)
+    public static final Symbol __iterator = Symbol.get("Symbol.iterator");
+    @ExposeField(target = ExposeTarget.STATIC)
+    public static final Symbol __asyncIterator = Symbol.get("Symbol.asyncIterator");
+    @ExposeField(target = ExposeTarget.STATIC)
+    public static final Symbol __cause = Symbol.get("Symbol.cause");
 
     public final Symbol value;
 
-    private static Symbol passThis(Context ctx, String funcName, Object val) {
-        if (val instanceof SymbolLib) return ((SymbolLib)val).value;
+    private static Symbol passThis(Arguments args, String funcName) {
+        var val = args.self;
+        if (Values.isWrapper(val, SymbolLib.class)) return Values.wrapper(val, SymbolLib.class).value;
         else if (val instanceof Symbol) return (Symbol)val;
         else throw EngineException.ofType(String.format("'%s' may only be called upon object and primitve symbols.", funcName));
     }
 
-    @NativeConstructor(thisArg = true) public static Object constructor(Context ctx, Object thisArg, Object val) {
-        if (thisArg instanceof ObjectValue) throw EngineException.ofType("Symbol constructor may not be called with new.");
-        if (val == null) return new Symbol("");
-        else return new Symbol(Values.toString(ctx, val));
-    }
-    @Native(thisArg = true) public static String toString(Context ctx, Object thisArg) {
-        return passThis(ctx, "toString", thisArg).value;
-    }
-    @Native(thisArg = true) public static Symbol valueOf(Context ctx, Object thisArg) {
-        return passThis(ctx, "valueOf", thisArg);
+    public SymbolLib(Symbol val) {
+        this.value = val;
     }
 
-    @Native("for") public static Symbol _for(String key) {
+    @Expose public static String __toString(Arguments args) {
+        return passThis(args, "toString").value;
+    }
+    @Expose public static Symbol __valueOf(Arguments args) {
+        return passThis(args, "valueOf");
+    }
+
+    @ExposeConstructor
+    public static Object __constructor(Arguments args) {
+        if (args.self instanceof ObjectValue) throw EngineException.ofType("Symbol constructor may not be called with new.");
+        if (args.get(0) == null) return new Symbol("");
+        else return new Symbol(args.getString(0));
+    }
+
+    @Expose(target = ExposeTarget.STATIC)
+    public static Symbol __for(Arguments args) {
+        var key = args.getString(0);
         if (symbols.containsKey(key)) return symbols.get(key);
         else {
             var sym = new Symbol(key);
@@ -53,11 +74,8 @@ import me.topchetoeu.jscript.interop.NativeGetter;
             return sym;
         }
     }
-    @Native public static String keyFor(Symbol sym) {
-        return sym.value;
-    }
-
-    public SymbolLib(Symbol val) {
-        this.value = val;
+    @Expose(target = ExposeTarget.STATIC)
+    public static String __keyFor(Arguments args) {
+        return passThis(new Arguments(args.ctx, args.get(0)), "keyFor").value;
     }
 }

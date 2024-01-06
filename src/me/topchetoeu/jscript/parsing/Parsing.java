@@ -1178,8 +1178,7 @@ public class Parsing {
                 prevArg = true;
             }
             else if (argRes.isError()) return argRes.transform();
-            else if (isOperator(tokens, i + n, Operator.COMMA)) {
-                if (!prevArg) args.add(null);
+            else if (prevArg && isOperator(tokens, i + n, Operator.COMMA)) {
                 prevArg = false;
                 n++;
             }
@@ -1187,7 +1186,7 @@ public class Parsing {
                 n++;
                 break;
             }
-            else return ParseRes.failed();
+            else return ParseRes.error(getLoc(filename, tokens, i + n), prevArg ? "Expected a comma or a closing paren." : "Expected an expression or a closing paren.");
         }
 
         return ParseRes.res(new CallStatement(loc, false, prev, args.toArray(Statement[]::new)), n);

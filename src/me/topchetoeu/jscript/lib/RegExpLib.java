@@ -10,79 +10,63 @@ import me.topchetoeu.jscript.engine.values.FunctionValue;
 import me.topchetoeu.jscript.engine.values.NativeWrapper;
 import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.engine.values.Values;
-import me.topchetoeu.jscript.interop.Native;
-import me.topchetoeu.jscript.interop.NativeGetter;
+import me.topchetoeu.jscript.interop.Arguments;
+import me.topchetoeu.jscript.interop.Expose;
+import me.topchetoeu.jscript.interop.ExposeConstructor;
+import me.topchetoeu.jscript.interop.ExposeTarget;
+import me.topchetoeu.jscript.interop.ExposeType;
+import me.topchetoeu.jscript.interop.WrapperName;
 
-@Native("RegExp") public class RegExpLib {
+@WrapperName("RegExp")
+public class RegExpLib {
     // I used Regex to analyze Regex
     private static final Pattern NAMED_PATTERN = Pattern.compile("\\(\\?<([^=!].*?)>", Pattern.DOTALL);
     private static final Pattern ESCAPE_PATTERN = Pattern.compile("[/\\-\\\\^$*+?.()|\\[\\]{}]");
 
-    private static String cleanupPattern(Context ctx, Object val) {
-        if (val == null) return "(?:)";
-        if (val instanceof RegExpLib) return ((RegExpLib)val).source;
-        if (val instanceof NativeWrapper && ((NativeWrapper)val).wrapped instanceof RegExpLib) {
-            return ((RegExpLib)((NativeWrapper)val).wrapped).source;
-        }
-        var res = Values.toString(ctx, val);
-        if (res.equals("")) return "(?:)";
-        return res;
-    }
-    private static String cleanupFlags(Context ctx, Object val) {
-        if (val == null) return "";
-        return Values.toString(ctx, val);
-    }
-
-    private static boolean checkEscaped(String s, int pos) {
-        int n = 0;
-
-        while (true) {
-            if (pos <= 0) break;
-            if (s.charAt(pos) != '\\') break;
-            n++;
-            pos--;
-        }
-
-        return (n % 2) != 0;
-    }
-
-    @Native
-    public static RegExpLib escape(Context ctx, Object raw, Object flags) {
-        return escape(Values.toString(ctx, raw), cleanupFlags(ctx, flags));
-    }
-    public static RegExpLib escape(String raw, String flags) {
-        return new RegExpLib(ESCAPE_PATTERN.matcher(raw).replaceAll("\\\\$0"), flags);
-    }
-
     private Pattern pattern;
     private String[] namedGroups;
     private int flags;
-    
-    @Native public int lastI = 0;
-    @Native public final String source;
-    @Native public final boolean hasIndices;
-    @Native public final boolean global;
-    @Native public final boolean sticky;
-    @Native("@@Symbol.typeName") public final String name = "RegExp";
 
-    @NativeGetter public boolean ignoreCase() { return (flags & Pattern.CASE_INSENSITIVE) != 0; }
-    @NativeGetter public boolean multiline() { return (flags & Pattern.MULTILINE) != 0; }
-    @NativeGetter public boolean unicode() { return (flags & Pattern.UNICODE_CHARACTER_CLASS) != 0; }
-    @NativeGetter public boolean dotAll() { return (flags & Pattern.DOTALL) != 0; }
+    public int lastI = 0;
+    public final String source;
+    public final boolean hasIndices;
+    public final boolean global;
+    public final boolean sticky;
 
-    @NativeGetter("flags") public final String flags() {
+    @Expose(type = ExposeType.GETTER)
+    public int __lastIndex() { return lastI; }
+    @Expose(type = ExposeType.SETTER)
+    public void __setLastIndex(Arguments args) { lastI = args.getInt(0); }
+    @Expose(type = ExposeType.GETTER)
+    public String __source() { return source; }
+
+    @Expose(type = ExposeType.GETTER)
+    public boolean __ignoreCase() { return (flags & Pattern.CASE_INSENSITIVE) != 0; }
+    @Expose(type = ExposeType.GETTER)
+    public boolean __multiline() { return (flags & Pattern.MULTILINE) != 0; }
+    @Expose(type = ExposeType.GETTER)
+    public boolean __unicode() { return (flags & Pattern.UNICODE_CHARACTER_CLASS) != 0; }
+    @Expose(type = ExposeType.GETTER)
+    public boolean __dotAll() { return (flags & Pattern.DOTALL) != 0; }
+    @Expose(type = ExposeType.GETTER)
+    public boolean __global() { return global; }
+    @Expose(type = ExposeType.GETTER)
+    public boolean __sticky() { return sticky; }
+    @Expose(type = ExposeType.GETTER)
+    public final String __flags() {
         String res = "";
         if (hasIndices) res += 'd';
         if (global) res += 'g';
-        if (ignoreCase()) res += 'i';
-        if (multiline()) res += 'm';
-        if (dotAll()) res += 's';
-        if (unicode()) res += 'u';
+        if (__ignoreCase()) res += 'i';
+        if (__multiline()) res += 'm';
+        if (__dotAll()) res += 's';
+        if (__unicode()) res += 'u';
         if (sticky) res += 'y';
         return res;
     }
 
-    @Native public Object exec(String str) {
+    @Expose public Object __exec(Arguments args) {
+        var str = args.getString(0);
         var matcher = pattern.matcher(str);
         if (lastI > str.length() || !matcher.find(lastI) || sticky && matcher.start() != lastI) {
             lastI = 0;
@@ -126,39 +110,36 @@ import me.topchetoeu.jscript.interop.NativeGetter;
         return obj;
     }
 
-    @Native public boolean test(String str) {
-        return this.exec(str) != Values.NULL;
-    }
-    @Native public String toString() {
-        return "/" + source + "/" + flags();
+    @Expose public boolean __test(Arguments args) {
+        return this.__exec(args) != Values.NULL;
     }
 
-    @Native("@@Symbol.match") public Object match(Context ctx, String target) {
+    @Expose("@@Symbol.match") public Object __match(Arguments args) {
         if (this.global) {
             var res = new ArrayValue();
             Object val;
-            while ((val = this.exec(target)) != Values.NULL) {
-                res.set(ctx, res.size(), Values.getMember(ctx, val, 0));
+            while ((val = this.__exec(args)) != Values.NULL) {
+                res.set(args.ctx, res.size(), Values.getMember(args.ctx, val, 0));
             }
             lastI = 0;
             return res;
         }
         else {
-            var res = this.exec(target);
+            var res = this.__exec(args);
             if (!this.sticky) this.lastI = 0;
             return res;
         }
     }
 
-    @Native("@@Symbol.matchAll") public Object matchAll(Context ctx, String target) {
-        var pattern = new RegExpLib(this.source, this.flags() + "g");
+    @Expose("@@Symbol.matchAll") public Object __matchAll(Arguments args) {
+        var pattern = this.toGlobal();
 
-        return Values.toJSIterator(ctx, new Iterator<Object>() {
+        return Values.toJSIterator(args.ctx, new Iterator<Object>() {
             private Object val = null;
             private boolean updated = false;
 
             private void update() {
-                if (!updated) val = pattern.exec(target);
+                if (!updated) val = pattern.__exec(args);
             }
             @Override public boolean hasNext() {
                 update();
@@ -172,17 +153,21 @@ import me.topchetoeu.jscript.interop.NativeGetter;
         });
     }
 
-    @Native("@@Symbol.split") public ArrayValue split(Context ctx, String target, Object limit, boolean sensible) {
-        var pattern = new RegExpLib(this.source, this.flags() + "g");
+    @Expose("@@Symbol.split") public ArrayValue __split(Arguments args) {
+        var pattern = this.toGlobal();
+        var target = args.getString(0);
+        var hasLimit = args.get(1) != null;
+        var lim = args.getInt(1);
+        var sensible = args.getBoolean(2);
+
         Object match;
         int lastEnd = 0;
         var res = new ArrayValue();
-        var lim = limit == null ? 0 : Values.toNumber(ctx, limit);
 
-        while ((match = pattern.exec(target)) != Values.NULL) {
+        while ((match = pattern.__exec(args)) != Values.NULL) {
             var added = new ArrayList<String>();
             var arrMatch = (ArrayValue)match;
-            int index = (int)Values.toNumber(ctx, Values.getMember(ctx, match, "index"));
+            int index = (int)Values.toNumber(args.ctx, Values.getMember(args.ctx, match, "index"));
             var matchVal = (String)arrMatch.get(0);
 
             if (index >= target.length()) break;
@@ -198,31 +183,33 @@ import me.topchetoeu.jscript.interop.NativeGetter;
             }
 
             if (sensible) {
-                if (limit != null && res.size() + added.size() >= lim) break;
-                else for (var i = 0; i < added.size(); i++) res.set(ctx, res.size(), added.get(i));
+                if (hasLimit && res.size() + added.size() >= lim) break;
+                else for (var i = 0; i < added.size(); i++) res.set(args.ctx, res.size(), added.get(i));
             }
             else {
                 for (var i = 0; i < added.size(); i++) {
-                    if (limit != null && res.size() >= lim) return res;
-                    else res.set(ctx, res.size(), added.get(i));
+                    if (hasLimit && res.size() >= lim) return res;
+                    else res.set(args.ctx, res.size(), added.get(i));
                 }
             }
             lastEnd = pattern.lastI;
         }
         if (lastEnd < target.length()) {
-            res.set(ctx, res.size(), target.substring(lastEnd));
+            res.set(args.ctx, res.size(), target.substring(lastEnd));
         }
         return res;
     }
 
-    @Native("@@Symbol.replace") public String replace(Context ctx, String target, Object replacement) {
-        var pattern = new RegExpLib(this.source, this.flags() + "d");
+    @Expose("@@Symbol.replace") public String __replace(Arguments args) {
+        var pattern = this.toIndexed();
+        var target = args.getString(0);
+        var replacement = args.get(1);
         Object match;
         var lastEnd = 0;
         var res = new StringBuilder();
     
-        while ((match = pattern.exec(target)) != Values.NULL) {
-            var indices = (ArrayValue)((ArrayValue)Values.getMember(ctx, match, "indices")).get(0);
+        while ((match = pattern.__exec(args)) != Values.NULL) {
+            var indices = (ArrayValue)((ArrayValue)Values.getMember(args.ctx, match, "indices")).get(0);
             var arrMatch = (ArrayValue)match;
 
             var start = ((Number)indices.get(0)).intValue();
@@ -230,15 +217,15 @@ import me.topchetoeu.jscript.interop.NativeGetter;
 
             res.append(target.substring(lastEnd, start));
             if (replacement instanceof FunctionValue) {
-                var args = new Object[arrMatch.size() + 2];
-                args[0] = target.substring(start, end);
-                arrMatch.copyTo(args, 1, 1, arrMatch.size() - 1);
-                args[args.length - 2] = start;
-                args[args.length - 1] = target;
-                res.append(Values.toString(ctx, ((FunctionValue)replacement).call(ctx, null, args)));
+                var callArgs = new Object[arrMatch.size() + 2];
+                callArgs[0] = target.substring(start, end);
+                arrMatch.copyTo(callArgs, 1, 1, arrMatch.size() - 1);
+                callArgs[callArgs.length - 2] = start;
+                callArgs[callArgs.length - 1] = target;
+                res.append(Values.toString(args.ctx, ((FunctionValue)replacement).call(args.ctx, null, callArgs)));
             }
             else {
-                res.append(Values.toString(ctx, replacement));
+                res.append(Values.toString(args.ctx, replacement));
             }
             lastEnd = end;
             if (!pattern.global) break;
@@ -271,9 +258,17 @@ import me.topchetoeu.jscript.interop.NativeGetter;
     //     }
     // },
 
-    @Native public RegExpLib(Context ctx, Object pattern, Object flags) {
-        this(cleanupPattern(ctx, pattern), cleanupFlags(ctx, flags));
+    public RegExpLib toGlobal() {
+        return new RegExpLib(pattern, namedGroups, flags, source, hasIndices, true, sticky);
     }
+    public RegExpLib toIndexed() {
+        return new RegExpLib(pattern, namedGroups, flags, source, true, global, sticky);
+    }
+
+    public String toString() {
+        return "/" + source + "/" + __flags();
+    }
+
     public RegExpLib(String pattern, String flags) {
         if (pattern == null || pattern.equals("")) pattern = "(?:)";
         if (flags == null || flags.equals("")) flags = "";
@@ -304,6 +299,56 @@ import me.topchetoeu.jscript.interop.NativeGetter;
         namedGroups = groups.toArray(String[]::new);
     }
 
+    private RegExpLib(Pattern pattern, String[] namedGroups, int flags, String source, boolean hasIndices, boolean global, boolean sticky) {
+        this.pattern = pattern;
+        this.namedGroups = namedGroups;
+        this.flags = flags;
+        this.source = source;
+        this.hasIndices = hasIndices;
+        this.global = global;
+        this.sticky = sticky;
+    }
     public RegExpLib(String pattern) { this(pattern, null); }
     public RegExpLib() { this(null, null); }
+
+    @ExposeConstructor
+    public static RegExpLib __constructor(Arguments args) {
+        return new RegExpLib(cleanupPattern(args.ctx, args.get(0)), cleanupFlags(args.ctx, args.get(1)));
+    }
+    @Expose(target = ExposeTarget.STATIC)
+    public static RegExpLib __escape(Arguments args) {
+        return escape(Values.toString(args.ctx, args.get(0)), cleanupFlags(args.ctx, args.get(1)));
+    }
+
+    private static String cleanupPattern(Context ctx, Object val) {
+        if (val == null) return "(?:)";
+        if (val instanceof RegExpLib) return ((RegExpLib)val).source;
+        if (val instanceof NativeWrapper && ((NativeWrapper)val).wrapped instanceof RegExpLib) {
+            return ((RegExpLib)((NativeWrapper)val).wrapped).source;
+        }
+        var res = Values.toString(ctx, val);
+        if (res.equals("")) return "(?:)";
+        return res;
+    }
+    private static String cleanupFlags(Context ctx, Object val) {
+        if (val == null) return "";
+        return Values.toString(ctx, val);
+    }
+
+    private static boolean checkEscaped(String s, int pos) {
+        int n = 0;
+
+        while (true) {
+            if (pos <= 0) break;
+            if (s.charAt(pos) != '\\') break;
+            n++;
+            pos--;
+        }
+
+        return (n % 2) != 0;
+    }
+
+    public static RegExpLib escape(String raw, String flags) {
+        return new RegExpLib(ESCAPE_PATTERN.matcher(raw).replaceAll("\\\\$0"), flags);
+    }
 }

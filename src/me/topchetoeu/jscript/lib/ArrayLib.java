@@ -3,35 +3,48 @@ package me.topchetoeu.jscript.lib;
 import java.util.Iterator;
 import java.util.Stack;
 
-import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.values.ArrayValue;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
 import me.topchetoeu.jscript.engine.values.NativeFunction;
 import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.engine.values.Values;
-import me.topchetoeu.jscript.interop.Native;
-import me.topchetoeu.jscript.interop.NativeConstructor;
-import me.topchetoeu.jscript.interop.NativeGetter;
-import me.topchetoeu.jscript.interop.NativeSetter;
+import me.topchetoeu.jscript.interop.Arguments;
+import me.topchetoeu.jscript.interop.Expose;
+import me.topchetoeu.jscript.interop.ExposeConstructor;
+import me.topchetoeu.jscript.interop.ExposeTarget;
+import me.topchetoeu.jscript.interop.ExposeType;
+import me.topchetoeu.jscript.interop.WrapperName;
 
-@Native("Array") public class ArrayLib {
-    @NativeGetter(thisArg = true) public static int length(Context ctx, ArrayValue thisArg) {
-        return thisArg.size();
+@WrapperName("Array")
+public class ArrayLib {
+    private static int normalizeI(int len, int i, boolean clamp) {
+        if (i < 0) i += len;
+        if (clamp) {
+            if (i < 0) i = 0;
+            if (i > len) i = len;
+        }
+        return i;
     }
-    @NativeSetter(thisArg = true) public static void length(Context ctx, ArrayValue thisArg, int len) {
-        thisArg.setSize(len);
+
+    @Expose(value = "length", type = ExposeType.GETTER)
+    public static int __getLength(Arguments args) {
+        return args.self(ArrayValue.class).size();
     }
-    
-    @Native(thisArg = true) public static ObjectValue values(Context ctx, ArrayValue thisArg) {
-        return Values.toJSIterator(ctx, thisArg);
+    @Expose(value = "length", type = ExposeType.SETTER)
+    public static void __setLength(Arguments args) {
+        args.self(ArrayValue.class).setSize(args.getInt(0));
     }
-    @Native(thisArg = true) public static ObjectValue keys(Context ctx, ArrayValue thisArg) {
-        return Values.toJSIterator(ctx, () -> new Iterator<Object>() {
+
+    @Expose public static ObjectValue __values(Arguments args) {
+        return __iterator(args);
+    }
+    @Expose public static ObjectValue __keys(Arguments args) {
+        return Values.toJSIterator(args.ctx, () -> new Iterator<Object>() {
             private int i = 0;
 
             @Override
             public boolean hasNext() {
-                return i < thisArg.size();
+                return i < args.self(ArrayValue.class).size();
             }
             @Override
             public Object next() {
@@ -40,63 +53,67 @@ import me.topchetoeu.jscript.interop.NativeSetter;
             }
         });
     }
-    @Native(thisArg = true) public static ObjectValue entries(Context ctx, ArrayValue thisArg) {
-        return Values.toJSIterator(ctx, () -> new Iterator<Object>() {
+    @Expose public static ObjectValue __entries(Arguments args) {
+        return Values.toJSIterator(args.ctx, () -> new Iterator<Object>() {
             private int i = 0;
 
             @Override
             public boolean hasNext() {
-                return i < thisArg.size();
+                return i < args.self(ArrayValue.class).size();
             }
             @Override
             public Object next() {
                 if (!hasNext()) return null;
-                return new ArrayValue(ctx, i, thisArg.get(i++));
+                return new ArrayValue(args.ctx, i, args.self(ArrayValue.class).get(i++));
             }
         });
     }
 
-    @Native(value = "@@Symbol.iterator", thisArg = true)
-    public static ObjectValue iterator(Context ctx, ArrayValue thisArg) {
-        return values(ctx, thisArg);
+    @Expose(value = "@@Symbol.iterator")
+    public static ObjectValue __iterator(Arguments args) {
+        return Values.toJSIterator(args.ctx, args.self(ArrayValue.class));
     }
-    @Native(value = "@@Symbol.asyncIterator", thisArg = true)
-    public static ObjectValue asyncIterator(Context ctx, ArrayValue thisArg) {
-        return values(ctx, thisArg);
+    @Expose(value = "@@Symbol.asyncIterator")
+    public static ObjectValue __asyncIterator(Arguments args) {
+        return Values.toJSAsyncIterator(args.ctx, args.self(ArrayValue.class).iterator());
     }
 
-    @Native(thisArg = true) public static ArrayValue concat(Context ctx, ArrayValue thisArg, Object ...others) {
+    @Expose public static ArrayValue __concat(Arguments args) {
         // TODO: Fully implement with non-array spreadable objects
-        var size = thisArg.size();
+        var arrs = args.slice(-1);
+        var size = 0;
 
-        for (int i = 0; i < others.length; i++) {
-            if (others[i] instanceof ArrayValue) size += ((ArrayValue)others[i]).size();
+        for (int i = 0; i < arrs.n(); i++) {
+            if (arrs.get(i) instanceof ArrayValue) size += arrs.convert(i, ArrayValue.class).size();
             else i++;
         }
 
         var res = new ArrayValue(size);
-        thisArg.copyTo(ctx, res, 0, 0, thisArg.size());
 
-        for (int i = 0, j = thisArg.size(); i < others.length; i++) {
-            if (others[i] instanceof ArrayValue) {
-                int n = ((ArrayValue)others[i]).size();
-                ((ArrayValue)others[i]).copyTo(ctx, res, 0, j, n);
+        for (int i = 0, j = 0; i < arrs.n(); i++) {
+            if (arrs.get(i) instanceof ArrayValue) {
+                var arrEl = arrs.convert(i, ArrayValue.class);
+                int n = arrEl.size();
+                arrEl.copyTo(args.ctx, res, 0, j, n);
                 j += n;
             }
             else {
-                res.set(ctx, j++, others[i]);
+                res.set(args.ctx, j++, arrs.get(i));
             }
         }
 
         return res;
     }
+    @Expose public static ArrayValue __sort(Arguments args) {
+        var arr = args.self(ArrayValue.class);
+        var cmp = args.convert(0, FunctionValue.class);
 
-    @Native(thisArg = true) public static ArrayValue sort(Context ctx, ArrayValue arr, FunctionValue cmp) {
-        var defaultCmp = new NativeFunction("", (_ctx, thisArg, args) -> {
-            return Values.toString(ctx, args[0]).compareTo(Values.toString(ctx, args[1]));
+        var defaultCmp = new NativeFunction("", _args -> {
+            return _args.getString(0).compareTo(_args.getString(1));
         });
+
         arr.sort((a, b) -> {
-            var res = Values.toNumber(ctx, (cmp == null ? defaultCmp : cmp).call(ctx, null, a, b));
+            var res = Values.toNumber(args.ctx, (cmp == null ? defaultCmp : cmp).call(args.ctx, null, a, b));
             if (res < 0) return -1;
             if (res > 0) return 1;
             return 0;
@@ -104,100 +121,121 @@ import me.topchetoeu.jscript.interop.NativeSetter;
         return arr;
     }
 
-    private static int normalizeI(int len, int i, boolean clamp) {
-        if (i < 0) i += len;
-        if (clamp) {
-            if (i < 0) i = 0;
-            if (i >= len) i = len;
-        }
-        return i;
-    }
+    @Expose public static ArrayValue __fill(Arguments args) {
+        var arr = args.self(ArrayValue.class);
+        var val = args.get(0);
+        var start = normalizeI(arr.size(), args.getInt(1, 0), true);
+        var end = normalizeI(arr.size(), args.getInt(2, arr.size()), true);
 
-    @Native(thisArg = true) public static ArrayValue fill(Context ctx, ArrayValue arr, Object val, int start, int end) {
-        start = normalizeI(arr.size(), start, true);
-        end = normalizeI(arr.size(), end, true);
-
-        for (; start < end; start++) {
-            arr.set(ctx, start, val);
-        }
+        for (; start < end; start++) arr.set(args.ctx, start, val);
 
         return arr;
     }
-    @Native(thisArg = true) public static ArrayValue fill(Context ctx, ArrayValue arr, Object val, int start) {
-        return fill(ctx, arr, val, start, arr.size());
-    }
-    @Native(thisArg = true) public static ArrayValue fill(Context ctx, ArrayValue arr, Object val) {
-        return fill(ctx, arr, val, 0, arr.size());
-    }
+    @Expose public static boolean __every(Arguments args) {
+        var arr = args.self(ArrayValue.class);
 
-    @Native(thisArg = true) public static boolean every(Context ctx, ArrayValue arr, FunctionValue func, Object thisArg) {
         for (var i = 0; i < arr.size(); i++) {
-            if (!Values.toBoolean(func.call(ctx, thisArg, arr.get(i), i, arr))) return false;
+            if (arr.has(i) && !Values.toBoolean(Values.call(
+                args.ctx, args.get(0), args.get(1),
+                arr.get(i), i, arr
+            ))) return false;
         }
 
         return true;
     }
-    @Native(thisArg = true) public static boolean some(Context ctx, ArrayValue arr, FunctionValue func, Object thisArg) {
+    @Expose public static boolean __some(Arguments args) {
+        var arr = args.self(ArrayValue.class);
+
         for (var i = 0; i < arr.size(); i++) {
-            if (Values.toBoolean(func.call(ctx, thisArg, arr.get(i), i, arr))) return true;
+            if (arr.has(i) && Values.toBoolean(Values.call(
+                args.ctx, args.get(0), args.get(1),
+                arr.get(i), i, arr
+            ))) return true;
         }
 
         return false;
     }
-
-    @Native(thisArg = true) public static ArrayValue filter(Context ctx, ArrayValue arr, FunctionValue func, Object thisArg) {
+    @Expose public static ArrayValue __filter(Arguments args) {
+        var arr = args.self(ArrayValue.class);
         var res = new ArrayValue(arr.size());
 
         for (int i = 0, j = 0; i < arr.size(); i++) {
-            if (arr.has(i) && Values.toBoolean(func.call(ctx, thisArg, arr.get(i), i, arr))) res.set(ctx, j++, arr.get(i));
+            if (arr.has(i) && Values.toBoolean(Values.call(
+                args.ctx, args.get(0), args.get(1),
+                arr.get(i), i, arr
+            ))) res.set(args.ctx, j++, arr.get(i));
         }
+
         return res;
     }
-    @Native(thisArg = true) public static ArrayValue map(Context ctx, ArrayValue arr, FunctionValue func, Object thisArg) {
+    @Expose public static ArrayValue __map(Arguments args) {
+        var arr = args.self(ArrayValue.class);
         var res = new ArrayValue(arr.size());
-        for (int i = 0, j = 0; i < arr.size(); i++) {
-            if (arr.has(i)) res.set(ctx, j++, func.call(ctx, thisArg, arr.get(i), i, arr));
-        }
-        return res;
-    }
-    @Native(thisArg = true) public static void forEach(Context ctx, ArrayValue arr, FunctionValue func, Object thisArg) {
+        res.setSize(arr.size());
+
         for (int i = 0; i < arr.size(); i++) {
-            if (arr.has(i)) func.call(ctx, thisArg, arr.get(i), i, arr);
+            if (arr.has(i)) res.set(args.ctx, i, Values.call(args.ctx, args.get(0), args.get(1), arr.get(i), i, arr));
+        }
+        return res;
+    }
+    @Expose public static void __forEach(Arguments args) {
+        var arr = args.self(ArrayValue.class);
+        var func = args.convert(0, FunctionValue.class);
+        var thisArg = args.get(1);
+
+        for (int i = 0; i < arr.size(); i++) {
+            if (arr.has(i)) func.call(args.ctx, thisArg, arr.get(i), i, arr);
         }
     }
 
-    @Native(thisArg = true) public static Object reduce(Context ctx, ArrayValue arr, FunctionValue func, Object... args) {
+    @Expose public static Object __reduce(Arguments args) {
+        var arr = args.self(ArrayValue.class);
+        var func = args.convert(0, FunctionValue.class);
+        var res = args.get(1);
         var i = 0;
-        var res = arr.get(0);
 
-        if (args.length > 0) res = args[0];
-        else for (; !arr.has(i) && i < arr.size(); i++) res = arr.get(i);
+        if (args.n() < 2) {
+            for (; i < arr.size(); i++) {
+                if (arr.has(i)){
+                    res = arr.get(i++);
+                    break;
+                }
+            }
+        }
 
         for (; i < arr.size(); i++) {
             if (arr.has(i)) {
-                res = func.call(ctx, null, res, arr.get(i), i, arr);
+                res = func.call(args.ctx, null, res, arr.get(i), i, arr);
             }
         }
 
         return res;
     }
-    @Native(thisArg = true) public static Object reduceRight(Context ctx, ArrayValue arr, FunctionValue func, Object... args) {
+    @Expose public static Object __reduceRight(Arguments args) {
+        var arr = args.self(ArrayValue.class);
+        var func = args.convert(0, FunctionValue.class);
+        var res = args.get(1);
         var i = arr.size();
-        var res = arr.get(0);
 
-        if (args.length > 0) res = args[0];
-        else while (!arr.has(i--) && i >= 0) res = arr.get(i);
+        if (args.n() < 2) {
+            while (!arr.has(i--) && i >= 0) {
+                res = arr.get(i);
+            }
+        }
+        else i--;
 
         for (; i >= 0; i--) {
             if (arr.has(i)) {
-                res = func.call(ctx, null, res, arr.get(i), i, arr);
+                res = func.call(args.ctx, null, res, arr.get(i), i, arr);
             }
         }
 
         return res;
     }
 
-    @Native(thisArg = true) public static ArrayValue flat(Context ctx, ArrayValue arr, int depth) {
+    @Expose public static ArrayValue __flat(Arguments args) {
+        var arr = args.self(ArrayValue.class);
+        var depth = args.getInt(0, 1);
         var res = new ArrayValue(arr.size());
         var stack = new Stack<Object>();
         var depths = new Stack<Integer>();
@@ -209,127 +247,169 @@ import me.topchetoeu.jscript.interop.NativeSetter;
             var el = stack.pop();
             int d = depths.pop();
 
-            if (d <= depth && el instanceof ArrayValue) {
-                for (int i = ((ArrayValue)el).size() - 1; i >= 0; i--) {
-                    stack.push(((ArrayValue)el).get(i));
+            if ((d == -1 || d < depth) && el instanceof ArrayValue) {
+                var arrEl = (ArrayValue)el;
+                for (int i = arrEl.size() - 1; i >= 0; i--) {
+                    if (!arrEl.has(i)) continue;
+                    stack.push(arrEl.get(i));
                     depths.push(d + 1);
                 }
             }
-            else res.set(ctx, depth, arr);
+            else res.set(args.ctx, res.size(), el);
         }
 
         return res;
     }
-    @Native(thisArg = true) public static ArrayValue flatMap(Context ctx, ArrayValue arr, FunctionValue cmp, Object thisArg) {
-        return flat(ctx, map(ctx, arr, cmp, thisArg), 1);
+    @Expose public static ArrayValue __flatMap(Arguments args) {
+        return __flat(new Arguments(args.ctx, __map(args), 1));
     }
 
-    @Native(thisArg = true) public static Object find(Context ctx, ArrayValue arr, FunctionValue cmp, Object thisArg) {
+    @Expose public static Object __find(Arguments args) {
+        var arr = args.self(ArrayValue.class);
+
         for (int i = 0; i < arr.size(); i++) {
-            if (arr.has(i) && Values.toBoolean(cmp.call(ctx, thisArg, arr.get(i), i, arr))) return arr.get(i);
+            if (arr.has(i) && Values.toBoolean(Values.call(
+                args.ctx, args.get(0), args.get(1),
+                arr.get(i), i, args.self
+            ))) return arr.get(i);
         }
 
         return null;
     }
-    @Native(thisArg = true) public static Object findLast(Context ctx, ArrayValue arr, FunctionValue cmp, Object thisArg) {
+    @Expose public static Object __findLast(Arguments args) {
+        var arr = args.self(ArrayValue.class);
+
         for (var i = arr.size() - 1; i >= 0; i--) {
-            if (arr.has(i) && Values.toBoolean(cmp.call(ctx, thisArg, arr.get(i), i, arr))) return arr.get(i);
+            if (arr.has(i) && Values.toBoolean(Values.call(
+                args.ctx, args.get(0), args.get(1),
+                arr.get(i), i, args.self
+            ))) return arr.get(i);
         }
 
         return null;
     }
 
-    @Native(thisArg = true) public static int findIndex(Context ctx, ArrayValue arr, FunctionValue cmp, Object thisArg) {
+    @Expose public static int __findIndex(Arguments args) {
+        var arr = args.self(ArrayValue.class);
+
         for (int i = 0; i < arr.size(); i++) {
-            if (arr.has(i) && Values.toBoolean(cmp.call(ctx, thisArg, arr.get(i), i, arr))) return i;
+            if (arr.has(i) && Values.toBoolean(Values.call(
+                args.ctx, args.get(0), args.get(1),
+                arr.get(i), i, args.self
+            ))) return i;
         }
 
         return -1;
     }
-    @Native(thisArg = true) public static int findLastIndex(Context ctx, ArrayValue arr, FunctionValue cmp, Object thisArg) {
+    @Expose public static int __findLastIndex(Arguments args) {
+        var arr = args.self(ArrayValue.class);
+
         for (var i = arr.size() - 1; i >= 0; i--) {
-            if (arr.has(i) && Values.toBoolean(cmp.call(ctx, thisArg, arr.get(i), i, arr))) return i;
+            if (arr.has(i) && Values.toBoolean(Values.call(
+                args.ctx, args.get(0), args.get(1),
+                arr.get(i), i, args.self
+            ))) return i;
         }
 
         return -1;
     }
 
-    @Native(thisArg = true) public static int indexOf(Context ctx, ArrayValue arr, Object val, int start) {
-        start = normalizeI(arr.size(), start, true);
+    @Expose public static int __indexOf(Arguments args) {
+        var arr = args.self(ArrayValue.class);
+        var val = args.get(0);
+        var start = normalizeI(arr.size(), args.getInt(1), true);
 
         for (int i = start; i < arr.size(); i++) {
-            if (Values.strictEquals(ctx, arr.get(i), val)) return i;
+            if (Values.strictEquals(args.ctx, arr.get(i), val)) return i;
         }
 
         return -1;
     }
-    @Native(thisArg = true) public static int lastIndexOf(Context ctx, ArrayValue arr, Object val, int start) {
-        start = normalizeI(arr.size(), start, true);
+    @Expose public static int __lastIndexOf(Arguments args) {
+        var arr = args.self(ArrayValue.class);
+        var val = args.get(0);
+        var start = normalizeI(arr.size(), args.getInt(1), true);
 
         for (int i = arr.size(); i >= start; i--) {
-            if (Values.strictEquals(ctx, arr.get(i), val)) return i;
+            if (Values.strictEquals(args.ctx, arr.get(i), val)) return i;
         }
 
         return -1;
     }
 
-    @Native(thisArg = true) public static boolean includes(Context ctx, ArrayValue arr, Object el, int start) {
-        return indexOf(ctx, arr, el, start) >= 0;
+    @Expose public static boolean __includes(Arguments args) {
+        return __indexOf(args) >= 0;
     }
 
-    @Native(thisArg = true) public static Object pop(Context ctx, ArrayValue arr) {
+    @Expose public static Object __pop(Arguments args) {
+        var arr = args.self(ArrayValue.class);
         if (arr.size() == 0) return null;
+
         var val = arr.get(arr.size() - 1);
         arr.shrink(1);
         return val;
     }
-    @Native(thisArg = true) public static int push(Context ctx, ArrayValue arr, Object ...values) {
-        arr.copyFrom(ctx, values, 0, arr.size(), values.length);
+    @Expose public static int __push(Arguments args) {
+        var arr = args.self(ArrayValue.class);
+        var values = args.args;
+
+        arr.copyFrom(args.ctx, values, 0, arr.size(), values.length);
         return arr.size();
     }
 
-    @Native(thisArg = true) public static Object shift(Context ctx, ArrayValue arr) {
+    @Expose public static Object __shift(Arguments args) {
+        var arr = args.self(ArrayValue.class);
+
         if (arr.size() == 0) return null;
         var val = arr.get(0);
+
         arr.move(1, 0, arr.size());
         arr.shrink(1);
         return val;
     }
-    @Native(thisArg = true) public static int unshift(Context ctx, ArrayValue arr, Object ...values) {
+    @Expose public static int __unshift(Arguments args) {
+        var arr = args.self(ArrayValue.class);
+        var values = args.slice(0).args;
+
         arr.move(0, values.length, arr.size());
-        arr.copyFrom(ctx, values, 0, 0, values.length);
+        arr.copyFrom(args.ctx, values, 0, 0, values.length);
         return arr.size();
     }
 
-    @Native(thisArg = true) public static ArrayValue slice(Context ctx, ArrayValue arr, int start, Object _end) {
-        start = normalizeI(arr.size(), start, true);
-        int end = normalizeI(arr.size(), (int)(_end == null ? arr.size() : Values.toNumber(ctx, _end)), true);
+    @Expose public static ArrayValue __slice(Arguments args) {
+        var arr = args.self(ArrayValue.class);
+        var start = normalizeI(arr.size(), args.getInt(0), true);
+        var end = normalizeI(arr.size(), args.getInt(1, arr.size()), true);
 
         var res = new ArrayValue(end - start);
-        arr.copyTo(ctx, res, start, 0, end - start);
+        arr.copyTo(args.ctx, res, start, 0, end - start);
         return res;
     }
 
-    @Native(thisArg = true) public static ArrayValue splice(Context ctx, ArrayValue arr, int start, Object _deleteCount, Object ...items) {
-        start = normalizeI(arr.size(), start, true);
-        int deleteCount = _deleteCount == null ? arr.size() - 1 : (int)Values.toNumber(ctx, _deleteCount);
-        deleteCount = normalizeI(arr.size(), deleteCount, true);
+    @Expose public static ArrayValue __splice(Arguments args) {
+        var arr = args.self(ArrayValue.class);
+        var start = normalizeI(arr.size(), args.getInt(0), true);
+        var deleteCount = normalizeI(arr.size(), args.getInt(1, arr.size()), true);
+        var items = args.slice(2).args;
+
         if (start + deleteCount >= arr.size()) deleteCount = arr.size() - start;
 
         var size = arr.size() - deleteCount + items.length;
         var res = new ArrayValue(deleteCount);
-        arr.copyTo(ctx, res, start, 0, deleteCount);
+        arr.copyTo(args.ctx, res, start, 0, deleteCount);
         arr.move(start + deleteCount, start + items.length, arr.size() - start - deleteCount);
-        arr.copyFrom(ctx, items, 0, start, items.length);
+        arr.copyFrom(args.ctx, items, 0, start, items.length);
         arr.setSize(size);
 
         return res;
     }
-    @Native(thisArg = true) public static String toString(Context ctx, ArrayValue arr) {
-        return join(ctx, arr, ",");
+    @Expose public static String __toString(Arguments args) {
+        return __join(new Arguments(args.ctx, args.self, ","));
     }
 
-    @Native(thisArg = true) public static String join(Context ctx, ArrayValue arr, String sep) {
+    @Expose public static String __join(Arguments args) {
+        var arr = args.self(ArrayValue.class);
+        var sep = args.getString(0, ", ");
         var res = new StringBuilder();
         var comma = false;
 
@@ -342,30 +422,33 @@ import me.topchetoeu.jscript.interop.NativeSetter;
             var el = arr.get(i);
             if (el == null || el == Values.NULL) continue;
 
-            res.append(Values.toString(ctx, el));
+            res.append(Values.toString(args.ctx, el));
         }
 
         return res.toString();
     }
 
-    @Native public static boolean isArray(Context ctx, Object val) { return val instanceof ArrayValue; }
-    @Native public static ArrayValue of(Context ctx, Object... args) {
-        var res = new ArrayValue(args.length);
-        res.copyFrom(ctx, args, 0, 0, args.length);
-        return res;
+    @Expose(target = ExposeTarget.STATIC)
+    public static boolean __isArray(Arguments args) {
+        return args.get(0) instanceof ArrayValue;
+    }
+    @Expose(target = ExposeTarget.STATIC)
+    public static ArrayValue __of(Arguments args) {
+        return new ArrayValue(args.ctx, args.slice(0).args);
     }
 
-    @NativeConstructor public static ArrayValue constructor(Context ctx, Object... args) {
+    @ExposeConstructor public static ArrayValue __constructor(Arguments args) {
         ArrayValue res;
 
-        if (args.length == 1 && args[0] instanceof Number) {
-            int len = ((Number)args[0]).intValue();
+        if (args.n() == 1 && args.get(0) instanceof Number) {
+            var len = args.getInt(0);
             res = new ArrayValue(len);
             res.setSize(len);
         }
         else {
-            res = new ArrayValue(args.length);
-            res.copyFrom(ctx, args, 0, 0, args.length);
+            var val = args.args;
+            res = new ArrayValue(val.length);
+            res.copyFrom(args.ctx, val, 0, 0, val.length);
         }
 
         return res;

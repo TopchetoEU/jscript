@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.Stack;
 
-import me.topchetoeu.jscript.Filename;
 import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.engine.values.Values;
@@ -16,47 +15,54 @@ import me.topchetoeu.jscript.filesystem.Filesystem;
 import me.topchetoeu.jscript.filesystem.FilesystemException;
 import me.topchetoeu.jscript.filesystem.Mode;
 import me.topchetoeu.jscript.filesystem.FilesystemException.FSCode;
-import me.topchetoeu.jscript.interop.Native;
+import me.topchetoeu.jscript.interop.Arguments;
+import me.topchetoeu.jscript.interop.Expose;
+import me.topchetoeu.jscript.interop.ExposeField;
+import me.topchetoeu.jscript.interop.ExposeTarget;
+import me.topchetoeu.jscript.interop.WrapperName;
 
-@Native("Filesystem")
+@WrapperName("Filesystem")
 public class FilesystemLib {
-    @Native public static final int SEEK_SET = 0;
-    @Native public static final int SEEK_CUR = 1;
-    @Native public static final int SEEK_END = 2;
+    @ExposeField(target = ExposeTarget.STATIC)
+    public static final int __SEEK_SET = 0;
+    @ExposeField(target = ExposeTarget.STATIC)
+    public static final int __SEEK_CUR = 1;
+    @ExposeField(target = ExposeTarget.STATIC)
+    public static final int __SEEK_END = 2;
 
     private static Filesystem fs(Context ctx) {
-        var env = ctx.environment();
-        if (env != null) {
-            var fs = ctx.environment().filesystem;
-            if (fs != null) return fs;
-        }
+        var fs = Filesystem.get(ctx);
+        if (fs != null) return fs;
         throw EngineException.ofError("Current environment doesn't have a file system.");
     }
 
-    @Native public static String normalize(Context ctx, String... paths) {
-        return fs(ctx).normalize(paths);
+    @Expose(target = ExposeTarget.STATIC)
+    public static String __normalize(Arguments args) {
+        return fs(args.ctx).normalize(args.convert(String.class));
     }
 
-    @Native public static PromiseLib open(Context ctx, String _path, String mode) {
-        var path = fs(ctx).normalize(_path);
-        var _mode = Mode.parse(mode);
+    @Expose(target = ExposeTarget.STATIC)
+    public static PromiseLib __open(Arguments args) {
+        return PromiseLib.await(args.ctx, () -> {
+            var fs = fs(args.ctx);
+            var path = fs.normalize(args.getString(0));
+            var _mode = Mode.parse(args.getString(1));
 
-        return PromiseLib.await(ctx, () -> {
             try {
-                if (fs(ctx).stat(path).type != EntryType.FILE) {
+                if (fs.stat(path).type != EntryType.FILE) {
                     throw new FilesystemException(path, FSCode.NOT_FILE);
                 }
 
-                var file = fs(ctx).open(path, _mode);
+                var file = fs.open(path, _mode);
                 return new FileLib(file);
             }
             catch (FilesystemException e) { throw e.toEngineException(); }
         });
     }
-    @Native public static ObjectValue ls(Context ctx, String _path) throws IOException {
-        var path = fs(ctx).normalize(_path);
+    @Expose(target = ExposeTarget.STATIC)
+    public static ObjectValue __ls(Arguments args) {
 
-        return Values.toJSAsyncIterator(ctx, new Iterator<>() {
+        return Values.toJSAsyncIterator(args.ctx, new Iterator<>() {
             private boolean failed, done;
             private File file;
             private String nextLine;
@@ -65,11 +71,14 @@ public class FilesystemLib {
                 if (done) return;
                 if (!failed) {
                     if (file == null) {
-                        if (fs(ctx).stat(path).type != EntryType.FOLDER) {
+                        var fs = fs(args.ctx);
+                        var path = fs.normalize(args.getString(0));
+
+                        if (fs.stat(path).type != EntryType.FOLDER) {
                             throw new FilesystemException(path, FSCode.NOT_FOLDER);
                         }
 
-                        file = fs(ctx).open(path, Mode.READ);
+                        file = fs.open(path, Mode.READ);
                     }
 
                     if (nextLine == null) {
@@ -106,29 +115,36 @@ public class FilesystemLib {
             }
         });
     }
-    @Native public static PromiseLib mkdir(Context ctx, String _path) throws IOException {
-        return PromiseLib.await(ctx, () -> {
+    @Expose(target = ExposeTarget.STATIC)
+    public static PromiseLib __mkdir(Arguments args) throws IOException {
+        return PromiseLib.await(args.ctx, () -> {
             try {
-                fs(ctx).create(Filename.parse(_path).toString(), EntryType.FOLDER);
+                fs(args.ctx).create(args.getString(0), EntryType.FOLDER);
                 return null;
             }
             catch (FilesystemException e) { throw e.toEngineException(); }
         });
 
     }
-    @Native public static PromiseLib mkfile(Context ctx, String path) throws IOException {
-        return PromiseLib.await(ctx, () -> {
+    @Expose(target = ExposeTarget.STATIC)
+    public static PromiseLib __mkfile(Arguments args) throws IOException {
+        return PromiseLib.await(args.ctx, () -> {
             try {
-                fs(ctx).create(path, EntryType.FILE);
+                fs(args.ctx).create(args.getString(0), EntryType.FILE);
                 return null;
             }
             catch (FilesystemException e) { throw e.toEngineException(); }
         });
     }
-    @Native public static PromiseLib rm(Context ctx, String path, boolean recursive) throws IOException {
-        return PromiseLib.await(ctx, () -> {
+    @Expose(target = ExposeTarget.STATIC)
+    public static PromiseLib __rm(Arguments args) throws IOException {
+        return PromiseLib.await(args.ctx, () -> {
             try {
-                if (!recursive) fs(ctx).create(path, EntryType.NONE);
+                var fs = fs(args.ctx);
+                var path = fs.normalize(args.getString(0));
+                var recursive = args.getBoolean(1);
+
+                if (!recursive) fs.create(path, EntryType.NONE);
                 else {
                     var stack = new Stack<String>();
                     stack.push(path);
@@ -137,13 +153,13 @@ public class FilesystemLib {
                         var currPath = stack.pop();
                         FileStat stat;
 
-                        try { stat = fs(ctx).stat(currPath); }
+                        try { stat = fs.stat(currPath); }
                         catch (FilesystemException e) { continue; }
 
                         if (stat.type == EntryType.FOLDER) {
-                            for (var el : fs(ctx).open(currPath, Mode.READ).readToString().split("\n")) stack.push(el);
+                            for (var el : fs.open(currPath, Mode.READ).readToString().split("\n")) stack.push(el);
                         }
-                        else fs(ctx).create(currPath, EntryType.NONE);
+                        else fs.create(currPath, EntryType.NONE);
                     }
                 }
                 return null;
@@ -151,22 +167,26 @@ public class FilesystemLib {
             catch (FilesystemException e) { throw e.toEngineException(); }
         });
     }
-    @Native public static PromiseLib stat(Context ctx, String path) throws IOException {
-        return PromiseLib.await(ctx, () -> {
+    @Expose(target = ExposeTarget.STATIC)
+    public static PromiseLib __stat(Arguments args) throws IOException {
+        return PromiseLib.await(args.ctx, () -> {
             try {
-                var stat = fs(ctx).stat(path);
+                var fs = fs(args.ctx);
+                var path = fs.normalize(args.getString(0));
+                var stat = fs.stat(path);
                 var res = new ObjectValue();
 
-                res.defineProperty(ctx, "type", stat.type.name);
-                res.defineProperty(ctx, "mode", stat.mode.name);
+                res.defineProperty(args.ctx, "type", stat.type.name);
+                res.defineProperty(args.ctx, "mode", stat.mode.name);
                 return res;
             }
             catch (FilesystemException e) { throw e.toEngineException(); }
         });
     }
-    @Native public static PromiseLib exists(Context ctx, String _path) throws IOException {
-        return PromiseLib.await(ctx, () -> {
-            try { fs(ctx).stat(_path); return true; }
+    @Expose(target = ExposeTarget.STATIC)
+    public static PromiseLib __exists(Arguments args) throws IOException {
+        return PromiseLib.await(args.ctx, () -> {
+            try { fs(args.ctx).stat(args.getString(0)); return true; }
             catch (FilesystemException e) { return false; }
         });
     }

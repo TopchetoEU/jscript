@@ -2,22 +2,34 @@ package me.topchetoeu.jscript.lib;
 
 import java.util.regex.Pattern;
 
-import me.topchetoeu.jscript.engine.Context;
+import me.topchetoeu.jscript.engine.Environment;
 import me.topchetoeu.jscript.engine.values.ArrayValue;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
 import me.topchetoeu.jscript.engine.values.ObjectValue;
+import me.topchetoeu.jscript.engine.values.Symbol;
 import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.exceptions.EngineException;
-import me.topchetoeu.jscript.interop.Native;
-import me.topchetoeu.jscript.interop.NativeConstructor;
-import me.topchetoeu.jscript.interop.NativeGetter;
+import me.topchetoeu.jscript.interop.Arguments;
+import me.topchetoeu.jscript.interop.Expose;
+import me.topchetoeu.jscript.interop.ExposeConstructor;
+import me.topchetoeu.jscript.interop.ExposeTarget;
+import me.topchetoeu.jscript.interop.ExposeType;
+import me.topchetoeu.jscript.interop.WrapperName;
 
 // TODO: implement index wrapping properly
-@Native("String") public class StringLib {
+@WrapperName("String")
+public class StringLib {
     public final String value;
 
-    private static String passThis(Context ctx, String funcName, Object val) {
-        if (val instanceof StringLib) return ((StringLib)val).value;
+    @Override public String toString() { return value; }
+
+    public StringLib(String val) {
+        this.value = val;
+    }
+
+    private static String passThis(Arguments args, String funcName) {
+        var val = args.self;
+        if (Values.isWrapper(val, StringLib.class)) return Values.wrapper(val, StringLib.class).value;
         else if (val instanceof String) return (String)val;
         else throw EngineException.ofType(String.format("'%s' may only be called upon object and primitve strings.", funcName));
     }
@@ -25,177 +37,188 @@ import me.topchetoeu.jscript.interop.NativeGetter;
         if (i < 0) i += len;
         if (clamp) {
             if (i < 0) i = 0;
-            if (i >= len) i = len;
+            if (i > len) i = len;
         }
         return i;
     }
 
-    @NativeGetter(thisArg = true) public static int length(Context ctx, Object thisArg) {
-        return passThis(ctx, "substring", thisArg).length();
+    @Expose(type = ExposeType.GETTER)
+    public static int __length(Arguments args) {
+        return passThis(args, "length").length();
     }
 
-    @Native(thisArg = true) public static String substring(Context ctx, Object thisArg, int start, Object _end) {
-        var val = passThis(ctx, "substring", thisArg);
-        start = normalizeI(start, val.length(), true);
-        int end = normalizeI(_end == null ? val.length() : (int)Values.toNumber(ctx, _end), val.length(), true);
+    @Expose public static String __substring(Arguments args) {
+        var val = passThis(args, "substring");
+        var start = Math.max(0, Math.min(val.length(), args.getInt(0)));
+        var end = Math.max(0, Math.min(val.length(), args.getInt(1, val.length())));
+
+        if (end < start) {
+            var tmp = end;
+            end = start;
+            start = tmp;
+        }
 
         return val.substring(start, end);
     }
-    @Native(thisArg = true) public static String substr(Context ctx, Object thisArg, int start, Object _len) {
-        var val = passThis(ctx, "substr", thisArg);
-        int len = _len == null ? val.length() - start : (int)Values.toNumber(ctx, _len);
-        return substring(ctx, val, start, start + len);
+    @Expose public static String __substr(Arguments args) {
+        var val = passThis(args, "substr");
+        var start = normalizeI(args.getInt(0), val.length(), true);
+        int end = normalizeI(args.getInt(1, val.length() - start) + start, val.length(), true);
+        return val.substring(start, end);
     }
 
-    @Native(thisArg = true) public static String toLowerCase(Context ctx, Object thisArg) {
-        return passThis(ctx, "toLowerCase", thisArg).toLowerCase();
+    @Expose public static String __toLowerCase(Arguments args) {
+        return passThis(args, "toLowerCase").toLowerCase();
     }
-    @Native(thisArg = true) public static String toUpperCase(Context ctx, Object thisArg) {
-        return passThis(ctx, "toUpperCase", thisArg).toUpperCase();
+    @Expose public static String __toUpperCase(Arguments args) {
+        return passThis(args, "toUpperCase").toUpperCase();
     }
 
-    @Native(thisArg = true) public static String charAt(Context ctx, Object thisArg, int i) {
-        return passThis(ctx, "charAt", thisArg).charAt(i) + "";
+    @Expose public static String __charAt(Arguments args) {
+        return passThis(args, "charAt").charAt(args.getInt(0)) + "";
     }
-    @Native(thisArg = true) public static double charCodeAt(Context ctx, Object thisArg, int i) {
-        var str = passThis(ctx, "charCodeAt", thisArg);
+    @Expose public static double __charCodeAt(Arguments args) {
+        var str = passThis(args, "charCodeAt");
+        var i = args.getInt(0);
         if (i < 0 || i >= str.length()) return Double.NaN;
         else return str.charAt(i);
     }
-    @Native(thisArg = true) public static double codePointAt(Context ctx, Object thisArg, int i) {
-        var str = passThis(ctx, "codePointAt", thisArg);
+    @Expose public static double __codePointAt(Arguments args) {
+        var str = passThis(args, "codePointAt");
+        var i = args.getInt(0);
         if (i < 0 || i >= str.length()) return Double.NaN;
         else return str.codePointAt(i);
     }
 
-    @Native(thisArg = true) public static boolean startsWith(Context ctx, Object thisArg, String term, int pos) {
-        return passThis(ctx, "startsWith", thisArg).startsWith(term, pos);
+    @Expose public static boolean __startsWith(Arguments args) {
+        return passThis(args, "startsWith").startsWith(args.getString(0), args.getInt(1));
     }
-    @Native(thisArg = true) public static boolean endsWith(Context ctx, Object thisArg, String term, int pos) {
-        var val = passThis(ctx, "endsWith", thisArg);
-        return val.lastIndexOf(term, pos) >= 0;
+    @Expose public static boolean __endsWith(Arguments args) {
+        return passThis(args, "endsWith").lastIndexOf(args.getString(0), args.getInt(1)) >= 0;
     }
 
-    @Native(thisArg = true) public static int indexOf(Context ctx, Object thisArg, Object term, int start) {
-        var val = passThis(ctx, "indexOf", thisArg);
+    @Expose public static int __indexOf(Arguments args) {
+        var val = passThis(args, "indexOf");
+        var term = args.get(0);
+        var start = args.getInt(1);
+        var search = Values.getMember(args.ctx, term, Symbol.get("Symbol.search"));
 
-        if (term != null && term != Values.NULL && !(term instanceof String)) {
-            var search = Values.getMember(ctx, term, ctx.environment().symbol("Symbol.search"));
-            if (search instanceof FunctionValue) {
-                return (int)Values.toNumber(ctx, ((FunctionValue)search).call(ctx, term, val, false, start));
-            }
+        if (search instanceof FunctionValue) {
+            return (int)Values.toNumber(args.ctx, Values.call(args.ctx, search, term, val, false, start));
         }
-
-        return val.indexOf(Values.toString(ctx, term), start);
+        else return val.indexOf(Values.toString(args.ctx, term), start);
     }
-    @Native(thisArg = true) public static int lastIndexOf(Context ctx, Object thisArg, Object term, int pos) {
-        var val = passThis(ctx, "lastIndexOf", thisArg);
+    @Expose public static int __lastIndexOf(Arguments args) {
+        var val = passThis(args, "lastIndexOf");
+        var term = args.get(0);
+        var start = args.getInt(1);
+        var search = Values.getMember(args.ctx, term, Symbol.get("Symbol.search"));
 
-        if (term != null && term != Values.NULL && !(term instanceof String)) {
-            var search = Values.getMember(ctx, term, ctx.environment().symbol("Symbol.search"));
-            if (search instanceof FunctionValue) {
-                return (int)Values.toNumber(ctx, ((FunctionValue)search).call(ctx, term, val, true, pos));
-            }
+        if (search instanceof FunctionValue) {
+            return (int)Values.toNumber(args.ctx, Values.call(args.ctx, search, term, val, true, start));
         }
-
-        return val.lastIndexOf(Values.toString(ctx, term), pos);
+        else return val.lastIndexOf(Values.toString(args.ctx, term), start);
     }
 
-    @Native(thisArg = true) public static boolean includes(Context ctx, Object thisArg, Object term, int pos) {
-        return indexOf(ctx, passThis(ctx, "includes", thisArg), term, pos) >= 0;
+    @Expose public static boolean __includes(Arguments args) {
+        return __indexOf(args) >= 0;
     }
 
-    @Native(thisArg = true) public static String replace(Context ctx, Object thisArg, Object term, Object replacement) {
-        var val = passThis(ctx, "replace", thisArg);
+    @Expose public static String __replace(Arguments args) {
+        var val = passThis(args, "replace");
+        var term = args.get(0);
+        var replacement = args.get(1);
+        var replace = Values.getMember(args.ctx, term, Symbol.get("Symbol.replace"));
 
-        if (term != null && term != Values.NULL && !(term instanceof String)) {
-            var replace = Values.getMember(ctx, term, ctx.environment().symbol("Symbol.replace"));
-            if (replace instanceof FunctionValue) {
-                return Values.toString(ctx, ((FunctionValue)replace).call(ctx, term, val, replacement));
-            }
+        if (replace instanceof FunctionValue) {
+            return Values.toString(args.ctx, Values.call(args.ctx, replace, term, val, replacement));
         }
-
-        return val.replaceFirst(Pattern.quote(Values.toString(ctx, term)), Values.toString(ctx, replacement));
+        else return val.replaceFirst(Pattern.quote(Values.toString(args.ctx, term)), Values.toString(args.ctx, replacement));
     }
-    @Native(thisArg = true) public static String replaceAll(Context ctx, Object thisArg, Object term, Object replacement) {
-        var val = passThis(ctx, "replaceAll", thisArg);
+    @Expose public static String __replaceAll(Arguments args) {
+        var val = passThis(args, "replaceAll");
+        var term = args.get(0);
+        var replacement = args.get(1);
+        var replace = Values.getMember(args.ctx, term, Symbol.get("Symbol.replace"));
 
-        if (term != null && term != Values.NULL && !(term instanceof String)) {
-            var replace = Values.getMember(ctx, term, ctx.environment().symbol("Symbol.replace"));
-            if (replace instanceof FunctionValue) {
-                return Values.toString(ctx, ((FunctionValue)replace).call(ctx, term, val, replacement));
-            }
+        if (replace instanceof FunctionValue) {
+            return Values.toString(args.ctx, Values.call(args.ctx, replace, term, val, replacement));
         }
-
-        return val.replaceFirst(Pattern.quote(Values.toString(ctx, term)), Values.toString(ctx, replacement));
+        else return val.replace(Values.toString(args.ctx, term), Values.toString(args.ctx, replacement));
     }
 
-    @Native(thisArg = true) public static ArrayValue match(Context ctx, Object thisArg, Object term, String replacement) {
-        var val = passThis(ctx, "match", thisArg);
+    @Expose public static ArrayValue __match(Arguments args) {
+        var val = passThis(args, "match");
+        var term = args.get(0);
 
         FunctionValue match;
-        
+
         try {
-            var _match = Values.getMember(ctx, term, ctx.environment().symbol("Symbol.match"));
+            var _match = Values.getMember(args.ctx, term, Symbol.get("Symbol.match"));
             if (_match instanceof FunctionValue) match = (FunctionValue)_match;
-            else if (ctx.environment().regexConstructor != null) {
-                var regex = Values.callNew(ctx, ctx.environment().regexConstructor, Values.toString(ctx, term), "");
-                _match = Values.getMember(ctx, regex, ctx.environment().symbol("Symbol.match"));
+            else if (args.ctx.hasNotNull(Environment.REGEX_CONSTR)) {
+                var regex = Values.callNew(args.ctx, args.ctx.get(Environment.REGEX_CONSTR), Values.toString(args.ctx, term), "");
+                _match = Values.getMember(args.ctx, regex, Symbol.get("Symbol.match"));
                 if (_match instanceof FunctionValue) match = (FunctionValue)_match;
                 else throw EngineException.ofError("Regular expressions don't support matching.");
             }
             else throw EngineException.ofError("Regular expressions not supported.");
         }
-        catch (IllegalArgumentException e) { return new ArrayValue(ctx, ""); }
+        catch (IllegalArgumentException e) { return new ArrayValue(args.ctx, ""); }
 
-        var res = match.call(ctx, term, val);
+        var res = match.call(args.ctx, term, val);
         if (res instanceof ArrayValue) return (ArrayValue)res;
-        else return new ArrayValue(ctx, "");
+        else return new ArrayValue(args.ctx, "");
     }
-    @Native(thisArg = true) public static Object matchAll(Context ctx, Object thisArg, Object term, String replacement) {
-        var val = passThis(ctx, "matchAll", thisArg);
+    @Expose public static Object __matchAll(Arguments args) {
+        var val = passThis(args, "matchAll");
+        var term = args.get(0);
 
         FunctionValue match = null;
         
         try {
-            var _match = Values.getMember(ctx, term, ctx.environment().symbol("Symbol.matchAll"));
+            var _match = Values.getMember(args.ctx, term, Symbol.get("Symbol.matchAll"));
             if (_match instanceof FunctionValue) match = (FunctionValue)_match;
         }
         catch (IllegalArgumentException e) { }
 
-        if (match == null && ctx.environment().regexConstructor != null) {
-            var regex = Values.callNew(ctx, ctx.environment().regexConstructor, Values.toString(ctx, term), "g");
-            var _match = Values.getMember(ctx, regex, ctx.environment().symbol("Symbol.matchAll"));
+        if (match == null && args.ctx.hasNotNull(Environment.REGEX_CONSTR)) {
+            var regex = Values.callNew(args.ctx, args.ctx.get(Environment.REGEX_CONSTR), Values.toString(args.ctx, term), "g");
+            var _match = Values.getMember(args.ctx, regex, Symbol.get("Symbol.matchAll"));
             if (_match instanceof FunctionValue) match = (FunctionValue)_match;
             else throw EngineException.ofError("Regular expressions don't support matching.");
         }
         else throw EngineException.ofError("Regular expressions not supported.");
 
-        return match.call(ctx, term, val);
+        return match.call(args.ctx, term, val);
     }
 
-    @Native(thisArg = true) public static ArrayValue split(Context ctx, Object thisArg, Object term, Object lim, boolean sensible) {
-        var val = passThis(ctx, "split", thisArg);
+    @Expose public static ArrayValue __split(Arguments args) {
+        var val = passThis(args, "split");
+        var term = args.get(0);
+        var lim = args.get(1);
+        var sensible = args.getBoolean(2);
 
-        if (lim != null) lim = Values.toNumber(ctx, lim);
+        if (lim != null) lim = Values.toNumber(args.ctx, lim);
 
         if (term != null && term != Values.NULL && !(term instanceof String)) {
-            var replace = Values.getMember(ctx, term, ctx.environment().symbol("Symbol.replace"));
+            var replace = Values.getMember(args.ctx, term, Symbol.get("Symbol.replace"));
             if (replace instanceof FunctionValue) {
-                var tmp = ((FunctionValue)replace).call(ctx, term, val, lim, sensible);
+                var tmp = ((FunctionValue)replace).call(args.ctx, term, val, lim, sensible);
 
                 if (tmp instanceof ArrayValue) {
                     var parts = new ArrayValue(((ArrayValue)tmp).size());
-                    for (int i = 0; i < parts.size(); i++) parts.set(ctx, i, Values.toString(ctx, ((ArrayValue)tmp).get(i)));
+                    for (int i = 0; i < parts.size(); i++) parts.set(args.ctx, i, Values.toString(args.ctx, ((ArrayValue)tmp).get(i)));
                     return parts;
                 }
             }
         }
 
         String[] parts;
-        var pattern = Pattern.quote(Values.toString(ctx, term));
+        var pattern = Pattern.quote(Values.toString(args.ctx, term));
 
         if (lim == null) parts = val.split(pattern);
+        else if ((double)lim < 1) return new ArrayValue();
         else if (sensible) parts = val.split(pattern, (int)(double)lim);
         else {
             var limit = (int)(double)lim;
@@ -205,7 +228,7 @@ import me.topchetoeu.jscript.interop.NativeGetter;
             if (parts.length > limit) res = new ArrayValue(limit);
             else res = new ArrayValue(parts.length);
 
-            for (var i = 0; i < parts.length && i < limit; i++) res.set(ctx, i, parts[i]);
+            for (var i = 0; i < parts.length && i < limit; i++) res.set(args.ctx, i, parts[i]);
 
             return res;
         }
@@ -215,52 +238,54 @@ import me.topchetoeu.jscript.interop.NativeGetter;
 
         for (; i < parts.length; i++) {
             if (lim != null && (double)lim <= i) break;
-            res.set(ctx, i, parts[i]);
+            res.set(args.ctx, i, parts[i]);
         }
 
         return res;
     }
 
-    @Native(thisArg = true) public static String slice(Context ctx, Object thisArg, int start, Object _end) {
-        return substring(ctx, passThis(ctx, "slice", thisArg), start, _end);
+    @Expose public static String __slice(Arguments args) {
+        var self = passThis(args, "slice");
+        var start = normalizeI(args.getInt(0), self.length(), false);
+        var end = normalizeI(args.getInt(1, self.length()), self.length(), false);
+
+        return __substring(new Arguments(args.ctx, self, start, end));
     }
 
-    @Native(thisArg = true) public static String concat(Context ctx, Object thisArg, Object... args) {
-        var res = new StringBuilder(passThis(ctx, "concat", thisArg));
+    @Expose public static String __concat(Arguments args) {
+        var res = new StringBuilder(passThis(args, "concat"));
 
-        for (var el : args) res.append(Values.toString(ctx, el));
+        for (var el : args.convert(String.class)) res.append(el);
 
         return res.toString();
     }
-    @Native(thisArg = true) public static String trim(Context ctx, Object thisArg) {
-        return passThis(ctx, "trim", thisArg).trim();
+    @Expose public static String __trim(Arguments args) {
+        return passThis(args, "trim").trim();
     }
-    @Native(thisArg = true) public static String trimStart(Context ctx, Object thisArg) {
-        return passThis(ctx, "trimStart", thisArg).replaceAll("^\\s+", "");
+    @Expose public static String __trimStart(Arguments args) {
+        return passThis(args, "trimStart").replaceAll("^\\s+", "");
     }
-    @Native(thisArg = true) public static String trimEnd(Context ctx, Object thisArg) {
-        return passThis(ctx, "trimEnd", thisArg).replaceAll("\\s+$", "");
+    @Expose public static String __trimEnd(Arguments args) {
+        return passThis(args, "trimEnd").replaceAll("\\s+$", "");
     }
 
-    @NativeConstructor(thisArg = true) public static Object constructor(Context ctx, Object thisArg, Object val) {
-        val = Values.toString(ctx, val);
-        if (thisArg instanceof ObjectValue) return new StringLib((String)val);
+    @ExposeConstructor public static Object __constructor(Arguments args) {
+        var val = args.getString(0, "");
+        if (args.self instanceof ObjectValue) return new StringLib(val);
         else return val;
     }
-    @Native(thisArg = true) public static String toString(Context ctx, Object thisArg) {
-        return passThis(ctx, "toString", thisArg);
+    @Expose public static String __toString(Arguments args) {
+        return passThis(args, "toString");
     }
-    @Native(thisArg = true) public static String valueOf(Context ctx, Object thisArg) {
-        return passThis(ctx, "valueOf", thisArg);
+    @Expose public static String __valueOf(Arguments args) {
+        return passThis(args, "valueOf");
     }
 
-    @Native public static String fromCharCode(int ...val) {
+    @Expose(target = ExposeTarget.STATIC)
+    public static String __fromCharCode(Arguments args) {
+        var val = args.convertInt();
         char[] arr = new char[val.length];
         for (var i = 0; i < val.length; i++) arr[i] = (char)val[i];
         return new String(arr);
-    }
-
-    public StringLib(String val) {
-        this.value = val;
     }
 }

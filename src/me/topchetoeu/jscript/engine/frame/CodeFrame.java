@@ -6,6 +6,7 @@ import java.util.Stack;
 import me.topchetoeu.jscript.Location;
 import me.topchetoeu.jscript.compilation.Instruction;
 import me.topchetoeu.jscript.engine.Context;
+import me.topchetoeu.jscript.engine.debug.DebugContext;
 import me.topchetoeu.jscript.engine.scope.LocalScope;
 import me.topchetoeu.jscript.engine.scope.ValueVariable;
 import me.topchetoeu.jscript.engine.values.ArrayValue;
@@ -37,8 +38,10 @@ public class CodeFrame {
             return ptr >= start && ptr < end;
         }
 
+        public void setCause(EngineException target) {
+            if (error != null) target.setCause(error);
+        }
         public TryCtx _catch(EngineException e) {
-            if (error != null) e.setCause(error);
             return new TryCtx(TryState.CATCH, e, result, restoreStackPtr, start, end, -1, finallyStart);
         }
         public TryCtx _finally(PendingResult res) {
@@ -93,13 +96,14 @@ public class CodeFrame {
     public final Object[] args;
     public final Stack<TryCtx> tryStack = new Stack<>();
     public final CodeFunction function;
+    public final Context ctx;
     public Object[] stack = new Object[32];
     public int stackPtr = 0;
     public int codePtr = 0;
     public boolean jumpFlag = false, popTryFlag = false;
     private Location prevLoc = null;
 
-    public ObjectValue getLocalScope(Context ctx, boolean props) {
+    public ObjectValue getLocalScope(boolean props) {
         var names = new String[scope.locals.length];
 
         for (int i = 0; i < scope.locals.length; i++) {
@@ -114,7 +118,7 @@ public class CodeFrame {
 
         return new ScopeValue(scope.locals, names);
     }
-    public ObjectValue getCaptureScope(Context ctx, boolean props) {
+    public ObjectValue getCaptureScope(boolean props) {
         var names = new String[scope.captures.length];
 
         for (int i = 0; i < scope.captures.length; i++) {
@@ -125,7 +129,7 @@ public class CodeFrame {
 
         return new ScopeValue(scope.captures, names);
     }
-    public ObjectValue getValStackScope(Context ctx) {
+    public ObjectValue getValStackScope() {
         return new ObjectValue() {
             @Override
             protected Object getField(Context ctx, Object key) {
@@ -177,7 +181,7 @@ public class CodeFrame {
 
         return res;
     }
-    public void push(Context ctx, Object val) {
+    public void push(Object val) {
         if (stack.length <= stackPtr) {
             var newStack = new Object[stack.length * 2];
             System.arraycopy(stack, 0, newStack, 0, stack.length);
@@ -186,20 +190,19 @@ public class CodeFrame {
         stack[stackPtr++] = Values.normalize(ctx, val);
     }
 
-    public Object next(Context ctx, Object value, Object returnValue, EngineException error) {
-        if (value != Runners.NO_RETURN) push(ctx, value);
+    public Object next(Object value, Object returnValue, EngineException error) {
+        if (value != Values.NO_RETURN) push(value);
 
         Instruction instr = null;
         if (codePtr >= 0 && codePtr < function.body.length) instr = function.body[codePtr];
 
-        if (returnValue == Runners.NO_RETURN && error == null) {
+        if (returnValue == Values.NO_RETURN && error == null) {
             try {
                 if (Thread.currentThread().isInterrupted()) throw new InterruptException();
 
                 if (instr == null) returnValue = null;
                 else {
-                // System.out.println(instr + "@" + instr.location);
-                    ctx.engine.onInstruction(ctx, this, instr, Runners.NO_RETURN, null, false);
+                    DebugContext.get(ctx).onInstruction(ctx, this, instr, Values.NO_RETURN, null, false);
 
                     if (instr.location != null) prevLoc = instr.location;
 
@@ -220,10 +223,11 @@ public class CodeFrame {
             TryCtx newCtx = null;
 
             if (error != null) {
+                tryCtx.setCause(error);
                 if (tryCtx.hasCatch()) newCtx = tryCtx._catch(error);
                 else if (tryCtx.hasFinally()) newCtx = tryCtx._finally(PendingResult.ofThrow(error, instr));
             }
-            else if (returnValue != Runners.NO_RETURN) {
+            else if (returnValue != Values.NO_RETURN) {
                 if (tryCtx.hasFinally()) newCtx = tryCtx._finally(PendingResult.ofReturn(returnValue, instr));
             }
             else if (jumpFlag && !tryCtx.inBounds(codePtr)) {
@@ -250,7 +254,7 @@ public class CodeFrame {
                     tryStack.push(newCtx);
                 }
                 error = null;
-                returnValue = Runners.NO_RETURN;
+                returnValue = Values.NO_RETURN;
                 break;
             }
             else {
@@ -268,15 +272,17 @@ public class CodeFrame {
                     tryStack.pop();
                     codePtr = tryCtx.end;
                     if (tryCtx.result.instruction != null) instr = tryCtx.result.instruction;
-                    if (tryCtx.result.isJump) {
-                        codePtr = tryCtx.result.ptr;
-                        jumpFlag = true;
+                    if (!jumpFlag && returnValue == Values.NO_RETURN && error == null) {
+                        if (tryCtx.result.isJump) {
+                            codePtr = tryCtx.result.ptr;
+                            jumpFlag = true;
+                        }
+                        if (tryCtx.result.isReturn) returnValue = tryCtx.result.value;
+                        if (error == null && tryCtx.result.isThrow) {
+                            error = tryCtx.result.error;
+                        }
                     }
-                    if (tryCtx.result.isReturn) returnValue = tryCtx.result.value;
-                    if (tryCtx.result.isThrow) {
-                        error = tryCtx.result.error;
-                    }
-                    if (error != null) error.setCause(tryCtx.error);
+                    if (error != null) tryCtx.setCause(error);
                     continue;
                 }
             }
@@ -291,15 +297,22 @@ public class CodeFrame {
                 }
             }
 
-            ctx.engine.onInstruction(ctx, this, instr, null, error, caught);
+            DebugContext.get(ctx).onInstruction(ctx, this, instr, null, error, caught);
             throw error;
         }
-        if (returnValue != Runners.NO_RETURN) {
-            ctx.engine.onInstruction(ctx, this, instr, returnValue, null, false);
+        if (returnValue != Values.NO_RETURN) {
+            DebugContext.get(ctx).onInstruction(ctx, this, instr, returnValue, null, false);
             return returnValue;
         }
 
-        return Runners.NO_RETURN;
+        return Values.NO_RETURN;
+    }
+
+    public void onPush() {
+        DebugContext.get(ctx).onFramePush(ctx, this);
+    }
+    public void onPop() {
+        DebugContext.get(ctx.parent).onFramePop(ctx.parent, this);
     }
 
     public CodeFrame(Context ctx, Object thisArg, Object[] args, CodeFunction func) {
@@ -314,5 +327,6 @@ public class CodeFrame {
 
         this.thisArg = thisArg;
         this.function = func;
+        this.ctx = ctx.pushFrame(this);
     }
 }

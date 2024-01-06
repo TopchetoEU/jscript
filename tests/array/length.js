@@ -8,12 +8,12 @@ return new UnitTest('length & capacity', function() { return 'length' in Array.p
     })
     .add('length after set', function() {
         var a = [];
-        a [5]= 5;
+        a[5] = 5;
         return a.length === 6;
     })
-    .add('length after set (big', function() {
+    .add('length after set (big)', function() {
         var a = [1, 2];
-        a [5000]= 5;
+        a[5000] = 5;
         return a.length === 5001;
     })
     .add('expand test', function() {

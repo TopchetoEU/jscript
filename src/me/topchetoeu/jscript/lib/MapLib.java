@@ -6,24 +6,28 @@ import java.util.stream.Collectors;
 
 import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.values.ArrayValue;
-import me.topchetoeu.jscript.engine.values.FunctionValue;
 import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.engine.values.Values;
-import me.topchetoeu.jscript.interop.Native;
-import me.topchetoeu.jscript.interop.NativeGetter;
+import me.topchetoeu.jscript.interop.Arguments;
+import me.topchetoeu.jscript.interop.Expose;
+import me.topchetoeu.jscript.interop.ExposeConstructor;
+import me.topchetoeu.jscript.interop.ExposeType;
+import me.topchetoeu.jscript.interop.WrapperName;
 
-@Native("Map") public class MapLib {
+@WrapperName("Map")
+public class MapLib {
     private LinkedHashMap<Object, Object> map = new LinkedHashMap<>();
 
-    @Native("@@Symbol.typeName") public final String name = "Map";
-    @Native("@@Symbol.iterator") public ObjectValue iterator(Context ctx) {
-        return this.entries(ctx);
+    @Expose("@@Symbol.iterator")
+    public ObjectValue __iterator(Arguments args) {
+        return this.__entries(args);
     }
 
-    @Native public void clear() {
+    @Expose public void __clear() {
         map.clear();
     }
-    @Native public boolean delete(Object key) {
+    @Expose public boolean __delete(Arguments args) {
+        var key = args.get(0);
         if (map.containsKey(key)) {
             map.remove(key);
             return true;
@@ -31,48 +35,53 @@ import me.topchetoeu.jscript.interop.NativeGetter;
         return false;
     }
 
-    @Native public ObjectValue entries(Context ctx) {
-        return ArrayValue.of(ctx, map
+    @Expose public ObjectValue __entries(Arguments args) {
+        return Values.toJSIterator(args.ctx, map
             .entrySet()
             .stream()
-            .map(v -> new ArrayValue(ctx, v.getKey(), v.getValue()))
+            .map(v -> new ArrayValue(args.ctx, v.getKey(), v.getValue()))
             .collect(Collectors.toList())
         );
     }
-    @Native public ObjectValue keys(Context ctx) {
-        return ArrayValue.of(ctx, map.keySet());
+    @Expose public ObjectValue __keys(Arguments args) {
+        return Values.toJSIterator(args.ctx, map.keySet());
     }
-    @Native public ObjectValue values(Context ctx) {
-        return ArrayValue.of(ctx, map.values());
+    @Expose public ObjectValue __values(Arguments args) {
+        return Values.toJSIterator(args.ctx, map.values());
     }
 
-    @Native public Object get(Object key) {
-        return map.get(key);
+    @Expose public Object __get(Arguments args) {
+        return map.get(args.get(0));
     }
-    @Native public MapLib set(Object key, Object val) {
-        map.put(key, val);
+    @Expose public MapLib __set(Arguments args) {
+        map.put(args.get(0), args.get(1));
         return this;
     }
-    @Native public boolean has(Object key) {
-        return map.containsKey(key);
+    @Expose public boolean __has(Arguments args) {
+        return map.containsKey(args.get(0));
     }
 
-    @NativeGetter public int size() {
+    @Expose(type = ExposeType.GETTER)
+    public int __size() {
         return map.size();
     }
 
-    @Native public void forEach(Context ctx, FunctionValue func, Object thisArg) {
+    @Expose public void __forEach(Arguments args) {
         var keys = new ArrayList<>(map.keySet());
 
-        for (var el : keys) func.call(ctx, thisArg, map.get(el), el,this);
+        for (var el : keys) Values.call(args.ctx, args.get(0), args.get(1), map.get(el), el, args.self);
     }
 
-    @Native public MapLib(Context ctx, Object iterable) {
+    public MapLib(Context ctx, Object iterable) {
         for (var el : Values.fromJSIterator(ctx, iterable)) {
             try {
-                set(Values.getMember(ctx, el, 0), Values.getMember(ctx, el, 1));
+                map.put(Values.getMember(ctx, el, 0), Values.getMember(ctx, el, 1));
             }
             catch (IllegalArgumentException e) { }
         }
+    }
+
+    @ExposeConstructor public static MapLib __constructor(Arguments args) {
+        return new MapLib(args.ctx, args.get(0));
     }
 }

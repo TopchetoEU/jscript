@@ -1,15 +1,25 @@
 package me.topchetoeu.jscript.interop;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Member;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.stream.Collectors;
 
+import me.topchetoeu.jscript.Location;
+import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.Environment;
 import me.topchetoeu.jscript.engine.WrappersProvider;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
 import me.topchetoeu.jscript.engine.values.NativeFunction;
 import me.topchetoeu.jscript.engine.values.ObjectValue;
+import me.topchetoeu.jscript.engine.values.Symbol;
+import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.exceptions.EngineException;
-import me.topchetoeu.jscript.exceptions.UncheckedException;
+import me.topchetoeu.jscript.exceptions.InterruptException;
 
 public class NativeWrapperProvider implements WrappersProvider {
     private final HashMap<Class<?>, FunctionValue> constructors = new HashMap<>();
@@ -17,101 +27,199 @@ public class NativeWrapperProvider implements WrappersProvider {
     private final HashMap<Class<?>, ObjectValue> namespaces = new HashMap<>();
     private final Environment env;
 
-    private static void applyMethods(Environment env, boolean member, ObjectValue target, Class<?> clazz) {
-        for (var method : clazz.getDeclaredMethods()) {
-            var nat = method.getAnnotation(Native.class);
-            var get = method.getAnnotation(NativeGetter.class);
-            var set = method.getAnnotation(NativeSetter.class);
-            var memberMatch = !Modifier.isStatic(method.getModifiers()) == member;
-
-            if (nat != null) {
-                if (nat.thisArg() && !member || !nat.thisArg() && !memberMatch) continue;
-
-                Object name = nat.value();
-                if (((String)name).startsWith("@@")) name = env.symbol(((String)name).substring(2));
-                else if (name.equals("")) name = method.getName();
-
-                var val = target.values.get(name);
-
-                if (!(val instanceof OverloadFunction)) target.defineProperty(null, name, val = new OverloadFunction(name.toString()), true, true, false);
-
-                ((OverloadFunction)val).add(Overload.fromMethod(method, nat.thisArg()));
+    private static Object call(Context ctx, String name, Method method, Object thisArg, Object... args) {
+        try {
+            var realArgs = new Object[method.getParameterCount()];
+            System.arraycopy(args, 0, realArgs, 0, realArgs.length);
+            if (Modifier.isStatic(method.getModifiers())) thisArg = null;
+            return Values.normalize(ctx, method.invoke(Values.convert(ctx, thisArg, method.getDeclaringClass()), realArgs));
+        }
+        catch (InvocationTargetException e) {
+            if (e.getTargetException() instanceof EngineException) {
+                throw ((EngineException)e.getTargetException()).add(ctx, name, Location.INTERNAL);
             }
-            else {
-                if (get != null) {
-                    if (get.thisArg() && !member || !get.thisArg() && !memberMatch) continue;
-
-                    Object name = get.value();
-                    if (((String)name).startsWith("@@")) name = env.symbol(((String)name).substring(2));
-                    else if (name.equals("")) name = method.getName();
-
-                    var prop = target.properties.get(name);
-                    OverloadFunction getter = null;
-                    var setter = prop == null ? null : prop.setter;
-
-                    if (prop != null && prop.getter instanceof OverloadFunction) getter = (OverloadFunction)prop.getter;
-                    else getter = new OverloadFunction("get " + name);
-
-                    getter.add(Overload.fromMethod(method, get.thisArg()));
-                    target.defineProperty(null, name, getter, setter, true, false);
-                }
-                if (set != null) {
-                    if (set.thisArg() && !member || !set.thisArg() && !memberMatch) continue;
-
-                    Object name = set.value();
-                    if (((String)name).startsWith("@@")) name = env.symbol(((String)name).substring(2));
-                    else if (name.equals("")) name = method.getName();
-
-                    var prop = target.properties.get(name);
-                    var getter = prop == null ? null : prop.getter;
-                    OverloadFunction setter = null;
-
-                    if (prop != null && prop.setter instanceof OverloadFunction) setter = (OverloadFunction)prop.setter;
-                    else setter = new OverloadFunction("set " + name);
-
-                    setter.add(Overload.fromMethod(method, set.thisArg()));
-                    target.defineProperty(null, name, getter, setter, true, false);
-                }
+            else if (e.getTargetException() instanceof NullPointerException) {
+                e.printStackTrace();
+                throw EngineException.ofType("Unexpected value of 'undefined'.").add(ctx, name, Location.INTERNAL);
             }
+            else if (e.getTargetException() instanceof InterruptException || e.getTargetException() instanceof InterruptedException) {
+                throw new InterruptException();
+            }
+            else throw new EngineException(e.getTargetException()).add(ctx, name, Location.INTERNAL);
+        }
+        catch (ReflectiveOperationException e) {
+            throw EngineException.ofError(e.getMessage()).add(ctx, name, Location.INTERNAL);
         }
     }
-    private static void applyFields(Environment env, boolean member, ObjectValue target, Class<?> clazz) {
-        for (var field : clazz.getDeclaredFields()) {
-            if (!Modifier.isStatic(field.getModifiers()) != member) continue;
-            var nat = field.getAnnotation(Native.class);
+    private static FunctionValue create(String name, Method method) {
+        return new NativeFunction(name, args -> call(args.ctx, name, method, args.self, args));
+    }
+    private static void checkSignature(Method method, boolean forceStatic, Class<?> ...params) {
+        if (forceStatic && !Modifier.isStatic(method.getModifiers())) throw new IllegalArgumentException(String.format(
+            "Method %s must be static.",
+            method.getDeclaringClass().getName() + "." + method.getName()
+        ));
 
-            if (nat != null) {
-                Object name = nat.value();
-                if (((String)name).startsWith("@@")) name = env.symbol(((String)name).substring(2));
-                else if (name.equals("")) name = field.getName();
-    
-                var getter = OverloadFunction.of("get " + name, Overload.getterFromField(field));
-                var setter = OverloadFunction.of("set " + name, Overload.setterFromField(field));
-                target.defineProperty(null, name, getter, setter, true, false);
+        var actual = method.getParameterTypes();
+
+        boolean failed = actual.length > params.length;
+
+        if (!failed) for (var i = 0; i < actual.length; i++) {
+            if (!actual[i].isAssignableFrom(params[i])) {
+                failed = true;
+                break;
             }
         }
+
+        if (failed) throw new IllegalArgumentException(String.format(
+            "Method %s was expected to have a signature of '%s', found '%s' instead.",
+            method.getDeclaringClass().getName() + "." + method.getName(),
+            String.join(", ", Arrays.stream(params).map(v -> v.getName()).collect(Collectors.toList())),
+            String.join(", ", Arrays.stream(actual).map(v -> v.getName()).collect(Collectors.toList()))
+        ));
     }
-    private static void applyClasses(Environment env, boolean member, ObjectValue target, Class<?> clazz) {
-        for (var cl : clazz.getDeclaredClasses()) {
-            if (!Modifier.isStatic(cl.getModifiers()) != member) continue;
-            var nat = cl.getAnnotation(Native.class);
-
-            if (nat != null) {
-                Object name = nat.value();
-                if (((String)name).startsWith("@@")) name = env.symbol(((String)name).substring(2));
-                else if (name.equals("")) name = cl.getName();
-
-                var getter = new NativeFunction("get " + name, (ctx, thisArg, args) -> cl);
-
-                target.defineProperty(null, name, getter, null, true, false);
-            }
-        }
-    }
-
-    public static String getName(Class<?> clazz) {
-        var classNat = clazz.getAnnotation(Native.class);
+    private static String getName(Class<?> clazz) {
+        var classNat = clazz.getAnnotation(WrapperName.class);
         if (classNat != null && !classNat.value().trim().equals("")) return classNat.value().trim();
         else return clazz.getSimpleName();
+    }
+
+    private static void checkUnderscore(Member member) {
+        if (!member.getName().startsWith("__")) {
+            System.out.println(String.format("WARNING: The name of the exposed member '%s.%s' doesn't start with '__'.",
+                member.getDeclaringClass().getName(),
+                member.getName()
+            ));
+        }
+    }
+    private static String getName(Member member, String overrideName) {
+        if (overrideName == null) overrideName = "";
+        if (overrideName.isBlank()) {
+            var res = member.getName();
+            if (res.startsWith("__")) res = res.substring(2);
+            return res;
+        }
+        else return overrideName.trim();
+    }
+    private static Object getKey(String name) {
+        if (name.startsWith("@@")) return Symbol.get(name.substring(2));
+        else return name;
+    }
+
+    private static void apply(ObjectValue obj, Environment env, ExposeTarget target, Class<?> clazz) {
+        var getters = new HashMap<Object, FunctionValue>();
+        var setters = new HashMap<Object, FunctionValue>();
+        var props = new HashSet<Object>();
+        var nonProps = new HashSet<Object>();
+
+        for (var method : clazz.getDeclaredMethods()) {
+            for (var annotation : method.getAnnotationsByType(Expose.class)) {
+                if (!annotation.target().shouldApply(target)) continue;
+
+                checkUnderscore(method);
+                var name = getName(method, annotation.value());
+                var key = getKey(name);
+                var repeat = false;
+
+                switch (annotation.type()) {
+                    case INIT:
+                        checkSignature(method, true,
+                            target == ExposeTarget.CONSTRUCTOR ? FunctionValue.class : ObjectValue.class,
+                            Environment.class
+                        );
+                        call(null, null, method, obj, null, env);
+                        break;
+                    case METHOD:
+                        if (props.contains(key) || nonProps.contains(key)) repeat = true;
+                        else {
+                            checkSignature(method, false, Arguments.class);
+                            obj.defineProperty(null, key, create(name, method), true, true, false);
+                            nonProps.add(key);
+                        }
+                        break;
+                    case GETTER:
+                        if (nonProps.contains(key) || getters.containsKey(key)) repeat = true;
+                        else {
+                            checkSignature(method, false, Arguments.class);
+                            getters.put(key, create(name, method));
+                            props.add(key);
+                        }
+                        break;
+                    case SETTER:
+                        if (nonProps.contains(key) || setters.containsKey(key)) repeat = true;
+                        else {
+                            checkSignature(method, false, Arguments.class);
+                            setters.put(key, create(name, method));
+                            props.add(key);
+                        }
+                        break;
+                }
+
+                if (repeat)
+                    throw new IllegalArgumentException(String.format(
+                    "A member '%s' in the wrapper for '%s' of type '%s' is already present.",
+                    name, clazz.getName(), target.toString()
+                ));
+            }
+            for (var annotation : method.getAnnotationsByType(ExposeField.class)) {
+                if (!annotation.target().shouldApply(target)) continue;
+
+                checkUnderscore(method);
+                var name = getName(method, annotation.value());
+                var key = getKey(name);
+                var repeat = false;
+
+                if (props.contains(key) || nonProps.contains(key)) repeat = true;
+                else {
+                    checkSignature(method, true, Environment.class);
+                    obj.defineProperty(null, key, call(new Context(null, env), name, method, null, env), true, true, false);
+                    nonProps.add(key);
+                }
+
+                if (repeat)
+                    throw new IllegalArgumentException(String.format(
+                    "A member '%s' in the wrapper for '%s' of type '%s' is already present.",
+                    name, clazz.getName(), target.toString()
+                ));
+            }
+        }
+        for (var field : clazz.getDeclaredFields()) {
+            for (var annotation : field.getAnnotationsByType(ExposeField.class)) {
+                if (!annotation.target().shouldApply(target)) continue;
+
+                checkUnderscore(field);
+                var name = getName(field, annotation.value());
+                var key = getKey(name);
+                var repeat = false;
+
+                if (props.contains(key) || nonProps.contains(key)) repeat = true;
+                else {
+                    try {
+                        obj.defineProperty(null, key, Values.normalize(new Context(null, env), field.get(null)), true, true, false);
+                        nonProps.add(key);
+                    }
+                    catch (IllegalArgumentException | IllegalAccessException e) { }
+                }
+
+                if (repeat)
+                    throw new IllegalArgumentException(String.format(
+                    "A member '%s' in the wrapper for '%s' of type '%s' is already present.",
+                    name, clazz.getName(), target.toString()
+                ));
+            }
+        }
+
+        for (var key : props) obj.defineProperty(null, key, getters.get(key), setters.get(key), true, false);
+    }
+
+    private static Method getConstructor(Environment env, Class<?> clazz) {
+        for (var method : clazz.getDeclaredMethods()) {
+            if (!method.isAnnotationPresent(ExposeConstructor.class)) continue;
+            checkSignature(method, true, Arguments.class);
+            return method;
+        }
+
+        return null;
     }
 
     /**
@@ -120,22 +228,10 @@ public class NativeWrapperProvider implements WrappersProvider {
      * All accessors and methods will expect the this argument to be a native wrapper of the given class type.
      * @param clazz The class for which a prototype should be generated
      */
-    public static ObjectValue makeProto(Environment ctx, Class<?> clazz) {
+    public static ObjectValue makeProto(Environment env, Class<?> clazz) {
         var res = new ObjectValue();
-
-        res.defineProperty(null, ctx.symbol("Symbol.typeName"), getName(clazz));
-
-        for (var overload : clazz.getDeclaredMethods()) {
-            var init = overload.getAnnotation(NativeInit.class);
-            if (init == null || init.value() != InitType.PROTOTYPE) continue;
-            try { overload.invoke(null, ctx, res); }
-            catch (Throwable e) { throw new UncheckedException(e); }
-        }
-
-        applyMethods(ctx, true, res, clazz);
-        applyFields(ctx, true, res, clazz);
-        applyClasses(ctx, true, res, clazz);
-
+        res.defineProperty(null, Symbol.get("Symbol.typeName"), getName(clazz));
+        apply(res, env, ExposeTarget.PROTOTYPE, clazz);
         return res;
     }
     /**
@@ -145,36 +241,17 @@ public class NativeWrapperProvider implements WrappersProvider {
      * @param clazz The class for which a constructor should be generated
      */
     public static FunctionValue makeConstructor(Environment ctx, Class<?> clazz) {
-        FunctionValue func = new OverloadFunction(getName(clazz));
+        var constr = getConstructor(ctx, clazz);
 
-        for (var overload : clazz.getDeclaredConstructors()) {
-            var nat = overload.getAnnotation(Native.class);
-            if (nat == null) continue;
-            ((OverloadFunction)func).add(Overload.fromConstructor(overload, nat.thisArg()));
-        }
-        for (var overload : clazz.getDeclaredMethods()) {
-            var constr = overload.getAnnotation(NativeConstructor.class);
-            if (constr == null) continue;
-            ((OverloadFunction)func).add(Overload.fromMethod(overload, constr.thisArg()));
-        }
-        for (var overload : clazz.getDeclaredMethods()) {
-            var init = overload.getAnnotation(NativeInit.class);
-            if (init == null || init.value() != InitType.CONSTRUCTOR) continue;
-            try { overload.invoke(null, ctx, func); }
-            catch (Throwable e) { throw new UncheckedException(e); }
-        }
+        FunctionValue res = constr == null ?
+            new NativeFunction(getName(clazz), args -> { throw EngineException.ofError("This constructor is not invokable."); }) :
+            create(getName(clazz), constr);
 
-        if (((OverloadFunction)func).overloads.size() == 0) {
-            func = new NativeFunction(getName(clazz), (a, b, c) -> { throw EngineException.ofError("This constructor is not invokable."); });
-        }
+        res.special = true;
 
-        applyMethods(ctx, false, func, clazz);
-        applyFields(ctx, false, func, clazz);
-        applyClasses(ctx, false, func, clazz);
+        apply(res, ctx, ExposeTarget.CONSTRUCTOR, clazz);
 
-        func.special = true;
-
-        return func;
+        return res;
     }
     /**
      * Generates a namespace for the given class.
@@ -183,19 +260,9 @@ public class NativeWrapperProvider implements WrappersProvider {
      * @param clazz The class for which a constructor should be generated
      */
     public static ObjectValue makeNamespace(Environment ctx, Class<?> clazz) {
-        ObjectValue res = new ObjectValue();
-
-        for (var overload : clazz.getDeclaredMethods()) {
-            var init = overload.getAnnotation(NativeInit.class);
-            if (init == null || init.value() != InitType.NAMESPACE) continue;
-            try { overload.invoke(null, ctx, res); }
-            catch (Throwable e) { throw new UncheckedException(e); }
-        }
-
-        applyMethods(ctx, false, res, clazz);
-        applyFields(ctx, false, res, clazz);
-        applyClasses(ctx, false, res, clazz);
-
+        var res = new ObjectValue();
+        res.defineProperty(null, Symbol.get("Symbol.typeName"), getName(clazz));
+        apply(res, ctx, ExposeTarget.NAMESPACE, clazz);
         return res;
     }
 
@@ -248,8 +315,7 @@ public class NativeWrapperProvider implements WrappersProvider {
         return constructors.get(clazz);
     }
 
-    @Override
-    public WrappersProvider fork(Environment env) {
+    @Override public WrappersProvider fork(Environment env) {
         return new NativeWrapperProvider(env);
     }
 
@@ -262,12 +328,12 @@ public class NativeWrapperProvider implements WrappersProvider {
 
     private void initError() {
         var proto = new ObjectValue();
-        proto.defineProperty(null, "message", new NativeFunction("message", (ctx, thisArg, args) -> {
-            if (thisArg instanceof Throwable) return ((Throwable)thisArg).getMessage();
+        proto.defineProperty(null, "message", new NativeFunction("message", args -> {
+            if (args.self instanceof Throwable) return ((Throwable)args.self).getMessage();
             else return null;
         }));
-        proto.defineProperty(null, "name", new NativeFunction("name", (ctx, thisArg, args) -> getName(thisArg.getClass())));
-        proto.defineProperty(null, "toString", new NativeFunction("toString", (ctx, thisArg, args) -> thisArg.toString()));
+        proto.defineProperty(null, "name", new NativeFunction("name", args -> getName(args.self.getClass())));
+        proto.defineProperty(null, "toString", new NativeFunction("toString", args -> args.self.toString()));
 
         var constr = makeConstructor(null, Throwable.class);
         proto.defineProperty(null, "constructor", constr, true, false, false);

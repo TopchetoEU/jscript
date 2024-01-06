@@ -27,7 +27,7 @@ public interface DebugController {
      * @param frame The frame in which execution is occuring
      * @param instruction The instruction which was or will be executed
      * @param loc The most recent location the code frame has been at
-     * @param returnVal The return value of the instruction, Runners.NO_RETURN if none
+     * @param returnVal The return value of the instruction, Values.NO_RETURN if none
      * @param error The error that the instruction threw, null if none
      * @param caught Whether or not the error has been caught
      * @return Whether or not the frame should restart
@@ -48,4 +48,15 @@ public interface DebugController {
      * @param frame The code frame which was popped out
      */
     void onFramePop(Context ctx, CodeFrame frame);
+
+    public static DebugController empty() {
+        return new DebugController () {
+            @Override public void onFramePop(Context ctx, CodeFrame frame) { }
+            @Override public void onFramePush(Context ctx, CodeFrame frame) { }
+            @Override public boolean onInstruction(Context ctx, CodeFrame frame, Instruction instruction, Object returnVal, EngineException error, boolean caught) {
+                return false;
+            }
+            @Override public void onSource(Filename filename, String source, TreeSet<Location> breakpoints, SourceMap map) { }
+        };
+    }
 }

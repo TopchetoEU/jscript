@@ -1,54 +1,59 @@
 package me.topchetoeu.jscript.lib;
 
 import me.topchetoeu.jscript.Location;
-import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.values.ArrayValue;
 import me.topchetoeu.jscript.engine.values.CodeFunction;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
 import me.topchetoeu.jscript.engine.values.NativeFunction;
-import me.topchetoeu.jscript.exceptions.EngineException;
-import me.topchetoeu.jscript.interop.Native;
+import me.topchetoeu.jscript.interop.Arguments;
+import me.topchetoeu.jscript.interop.Expose;
+import me.topchetoeu.jscript.interop.ExposeTarget;
+import me.topchetoeu.jscript.interop.WrapperName;
 
-@Native("Function") public class FunctionLib {
-    @Native(thisArg = true) public static Object location(Context ctx, FunctionValue func) {
-        if (func instanceof CodeFunction) return ((CodeFunction)func).loc().toString();
+@WrapperName("Function")
+public class FunctionLib {
+    @Expose public static Object __location(Arguments args) {
+        if (args.self instanceof CodeFunction) return ((CodeFunction)args.self).loc().toString();
         else return Location.INTERNAL.toString();
     }
-    @Native(thisArg = true) public static Object apply(Context ctx, FunctionValue func, Object thisArg, ArrayValue args) {
-        return func.call(ctx, thisArg, args.toArray());
+    @Expose public static Object __apply(Arguments args) {
+        return args.self(FunctionValue.class).call(args.ctx, args.get(0), args.convert(1, ArrayValue.class).toArray());
     }
-    @Native(thisArg = true) public static Object call(Context ctx, FunctionValue func, Object thisArg, Object... args) {
-        if (!(func instanceof FunctionValue)) throw EngineException.ofError("Expected this to be a function.");
-
-        return func.call(ctx, thisArg, args);
+    @Expose public static Object __call(Arguments args) {
+        return args.self(FunctionValue.class).call(args.ctx, args.get(0), args.slice(1).args);
     }
-    @Native(thisArg = true) public static FunctionValue bind(FunctionValue func, Object thisArg, Object... args) {
-        if (!(func instanceof FunctionValue)) throw EngineException.ofError("Expected this to be a function.");
+    @Expose public static FunctionValue __bind(Arguments args) {
+        var self = args.self(FunctionValue.class);
+        var thisArg = args.get(0);
+        var bindArgs = args.slice(1).args;
 
-        return new NativeFunction(func.name + " (bound)", (callCtx, _0, callArgs) -> {
+        return new NativeFunction(self.name + " (bound)", callArgs -> {
             Object[] resArgs;
 
-            if (args.length == 0) resArgs = callArgs;
+            if (args.n() == 0) resArgs = bindArgs;
             else {
-                resArgs = new Object[args.length + callArgs.length];
-                System.arraycopy(args, 0, resArgs, 0, args.length);
-                System.arraycopy(callArgs, 0, resArgs, args.length, callArgs.length);
+                resArgs = new Object[bindArgs.length + callArgs.n()];
+                System.arraycopy(bindArgs, 0, resArgs, 0, bindArgs.length);
+                System.arraycopy(callArgs.args, 0, resArgs, bindArgs.length, callArgs.n());
             }
 
-            return func.call(callCtx, thisArg, resArgs);
+            return self.call(callArgs.ctx, thisArg, resArgs);
         });
     }
-    @Native(thisArg = true) public static String toString(Context ctx, Object func) {
-        return func.toString();
+    @Expose public static String __toString(Arguments args) {
+        return args.self.toString();
     }
 
-    @Native public static FunctionValue async(FunctionValue func) {
-        return new AsyncFunctionLib(func);
+    @Expose(target = ExposeTarget.STATIC)
+    public static FunctionValue __async(Arguments args) {
+        return new AsyncFunctionLib(args.convert(0, FunctionValue.class));
     }
-    @Native public static FunctionValue asyncGenerator(FunctionValue func) {
-        return new AsyncGeneratorFunctionLib(func);
+    @Expose(target = ExposeTarget.STATIC)
+    public static FunctionValue __asyncGenerator(Arguments args) {
+        return new AsyncGeneratorFunctionLib(args.convert(0, FunctionValue.class));
     }
-    @Native public static FunctionValue generator(FunctionValue func) {
-        return new GeneratorFunctionLib(func);
+    @Expose(target = ExposeTarget.STATIC)
+    public static FunctionValue __generator(Arguments args) {
+        return new GeneratorFunctionLib(args.convert(0, FunctionValue.class));
     }
 }

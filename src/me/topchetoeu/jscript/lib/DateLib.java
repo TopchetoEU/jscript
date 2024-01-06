@@ -1,12 +1,17 @@
 package me.topchetoeu.jscript.lib;
 
 import java.util.Calendar;
+import java.util.Date;
 import java.util.TimeZone;
 
-import me.topchetoeu.jscript.engine.Context;
-import me.topchetoeu.jscript.interop.Native;
+import me.topchetoeu.jscript.interop.Arguments;
+import me.topchetoeu.jscript.interop.Expose;
+import me.topchetoeu.jscript.interop.ExposeConstructor;
+import me.topchetoeu.jscript.interop.ExposeTarget;
+import me.topchetoeu.jscript.interop.WrapperName;
 
-@Native("Date") public class DateLib {
+@WrapperName("Date")
+public class DateLib {
     private Calendar normal;
     private Calendar utc;
 
@@ -22,244 +27,221 @@ import me.topchetoeu.jscript.interop.Native;
         normal = utc = null;
     }
 
-    @Native
-    public static double now() {
-        return new DateLib().getTime();
-    }
-
-    @Native
-    public double getYear() {
+    @Expose public double __getYear() {
         if (normal == null) return Double.NaN;
         return normal.get(Calendar.YEAR) - 1900;
     }
-    @Native
-    public double setYear(Context ctx, double real) {
+    @Expose public double __setYeard(Arguments args) {
+        var real = args.getDouble(0);
         if (real >= 0 && real <= 99) real = real + 1900;
         if (Double.isNaN(real)) invalidate();
         else normal.set(Calendar.YEAR, (int)real);
         updateUTC();
-        return getTime();
+        return __getTime();
     }
 
-    @Native
-    public double getFullYear() {
+    @Expose public double __getFullYear() {
         if (normal == null) return Double.NaN;
         return normal.get(Calendar.YEAR);
     }
-    @Native
-    public double getMonth() {
+    @Expose public double __getMonth() {
         if (normal == null) return Double.NaN;
         return normal.get(Calendar.MONTH);
     }
-    @Native
-    public double getDate() {
+    @Expose public double __getDate() {
         if (normal == null) return Double.NaN;
         return normal.get(Calendar.DAY_OF_MONTH);
     }
-    @Native
-    public double getDay() {
+    @Expose public double __getDay() {
         if (normal == null) return Double.NaN;
         return normal.get(Calendar.DAY_OF_WEEK);
     }
-    @Native
-    public double getHours() {
+    @Expose public double __getHours() {
         if (normal == null) return Double.NaN;
         return normal.get(Calendar.HOUR_OF_DAY);
     }
-    @Native
-    public double getMinutes() {
+    @Expose public double __getMinutes() {
         if (normal == null) return Double.NaN;
         return normal.get(Calendar.MINUTE);
     }
-    @Native
-    public double getSeconds() {
+    @Expose public double __getSeconds() {
         if (normal == null) return Double.NaN;
         return normal.get(Calendar.SECOND);
     }
-    @Native
-    public double getMilliseconds() {
+    @Expose public double __getMilliseconds() {
         if (normal == null) return Double.NaN;
         return normal.get(Calendar.MILLISECOND);
     }
 
-    @Native
-    public double getUTCFullYear() {
+    @Expose public double __getUTCFullYear() {
         if (utc == null) return Double.NaN;
         return utc.get(Calendar.YEAR);
     }
-    @Native
-    public double getUTCMonth() {
+    @Expose public double __getUTCMonth() {
         if (utc == null) return Double.NaN;
         return utc.get(Calendar.MONTH);
     }
-    @Native
-    public double getUTCDate() {
+    @Expose public double __getUTCDate() {
         if (utc == null) return Double.NaN;
         return utc.get(Calendar.DAY_OF_MONTH);
     }
-    @Native
-    public double getUTCDay() {
+    @Expose public double __getUTCDay() {
         if (utc == null) return Double.NaN;
         return utc.get(Calendar.DAY_OF_WEEK);
     }
-    @Native
-    public double getUTCHours() {
+    @Expose public double __getUTCHours() {
         if (utc == null) return Double.NaN;
         return utc.get(Calendar.HOUR_OF_DAY);
     }
-    @Native
-    public double getUTCMinutes() {
+    @Expose public double __getUTCMinutes() {
         if (utc == null) return Double.NaN;
         return utc.get(Calendar.MINUTE);
     }
-    @Native
-    public double getUTCSeconds() {
+    @Expose public double __getUTCSeconds() {
         if (utc == null) return Double.NaN;
         return utc.get(Calendar.SECOND);
     }
-    @Native
-    public double getUTCMilliseconds() {
+    @Expose public double __getUTCMilliseconds() {
         if (utc == null) return Double.NaN;
         return utc.get(Calendar.MILLISECOND);
     }
 
-    @Native
-    public double setFullYear(Context ctx, double real) {
+    @Expose public double __setFullYear(Arguments args) {
+        var real = args.getDouble(0);
         if (Double.isNaN(real)) invalidate();
         else normal.set(Calendar.YEAR, (int)real);
         updateUTC();
-        return getTime();
+        return __getTime();
     }
-    @Native
-    public double setMonth(Context ctx, double real) {
+    @Expose public double __setMonthd(Arguments args) {
+        var real = args.getDouble(0);
         if (Double.isNaN(real)) invalidate();
         else normal.set(Calendar.MONTH, (int)real);
         updateUTC();
-        return getTime();
+        return __getTime();
     }
-    @Native
-    public double setDate(Context ctx, double real) {
+    @Expose public double __setDated(Arguments args) {
+        var real = args.getDouble(0);
         if (Double.isNaN(real)) invalidate();
         else normal.set(Calendar.DAY_OF_MONTH, (int)real);
         updateUTC();
-        return getTime();
+        return __getTime();
     }
-    @Native
-    public double setDay(Context ctx, double real) {
+    @Expose public double __setDayd(Arguments args) {
+        var real = args.getDouble(0);
         if (Double.isNaN(real)) invalidate();
         else normal.set(Calendar.DAY_OF_WEEK, (int)real);
         updateUTC();
-        return getTime();
+        return __getTime();
     }
-    @Native
-    public double setHours(Context ctx, double real) {
+    @Expose public double __setHoursd(Arguments args) {
+        var real = args.getDouble(0);
         if (Double.isNaN(real)) invalidate();
         else normal.set(Calendar.HOUR_OF_DAY, (int)real);
         updateUTC();
-        return getTime();
+        return __getTime();
     }
-    @Native
-    public double setMinutes(Context ctx, double real) {
+    @Expose public double __setMinutesd(Arguments args) {
+        var real = args.getDouble(0);
         if (Double.isNaN(real)) invalidate();
         else normal.set(Calendar.MINUTE, (int)real);
         updateUTC();
-        return getTime();
+        return __getTime();
     }
-    @Native
-    public double setSeconds(Context ctx, double real) {
+    @Expose public double __setSecondsd(Arguments args) {
+        var real = args.getDouble(0);
         if (Double.isNaN(real)) invalidate();
         else normal.set(Calendar.SECOND, (int)real);
         updateUTC();
-        return getTime();
+        return __getTime();
     }
-    @Native
-    public double setMilliseconds(Context ctx, double real) {
+    @Expose public double __setMillisecondsd(Arguments args) {
+        var real = args.getDouble(0);
         if (Double.isNaN(real)) invalidate();
         else normal.set(Calendar.MILLISECOND, (int)real);
         updateUTC();
-        return getTime();
+        return __getTime();
     }
 
-    @Native
-    public double setUTCFullYear(Context ctx, double real) {
+    @Expose public double __setUTCFullYeard(Arguments args) {
+        var real = args.getDouble(0);
         if (Double.isNaN(real)) invalidate();
         else utc.set(Calendar.YEAR, (int)real);
         updateNormal();
-        return getTime();
+        return __getTime();
     }
-    @Native
-    public double setUTCMonth(Context ctx, double real) {
+    @Expose public double __setUTCMonthd(Arguments args) {
+        var real = args.getDouble(0);
         if (Double.isNaN(real)) invalidate();
         else utc.set(Calendar.MONTH, (int)real);
         updateNormal();
-        return getTime();
+        return __getTime();
     }
-    @Native
-    public double setUTCDate(Context ctx, double real) {
+    @Expose public double __setUTCDated(Arguments args) {
+        var real = args.getDouble(0);
         if (Double.isNaN(real)) invalidate();
         else utc.set(Calendar.DAY_OF_MONTH, (int)real);
         updateNormal();
-        return getTime();
+        return __getTime();
     }
-    @Native
-    public double setUTCDay(Context ctx, double real) {
+    @Expose public double __setUTCDayd(Arguments args) {
+        var real = args.getDouble(0);
         if (Double.isNaN(real)) invalidate();
         else utc.set(Calendar.DAY_OF_WEEK, (int)real);
         updateNormal();
-        return getTime();
+        return __getTime();
     }
-    @Native
-    public double setUTCHours(Context ctx, double real) {
+    @Expose public double __setUTCHoursd(Arguments args) {
+        var real = args.getDouble(0);
         if (Double.isNaN(real)) invalidate();
         else utc.set(Calendar.HOUR_OF_DAY, (int)real);
         updateNormal();
-        return getTime();
+        return __getTime();
     }
-    @Native
-    public double setUTCMinutes(Context ctx, double real) {
+    @Expose public double __setUTCMinutesd(Arguments args) {
+        var real = args.getDouble(0);
         if (Double.isNaN(real)) invalidate();
         else utc.set(Calendar.MINUTE, (int)real);
         updateNormal();
-        return getTime();
+        return __getTime();
     }
-    @Native
-    public double setUTCSeconds(Context ctx, double real) {
+    @Expose public double __setUTCSecondsd(Arguments args) {
+        var real = args.getDouble(0);
         if (Double.isNaN(real)) invalidate();
         else utc.set(Calendar.SECOND, (int)real);
         updateNormal();
-        return getTime();
+        return __getTime();
     }
-    @Native
-    public double setUTCMilliseconds(Context ctx, double real) {
+    @Expose public double __setUTCMillisecondsd(Arguments args) {
+        var real = args.getDouble(0);
         if (Double.isNaN(real)) invalidate();
         else utc.set(Calendar.MILLISECOND, (int)real);
         updateNormal();
-        return getTime();
+        return __getTime();
     }
 
-    @Native
-    public double getTime() {
+    @Expose public double __getTime() {
         if (utc == null) return Double.NaN;
         return utc.getTimeInMillis();
     }
-    @Native
-    public double getTimezoneOffset() {
+    @Expose public double __getTimezoneOffset() {
         if (normal == null) return Double.NaN;
         return normal.getTimeZone().getRawOffset() / 60000;
     }
 
-    @Native
-    public double valueOf() {
+    @Expose public double __valueOf() {
         if (normal == null) return Double.NaN;
         else return normal.getTimeInMillis();
     }
 
-    @Native
-    public String toString() {
+    @Expose public String __toString() {
         return normal.getTime().toString();
     }
 
-    @Native
+    @Override public String toString() {
+        return __toString();
+    }
+
     public DateLib(long timestamp) {
         normal = Calendar.getInstance();
         utc = Calendar.getInstance();
@@ -268,8 +250,17 @@ import me.topchetoeu.jscript.interop.Native;
         utc.setTimeInMillis(timestamp);
     }
 
-    @Native
     public DateLib() {
-        this(new java.util.Date().getTime());
+        this(new Date().getTime());
+    }
+
+    @ExposeConstructor public static DateLib init(Arguments args) {
+        if (args.has(0)) return new DateLib(args.getLong(0));
+        else return new DateLib();
+    }
+
+    @Expose(target = ExposeTarget.STATIC)
+    public static double __now() {
+        return new DateLib().__getTime();
     }
 }

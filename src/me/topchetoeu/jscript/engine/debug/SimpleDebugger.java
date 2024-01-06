@@ -15,8 +15,8 @@ import me.topchetoeu.jscript.compilation.Instruction;
 import me.topchetoeu.jscript.compilation.Instruction.Type;
 import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.Engine;
+import me.topchetoeu.jscript.engine.Environment;
 import me.topchetoeu.jscript.engine.frame.CodeFrame;
-import me.topchetoeu.jscript.engine.frame.Runners;
 import me.topchetoeu.jscript.engine.scope.GlobalScope;
 import me.topchetoeu.jscript.engine.values.ArrayValue;
 import me.topchetoeu.jscript.engine.values.CodeFunction;
@@ -109,34 +109,48 @@ public class SimpleDebugger implements Debugger {
         public ObjectValue local, capture, global, valstack;
         public JSONMap serialized;
         public Location location;
-        public boolean debugData = false;
 
         public void updateLoc(Location loc) {
             if (loc == null) return;
             this.location = loc;
         }
 
-        public Frame(Context ctx, CodeFrame frame, int id) {
+        public Frame(CodeFrame frame, int id) {
             this.frame = frame;
             this.func = frame.function;
             this.id = id;
 
             this.global = frame.function.environment.global.obj;
-            this.local = frame.getLocalScope(ctx, true);
-            this.capture = frame.getCaptureScope(ctx, true);
-            this.local.setPrototype(ctx, capture);
-            this.capture.setPrototype(ctx, global);
-            this.valstack = frame.getValStackScope(ctx);
-            debugData = true;
+            this.local = frame.getLocalScope(true);
+            this.capture = frame.getCaptureScope(true);
+            this.local.setPrototype(frame.ctx, capture);
+            this.capture.setPrototype(frame.ctx, global);
+            this.valstack = frame.getValStackScope();
 
             this.serialized = new JSONMap()
                 .set("callFrameId", id + "")
                 .set("functionName", func.name)
                 .set("scopeChain", new JSONList()
-                    .add(new JSONMap().set("type", "local").set("name", "Local Scope").set("object", serializeObj(ctx, local)))
-                    .add(new JSONMap().set("type", "closure").set("name", "Closure").set("object", serializeObj(ctx, capture)))
-                    .add(new JSONMap().set("type", "global").set("name", "Global Scope").set("object", serializeObj(ctx, global)))
-                    .add(new JSONMap().set("type", "other").set("name", "Value Stack").set("object", serializeObj(ctx, valstack)))
+                    .add(new JSONMap()
+                        .set("type", "local")
+                        .set("name", "Local Scope")
+                        .set("object", serializeObj(frame.ctx, local))
+                    )
+                    .add(new JSONMap()
+                        .set("type", "closure")
+                        .set("name", "Closure")
+                        .set("object", serializeObj(frame.ctx, capture))
+                    )
+                    .add(new JSONMap()
+                        .set("type", "global")
+                        .set("name", "Global Scope")
+                        .set("object", serializeObj(frame.ctx, global))
+                    )
+                    .add(new JSONMap()
+                        .set("type", "other")
+                        .set("name", "Value Stack")
+                        .set("object", serializeObj(frame.ctx, valstack))
+                    )
                 );
         }
     }
@@ -173,7 +187,6 @@ public class SimpleDebugger implements Debugger {
     public State state = State.RESUMED;
 
     public final WebSocket ws;
-    public final Engine target;
 
     private ObjectValue emptyObject = new ObjectValue();
 
@@ -232,26 +245,29 @@ public class SimpleDebugger implements Debugger {
         return nextId++;
     }
 
-    private synchronized void updateFrames(Context ctx) {
-        var frame = ctx.peekFrame();
-        if (frame == null) return;
-
+    private synchronized Frame getFrame(CodeFrame frame) {
         if (!codeFrameToFrame.containsKey(frame)) {
             var id = nextId();
-            var fr = new Frame(ctx, frame, id);
+            var fr = new Frame(frame, id);
 
             idToFrame.put(id, fr);
             codeFrameToFrame.put(frame, fr);
-        }
 
-        currFrame = codeFrameToFrame.get(frame);
+            return fr;
+        }
+        else return codeFrameToFrame.get(frame);
+    }
+    private synchronized void updateFrames(Context ctx) {
+        var frame = ctx.frame;
+        if (frame == null) return;
+
+        currFrame = getFrame(frame);
     }
     private JSONList serializeFrames(Context ctx) {
         var res = new JSONList();
-        var frames = ctx.frames();
 
-        for (var i = frames.size() - 1; i >= 0; i--) {
-            var frame = codeFrameToFrame.get(frames.get(i));
+        for (var el : ctx.frames()) {
+            var frame = getFrame(el);
             if (frame.location == null) continue;
             frame.serialized.set("location", serializeLocation(frame.location));
             if (frame.location != null) res.add(frame.serialized);
@@ -302,6 +318,8 @@ public class SimpleDebugger implements Debugger {
     }
     private JSONMap serializeObj(Context ctx, Object val, boolean byValue) {
         val = Values.normalize(null, val);
+        ctx = new Context(ctx.engine.copy(), ctx.environment);
+        ctx.engine.add(DebugContext.IGNORE, true);
 
         if (val == Values.NULL) {
             return new JSONMap()
@@ -341,7 +359,7 @@ public class SimpleDebugger implements Debugger {
                 try {
                     defaultToString =
                         Values.getMember(ctx, obj, "toString") ==
-                        Values.getMember(ctx, ctx.environment().proto("object"), "toString");
+                        Values.getMember(ctx, ctx.get(Environment.OBJECT_PROTO), "toString");
                 }
                 catch (Exception e) { }
 
@@ -477,13 +495,13 @@ public class SimpleDebugger implements Debugger {
 
     private RunResult run(Frame codeFrame, String code) {
         if (codeFrame == null) return new RunResult(null, code, new EngineException("Invalid code frame!"));
-        var engine = new Engine(false);
-        var env = codeFrame.func.environment.fork();
+        var engine = new Engine();
+        var env = codeFrame.func.environment.copy();
 
         env.global = new GlobalScope(codeFrame.local);
 
         var ctx = new Context(engine, env);
-        var awaiter = engine.pushMsg(false, ctx.environment(), new Filename("jscript", "eval"), code, codeFrame.frame.thisArg, codeFrame.frame.args);
+        var awaiter = engine.pushMsg(false, ctx.environment, new Filename("jscript", "eval"), code, codeFrame.frame.thisArg, codeFrame.frame.args);
 
         engine.run(true);
 
@@ -495,7 +513,7 @@ public class SimpleDebugger implements Debugger {
         var res = new ArrayValue();
         var passed = new HashSet<String>();
         var tildas = "~";
-        if (target == null) target = ctx.environment().getGlobal();
+        if (target == null) target = ctx.environment.global;
 
         for (var proto = target; proto != null && proto != Values.NULL; proto = Values.getPrototype(ctx, proto)) {
             for (var el : Values.getMembers(ctx, proto, true, true)) {
@@ -574,8 +592,36 @@ public class SimpleDebugger implements Debugger {
         updateNotifier.next();
     }
     @Override public synchronized void disable(V8Message msg) {
-        enabled = false;
+        close();
         ws.send(msg.respond());
+    }
+    public synchronized void close() {
+        enabled = false;
+        execptionType = CatchType.NONE;
+        state = State.RESUMED;
+
+        idToBptCand.clear();
+
+        idToBreakpoint.clear();
+        locToBreakpoint.clear();
+        tmpBreakpts.clear();
+
+        filenameToId.clear();
+        idToSource.clear();
+        pendingSources.clear();
+
+        idToFrame.clear();
+        codeFrameToFrame.clear();
+
+        idToObject.clear();
+        objectToId.clear();
+        objectGroups.clear();
+
+        pendingPause = false;
+
+        stepOutFrame = currFrame = null;
+        stepOutPtr = 0;
+
         updateNotifier.next();
     }
 
@@ -866,18 +912,16 @@ public class SimpleDebugger implements Debugger {
         Frame frame;
 
         synchronized (this) {
-            frame = codeFrameToFrame.get(cf);
+            frame = getFrame(cf);
 
-            if (!frame.debugData) return false;
-
-            if (instruction.location != null) frame.updateLoc(ctx.engine.mapToCompiled(instruction.location));
+            if (instruction.location != null) frame.updateLoc(DebugContext.get(ctx).mapToCompiled(instruction.location));
             loc = frame.location;
             isBreakpointable = loc != null && (instruction.breakpoint.shouldStepIn());
 
             if (error != null && (execptionType == CatchType.ALL || execptionType == CatchType.UNCAUGHT && !caught)) {
                 pauseException(ctx);
             }
-            else if (loc != null && (state == State.STEPPING_IN || state == State.STEPPING_OVER) && returnVal != Runners.NO_RETURN && stepOutFrame == frame) {
+            else if (loc != null && (state == State.STEPPING_IN || state == State.STEPPING_OVER) && returnVal != Values.NO_RETURN && stepOutFrame == frame) {
                 pauseDebug(ctx, null);
             }
             else if (isBreakpointable && locToBreakpoint.containsKey(loc)) {
@@ -906,7 +950,7 @@ public class SimpleDebugger implements Debugger {
                     case STEPPING_IN:
                     case STEPPING_OVER:
                         if (stepOutFrame.frame == frame.frame) {
-                            if (returnVal != Runners.NO_RETURN || error != null) {
+                            if (returnVal != Values.NO_RETURN || error != null) {
                                 state = State.STEPPING_OUT;
                                 continue;
                             }
@@ -943,7 +987,7 @@ public class SimpleDebugger implements Debugger {
         try { idToFrame.remove(codeFrameToFrame.remove(frame).id); }
         catch (NullPointerException e) { }
 
-        if (ctx.frames().size() == 0) {
+        if (ctx.stackSize == 0) {
             if (state == State.PAUSED_EXCEPTION || state == State.PAUSED_NORMAL) resume(State.RESUMED);
         }
         else if (stepOutFrame != null && stepOutFrame.frame == frame && state == State.STEPPING_OUT) {
@@ -952,19 +996,12 @@ public class SimpleDebugger implements Debugger {
         }
     }
 
-    @Override public synchronized void connect() {
-        if (!target.attachDebugger(this)) {
-            ws.send(new V8Error("A debugger is already attached to this engine."));
-        }
-    }
-    @Override public synchronized void disconnect() {
-        target.detachDebugger();
-        enabled = false;
-        updateNotifier.next();
+    public SimpleDebugger attach(DebugContext ctx) {
+        ctx.attachDebugger(this);
+        return this;
     }
 
-    public SimpleDebugger(WebSocket ws, Engine target) {
+    public SimpleDebugger(WebSocket ws) {
         this.ws = ws;
-        this.target = target;
     }
 }

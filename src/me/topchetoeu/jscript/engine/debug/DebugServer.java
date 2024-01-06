@@ -50,8 +50,6 @@ public class DebugServer {
     private void handle(WebSocket ws, Debugger debugger) {
         WebSocketMessage raw;
 
-        debugger.connect();
-
         while ((raw = ws.receive()) != null) {
             if (raw.type != Type.Text) {
                 ws.send(new V8Error("Expected a text message."));
@@ -72,8 +70,9 @@ public class DebugServer {
                 switch (msg.name) {
                     case "Debugger.enable":
                         connNotifier.next();
-                        debugger.enable(msg); continue;
-                    case "Debugger.disable": debugger.disable(msg); continue;
+                        debugger.enable(msg);
+                        continue;
+                    case "Debugger.disable": debugger.close(); continue;
 
                     case "Debugger.setBreakpointByUrl": debugger.setBreakpointByUrl(msg); continue;
                     case "Debugger.removeBreakpoint": debugger.removeBreakpoint(msg); continue;
@@ -116,7 +115,7 @@ public class DebugServer {
             }
         }
 
-        debugger.disconnect();
+        debugger.close();
     }
     private void onWsConnect(HttpRequest req, Socket socket, DebuggerProvider debuggerProvider) {
         var key = req.headers.get("sec-websocket-key");
@@ -151,7 +150,7 @@ public class DebugServer {
             catch (RuntimeException e) {
                 ws.send(new V8Error(e.getMessage()));
             }
-            finally { ws.close(); debugger.disconnect(); }
+            finally { ws.close(); debugger.close(); }
         }, "Debug Handler");
     }
 
@@ -232,9 +231,9 @@ public class DebugServer {
 
     public DebugServer() {
         try {
-            this.favicon = Reading.resourceToStream("debugger/favicon.png").readAllBytes();
-            this.protocol = Reading.resourceToStream("debugger/protocol.json").readAllBytes();
-            this.index = Reading.resourceToString("debugger/index.html")
+            this.favicon = Reading.resourceToStream("assets/debugger/favicon.png").readAllBytes();
+            this.protocol = Reading.resourceToStream("assets/debugger/protocol.json").readAllBytes();
+            this.index = Reading.resourceToString("assets/debugger/index.html")
                 .replace("${NAME}", Metadata.name())
                 .replace("${VERSION}", Metadata.version())
                 .replace("${AUTHOR}", Metadata.author())

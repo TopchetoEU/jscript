@@ -1,21 +1,47 @@
 package me.topchetoeu.jscript.lib;
 
-import me.topchetoeu.jscript.interop.Native;
+import me.topchetoeu.jscript.interop.Arguments;
+import me.topchetoeu.jscript.interop.Expose;
+import me.topchetoeu.jscript.interop.ExposeField;
+import me.topchetoeu.jscript.interop.ExposeTarget;
+import me.topchetoeu.jscript.interop.WrapperName;
 
-@Native("Math") public class MathLib {
-    @Native public static final double E = Math.E;
-    @Native public static final double PI = Math.PI;
-    @Native public static final double SQRT2 = Math.sqrt(2);
-    @Native public static final double SQRT1_2 = Math.sqrt(.5);
-    @Native public static final double LN2 = Math.log(2);
-    @Native public static final double LN10 = Math.log(10);
-    @Native public static final double LOG2E = Math.log(Math.E) / LN2;
-    @Native public static final double LOG10E = Math.log10(Math.E);
+@WrapperName("Math")
+public class MathLib {
+    @ExposeField(target = ExposeTarget.STATIC)
+    public static final double __E = Math.E;
+    @ExposeField(target = ExposeTarget.STATIC)
+    public static final double __PI = Math.PI;
+    @ExposeField(target = ExposeTarget.STATIC)
+    public static final double __SQRT2 = Math.sqrt(2);
+    @ExposeField(target = ExposeTarget.STATIC)
+    public static final double __SQRT1_2 = Math.sqrt(.5);
+    @ExposeField(target = ExposeTarget.STATIC)
+    public static final double __LN2 = Math.log(2);
+    @ExposeField(target = ExposeTarget.STATIC)
+    public static final double __LN10 = Math.log(10);
+    @ExposeField(target = ExposeTarget.STATIC)
+    public static final double __LOG2E = Math.log(Math.E) / __LN2;
+    @ExposeField(target = ExposeTarget.STATIC)
+    public static final double __LOG10E = Math.log10(Math.E);
 
-    @Native public static double asin(double x) { return Math.asin(x); }
-    @Native public static double acos(double x) { return Math.acos(x); }
-    @Native public static double atan(double x) { return Math.atan(x); }
-    @Native public static double atan2(double y, double x) {
+    @Expose(target = ExposeTarget.STATIC)
+    public static double __asin(Arguments args) {
+        return Math.asin(args.getDouble(0));
+    }
+    @Expose(target = ExposeTarget.STATIC)
+    public static double __acos(Arguments args) {
+        return Math.acos(args.getDouble(0));
+    }
+    @Expose(target = ExposeTarget.STATIC)
+    public static double __atan(Arguments args) {
+        return Math.atan(args.getDouble(0));
+    }
+    @Expose(target = ExposeTarget.STATIC)
+    public static double __atan2(Arguments args) {
+        var x = args.getDouble(1);
+        var y = args.getDouble(0);
+
         if (x == 0) {
             if (y == 0) return Double.NaN;
             return Math.signum(y) * Math.PI / 2;
@@ -29,71 +55,157 @@ import me.topchetoeu.jscript.interop.Native;
 
     }
 
-    @Native public static double asinh(double x) { return Math.log(x + Math.sqrt(x * x + 1)); }
-    @Native public static double acosh(double x) { return Math.log(x + Math.sqrt(x * x - 1)); }
-    @Native public static double atanh(double x) { 
+    @Expose(target = ExposeTarget.STATIC)
+    public static double __asinh(Arguments args) {
+        var x = args.getDouble(0);
+        return Math.log(x + Math.sqrt(x * x + 1));
+    }
+    @Expose(target = ExposeTarget.STATIC)
+    public static double __acosh(Arguments args) {
+        var x = args.getDouble(0);
+        return Math.log(x + Math.sqrt(x * x - 1));
+    }
+    @Expose(target = ExposeTarget.STATIC)
+    public static double __atanh(Arguments args) {
+        var x = args.getDouble(0);
+
         if (x <= -1 || x >= 1) return Double.NaN;
         return .5 * Math.log((1 + x) / (1 - x));
     }
 
-    @Native public static double sin(double x) { return Math.sin(x); }
-    @Native public static double cos(double x) { return Math.cos(x); }
-    @Native public static double tan(double x) { return Math.tan(x); }
+    @Expose(target = ExposeTarget.STATIC)
+    public static double __sin(Arguments args) {
+        return Math.sin(args.getDouble(0));
+    }
+    @Expose(target = ExposeTarget.STATIC)
+    public static double __cos(Arguments args) {
+        return Math.cos(args.getDouble(0));
+    }
+    @Expose(target = ExposeTarget.STATIC)
+    public static double __tan(Arguments args) {
+        return Math.tan(args.getDouble(0));
+    }
 
-    @Native public static double sinh(double x) { return Math.sinh(x); }
-    @Native public static double cosh(double x) { return Math.cosh(x); }
-    @Native public static double tanh(double x) { return Math.tanh(x); }
+    @Expose(target = ExposeTarget.STATIC)
+    public static double __sinh(Arguments args) {
+        return Math.sinh(args.getDouble(0));
+    }
+    @Expose(target = ExposeTarget.STATIC)
+    public static double __cosh(Arguments args) {
+        return Math.cosh(args.getDouble(0));
+    }
+    @Expose(target = ExposeTarget.STATIC)
+    public static double __tanh(Arguments args) {
+        return Math.tanh(args.getDouble(0));
+    }
 
-    @Native public static double sqrt(double x) { return Math.sqrt(x); }
-    @Native public static double cbrt(double x) { return Math.cbrt(x); }
+    @Expose(target = ExposeTarget.STATIC)
+    public static double __sqrt(Arguments args) {
+        return Math.sqrt(args.getDouble(0));
+    }
+    @Expose(target = ExposeTarget.STATIC)
+    public static double __cbrt(Arguments args) {
+        return Math.cbrt(args.getDouble(0));
+    }
 
-    @Native public static double hypot(double ...vals) {
+    @Expose(target = ExposeTarget.STATIC)
+    public static double __hypot(Arguments args) {
         var res = 0.;
-        for (var el : vals) {
-            var val = el;
+        for (var i = 0; i < args.n(); i++) {
+            var val = args.getDouble(i);
             res += val * val;
         }
         return Math.sqrt(res);
     }
-    @Native public static int imul(double a, double b) { return (int)a * (int)b; }
+    @Expose(target = ExposeTarget.STATIC)
+    public static int __imul(Arguments args) { return args.getInt(0) * args.getInt(1); }
 
-    @Native public static double exp(double x) { return Math.exp(x); }
-    @Native public static double expm1(double x) { return Math.expm1(x); }
-    @Native public static double pow(double x, double y) { return Math.pow(x, y); }
+    @Expose(target = ExposeTarget.STATIC)
+    public static double __exp(Arguments args) {
+        return Math.exp(args.getDouble(0));
+    }
+    @Expose(target = ExposeTarget.STATIC)
+    public static double __expm1(Arguments args) {
+        return Math.expm1(args.getDouble(0));
+    }
+    @Expose(target = ExposeTarget.STATIC)
+    public static double __pow(Arguments args) { return Math.pow(args.getDouble(0), args.getDouble(1)); }
 
-    @Native public static double log(double x) { return Math.log(x); }
-    @Native public static double log10(double x) { return Math.log10(x); }
-    @Native public static double log1p(double x) { return Math.log1p(x); }
-    @Native public static double log2(double x) { return Math.log(x) / LN2; }
+    @Expose(target = ExposeTarget.STATIC)
+    public static double __log(Arguments args) {
+        return Math.log(args.getDouble(0));
+    }
+    @Expose(target = ExposeTarget.STATIC)
+    public static double __log10(Arguments args) {
+        return Math.log10(args.getDouble(0));
+    }
+    @Expose(target = ExposeTarget.STATIC)
+    public static double __log1p(Arguments args) {
+        return Math.log1p(args.getDouble(0));
+    }
+    @Expose(target = ExposeTarget.STATIC)
+    public static double __log2(Arguments args) {
+        return Math.log(args.getDouble(0)) / __LN2;
+    }
 
-    @Native public static double ceil(double x) { return Math.ceil(x); }
-    @Native public static double floor(double x) { return Math.floor(x); }
-    @Native public static double round(double x) { return Math.round(x); }
-    @Native public static float fround(double x) { return (float)x; }
-    @Native public static double trunc(double x) { return Math.floor(Math.abs(x)) * Math.signum(x); }
-    @Native public static double abs(double x) { return Math.abs(x); }
+    @Expose(target = ExposeTarget.STATIC)
+    public static double __ceil(Arguments args) {
+        return Math.ceil(args.getDouble(0));
+    }
+    @Expose(target = ExposeTarget.STATIC)
+    public static double __floor(Arguments args) {
+        return Math.floor(args.getDouble(0));
+    }
+    @Expose(target = ExposeTarget.STATIC)
+    public static double __round(Arguments args) {
+        return Math.round(args.getDouble(0));
+    }
+    @Expose(target = ExposeTarget.STATIC)
+    public static float __fround(Arguments args) {
+        return (float)args.getDouble(0);
+    }
+    @Expose(target = ExposeTarget.STATIC)
+    public static double __trunc(Arguments args) {
+        var x = args.getDouble(0);
+        return Math.floor(Math.abs(x)) * Math.signum(x);
+    }
+    @Expose(target = ExposeTarget.STATIC)
+    public static double __abs(Arguments args) {
+        return Math.abs(args.getDouble(0));
+    }
 
-    @Native public static double max(double ...vals) {
+    @Expose(target = ExposeTarget.STATIC)
+    public static double __max(Arguments args) {
         var res = Double.NEGATIVE_INFINITY;
 
-        for (var el : vals) {
+        for (var i = 0; i < args.n(); i++) {
+            var el = args.getDouble(i);
             if (el > res) res = el;
         }
 
         return res;
     }
-    @Native public static double min(double ...vals) {
+    @Expose(target = ExposeTarget.STATIC)
+    public static double __min(Arguments args) {
         var res = Double.POSITIVE_INFINITY;
 
-        for (var el : vals) {
+        for (var i = 0; i < args.n(); i++) {
+            var el = args.getDouble(i);
             if (el < res) res = el;
         }
 
         return res;
     }
 
-    @Native public static double sign(double x) { return Math.signum(x); }
+    @Expose(target = ExposeTarget.STATIC)
+    public static double __sign(Arguments args) {
+        return Math.signum(args.getDouble(0));
+    }
 
-    @Native public static double random() { return Math.random(); }
-    @Native public static int clz32(double x) { return Integer.numberOfLeadingZeros((int)x); }
+    @Expose(target = ExposeTarget.STATIC)
+    public static double __random() { return Math.random(); }
+    @Expose(target = ExposeTarget.STATIC)
+    public static int __clz32(Arguments args) {
+        return Integer.numberOfLeadingZeros(args.getInt(0));
+    }
 }

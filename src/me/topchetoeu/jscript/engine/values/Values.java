@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 import me.topchetoeu.jscript.engine.Context;
+import me.topchetoeu.jscript.engine.Environment;
 import me.topchetoeu.jscript.engine.Operation;
 import me.topchetoeu.jscript.engine.frame.ConvertHint;
 import me.topchetoeu.jscript.exceptions.ConvertException;
@@ -39,10 +40,8 @@ public class Values {
     }
 
     public static final Object NULL = new Object();
+    public static final Object NO_RETURN = new Object();
 
-    public static boolean isObject(Object val) { return val instanceof ObjectValue; }
-    public static boolean isFunction(Object val) { return val instanceof FunctionValue; }
-    public static boolean isArray(Object val) { return val instanceof ArrayValue; }
     public static boolean isWrapper(Object val) { return val instanceof NativeWrapper; }
     public static boolean isWrapper(Object val, Class<?> clazz) {
         if (!isWrapper(val)) return false;
@@ -89,8 +88,8 @@ public class Values {
     private static Object tryCallConvertFunc(Context ctx, Object obj, String name) {
         var func = getMember(ctx, obj, name);
 
-        if (func != null) {
-            var res = ((FunctionValue)func).call(ctx, obj);
+        if (func instanceof FunctionValue) {
+            var res = Values.call(ctx, func, obj);
             if (isPrimitive(res)) return res;
         }
 
@@ -284,7 +283,7 @@ public class Values {
         obj = normalize(ctx, obj); key = normalize(ctx, key);
         if (obj == null) throw new IllegalArgumentException("Tried to access member of undefined.");
         if (obj == NULL) throw new IllegalArgumentException("Tried to access member of null.");
-        if (isObject(obj)) return object(obj).getMember(ctx, key);
+        if (obj instanceof ObjectValue) return object(obj).getMember(ctx, key);
 
         if (obj instanceof String && key instanceof Number) {
             var i = number(key);
@@ -310,7 +309,7 @@ public class Values {
         if (obj == null) throw EngineException.ofType("Tried to access member of undefined.");
         if (obj == NULL) throw EngineException.ofType("Tried to access member of null.");
         if (key != null && "__proto__".equals(key)) return setPrototype(ctx, obj, val);
-        if (isObject(obj)) return object(obj).setMember(ctx, key, val, false);
+        if (obj instanceof ObjectValue) return object(obj).setMember(ctx, key, val, false);
 
         var proto = getPrototype(ctx, obj);
         return proto.setMember(ctx, key, val, obj, true);
@@ -320,7 +319,7 @@ public class Values {
         obj = normalize(ctx, obj); key = normalize(ctx, key);
 
         if ("__proto__".equals(key)) return true;
-        if (isObject(obj)) return object(obj).hasMember(ctx, key, own);
+        if (obj instanceof ObjectValue) return object(obj).hasMember(ctx, key, own);
 
         if (obj instanceof String && key instanceof Number) {
             var i = number(key);
@@ -337,30 +336,30 @@ public class Values {
         if (obj == null || obj == NULL) return false;
         obj = normalize(ctx, obj); key = normalize(ctx, key);
 
-        if (isObject(obj)) return object(obj).deleteMember(ctx, key);
+        if (obj instanceof ObjectValue) return object(obj).deleteMember(ctx, key);
         else return false;
     }
     public static ObjectValue getPrototype(Context ctx, Object obj) {
         if (obj == null || obj == NULL) return null;
         obj = normalize(ctx, obj);
-        if (isObject(obj)) return object(obj).getPrototype(ctx);
+        if (obj instanceof ObjectValue) return object(obj).getPrototype(ctx);
         if (ctx == null) return null;
 
-        if (obj instanceof String) return ctx.environment().proto("string");
-        else if (obj instanceof Number) return ctx.environment().proto("number");
-        else if (obj instanceof Boolean) return ctx.environment().proto("bool");
-        else if (obj instanceof Symbol) return ctx.environment().proto("symbol");
+        if (obj instanceof String) return ctx.get(Environment.STRING_PROTO);
+        else if (obj instanceof Number) return ctx.get(Environment.NUMBER_PROTO);
+        else if (obj instanceof Boolean) return ctx.get(Environment.BOOL_PROTO);
+        else if (obj instanceof Symbol) return ctx.get(Environment.SYMBOL_PROTO);
 
         return null;
     }
     public static boolean setPrototype(Context ctx, Object obj, Object proto) {
         obj = normalize(ctx, obj);
-        return isObject(obj) && object(obj).setPrototype(ctx, proto);
+        return obj instanceof ObjectValue && object(obj).setPrototype(ctx, proto);
     }
     public static List<Object> getMembers(Context ctx, Object obj, boolean own, boolean includeNonEnumerable) {  
         List<Object> res = new ArrayList<>();
 
-        if (isObject(obj)) res = object(obj).keys(includeNonEnumerable);
+        if (obj instanceof ObjectValue) res = object(obj).keys(includeNonEnumerable);
         if (obj instanceof String) {
             for (var i = 0; i < ((String)obj).length(); i++) res.add((double)i);
         }
@@ -396,7 +395,7 @@ public class Values {
     }
 
     public static Object call(Context ctx, Object func, Object thisArg, Object ...args) {
-        if (!isFunction(func)) throw EngineException.ofType("Tried to call a non-function value.");
+        if (!(func instanceof FunctionValue)) throw EngineException.ofType("Tried to call a non-function value.");
         return function(func).call(ctx, thisArg, args);
     }
     public static Object callNew(Context ctx, Object func, Object ...args) {
@@ -476,7 +475,7 @@ public class Values {
 
         if (val instanceof Class) {
             if (ctx == null) return null;
-            else return ctx.environment().wrappers.getConstr((Class<?>)val);
+            else return ctx.environment.wrappers.getConstr((Class<?>)val);
         }
 
         return new NativeWrapper(val);
@@ -543,6 +542,9 @@ public class Values {
 
         if (obj == null) return null;
         if (clazz.isInstance(obj)) return (T)obj;
+        if (clazz.isAssignableFrom(NativeWrapper.class)) {
+            return (T)new NativeWrapper(obj);
+        }
 
         throw new ConvertException(type(obj), clazz.getSimpleName());
     }
@@ -550,16 +552,16 @@ public class Values {
     public static Iterable<Object> fromJSIterator(Context ctx, Object obj) {
         return () -> {
             try {
-                var symbol = ctx.environment().symbol("Symbol.iterator");
+                var symbol = Symbol.get("Symbol.iterator");
 
                 var iteratorFunc = getMember(ctx, obj, symbol);
-                if (!isFunction(iteratorFunc)) return Collections.emptyIterator();
+                if (!(iteratorFunc instanceof FunctionValue)) return Collections.emptyIterator();
                 var iterator = iteratorFunc instanceof FunctionValue ?
                     ((FunctionValue)iteratorFunc).call(ctx, obj, obj) :
                     iteratorFunc;
                 var nextFunc = getMember(ctx, call(ctx, iteratorFunc, obj), "next");
 
-                if (!isFunction(nextFunc)) return Collections.emptyIterator();
+                if (!(nextFunc instanceof FunctionValue)) return Collections.emptyIterator();
 
                 return new Iterator<Object>() {
                     private Object value = null;
@@ -604,16 +606,16 @@ public class Values {
         var res = new ObjectValue();
 
         try {
-            var key = getMember(ctx, getMember(ctx, ctx.environment().proto("symbol"), "constructor"), "iterator");
-            res.defineProperty(ctx, key, new NativeFunction("", (_ctx, thisArg, args) -> thisArg));
+            var key = getMember(ctx, getMember(ctx, ctx.get(Environment.SYMBOL_PROTO), "constructor"), "iterator");
+            res.defineProperty(ctx, key, new NativeFunction("", args -> args.self));
         }
         catch (IllegalArgumentException | NullPointerException e) { }
 
-        res.defineProperty(ctx, "next", new NativeFunction("", (_ctx, _th, _args) -> {
+        res.defineProperty(ctx, "next", new NativeFunction("", args -> {
             if (!it.hasNext()) return new ObjectValue(ctx, Map.of("done", true));
             else {
                 var obj = new ObjectValue();
-                obj.defineProperty(_ctx, "value", it.next());
+                obj.defineProperty(args.ctx, "value", it.next());
                 return obj;
             }
         }));
@@ -629,17 +631,17 @@ public class Values {
         var res = new ObjectValue();
 
         try {
-            var key = getMemberPath(ctx, ctx.environment().proto("symbol"), "constructor", "asyncIterator");
-            res.defineProperty(ctx, key, new NativeFunction("", (_ctx, thisArg, args) -> thisArg));
+            var key = getMemberPath(ctx, ctx.get(Environment.SYMBOL_PROTO), "constructor", "asyncIterator");
+            res.defineProperty(ctx, key, new NativeFunction("", args -> args.self));
         }
         catch (IllegalArgumentException | NullPointerException e) { }
 
-        res.defineProperty(ctx, "next", new NativeFunction("", (_ctx, _th, _args) -> {
-            return PromiseLib.await(ctx, () -> {
+        res.defineProperty(ctx, "next", new NativeFunction("", args -> {
+            return PromiseLib.await(args.ctx, () -> {
                 if (!it.hasNext()) return new ObjectValue(ctx, Map.of("done", true));
                 else {
                     var obj = new ObjectValue();
-                    obj.defineProperty(_ctx, "value", it.next());
+                    obj.defineProperty(args.ctx, "value", it.next());
                     return obj;
                 }
             });

@@ -7,7 +7,6 @@ import java.lang.annotation.Target;
 
 @Target({ ElementType.METHOD })
 @Retention(RetentionPolicy.RUNTIME)
-public @interface NativeConstructor {
-    public boolean thisArg() default false;
+public @interface OnWrapperInit {
+    
 }
-

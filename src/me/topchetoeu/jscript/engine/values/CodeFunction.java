@@ -6,7 +6,6 @@ import me.topchetoeu.jscript.compilation.Instruction;
 import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.Environment;
 import me.topchetoeu.jscript.engine.frame.CodeFrame;
-import me.topchetoeu.jscript.engine.frame.Runners;
 import me.topchetoeu.jscript.engine.scope.ValueVariable;
 
 public class CodeFunction extends FunctionValue {
@@ -32,16 +31,17 @@ public class CodeFunction extends FunctionValue {
     @Override
     public Object call(Context ctx, Object thisArg, Object ...args) {
         var frame = new CodeFrame(ctx, thisArg, args, this);
-        try {
-            ctx.pushFrame(frame);
 
+        frame.onPush();
+
+        try {
             while (true) {
-                var res = frame.next(ctx, Runners.NO_RETURN, Runners.NO_RETURN, null);
-                if (res != Runners.NO_RETURN) return res;
+                var res = frame.next(Values.NO_RETURN, Values.NO_RETURN, null);
+                if (res != Values.NO_RETURN) return res;
             }
         }
         finally {
-            ctx.popFrame(frame);
+            frame.onPop();
         }
     }
 

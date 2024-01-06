@@ -1,18 +1,19 @@
 package me.topchetoeu.jscript.lib;
 
 import me.topchetoeu.jscript.engine.Context;
-import me.topchetoeu.jscript.engine.Environment;
-import me.topchetoeu.jscript.engine.values.ArrayValue;
 import me.topchetoeu.jscript.engine.values.ObjectValue;
 import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.engine.values.ObjectValue.PlaceholderProto;
-import me.topchetoeu.jscript.interop.InitType;
-import me.topchetoeu.jscript.interop.Native;
-import me.topchetoeu.jscript.interop.NativeConstructor;
-import me.topchetoeu.jscript.interop.NativeInit;
+import me.topchetoeu.jscript.exceptions.ConvertException;
+import me.topchetoeu.jscript.interop.WrapperName;
+import me.topchetoeu.jscript.interop.Arguments;
+import me.topchetoeu.jscript.interop.Expose;
+import me.topchetoeu.jscript.interop.ExposeConstructor;
+import me.topchetoeu.jscript.interop.ExposeField;
 
-@Native("Error") public class ErrorLib {
-    private static String toString(Context ctx, boolean rethrown, Object cause, Object name, Object message, ArrayValue stack) {
+@WrapperName("Error")
+public class ErrorLib {
+    private static String toString(Context ctx, Object name, Object message) {
         if (name == null) name = "";
         else name = Values.toString(ctx, name).trim();
         if (message == null) message = "";
@@ -23,43 +24,31 @@ import me.topchetoeu.jscript.interop.NativeInit;
         if (!message.equals("") && !name.equals("")) res.append(": ");
         if (!message.equals("")) res.append(message);
 
-        if (cause instanceof ObjectValue) {
-            if (rethrown) res.append("\n    (rethrown)");
-            else res.append("\nCaused by ").append(toString(ctx, cause));
-        }
-
         return res.toString();
     }
 
-    @Native(thisArg = true) public static String toString(Context ctx, Object thisArg) {
-        if (thisArg instanceof ObjectValue) {
-            var stack = Values.getMember(ctx, thisArg, "stack");
-            if (!(stack instanceof ArrayValue)) stack = null;
-            var cause = Values.getMember(ctx, thisArg, ctx.environment().symbol("Symbol.cause"));
-            return toString(ctx,
-                thisArg == cause,
-                cause,
-                Values.getMember(ctx, thisArg, "name"),
-                Values.getMember(ctx, thisArg, "message"),
-                (ArrayValue)stack
-            );
-        }
+    @ExposeField public static final String __name = "Error";
+
+    @Expose public static String __toString(Arguments args) {
+        if (args.self instanceof ObjectValue) return toString(args.ctx,
+            Values.getMember(args.ctx, args.self, "name"),
+            Values.getMember(args.ctx, args.self, "message")
+        );
         else return "[Invalid error]";
     }
 
-    @NativeConstructor(thisArg = true) public static ObjectValue constructor(Context ctx, Object thisArg, Object message) {
+    @ExposeConstructor public static ObjectValue __constructor(Arguments args) {
         var target = new ObjectValue();
-        if (thisArg instanceof ObjectValue) target = (ObjectValue)thisArg;
+        var message = args.getString(0, "");
+
+        try {
+            target = args.self(ObjectValue.class);
+        }
+        catch (ConvertException e) {}
 
         target.setPrototype(PlaceholderProto.ERROR);
-        target.defineProperty(ctx, "stack", ArrayValue.of(ctx, ctx.stackTrace()));
-        if (message == null) target.defineProperty(ctx, "message", "");
-        else target.defineProperty(ctx, "message", Values.toString(ctx, message));
+        target.defineProperty(args.ctx, "message", Values.toString(args.ctx, message));
 
         return target;
-    }
-
-    @NativeInit(InitType.PROTOTYPE) public static void init(Environment env, ObjectValue target) {
-        target.defineProperty(null, "name", "Error");
     }
 }
