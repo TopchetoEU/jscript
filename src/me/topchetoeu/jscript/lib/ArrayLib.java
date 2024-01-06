@@ -21,7 +21,7 @@ public class ArrayLib {
         if (i < 0) i += len;
         if (clamp) {
             if (i < 0) i = 0;
-            if (i >= len) i = len;
+            if (i > len) i = len;
         }
         return i;
     }
@@ -133,46 +133,48 @@ public class ArrayLib {
     }
     @Expose public static boolean __every(Arguments args) {
         var arr = args.self(ArrayValue.class);
-        var func = args.convert(0, FunctionValue.class);
-        var thisArg = args.get(1);
 
         for (var i = 0; i < arr.size(); i++) {
-            if (!Values.toBoolean(func.call(args.ctx, thisArg, arr.get(i), i, arr))) return false;
+            if (arr.has(i) && !Values.toBoolean(Values.call(
+                args.ctx, args.get(0), args.get(1),
+                arr.get(i), i, arr
+            ))) return false;
         }
 
         return true;
     }
     @Expose public static boolean __some(Arguments args) {
         var arr = args.self(ArrayValue.class);
-        var func = args.convert(0, FunctionValue.class);
-        var thisArg = args.get(1);
 
         for (var i = 0; i < arr.size(); i++) {
-            if (Values.toBoolean(func.call(args.ctx, thisArg, arr.get(i), i, arr))) return true;
+            if (arr.has(i) && Values.toBoolean(Values.call(
+                args.ctx, args.get(0), args.get(1),
+                arr.get(i), i, arr
+            ))) return true;
         }
 
         return false;
     }
     @Expose public static ArrayValue __filter(Arguments args) {
         var arr = args.self(ArrayValue.class);
-        var func = args.convert(0, FunctionValue.class);
-        var thisArg = args.get(1);
         var res = new ArrayValue(arr.size());
 
         for (int i = 0, j = 0; i < arr.size(); i++) {
-            if (arr.has(i) && Values.toBoolean(func.call(args.ctx, thisArg, arr.get(i), i, arr))) res.set(args.ctx, j++, arr.get(i));
+            if (arr.has(i) && Values.toBoolean(Values.call(
+                args.ctx, args.get(0), args.get(1),
+                arr.get(i), i, arr
+            ))) res.set(args.ctx, j++, arr.get(i));
         }
+
         return res;
     }
     @Expose public static ArrayValue __map(Arguments args) {
         var arr = args.self(ArrayValue.class);
-        var func = args.convert(0, FunctionValue.class);
-        var thisArg = args.get(1);
         var res = new ArrayValue(arr.size());
         res.setSize(arr.size());
 
-        for (int i = 0, j = 0; i < arr.size(); i++) {
-            if (arr.has(i)) res.set(args.ctx, j++, func.call(args.ctx, thisArg, arr.get(i), i, arr));
+        for (int i = 0; i < arr.size(); i++) {
+            if (arr.has(i)) res.set(args.ctx, i, Values.call(args.ctx, args.get(0), args.get(1), arr.get(i), i, arr));
         }
         return res;
     }
@@ -192,7 +194,14 @@ public class ArrayLib {
         var res = args.get(1);
         var i = 0;
 
-        if (args.n() < 2) for (; !arr.has(i) && i < arr.size(); i++) res = arr.get(i);
+        if (args.n() < 2) {
+            for (; i < arr.size(); i++) {
+                if (arr.has(i)){
+                    res = arr.get(i++);
+                    break;
+                }
+            }
+        }
 
         for (; i < arr.size(); i++) {
             if (arr.has(i)) {
@@ -208,7 +217,12 @@ public class ArrayLib {
         var res = args.get(1);
         var i = arr.size();
 
-        if (args.n() < 1) while (!arr.has(i--) && i >= 0) res = arr.get(i);
+        if (args.n() < 2) {
+            while (!arr.has(i--) && i >= 0) {
+                res = arr.get(i);
+            }
+        }
+        else i--;
 
         for (; i >= 0; i--) {
             if (arr.has(i)) {
@@ -252,22 +266,24 @@ public class ArrayLib {
 
     @Expose public static Object __find(Arguments args) {
         var arr = args.self(ArrayValue.class);
-        var cmp = args.convert(0, FunctionValue.class);
-        var thisArg = args.get(1);
 
         for (int i = 0; i < arr.size(); i++) {
-            if (arr.has(i) && Values.toBoolean(cmp.call(args.ctx, thisArg, arr.get(i), i, arr))) return arr.get(i);
+            if (arr.has(i) && Values.toBoolean(Values.call(
+                args.ctx, args.get(0), args.get(1),
+                arr.get(i), i, args.self
+            ))) return arr.get(i);
         }
 
         return null;
     }
     @Expose public static Object __findLast(Arguments args) {
         var arr = args.self(ArrayValue.class);
-        var cmp = args.convert(0, FunctionValue.class);
-        var thisArg = args.get(1);
 
         for (var i = arr.size() - 1; i >= 0; i--) {
-            if (arr.has(i) && Values.toBoolean(cmp.call(args.ctx, thisArg, arr.get(i), i, arr))) return arr.get(i);
+            if (arr.has(i) && Values.toBoolean(Values.call(
+                args.ctx, args.get(0), args.get(1),
+                arr.get(i), i, args.self
+            ))) return arr.get(i);
         }
 
         return null;
@@ -275,22 +291,24 @@ public class ArrayLib {
 
     @Expose public static int __findIndex(Arguments args) {
         var arr = args.self(ArrayValue.class);
-        var cmp = args.convert(0, FunctionValue.class);
-        var thisArg = args.get(1);
 
         for (int i = 0; i < arr.size(); i++) {
-            if (arr.has(i) && Values.toBoolean(cmp.call(args.ctx, thisArg, arr.get(i), i, arr))) return i;
+            if (arr.has(i) && Values.toBoolean(Values.call(
+                args.ctx, args.get(0), args.get(1),
+                arr.get(i), i, args.self
+            ))) return i;
         }
 
         return -1;
     }
     @Expose public static int __findLastIndex(Arguments args) {
         var arr = args.self(ArrayValue.class);
-        var cmp = args.convert(0, FunctionValue.class);
-        var thisArg = args.get(1);
 
         for (var i = arr.size() - 1; i >= 0; i--) {
-            if (arr.has(i) && Values.toBoolean(cmp.call(args.ctx, thisArg, arr.get(i), i, arr))) return i;
+            if (arr.has(i) && Values.toBoolean(Values.call(
+                args.ctx, args.get(0), args.get(1),
+                arr.get(i), i, args.self
+            ))) return i;
         }
 
         return -1;
@@ -391,7 +409,7 @@ public class ArrayLib {
 
     @Expose public static String __join(Arguments args) {
         var arr = args.self(ArrayValue.class);
-        var sep = args.getString(0);
+        var sep = args.getString(0, ", ");
         var res = new StringBuilder();
         var comma = false;
 
@@ -428,7 +446,7 @@ public class ArrayLib {
             res.setSize(len);
         }
         else {
-            var val = args.slice(0).args;
+            var val = args.args;
             res = new ArrayValue(val.length);
             res.copyFrom(args.ctx, val, 0, 0, val.length);
         }
