@@ -54,7 +54,28 @@ public class NumberLib {
     }
     @Expose(target = ExposeTarget.STATIC)
     public static double __parseInt(Arguments args) {
-        return args.getLong(0);
+        var radix = args.getInt(1, 10);
+
+        if (radix < 2 || radix > 36) return Double.NaN;
+        else {
+            long res = 0;
+            
+            for (var c : args.getString(0).toCharArray()) {
+                var digit = 0;
+
+                if (c >= '0' && c <= '9') digit = c - '0';
+                else if (c >= 'a' && c <= 'z') digit = c - 'a' + 10;
+                else if (c >= 'A' && c <= 'Z') digit = c - 'A' + 10;
+                else break;
+
+                if (digit > radix) break;
+
+                res *= radix;
+                res += digit;
+            }
+
+            return res;
+        }
     }
 
     @ExposeConstructor public static Object __constructor(Arguments args) {
