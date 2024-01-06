@@ -103,7 +103,7 @@ public class CodeFrame {
     public boolean jumpFlag = false, popTryFlag = false;
     private Location prevLoc = null;
 
-    public ObjectValue getLocalScope(Context ctx, boolean props) {
+    public ObjectValue getLocalScope(boolean props) {
         var names = new String[scope.locals.length];
 
         for (int i = 0; i < scope.locals.length; i++) {
@@ -118,7 +118,7 @@ public class CodeFrame {
 
         return new ScopeValue(scope.locals, names);
     }
-    public ObjectValue getCaptureScope(Context ctx, boolean props) {
+    public ObjectValue getCaptureScope(boolean props) {
         var names = new String[scope.captures.length];
 
         for (int i = 0; i < scope.captures.length; i++) {
@@ -129,7 +129,7 @@ public class CodeFrame {
 
         return new ScopeValue(scope.captures, names);
     }
-    public ObjectValue getValStackScope(Context ctx) {
+    public ObjectValue getValStackScope() {
         return new ObjectValue() {
             @Override
             protected Object getField(Context ctx, Object key) {
@@ -181,7 +181,7 @@ public class CodeFrame {
 
         return res;
     }
-    public void push(Context ctx, Object val) {
+    public void push(Object val) {
         if (stack.length <= stackPtr) {
             var newStack = new Object[stack.length * 2];
             System.arraycopy(stack, 0, newStack, 0, stack.length);
@@ -191,7 +191,7 @@ public class CodeFrame {
     }
 
     public Object next(Object value, Object returnValue, EngineException error) {
-        if (value != Values.NO_RETURN) push(ctx, value);
+        if (value != Values.NO_RETURN) push(value);
 
         Instruction instr = null;
         if (codePtr >= 0 && codePtr < function.body.length) instr = function.body[codePtr];

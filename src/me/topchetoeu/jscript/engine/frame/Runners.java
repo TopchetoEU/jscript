@@ -32,7 +32,7 @@ public class Runners {
         var func = frame.pop();
         var thisArg = frame.pop();
 
-        frame.push(ctx, Values.call(ctx, func, thisArg, callArgs));
+        frame.push(Values.call(ctx, func, thisArg, callArgs));
 
         frame.codePtr++;
         return Values.NO_RETURN;
@@ -41,7 +41,7 @@ public class Runners {
         var callArgs = frame.take(instr.get(0));
         var funcObj = frame.pop();
 
-        frame.push(ctx, Values.callNew(ctx, funcObj, callArgs));
+        frame.push(Values.callNew(ctx, funcObj, callArgs));
 
         frame.codePtr++;
         return Values.NO_RETURN;
@@ -64,7 +64,7 @@ public class Runners {
         if (!(obj instanceof ObjectValue)) throw EngineException.ofType("Property apply target must be an object.");
         Values.object(obj).defineProperty(ctx, name, Values.function(getter), Values.function(setter), false, false);
 
-        frame.push(ctx, obj);
+        frame.push(obj);
         frame.codePtr++;
         return Values.NO_RETURN;
     }
@@ -74,10 +74,10 @@ public class Runners {
 
         if (!Values.isPrimitive(type)) {
             var proto = Values.getMember(ctx, type, "prototype");
-            frame.push(ctx, Values.isInstanceOf(ctx, obj, proto));
+            frame.push(Values.isInstanceOf(ctx, obj, proto));
         }
         else {
-            frame.push(ctx, false);
+            frame.push(false);
         }
 
         frame.codePtr++;
@@ -89,13 +89,13 @@ public class Runners {
         var members = Values.getMembers(ctx, val, false, false);
         Collections.reverse(members);
 
-        frame.push(ctx, null);
+        frame.push(null);
 
         for (var el : members) {
             if (el instanceof Symbol) continue;
             var obj = new ObjectValue();
             obj.defineProperty(ctx, "value", el);
-            frame.push(ctx, obj);
+            frame.push(obj);
         }
 
         frame.codePtr++;
@@ -122,45 +122,45 @@ public class Runners {
         int count = instr.get(0);
 
         for (var i = 0; i < count; i++) {
-            frame.push(ctx, frame.peek(count - 1));
+            frame.push(frame.peek(count - 1));
         }
 
         frame.codePtr++;
         return Values.NO_RETURN;
     }
     public static Object execLoadUndefined(Context ctx, Instruction instr, CodeFrame frame) {
-        frame.push(ctx, null);
+        frame.push(null);
         frame.codePtr++;
         return Values.NO_RETURN;
     }
     public static Object execLoadValue(Context ctx, Instruction instr, CodeFrame frame) {
-        frame.push(ctx, instr.get(0));
+        frame.push(instr.get(0));
         frame.codePtr++;
         return Values.NO_RETURN;
     }
     public static Object execLoadVar(Context ctx, Instruction instr, CodeFrame frame) {
         var i = instr.get(0);
 
-        if (i instanceof String) frame.push(ctx, ctx.environment.global.get(ctx, (String)i));
-        else frame.push(ctx, frame.scope.get((int)i).get(ctx));
+        if (i instanceof String) frame.push(ctx.environment.global.get(ctx, (String)i));
+        else frame.push(frame.scope.get((int)i).get(ctx));
 
         frame.codePtr++;
         return Values.NO_RETURN;
     }
     public static Object execLoadObj(Context ctx, Instruction instr, CodeFrame frame) {
-        frame.push(ctx, new ObjectValue());
+        frame.push(new ObjectValue());
         frame.codePtr++;
         return Values.NO_RETURN;
     }
     public static Object execLoadGlob(Context ctx, Instruction instr, CodeFrame frame) {
-        frame.push(ctx, ctx.environment.global.obj);
+        frame.push(ctx.environment.global.obj);
         frame.codePtr++;
         return Values.NO_RETURN;
     }
     public static Object execLoadArr(Context ctx, Instruction instr, CodeFrame frame) {
         var res = new ArrayValue();
         res.setSize(instr.get(0));
-        frame.push(ctx, res);
+        frame.push(res);
         frame.codePtr++;
         return Values.NO_RETURN;
     }
@@ -174,7 +174,7 @@ public class Runners {
 
         var func = new CodeFunction(ctx.environment, "", Engine.functions.get(id), captures);
 
-        frame.push(ctx, func);
+        frame.push(func);
 
         frame.codePtr++;
         return Values.NO_RETURN;
@@ -184,7 +184,7 @@ public class Runners {
         var obj = frame.pop();
 
         try {
-            frame.push(ctx, Values.getMember(ctx, obj, key));
+            frame.push(Values.getMember(ctx, obj, key));
         }
         catch (IllegalArgumentException e) {
             throw EngineException.ofType(e.getMessage());
@@ -193,12 +193,12 @@ public class Runners {
         return Values.NO_RETURN;
     }
     public static Object execLoadKeyMember(Context ctx, Instruction instr, CodeFrame frame) {
-        frame.push(ctx, instr.get(0));
+        frame.push(instr.get(0));
         return execLoadMember(ctx, instr, frame);
     }
     public static Object execLoadRegEx(Context ctx, Instruction instr, CodeFrame frame) {
         if (ctx.hasNotNull(Environment.REGEX_CONSTR)) {
-            frame.push(ctx, Values.callNew(ctx, ctx.get(Environment.REGEX_CONSTR), instr.get(0), instr.get(1)));
+            frame.push(Values.callNew(ctx, ctx.get(Environment.REGEX_CONSTR), instr.get(0), instr.get(1)));
         }
         else {
             throw EngineException.ofSyntax("Regex is not supported.");
@@ -218,7 +218,7 @@ public class Runners {
         var obj = frame.pop();
 
         if (!Values.setMember(ctx, obj, key, val)) throw EngineException.ofSyntax("Can't set member '" + key + "'.");
-        if ((boolean)instr.get(0)) frame.push(ctx, val);
+        if ((boolean)instr.get(0)) frame.push(val);
         frame.codePtr++;
         return Values.NO_RETURN;
     }
@@ -264,7 +264,7 @@ public class Runners {
         var obj = frame.pop();
         var index = frame.pop();
 
-        frame.push(ctx, Values.hasMember(ctx, obj, index, false));
+        frame.push(Values.hasMember(ctx, obj, index, false));
         frame.codePtr++;
         return Values.NO_RETURN;
     }
@@ -280,7 +280,7 @@ public class Runners {
         }
         else obj = frame.pop();
 
-        frame.push(ctx, Values.type(obj));
+        frame.push(Values.type(obj));
 
         frame.codePtr++;
         return Values.NO_RETURN;
@@ -305,7 +305,7 @@ public class Runners {
 
         for (var i = op.operands - 1; i >= 0; i--) args[i] = frame.pop();
 
-        frame.push(ctx, Values.operation(ctx, op, args));
+        frame.push(Values.operation(ctx, op, args));
         frame.codePtr++;
         return Values.NO_RETURN;
     }
