@@ -24,17 +24,20 @@ public class FunctionLib {
     }
     @Expose public static FunctionValue __bind(Arguments args) {
         var self = args.self(FunctionValue.class);
+        var thisArg = args.get(0);
+        var bindArgs = args.slice(1).args;
+
         return new NativeFunction(self.name + " (bound)", callArgs -> {
             Object[] resArgs;
 
-            if (args.n() == 0) resArgs = callArgs.args;
+            if (args.n() == 0) resArgs = bindArgs;
             else {
-                resArgs = new Object[args.n() + callArgs.n()];
-                System.arraycopy(args.args, 0, resArgs, 0, args.n());
-                System.arraycopy(callArgs.args, 0, resArgs, args.n(), callArgs.n());
+                resArgs = new Object[bindArgs.length + callArgs.n()];
+                System.arraycopy(bindArgs, 0, resArgs, 0, bindArgs.length);
+                System.arraycopy(callArgs.args, 0, resArgs, bindArgs.length, callArgs.n());
             }
 
-            return self.call(callArgs.ctx, self, resArgs);
+            return self.call(callArgs.ctx, thisArg, resArgs);
         });
     }
     @Expose public static String __toString(Arguments args) {
