@@ -45,31 +45,31 @@ public class ObjectLib {
         var key = args.get(1);
         var attrib = args.convert(2, ObjectValue.class);
 
-        var hasVal = attrib.hasMember(args.ctx, "value", false);
-        var hasGet = attrib.hasMember(args.ctx, "get", false);
-        var hasSet = attrib.hasMember(args.ctx, "set", false);
+        var hasVal = Values.hasMember(args.ctx, attrib, "value", false);
+        var hasGet = Values.hasMember(args.ctx, attrib, "get", false);
+        var hasSet = Values.hasMember(args.ctx, attrib, "set", false);
 
         if (hasVal) {
             if (hasGet || hasSet) throw EngineException.ofType("Cannot specify a value and accessors for a property.");
             if (!obj.defineProperty(
                 args.ctx, key,
                 attrib.getMember(args.ctx, "value"),
-                Values.toBoolean(attrib.getMember(args.ctx, "writable")),
-                Values.toBoolean(attrib.getMember(args.ctx, "configurable")),
-                Values.toBoolean(attrib.getMember(args.ctx, "enumerable"))
+                Values.toBoolean(Values.getMember(args.ctx, attrib, "writable")),
+                Values.toBoolean(Values.getMember(args.ctx, attrib, "configurable")),
+                Values.toBoolean(Values.getMember(args.ctx, attrib, "enumerable"))
             )) throw EngineException.ofType("Can't define property '" + key + "'.");
         }
         else {
-            var get = attrib.getMember(args.ctx, "get");
-            var set = attrib.getMember(args.ctx, "set");
+            var get = Values.getMember(args.ctx, attrib, "get");
+            var set = Values.getMember(args.ctx, attrib, "set");
             if (get != null && !(get instanceof FunctionValue)) throw EngineException.ofType("Get accessor must be a function.");
             if (set != null && !(set instanceof FunctionValue)) throw EngineException.ofType("Set accessor must be a function.");
 
             if (!obj.defineProperty(
                 args.ctx, key,
                 (FunctionValue)get, (FunctionValue)set,
-                Values.toBoolean(attrib.getMember(args.ctx, "configurable")),
-                Values.toBoolean(attrib.getMember(args.ctx, "enumerable"))
+                Values.toBoolean(Values.getMember(args.ctx, attrib, "configurable")),
+                Values.toBoolean(Values.getMember(args.ctx, attrib, "enumerable"))
             )) throw EngineException.ofType("Can't define property '" + key + "'.");
         }
 
@@ -78,10 +78,10 @@ public class ObjectLib {
     @Expose(target = ExposeTarget.STATIC)
     public static ObjectValue __defineProperties(Arguments args) {
         var obj = args.convert(0, ObjectValue.class);
-        var attrib = args.convert(1, ObjectValue.class);
+        var attrib = args.get(1);
 
         for (var key : Values.getMembers(null, attrib, false, false)) {
-            __defineProperty(new Arguments(args.ctx, null, obj, key, attrib.getMember(args.ctx, key)));
+            __defineProperty(new Arguments(args.ctx, null, obj, key, Values.getMember(args.ctx, attrib, key)));
         }
 
         return obj;
@@ -133,7 +133,7 @@ public class ObjectLib {
         var res = new ObjectValue();
         var obj = args.get(0);
         for (var key : Values.getMembers(args.ctx, obj, true, true)) {
-            res.defineProperty(args.ctx, key, __getOwnPropertyDescriptor(new Arguments(args.ctx, null, obj, key)));
+            res.defineProperty(args.ctx, key, Values.getMemberDescriptor(args.ctx, obj, key));
         }
         return res;
     }
