@@ -7,6 +7,7 @@ import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.stream.Collectors;
 
 import me.topchetoeu.jscript.Location;
 import me.topchetoeu.jscript.engine.Context;
@@ -73,8 +74,8 @@ public class NativeWrapperProvider implements WrappersProvider {
         if (failed) throw new IllegalArgumentException(String.format(
             "Method %s was expected to have a signature of '%s', found '%s' instead.",
             method.getDeclaringClass().getName() + "." + method.getName(),
-            String.join(", ", Arrays.stream(params).map(v -> v.getName()).toList()),
-            String.join(", ", Arrays.stream(actual).map(v -> v.getName()).toList())
+            String.join(", ", Arrays.stream(params).map(v -> v.getName()).collect(Collectors.toList())),
+            String.join(", ", Arrays.stream(actual).map(v -> v.getName()).collect(Collectors.toList()))
         ));
     }
     private static String getName(Class<?> clazz) {
@@ -85,7 +86,7 @@ public class NativeWrapperProvider implements WrappersProvider {
 
     private static void checkUnderscore(Member member) {
         if (!member.getName().startsWith("__")) {
-            System.out.println("WARNING: The name of the exposed member '%s.%s' doesn't start with '__'.".formatted(
+            System.out.println(String.format("WARNING: The name of the exposed member '%s.%s' doesn't start with '__'.",
                 member.getDeclaringClass().getName(),
                 member.getName()
             ));
