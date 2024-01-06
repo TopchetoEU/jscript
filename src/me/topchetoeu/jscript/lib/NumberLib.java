@@ -83,7 +83,7 @@ public class NumberLib {
         else return args.getDouble(0);
     }
     @Expose public static String __toString(Arguments args) {
-        return Values.toString(args.ctx, args.getDouble(0));
+        return Values.toString(args.ctx, args.self);
     }
     @Expose public static double __valueOf(Arguments args) {
         if (Values.isWrapper(args.self, NumberLib.class)) return Values.wrapper(args.self, NumberLib.class).value;
