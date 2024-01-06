@@ -566,7 +566,7 @@ declare class Map<KeyT, ValueT> {
 
     public get size(): number;
 
-    public forEach(func: (key: KeyT, val: ValueT, map: Map<KeyT, ValueT>) => void, thisArg?: any): void;
+    public forEach(func: (val: ValueT, key: KeyT, map: Map<KeyT, ValueT>) => void, thisArg?: any): void;
 
     public constructor();
 }
@@ -585,7 +585,7 @@ declare class Set<T> {
 
     public get size(): number;
 
-    public forEach(func: (key: T, set: Set<T>) => void, thisArg?: any): void;
+    public forEach(func: (key: T, value: T, set: Set<T>) => void, thisArg?: any): void;
 
     public constructor();
 }
