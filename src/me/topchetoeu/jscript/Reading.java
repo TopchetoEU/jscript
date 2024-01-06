@@ -4,8 +4,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-
-import me.topchetoeu.jscript.exceptions.UncheckedException;
+import java.io.UncheckedIOException;
 
 public class Reading {
     private static final BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
@@ -14,9 +13,16 @@ public class Reading {
         return reader.readLine();
     }
 
+    /**
+     * Reads the given stream to a string
+     * @param in 
+     * @return
+     */
     public static String streamToString(InputStream in) {
-        try { return new String(in.readAllBytes()); }
-        catch (Throwable e) { throw new UncheckedException(e); }
+        try {
+            return new String(in.readAllBytes());
+        }
+        catch (IOException e) { throw new UncheckedIOException(e); }
     }
     public static InputStream resourceToStream(String name) {
         return Reading.class.getResourceAsStream("/" + name);

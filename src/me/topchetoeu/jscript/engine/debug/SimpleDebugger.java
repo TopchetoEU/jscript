@@ -1,5 +1,6 @@
 package me.topchetoeu.jscript.engine.debug;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -453,44 +454,74 @@ public class SimpleDebugger implements Debugger {
     }
 
     private void resume(State state) {
-        this.state = state;
-        ws.send(new V8Event("Debugger.resumed", new JSONMap()));
-        updateNotifier.next();
+        try {
+            this.state = state;
+            ws.send(new V8Event("Debugger.resumed", new JSONMap()));
+            updateNotifier.next();
+        }
+        catch (IOException e) {
+            ws.close();
+            close();
+        }
     }
     private void pauseDebug(Context ctx, Breakpoint bp) {
-        state = State.PAUSED_NORMAL;
-        var map = new JSONMap()
-            .set("callFrames", serializeFrames(ctx))
-            .set("reason", "debugCommand");
+        try {
+            state = State.PAUSED_NORMAL;
+            var map = new JSONMap()
+                .set("callFrames", serializeFrames(ctx))
+                .set("reason", "debugCommand");
 
-        if (bp != null) map.set("hitBreakpoints", new JSONList().add(bp.id + ""));
-        ws.send(new V8Event("Debugger.paused", map));
+            if (bp != null) map.set("hitBreakpoints", new JSONList().add(bp.id + ""));
+            ws.send(new V8Event("Debugger.paused", map));
+        }
+        catch (IOException e) {
+            ws.close();
+            close();
+        }
     }
     private void pauseException(Context ctx) {
-        state = State.PAUSED_EXCEPTION;
-        var map = new JSONMap()
-            .set("callFrames", serializeFrames(ctx))
-            .set("reason", "exception");
+        try {
+            state = State.PAUSED_EXCEPTION;
+            var map = new JSONMap()
+                .set("callFrames", serializeFrames(ctx))
+                .set("reason", "exception");
 
-        ws.send(new V8Event("Debugger.paused", map));
+            ws.send(new V8Event("Debugger.paused", map));
+        }
+        catch (IOException e) {
+            ws.close();
+            close();
+        }
     }
 
-    private void sendSource(Source src) {
-        ws.send(new V8Event("Debugger.scriptParsed", new JSONMap()
-            .set("scriptId", src.id + "")
-            .set("hash", src.source.hashCode())
-            .set("url", src.filename + "")
-        ));
+    private void sendSource(Source src){
+        try {
+            ws.send(new V8Event("Debugger.scriptParsed", new JSONMap()
+                .set("scriptId", src.id + "")
+                .set("hash", src.source.hashCode())
+                .set("url", src.filename + "")
+            ));
+        }
+        catch (IOException e) {
+            ws.close();
+            close();
+        }
     }
 
     private void addBreakpoint(Breakpoint bpt) {
-        idToBreakpoint.put(bpt.id, bpt);
-        locToBreakpoint.put(bpt.location, bpt);
+        try {
+            idToBreakpoint.put(bpt.id, bpt);
+            locToBreakpoint.put(bpt.location, bpt);
 
-        ws.send(new V8Event("Debugger.breakpointResolved", new JSONMap()
-            .set("breakpointId", bpt.id)
-            .set("location", serializeLocation(bpt.location))
-        ));
+            ws.send(new V8Event("Debugger.breakpointResolved", new JSONMap()
+                .set("breakpointId", bpt.id)
+                .set("location", serializeLocation(bpt.location))
+            ));
+        }
+        catch (IOException e) {
+            ws.close();
+            close();
+        }
     }
 
     private RunResult run(Frame codeFrame, String code) {
@@ -582,7 +613,7 @@ public class SimpleDebugger implements Debugger {
         return resObj;
     }
 
-    @Override public synchronized void enable(V8Message msg) {
+    @Override public synchronized void enable(V8Message msg) throws IOException {
         enabled = true;
         ws.send(msg.respond());
 
@@ -591,7 +622,7 @@ public class SimpleDebugger implements Debugger {
 
         updateNotifier.next();
     }
-    @Override public synchronized void disable(V8Message msg) {
+    @Override public synchronized void disable(V8Message msg) throws IOException {
         close();
         ws.send(msg.respond());
     }
@@ -625,11 +656,11 @@ public class SimpleDebugger implements Debugger {
         updateNotifier.next();
     }
 
-    @Override public synchronized void getScriptSource(V8Message msg) {
+    @Override public synchronized void getScriptSource(V8Message msg) throws IOException {
         int id = Integer.parseInt(msg.params.string("scriptId"));
         ws.send(msg.respond(new JSONMap().set("scriptSource", idToSource.get(id).source)));
     }
-    @Override public synchronized void getPossibleBreakpoints(V8Message msg) {
+    @Override public synchronized void getPossibleBreakpoints(V8Message msg) throws IOException {
         var src = idToSource.get(Integer.parseInt(msg.params.map("start").string("scriptId")));
         var start = deserializeLocation(msg.params.get("start"), false);
         var end = msg.params.isMap("end") ? deserializeLocation(msg.params.get("end"), false) : null;
@@ -644,16 +675,16 @@ public class SimpleDebugger implements Debugger {
         ws.send(msg.respond(new JSONMap().set("locations", res)));
     }
 
-    @Override public synchronized void pause(V8Message msg) {
+    @Override public synchronized void pause(V8Message msg) throws IOException {
         pendingPause = true;
         ws.send(msg.respond());
     }
-    @Override public synchronized void resume(V8Message msg) {
+    @Override public synchronized void resume(V8Message msg) throws IOException {
         resume(State.RESUMED);
         ws.send(msg.respond(new JSONMap()));
     }
 
-    @Override public synchronized void setBreakpointByUrl(V8Message msg) {
+    @Override public synchronized void setBreakpointByUrl(V8Message msg) throws IOException {
         var line = (int)msg.params.number("lineNumber") + 1;
         var col = (int)msg.params.number("columnNumber", 0) + 1;
         var cond = msg.params.string("condition", "").trim();
@@ -688,7 +719,7 @@ public class SimpleDebugger implements Debugger {
             .set("locations", locs)
         ));
     }
-    @Override public synchronized void removeBreakpoint(V8Message msg) {
+    @Override public synchronized void removeBreakpoint(V8Message msg) throws IOException {
         var id = Integer.parseInt(msg.params.string("breakpointId"));
 
         if (idToBptCand.containsKey(id)) {
@@ -705,7 +736,7 @@ public class SimpleDebugger implements Debugger {
         }
         ws.send(msg.respond());
     }
-    @Override public synchronized void continueToLocation(V8Message msg) {
+    @Override public synchronized void continueToLocation(V8Message msg) throws IOException {
         var loc = deserializeLocation(msg.params.get("location"), true);
 
         tmpBreakpts.add(loc);
@@ -714,7 +745,7 @@ public class SimpleDebugger implements Debugger {
         ws.send(msg.respond());
     }
 
-    @Override public synchronized void setPauseOnExceptions(V8Message msg) {
+    @Override public synchronized void setPauseOnExceptions(V8Message msg) throws IOException {
         switch (msg.params.string("state")) {
             case "none": execptionType = CatchType.NONE; break;
             case "all": execptionType = CatchType.ALL; break;
@@ -727,7 +758,7 @@ public class SimpleDebugger implements Debugger {
         ws.send(msg.respond());
     }
 
-    @Override public synchronized void stepInto(V8Message msg) {
+    @Override public synchronized void stepInto(V8Message msg) throws IOException {
         if (state == State.RESUMED) ws.send(new V8Error("Debugger is resumed."));
         else {
             stepOutFrame = currFrame;
@@ -736,7 +767,7 @@ public class SimpleDebugger implements Debugger {
             ws.send(msg.respond());
         }
     }
-    @Override public synchronized void stepOut(V8Message msg) {
+    @Override public synchronized void stepOut(V8Message msg) throws IOException {
         if (state == State.RESUMED) ws.send(new V8Error("Debugger is resumed."));
         else {
             stepOutFrame = currFrame;
@@ -745,7 +776,7 @@ public class SimpleDebugger implements Debugger {
             ws.send(msg.respond());
         }
     }
-    @Override public synchronized void stepOver(V8Message msg) {
+    @Override public synchronized void stepOver(V8Message msg) throws IOException {
         if (state == State.RESUMED) ws.send(new V8Error("Debugger is resumed."));
         else {
             stepOutFrame = currFrame;
@@ -755,7 +786,7 @@ public class SimpleDebugger implements Debugger {
         }
     }
 
-    @Override public synchronized void evaluateOnCallFrame(V8Message msg) {
+    @Override public synchronized void evaluateOnCallFrame(V8Message msg) throws IOException {
         var cfId = Integer.parseInt(msg.params.string("callFrameId"));
         var expr = msg.params.string("expression");
         var group = msg.params.string("objectGroup", null);
@@ -769,12 +800,12 @@ public class SimpleDebugger implements Debugger {
         else ws.send(msg.respond(new JSONMap().set("result", serializeObj(res.ctx, res.result))));
     }
 
-    @Override public synchronized void releaseObjectGroup(V8Message msg) {
+    @Override public synchronized void releaseObjectGroup(V8Message msg) throws IOException {
         var group = msg.params.string("objectGroup");
         releaseGroup(group);
         ws.send(msg.respond());
     }
-    @Override public synchronized void releaseObject(V8Message msg) {
+    @Override public synchronized void releaseObject(V8Message msg) throws IOException {
         var id = Integer.parseInt(msg.params.string("objectId"));
         var ref = idToObject.get(id);
         ref.held = false;
@@ -786,7 +817,7 @@ public class SimpleDebugger implements Debugger {
 
         ws.send(msg.respond());
     }
-    @Override public synchronized void getProperties(V8Message msg) {
+    @Override public synchronized void getProperties(V8Message msg) throws IOException {
         var ref = idToObject.get(Integer.parseInt(msg.params.string("objectId")));
         var obj = ref.obj;
 
@@ -833,7 +864,7 @@ public class SimpleDebugger implements Debugger {
 
         ws.send(msg.respond(new JSONMap().set("result", res)));
     }
-    @Override public synchronized void callFunctionOn(V8Message msg) {
+    @Override public synchronized void callFunctionOn(V8Message msg) throws IOException {
         var src = msg.params.string("functionDeclaration");
         var args = msg.params
             .list("arguments", new JSONList())
@@ -881,7 +912,7 @@ public class SimpleDebugger implements Debugger {
         catch (EngineException e) { ws.send(msg.respond(new JSONMap().set("exceptionDetails", serializeException(ctx, e)))); }
     }
 
-    @Override public synchronized void runtimeEnable(V8Message msg) {
+    @Override public synchronized void runtimeEnable(V8Message msg) throws IOException {
         ws.send(msg.respond());
     }
 
@@ -921,7 +952,11 @@ public class SimpleDebugger implements Debugger {
             if (error != null && (execptionType == CatchType.ALL || execptionType == CatchType.UNCAUGHT && !caught)) {
                 pauseException(ctx);
             }
-            else if (loc != null && (state == State.STEPPING_IN || state == State.STEPPING_OVER) && returnVal != Values.NO_RETURN && stepOutFrame == frame) {
+            else if (
+                loc != null &&
+                (state == State.STEPPING_IN || state == State.STEPPING_OVER) &&
+                returnVal != Values.NO_RETURN && stepOutFrame == frame
+            ) {
                 pauseDebug(ctx, null);
             }
             else if (isBreakpointable && locToBreakpoint.containsKey(loc)) {

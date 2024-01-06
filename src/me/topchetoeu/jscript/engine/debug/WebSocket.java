@@ -7,7 +7,6 @@ import java.io.OutputStream;
 import java.net.Socket;
 
 import me.topchetoeu.jscript.engine.debug.WebSocketMessage.Type;
-import me.topchetoeu.jscript.exceptions.UncheckedIOException;
 
 public class WebSocket implements AutoCloseable {
     public long maxLength = 1 << 20;
@@ -15,109 +14,95 @@ public class WebSocket implements AutoCloseable {
     private Socket socket;
     private boolean closed = false;
 
-    private OutputStream out() {
-        try { return socket.getOutputStream(); }
-        catch (IOException e) { throw new UncheckedIOException(e); }
+    private OutputStream out() throws IOException {
+        return socket.getOutputStream();
     }
-    private InputStream in() {
-        try { return socket.getInputStream(); }
-        catch (IOException e) { throw new UncheckedIOException(e); }
+    private InputStream in() throws IOException {
+        return socket.getInputStream();
     }
 
-    private long readLen(int byteLen) {
+    private long readLen(int byteLen) throws IOException {
         long res = 0;
 
-        try {
-            if (byteLen == 126) {
-                res |= in().read() << 8;
-                res |= in().read();
-                return res;
-            }
-            else if (byteLen == 127) {
-                res |= in().read() << 56;
-                res |= in().read() << 48;
-                res |= in().read() << 40;
-                res |= in().read() << 32;
-                res |= in().read() << 24;
-                res |= in().read() << 16;
-                res |= in().read() << 8;
-                res |= in().read();
-                return res;
-            }
-            else return byteLen;
+        if (byteLen == 126) {
+            res |= in().read() << 8;
+            res |= in().read();
+            return res;
         }
-        catch (IOException e) { throw new UncheckedIOException(e); }
+        else if (byteLen == 127) {
+            res |= in().read() << 56;
+            res |= in().read() << 48;
+            res |= in().read() << 40;
+            res |= in().read() << 32;
+            res |= in().read() << 24;
+            res |= in().read() << 16;
+            res |= in().read() << 8;
+            res |= in().read();
+            return res;
+        }
+        else return byteLen;
     }
-    private byte[] readMask(boolean has) {
+    private byte[] readMask(boolean has) throws IOException {
         if (has) {
-            try { return new byte[] {
+            return new byte[] {
                 (byte)in().read(),
                 (byte)in().read(),
                 (byte)in().read(),
                 (byte)in().read()
-            }; }
-            catch (IOException e) { throw new UncheckedIOException(e); }
+            };
         }
         else return new byte[4];
     }
 
-    private void writeLength(int len) {
-        try {
-            if (len < 126) {
-                out().write((int)len);
-            }
-            else if (len <= 0xFFFF) {
-                out().write(126);
-                out().write((int)(len >> 8) & 0xFF);
-                out().write((int)len & 0xFF);
-            }
-            else {
-                out().write(127);
-                out().write((len >> 56) & 0xFF);
-                out().write((len >> 48) & 0xFF);
-                out().write((len >> 40) & 0xFF);
-                out().write((len >> 32) & 0xFF);
-                out().write((len >> 24) & 0xFF);
-                out().write((len >> 16) & 0xFF);
-                out().write((len >> 8) & 0xFF);
-                out().write(len & 0xFF);
-            }
+    private void writeLength(int len) throws IOException {
+        if (len < 126) {
+            out().write((int)len);
         }
-        catch (IOException e) { throw new UncheckedIOException(e); }
-    }
-    private synchronized void write(int type, byte[] data) {
-        try {
-            int i;
-
-            for (i = 0; i < data.length / 0xFFFF; i++) {
-                out().write(type);
-                writeLength(0xFFFF);
-                out().write(data, i * 0xFFFF, 0xFFFF);
-                type = 0;
-            }
-
-            out().write(type | 0x80);
-            writeLength(data.length % 0xFFFF);
-            out().write(data, i * 0xFFFF, data.length % 0xFFFF);
+        else if (len <= 0xFFFF) {
+            out().write(126);
+            out().write((int)(len >> 8) & 0xFF);
+            out().write((int)len & 0xFF);
         }
-        catch (IOException e) {
-            throw new UncheckedIOException(e);
+        else {
+            out().write(127);
+            out().write((len >> 56) & 0xFF);
+            out().write((len >> 48) & 0xFF);
+            out().write((len >> 40) & 0xFF);
+            out().write((len >> 32) & 0xFF);
+            out().write((len >> 24) & 0xFF);
+            out().write((len >> 16) & 0xFF);
+            out().write((len >> 8) & 0xFF);
+            out().write(len & 0xFF);
         }
     }
+    private synchronized void write(int type, byte[] data) throws IOException {
+        int i;
 
-    public void send(String data) {
+        for (i = 0; i < data.length / 0xFFFF; i++) {
+            out().write(type);
+            writeLength(0xFFFF);
+            out().write(data, i * 0xFFFF, 0xFFFF);
+            type = 0;
+        }
+
+        out().write(type | 0x80);
+        writeLength(data.length % 0xFFFF);
+        out().write(data, i * 0xFFFF, data.length % 0xFFFF);
+    }
+
+    public void send(String data) throws IOException {
         if (closed) throw new IllegalStateException("Object is closed.");
         write(1, data.getBytes());
     }
-    public void send(byte[] data) {
+    public void send(byte[] data) throws IOException {
         if (closed) throw new IllegalStateException("Object is closed.");
         write(2, data);
     }
-    public void send(WebSocketMessage msg) {
+    public void send(WebSocketMessage msg) throws IOException {
         if (msg.type == Type.Binary) send(msg.binaryData());
         else send(msg.textData());
     }
-    public void send(Object data) {
+    public void send(Object data) throws IOException {
         if (closed) throw new IllegalStateException("Object is closed.");
         write(1, data.toString().getBytes());
     }
@@ -144,67 +129,59 @@ public class WebSocket implements AutoCloseable {
         return null;
     }
 
-    private byte[] readData() {
-        try {
-            var maskLen = in().read();
-            var hasMask = (maskLen & 0x80) != 0;
-            var len = (int)readLen(maskLen & 0x7F);
-            var mask = readMask(hasMask);
-    
-            if (len > maxLength) fail("WebSocket Error: client exceeded configured max message size");
-            else {
-                var buff = new byte[len];
-    
-                if (in().read(buff) < len) fail("WebSocket Error: payload too short");
-                else {
-                    for (int i = 0; i < len; i++) {
-                        buff[i] ^= mask[(int)(i % 4)];
-                    }
-                    return buff;
-                }
-            }
+    private byte[] readData() throws IOException {
+        var maskLen = in().read();
+        var hasMask = (maskLen & 0x80) != 0;
+        var len = (int)readLen(maskLen & 0x7F);
+        var mask = readMask(hasMask);
 
-            return null;
+        if (len > maxLength) fail("WebSocket Error: client exceeded configured max message size");
+        else {
+            var buff = new byte[len];
+
+            if (in().read(buff) < len) fail("WebSocket Error: payload too short");
+            else {
+                for (int i = 0; i < len; i++) {
+                    buff[i] ^= mask[(int)(i % 4)];
+                }
+                return buff;
+            }
         }
-        catch (IOException e) { throw new UncheckedIOException(e); }
+
+        return null;
     }
 
-    public WebSocketMessage receive() {
-        try {
-            var data = new ByteArrayOutputStream();
-            var type = 0;
+    public WebSocketMessage receive() throws IOException {
+        var data = new ByteArrayOutputStream();
+        var type = 0;
 
-            while (socket != null && !closed) {
-                var finId = in().read();
-                if (finId < 0) break;
-                var fin = (finId & 0x80) != 0;
-                int id = finId & 0x0F;
+        while (socket != null && !closed) {
+            var finId = in().read();
+            if (finId < 0) break;
+            var fin = (finId & 0x80) != 0;
+            int id = finId & 0x0F;
 
-                if (id == 0x8) { close(); return null; }
-                if (id >= 0x8) {
-                    if (!fin) return fail("WebSocket Error: client-sent control frame was fragmented");
-                    if (id == 0x9) write(0xA, data.toByteArray());
-                    continue;
-                }
-
-                if (type == 0) type = id;
-                if (type == 0) return fail("WebSocket Error: client used opcode 0x00 for first fragment");
-
-                var buff = readData();
-                if (buff == null) break;
-
-                if (data.size() + buff.length > maxLength) return fail("WebSocket Error: client exceeded configured max message size");
-                data.write(buff);
-
-                if (!fin) continue;
-                var raw = data.toByteArray();
-
-                if (type == 1) return new WebSocketMessage(new String(raw));
-                else return new WebSocketMessage(raw);
+            if (id == 0x8) { close(); return null; }
+            if (id >= 0x8) {
+                if (!fin) return fail("WebSocket Error: client-sent control frame was fragmented");
+                if (id == 0x9) write(0xA, data.toByteArray());
+                continue;
             }
-        }
-        catch (IOException e) {
-            close();
+
+            if (type == 0) type = id;
+            if (type == 0) return fail("WebSocket Error: client used opcode 0x00 for first fragment");
+
+            var buff = readData();
+            if (buff == null) break;
+
+            if (data.size() + buff.length > maxLength) return fail("WebSocket Error: client exceeded configured max message size");
+            data.write(buff);
+
+            if (!fin) continue;
+            var raw = data.toByteArray();
+
+            if (type == 1) return new WebSocketMessage(new String(raw));
+            else return new WebSocketMessage(raw);
         }
 
         return null;

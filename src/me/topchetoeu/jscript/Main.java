@@ -125,7 +125,7 @@ public class Main {
         engineTask = engine.start();
         debugTask = debugServer.start(new InetSocketAddress("127.0.0.1", 9229), true);
     }
-    private static void initTypescript() {
+    private static void initTypescript() throws IOException {
         var tsEnv = Internals.apply(new Environment());
         var bsEnv = Internals.apply(new Environment());
 

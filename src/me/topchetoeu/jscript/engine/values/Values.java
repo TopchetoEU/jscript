@@ -17,7 +17,6 @@ import me.topchetoeu.jscript.engine.frame.ConvertHint;
 import me.topchetoeu.jscript.exceptions.ConvertException;
 import me.topchetoeu.jscript.exceptions.EngineException;
 import me.topchetoeu.jscript.exceptions.SyntaxException;
-import me.topchetoeu.jscript.exceptions.UncheckedException;
 import me.topchetoeu.jscript.lib.PromiseLib;
 
 public class Values {
@@ -135,7 +134,6 @@ public class Values {
         if (val instanceof String) {
             try { return Double.parseDouble((String)val); }
             catch (NumberFormatException e) { return Double.NaN; }
-            catch (Throwable e) { throw new UncheckedException(e); }
         }
         return Double.NaN;
     }

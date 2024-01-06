@@ -11,9 +11,6 @@ public class DataNotifier<T> implements Awaitable<T> {
         isErr = true;
         notifier.next();
     }
-    public void error(Throwable t) {
-        error(new RuntimeException(t));
-    }
     public void next(T val) {
         this.val = val;
         isErr = false;
