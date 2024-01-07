@@ -281,7 +281,7 @@ public class Values {
         obj = normalize(ctx, obj); key = normalize(ctx, key);
         if (obj == null) throw new IllegalArgumentException("Tried to access member of undefined.");
         if (obj == NULL) throw new IllegalArgumentException("Tried to access member of null.");
-        if (obj instanceof ObjectValue) return object(obj).getMember(ctx, key);
+        if (obj instanceof ObjectValue) return ((ObjectValue)obj).getMember(ctx, key, obj);
 
         if (obj instanceof String && key instanceof Number) {
             var i = number(key);
@@ -307,7 +307,7 @@ public class Values {
         if (obj == null) throw EngineException.ofType("Tried to access member of undefined.");
         if (obj == NULL) throw EngineException.ofType("Tried to access member of null.");
         if (key != null && "__proto__".equals(key)) return setPrototype(ctx, obj, val);
-        if (obj instanceof ObjectValue) return object(obj).setMember(ctx, key, val, false);
+        if (obj instanceof ObjectValue) return ((ObjectValue)obj).setMember(ctx, key, val, obj, false);
 
         var proto = getPrototype(ctx, obj);
         return proto.setMember(ctx, key, val, obj, true);
@@ -340,7 +340,7 @@ public class Values {
     public static ObjectValue getPrototype(Context ctx, Object obj) {
         if (obj == null || obj == NULL) return null;
         obj = normalize(ctx, obj);
-        if (obj instanceof ObjectValue) return object(obj).getPrototype(ctx);
+        if (obj instanceof ObjectValue) return ((ObjectValue)obj).getPrototype(ctx);
         if (ctx == null) return null;
 
         if (obj instanceof String) return ctx.get(Environment.STRING_PROTO);
@@ -352,7 +352,12 @@ public class Values {
     }
     public static boolean setPrototype(Context ctx, Object obj, Object proto) {
         obj = normalize(ctx, obj);
-        return obj instanceof ObjectValue && object(obj).setPrototype(ctx, proto);
+        return obj instanceof ObjectValue && ((ObjectValue)obj).setPrototype(ctx, proto);
+    }
+    public static void makePrototypeChain(Context ctx, Object... chain) {
+        for(var i = 1; i < chain.length; i++) {
+            setPrototype(ctx, chain[i], chain[i - 1]);
+        }
     }
     public static List<Object> getMembers(Context ctx, Object obj, boolean own, boolean includeNonEnumerable) {  
         List<Object> res = new ArrayList<>();
@@ -367,7 +372,7 @@ public class Values {
 
             while (proto != null) {
                 res.addAll(proto.keys(includeNonEnumerable));
-                proto = proto.getPrototype(ctx);
+                proto = getPrototype(ctx, proto);
             }
         }
 
@@ -400,10 +405,10 @@ public class Values {
         var res = new ObjectValue();
         try {
             var proto = Values.getMember(ctx, func, "prototype");
-            res.setPrototype(ctx, proto);
-    
+            setPrototype(ctx, res, proto);
+
             var ret = call(ctx, func, res, args);
-    
+
             if (ret != null && func instanceof FunctionValue && ((FunctionValue)func).special) return ret;
             return res;
         }
@@ -569,11 +574,11 @@ public class Values {
                     private void loadNext() {
                         if (next == null) value = null;
                         else if (consumed) {
-                            var curr = object(next.call(ctx, iterator));
+                            var curr = next.call(ctx, iterator);
                             if (curr == null) { next = null; value = null; }
-                            if (toBoolean(curr.getMember(ctx, "done"))) { next = null; value = null; }
+                            if (toBoolean(Values.getMember(ctx, curr, "done"))) { next = null; value = null; }
                             else {
-                                this.value = curr.getMember(ctx, "value");
+                                this.value = Values.getMember(ctx, curr, "value");
                                 consumed = false;
                             }
                         }

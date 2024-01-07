@@ -26,7 +26,7 @@ public class ObjectLib {
     @Expose(target = ExposeTarget.STATIC)
     public static ObjectValue __create(Arguments args) {
         var obj = new ObjectValue();
-        obj.setPrototype(args.ctx, args.get(0));
+        Values.setPrototype(args.ctx, obj, args.get(0));
 
         if (args.n() >= 1) {
             var newArgs = new Object[args.n()];
@@ -53,7 +53,7 @@ public class ObjectLib {
             if (hasGet || hasSet) throw EngineException.ofType("Cannot specify a value and accessors for a property.");
             if (!obj.defineProperty(
                 args.ctx, key,
-                attrib.getMember(args.ctx, "value"),
+                Values.getMember(args.ctx, attrib, "value"),
                 Values.toBoolean(Values.getMember(args.ctx, attrib, "writable")),
                 Values.toBoolean(Values.getMember(args.ctx, attrib, "configurable")),
                 Values.toBoolean(Values.getMember(args.ctx, attrib, "enumerable"))

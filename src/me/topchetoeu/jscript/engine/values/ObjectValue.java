@@ -54,6 +54,13 @@ public class ObjectValue {
     public LinkedHashSet<Object> nonConfigurableSet = new LinkedHashSet<>();
     public LinkedHashSet<Object> nonEnumerableSet = new LinkedHashSet<>();
 
+    private Property getProperty(Context ctx, Object key) {
+        if (properties.containsKey(key)) return properties.get(key);
+        var proto = getPrototype(ctx);
+        if (proto != null) return proto.getProperty(ctx, key);
+        else return null;
+    }
+
     public final boolean memberWritable(Object key) {
         if (state == State.FROZEN) return false;
         return !values.containsKey(key) || !nonWritableSet.contains(key);
@@ -159,6 +166,113 @@ public class ObjectValue {
 
         return (ObjectValue)prototype;
     }
+    public final boolean setPrototype(PlaceholderProto val) {
+        if (!extensible()) return false;
+        switch (val) {
+            case OBJECT: prototype = OBJ_PROTO; break;
+            case FUNCTION: prototype = FUNC_PROTO; break;
+            case ARRAY: prototype = ARR_PROTO; break;
+            case ERROR: prototype = ERR_PROTO; break;
+            case SYNTAX_ERROR: prototype = SYNTAX_ERR_PROTO; break;
+            case TYPE_ERROR: prototype = TYPE_ERR_PROTO; break;
+            case RANGE_ERROR: prototype = RANGE_ERR_PROTO; break;
+            case NONE: prototype = null; break;
+        }
+        return true;
+    }
+
+    /**
+     * A method, used to get the value of a field. If a property is bound to
+     * this key, but not a field, this method should return null.
+     */
+    protected Object getField(Context ctx, Object key) {
+        if (values.containsKey(key)) return values.get(key);
+        var proto = getPrototype(ctx);
+        if (proto != null) return proto.getField(ctx, key);
+        else return null;
+    }
+    /**
+     * Changes the value of a field, that is bound to the given key. If no field is
+     * bound to this key, a new field should be created with the given value
+     * @return Whether or not the operation was successful
+     */
+    protected boolean setField(Context ctx, Object key, Object val) {
+        if (val instanceof FunctionValue && ((FunctionValue)val).name.equals("")) {
+            ((FunctionValue)val).name = Values.toString(ctx, key);
+        }
+
+        values.put(key, val);
+        return true;
+    }
+    /**
+     * Deletes the field bound to the given key.
+     */
+    protected void deleteField(Context ctx, Object key) {
+        values.remove(key);
+    }
+    /**
+     * Returns whether or not there is a field bound to the given key.
+     * This must ignore properties
+     */
+    protected boolean hasField(Context ctx, Object key) {
+        return values.containsKey(key);
+    }
+
+    public final Object getMember(Context ctx, Object key, Object thisArg) {
+        key = Values.normalize(ctx, key);
+
+        if ("__proto__".equals(key)) {
+            var res = getPrototype(ctx);
+            return res == null ? Values.NULL : res;
+        }
+
+        var prop = getProperty(ctx, key);
+
+        if (prop != null) {
+            if (prop.getter == null) return null;
+            else return prop.getter.call(ctx, Values.normalize(ctx, thisArg));
+        }
+        else return getField(ctx, key);
+    }
+    public final boolean setMember(Context ctx, Object key, Object val, Object thisArg, boolean onlyProps) {
+        key = Values.normalize(ctx, key); val = Values.normalize(ctx, val);
+
+        var prop = getProperty(ctx, key);
+        if (prop != null) {
+            if (prop.setter == null) return false;
+            prop.setter.call(ctx, Values.normalize(ctx, thisArg), val);
+            return true;
+        }
+        else if (onlyProps) return false;
+        else if (!extensible() && !values.containsKey(key)) return false;
+        else if (key == null) {
+            values.put(key, val);
+            return true;
+        }
+        else if ("__proto__".equals(key)) return setPrototype(ctx, val);
+        else if (nonWritableSet.contains(key)) return false;
+        else return setField(ctx, key, val);
+    }
+    public final boolean hasMember(Context ctx, Object key, boolean own) {
+        key = Values.normalize(ctx, key);
+
+        if (key != null && "__proto__".equals(key)) return true;
+        if (hasField(ctx, key)) return true;
+        if (properties.containsKey(key)) return true;
+        if (own) return false;
+        var proto = getPrototype(ctx);
+        return proto != null && proto.hasMember(ctx, key, own);
+    }
+    public final boolean deleteMember(Context ctx, Object key) {
+        key = Values.normalize(ctx, key);
+
+        if (!memberConfigurable(key)) return false;
+        properties.remove(key);
+        nonWritableSet.remove(key);
+        nonEnumerableSet.remove(key);
+        deleteField(ctx, key);
+        return true;
+    }
     public final boolean setPrototype(Context ctx, Object val) {
         val = Values.normalize(ctx, val);
 
@@ -185,111 +299,6 @@ public class ObjectValue {
             return true;
         }
         return false;
-    }
-    public final boolean setPrototype(PlaceholderProto val) {
-        if (!extensible()) return false;
-        switch (val) {
-            case OBJECT: prototype = OBJ_PROTO; break;
-            case FUNCTION: prototype = FUNC_PROTO; break;
-            case ARRAY: prototype = ARR_PROTO; break;
-            case ERROR: prototype = ERR_PROTO; break;
-            case SYNTAX_ERROR: prototype = SYNTAX_ERR_PROTO; break;
-            case TYPE_ERROR: prototype = TYPE_ERR_PROTO; break;
-            case RANGE_ERROR: prototype = RANGE_ERR_PROTO; break;
-            case NONE: prototype = null; break;
-        }
-        return true;
-    }
-
-    protected Property getProperty(Context ctx, Object key) {
-        if (properties.containsKey(key)) return properties.get(key);
-        var proto = getPrototype(ctx);
-        if (proto != null) return proto.getProperty(ctx, key);
-        else return null;
-    }
-    protected Object getField(Context ctx, Object key) {
-        if (values.containsKey(key)) return values.get(key);
-        var proto = getPrototype(ctx);
-        if (proto != null) return proto.getField(ctx, key);
-        else return null;
-    }
-    protected boolean setField(Context ctx, Object key, Object val) {
-        if (val instanceof FunctionValue && ((FunctionValue)val).name.equals("")) {
-            ((FunctionValue)val).name = Values.toString(ctx, key);
-        }
-
-        values.put(key, val);
-        return true;
-    }
-    protected void deleteField(Context ctx, Object key) {
-        values.remove(key);
-    }
-    protected boolean hasField(Context ctx, Object key) {
-        return values.containsKey(key);
-    }
-
-    public final Object getMember(Context ctx, Object key, Object thisArg) {
-        key = Values.normalize(ctx, key);
-
-        if ("__proto__".equals(key)) {
-            var res = getPrototype(ctx);
-            return res == null ? Values.NULL : res;
-        }
-
-        var prop = getProperty(ctx, key);
-
-        if (prop != null) {
-            if (prop.getter == null) return null;
-            else return prop.getter.call(ctx, Values.normalize(ctx, thisArg));
-        }
-        else return getField(ctx, key);
-    }
-    public final Object getMember(Context ctx, Object key) {
-        return getMember(ctx, key, this);
-    }
-
-    public final boolean setMember(Context ctx, Object key, Object val, Object thisArg, boolean onlyProps) {
-        key = Values.normalize(ctx, key); val = Values.normalize(ctx, val);
-
-        var prop = getProperty(ctx, key);
-        if (prop != null) {
-            if (prop.setter == null) return false;
-            prop.setter.call(ctx, Values.normalize(ctx, thisArg), val);
-            return true;
-        }
-        else if (onlyProps) return false;
-        else if (!extensible() && !values.containsKey(key)) return false;
-        else if (key == null) {
-            values.put(key, val);
-            return true;
-        }
-        else if ("__proto__".equals(key)) return setPrototype(ctx, val);
-        else if (nonWritableSet.contains(key)) return false;
-        else return setField(ctx, key, val);
-    }
-    public final boolean setMember(Context ctx, Object key, Object val, boolean onlyProps) {
-        return setMember(ctx, Values.normalize(ctx, key), Values.normalize(ctx, val), this, onlyProps);
-    }
-
-    public final boolean hasMember(Context ctx, Object key, boolean own) {
-        key = Values.normalize(ctx, key);
-
-        if (key != null && "__proto__".equals(key)) return true;
-        if (hasField(ctx, key)) return true;
-        if (properties.containsKey(key)) return true;
-        if (own) return false;
-        var proto = getPrototype(ctx);
-        return proto != null && proto.hasMember(ctx, key, own);
-    }
-    public final boolean deleteMember(Context ctx, Object key) {
-        key = Values.normalize(ctx, key);
-
-        if (!memberConfigurable(key)) return false;
-        properties.remove(key);
-        nonWritableSet.remove(key);
-        nonEnumerableSet.remove(key);
-        deleteField(ctx, key);
-        return true;
     }
 
     public final ObjectValue getMemberDescriptor(Context ctx, Object key) {

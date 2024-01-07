@@ -298,8 +298,8 @@ public class NativeWrapperProvider implements WrappersProvider {
         var parentProto = getProto(parent);
         var parentConstr = getConstr(parent);
 
-        if (parentProto != null) proto.setPrototype(null, parentProto);
-        if (parentConstr != null) constr.setPrototype(null, parentConstr);
+        if (parentProto != null) Values.setPrototype(Context.NULL, proto, parentProto);
+        if (parentConstr != null) Values.setPrototype(Context.NULL, constr, parentConstr);
     }
 
     public ObjectValue getProto(Class<?> clazz) {
