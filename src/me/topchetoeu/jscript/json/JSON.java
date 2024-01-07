@@ -58,8 +58,8 @@ public class JSON {
 
             var res = new JSONMap();
 
-            for (var el : ((ObjectValue)val).keys(false)) {
-                var jsonEl = fromJs(ctx, ((ObjectValue)val).getMember(ctx, el), prev);
+            for (var el : Values.getMembers(ctx, val, false, false)) {
+                var jsonEl = fromJs(ctx, Values.getMember(ctx, val, el), prev);
                 if (jsonEl == null) continue;
                 if (el instanceof String || el instanceof Number) res.put(el.toString(), jsonEl);
             }

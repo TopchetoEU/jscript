@@ -124,8 +124,7 @@ public class SimpleDebugger implements Debugger {
             this.global = frame.function.environment.global.obj;
             this.local = frame.getLocalScope(true);
             this.capture = frame.getCaptureScope(true);
-            this.local.setPrototype(frame.ctx, capture);
-            this.capture.setPrototype(frame.ctx, global);
+            Values.makePrototypeChain(frame.ctx, global, capture, local);
             this.valstack = frame.getValStackScope();
 
             this.serialized = new JSONMap()
@@ -841,7 +840,7 @@ public class SimpleDebugger implements Debugger {
                 }
                 else {
                     propDesc.set("name", Values.toString(ctx, key));
-                    propDesc.set("value", serializeObj(ctx, obj.getMember(ctx, key)));
+                    propDesc.set("value", serializeObj(ctx, Values.getMember(ctx, obj, key)));
                     propDesc.set("writable", obj.memberWritable(key));
                     propDesc.set("enumerable", obj.memberEnumerable(key));
                     propDesc.set("configurable", obj.memberConfigurable(key));
@@ -850,7 +849,7 @@ public class SimpleDebugger implements Debugger {
                 }
             }
     
-            var proto = obj.getPrototype(ctx);
+            var proto = Values.getPrototype(ctx, obj);
     
             var protoDesc = new JSONMap();
             protoDesc.set("name", "__proto__");

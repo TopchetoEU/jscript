@@ -71,7 +71,7 @@ public class Environment implements Extensions {
         return ext.init(COMPILE_FUNC, new NativeFunction("compile", args -> {
             var source = args.getString(0);
             var filename = args.getString(1);
-            var env = Values.wrapper(args.convert(2, ObjectValue.class).getMember(args.ctx, Symbol.get("env")), Environment.class);
+            var env = Values.wrapper(Values.getMember(args.ctx, args.get(2), Symbol.get("env")), Environment.class);
             var isDebug = DebugContext.enabled(args.ctx);
             var res = new ObjectValue();
 

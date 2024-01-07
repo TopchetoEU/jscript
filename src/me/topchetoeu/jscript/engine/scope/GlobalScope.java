@@ -7,13 +7,14 @@ import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
 import me.topchetoeu.jscript.engine.values.NativeFunction;
 import me.topchetoeu.jscript.engine.values.ObjectValue;
+import me.topchetoeu.jscript.engine.values.Values;
 import me.topchetoeu.jscript.exceptions.EngineException;
 
 public class GlobalScope implements ScopeRecord {
     public final ObjectValue obj;
 
     public boolean has(Context ctx, String name) {
-        return obj.hasMember(ctx, name, false);
+        return Values.hasMember(null, obj, name, false);
     }
     public Object getKey(String name) {
         return name;
@@ -21,7 +22,7 @@ public class GlobalScope implements ScopeRecord {
 
     public GlobalScope globalChild() {
         var obj = new ObjectValue();
-        obj.setPrototype(null, this.obj);
+        Values.setPrototype(null, obj, this.obj);
         return new GlobalScope(obj);
     }
     public LocalScopeRecord child() {
@@ -29,12 +30,12 @@ public class GlobalScope implements ScopeRecord {
     }
 
     public Object define(String name) {
-        if (obj.hasMember(null, name, true)) return name;
-        obj.defineProperty(null, name, null);
+        if (Values.hasMember(Context.NULL, obj, name, false)) return name;
+        obj.defineProperty(Context.NULL, name, null);
         return name;
     }
     public void define(String name, Variable val) {
-        obj.defineProperty(null, name,
+        obj.defineProperty(Context.NULL, name,
             new NativeFunction("get " + name, args -> val.get(args.ctx)),
             new NativeFunction("set " + name, args -> { val.set(args.ctx, args.get(0)); return null; }),
             true, true
@@ -51,12 +52,12 @@ public class GlobalScope implements ScopeRecord {
     }
 
     public Object get(Context ctx, String name) {
-        if (!obj.hasMember(ctx, name, false)) throw EngineException.ofSyntax("The variable '" + name + "' doesn't exist.");
-        else return obj.getMember(ctx, name);
+        if (!Values.hasMember(ctx, obj, name, false)) throw EngineException.ofSyntax("The variable '" + name + "' doesn't exist.");
+        else return Values.getMember(ctx, obj, name);
     }
     public void set(Context ctx, String name, Object val) {
-        if (!obj.hasMember(ctx, name, false)) throw EngineException.ofSyntax("The variable '" + name + "' doesn't exist.");
-        if (!obj.setMember(ctx, name, val, false)) throw EngineException.ofSyntax("The global '" + name + "' is readonly.");
+        if (!Values.hasMember(ctx, obj, name, false)) throw EngineException.ofSyntax("The variable '" + name + "' doesn't exist.");
+        if (!Values.setMember(ctx, obj, name, val)) throw EngineException.ofSyntax("The global '" + name + "' is readonly.");
     }
 
     public Set<String> keys() {

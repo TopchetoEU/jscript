@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.HashMap;
 
 import me.topchetoeu.jscript.Reading;
+import me.topchetoeu.jscript.engine.Context;
 import me.topchetoeu.jscript.engine.Environment;
 import me.topchetoeu.jscript.engine.scope.GlobalScope;
 import me.topchetoeu.jscript.engine.values.FunctionValue;
@@ -208,7 +209,7 @@ public class Internals {
         env.add(Environment.TYPE_ERR_PROTO, wp.getProto(TypeErrorLib.class));
         env.add(Environment.RANGE_ERR_PROTO, wp.getProto(RangeErrorLib.class));
 
-        wp.getProto(ObjectLib.class).setPrototype(null, null);
+        Values.setPrototype(Context.NULL, wp.getProto(ObjectLib.class), null);
         env.add(Environment.REGEX_CONSTR, wp.getConstr(RegExpLib.class));
 
         return env;

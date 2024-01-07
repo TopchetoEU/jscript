@@ -22,6 +22,8 @@ import me.topchetoeu.jscript.lib.EnvironmentLib;
 import me.topchetoeu.jscript.mapping.SourceMap;
 
 public class Context implements Extensions {
+    public static final Context NULL = new Context(null);
+
     public final Context parent;
     public final Environment environment;
     public final CodeFrame frame;
