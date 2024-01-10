@@ -1,4 +1,4 @@
-package me.topchetoeu.jscript.core.engine.debug;
+package me.topchetoeu.jscript.utils.debug;
 
 import java.io.BufferedReader;
 import java.io.IOException;

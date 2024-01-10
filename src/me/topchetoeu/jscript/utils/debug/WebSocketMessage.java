@@ -1,4 +1,4 @@
-package me.topchetoeu.jscript.core.engine.debug;
+package me.topchetoeu.jscript.utils.debug;
 
 public class WebSocketMessage {
     public static enum Type {

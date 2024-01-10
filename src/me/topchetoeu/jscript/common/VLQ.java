@@ -1,4 +1,4 @@
-package me.topchetoeu.jscript.utils.mapping;
+package me.topchetoeu.jscript.common;
 
 import java.util.ArrayList;
 import java.util.List;

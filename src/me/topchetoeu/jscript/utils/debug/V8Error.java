@@ -1,4 +1,4 @@
-package me.topchetoeu.jscript.core.engine.debug;
+package me.topchetoeu.jscript.utils.debug;
 
 import me.topchetoeu.jscript.common.json.JSON;
 import me.topchetoeu.jscript.common.json.JSONMap;

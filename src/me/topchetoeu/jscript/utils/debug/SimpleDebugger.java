@@ -1,4 +1,4 @@
-package me.topchetoeu.jscript.core.engine.debug;
+package me.topchetoeu.jscript.utils.debug;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -22,6 +22,7 @@ import me.topchetoeu.jscript.core.compilation.Instruction.Type;
 import me.topchetoeu.jscript.core.engine.Context;
 import me.topchetoeu.jscript.core.engine.Engine;
 import me.topchetoeu.jscript.core.engine.Environment;
+import me.topchetoeu.jscript.core.engine.debug.DebugContext;
 import me.topchetoeu.jscript.core.engine.frame.CodeFrame;
 import me.topchetoeu.jscript.core.engine.scope.GlobalScope;
 import me.topchetoeu.jscript.core.engine.values.ArrayValue;

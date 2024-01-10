@@ -1,4 +1,4 @@
-package me.topchetoeu.jscript.core.engine.debug;
+package me.topchetoeu.jscript.utils.debug;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -6,7 +6,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 
-import me.topchetoeu.jscript.core.engine.debug.WebSocketMessage.Type;
+import me.topchetoeu.jscript.utils.debug.WebSocketMessage.Type;
 
 public class WebSocket implements AutoCloseable {
     public long maxLength = 1 << 20;
