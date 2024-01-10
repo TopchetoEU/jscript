@@ -1,12 +1,12 @@
 package me.topchetoeu.jscript.lib;
 
-import me.topchetoeu.jscript.engine.Environment;
-import me.topchetoeu.jscript.engine.values.FunctionValue;
-import me.topchetoeu.jscript.engine.values.ObjectValue;
-import me.topchetoeu.jscript.interop.Arguments;
-import me.topchetoeu.jscript.interop.Expose;
-import me.topchetoeu.jscript.interop.ExposeType;
-import me.topchetoeu.jscript.interop.WrapperName;
+import me.topchetoeu.jscript.core.engine.Environment;
+import me.topchetoeu.jscript.core.engine.values.FunctionValue;
+import me.topchetoeu.jscript.core.engine.values.ObjectValue;
+import me.topchetoeu.jscript.utils.interop.Arguments;
+import me.topchetoeu.jscript.utils.interop.Expose;
+import me.topchetoeu.jscript.utils.interop.ExposeType;
+import me.topchetoeu.jscript.utils.interop.WrapperName;
 
 @WrapperName("Environment")
 public class EnvironmentLib {

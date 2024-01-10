@@ -4,22 +4,22 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.Stack;
 
-import me.topchetoeu.jscript.engine.Context;
-import me.topchetoeu.jscript.engine.values.ObjectValue;
-import me.topchetoeu.jscript.engine.values.Values;
-import me.topchetoeu.jscript.exceptions.EngineException;
-import me.topchetoeu.jscript.filesystem.EntryType;
-import me.topchetoeu.jscript.filesystem.File;
-import me.topchetoeu.jscript.filesystem.FileStat;
-import me.topchetoeu.jscript.filesystem.Filesystem;
-import me.topchetoeu.jscript.filesystem.FilesystemException;
-import me.topchetoeu.jscript.filesystem.Mode;
-import me.topchetoeu.jscript.filesystem.FilesystemException.FSCode;
-import me.topchetoeu.jscript.interop.Arguments;
-import me.topchetoeu.jscript.interop.Expose;
-import me.topchetoeu.jscript.interop.ExposeField;
-import me.topchetoeu.jscript.interop.ExposeTarget;
-import me.topchetoeu.jscript.interop.WrapperName;
+import me.topchetoeu.jscript.core.engine.Context;
+import me.topchetoeu.jscript.core.engine.values.ObjectValue;
+import me.topchetoeu.jscript.core.engine.values.Values;
+import me.topchetoeu.jscript.core.exceptions.EngineException;
+import me.topchetoeu.jscript.utils.filesystem.EntryType;
+import me.topchetoeu.jscript.utils.filesystem.File;
+import me.topchetoeu.jscript.utils.filesystem.FileStat;
+import me.topchetoeu.jscript.utils.filesystem.Filesystem;
+import me.topchetoeu.jscript.utils.filesystem.FilesystemException;
+import me.topchetoeu.jscript.utils.filesystem.Mode;
+import me.topchetoeu.jscript.utils.filesystem.FilesystemException.FSCode;
+import me.topchetoeu.jscript.utils.interop.Arguments;
+import me.topchetoeu.jscript.utils.interop.Expose;
+import me.topchetoeu.jscript.utils.interop.ExposeField;
+import me.topchetoeu.jscript.utils.interop.ExposeTarget;
+import me.topchetoeu.jscript.utils.interop.WrapperName;
 
 @WrapperName("Filesystem")
 public class FilesystemLib {

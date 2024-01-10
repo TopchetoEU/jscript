@@ -1,12 +1,12 @@
 package me.topchetoeu.jscript.lib;
 
-import me.topchetoeu.jscript.engine.Context;
-import me.topchetoeu.jscript.engine.frame.CodeFrame;
-import me.topchetoeu.jscript.engine.values.CodeFunction;
-import me.topchetoeu.jscript.engine.values.FunctionValue;
-import me.topchetoeu.jscript.engine.values.NativeFunction;
-import me.topchetoeu.jscript.exceptions.EngineException;
-import me.topchetoeu.jscript.interop.WrapperName;
+import me.topchetoeu.jscript.core.engine.Context;
+import me.topchetoeu.jscript.core.engine.frame.CodeFrame;
+import me.topchetoeu.jscript.core.engine.values.CodeFunction;
+import me.topchetoeu.jscript.core.engine.values.FunctionValue;
+import me.topchetoeu.jscript.core.engine.values.NativeFunction;
+import me.topchetoeu.jscript.core.exceptions.EngineException;
+import me.topchetoeu.jscript.utils.interop.WrapperName;
 
 @WrapperName("GeneratorFunction")
 public class GeneratorFunctionLib extends FunctionValue {

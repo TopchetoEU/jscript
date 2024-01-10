@@ -118,7 +118,7 @@ The following is a minified version of the unmodified Typescript 5.2
 }
 async function compileJava(conf) {
     try {
-        await fs.writeFile('Metadata.java', (await fs.readFile('src/me/topchetoeu/jscript/Metadata.java')).toString()
+        await fs.writeFile('Metadata.java', (await fs.readFile('src/me/topchetoeu/jscript/common/Metadata.java')).toString()
             .replace('${VERSION}', conf.version)
             .replace('${NAME}', conf.name)
             .replace('${AUTHOR}', conf.author)
@@ -136,11 +136,22 @@ async function compileJava(conf) {
         await fs.rm('Metadata.java');
     }
 }
+async function jar(conf, project, mainClass) {
+    const args = [
+        'jar', '-c',
+        '-f', `dst/${project}-v${conf.version}.jar`,
+    ];
+    if (mainClass) args.push('-e', mainClass);
+    args.push('-C', 'dst/classes', project.replaceAll('.', '/'));
+    console.log(args.join(' '));
+
+    await run(true, ...args);
+}
 
 (async () => {
     try {
         if (argv[2] === 'init-ts') {
-            await downloadTypescript('src/assets/js/ts.js');
+            await downloadTypescript('src/me/topchetoeu/jscript/utils/assets/js/ts.js');
         }
         else {
             const conf = {
@@ -156,12 +167,21 @@ async function compileJava(conf) {
             try { await fs.rm('dst', { recursive: true }); } catch {}
 
             await Promise.all([
-                downloadTypescript('dst/classes/assets/js/ts.js'),
-                copy('src', 'dst/classes', v => !v.endsWith('.java')),
+                (async () => {
+                    await copy('src', 'dst/classes', v => !v.endsWith('.java'));
+                    // await downloadTypescript('dst/classes/me/topchetoeu/jscript/utils/assets/js/ts.js');
+                })(),
                 compileJava(conf),
             ]);
 
-            await run(true, 'jar', '-c', '-f', 'dst/jscript.jar', '-e', 'me.topchetoeu.jscript.Main', '-C', 'dst/classes', '.');
+            await Promise.all([
+                jar(conf, 'me.topchetoeu.jscript.common'),
+                jar(conf, 'me.topchetoeu.jscript.core'),
+                jar(conf, 'me.topchetoeu.jscript.lib'),
+                jar(conf, 'me.topchetoeu.jscript.utils'),
+                jar(conf, 'me.topchetoeu.jscript', 'me.topchetoeu.jscript.utils.JScriptRepl'),
+            ]);
+
             console.log('Done!');
         }
     }
