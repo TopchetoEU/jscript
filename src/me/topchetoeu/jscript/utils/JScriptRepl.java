@@ -46,18 +46,15 @@ public class JScriptRepl {
         try {
             for (var arg : args) {
                 try {
-                    if (arg.equals("--ts")) initTypescript();
-                    else {
-                        var file = Path.of(arg);
-                        var raw = Files.readString(file);
-                        var res = engine.pushMsg(
-                            false, environment,
-                            Filename.fromFile(file.toFile()),
-                            raw, null
-                        ).await();
-                        Values.printValue(null, res);
-                        System.out.println();
-                    }
+                    var file = Path.of(arg);
+                    var raw = Files.readString(file);
+                    var res = engine.pushMsg(
+                        false, environment,
+                        Filename.fromFile(file.toFile()),
+                        raw, null
+                    ).await();
+                    Values.printValue(null, res);
+                    System.out.println();
                 }
                 catch (EngineException e) { Values.printError(e, null); }
             }
@@ -127,36 +124,6 @@ public class JScriptRepl {
         debugServer.targets.put("target", (ws, req) -> new SimpleDebugger(ws).attach(ctx));
         engineTask = engine.start();
         debugTask = debugServer.start(new InetSocketAddress("127.0.0.1", 9229), true);
-    }
-    private static void initTypescript() throws IOException {
-        var tsEnv = Internals.apply(new Environment());
-        var bsEnv = Internals.apply(new Environment());
-
-        try {
-            tsEnv.global.define(null, "module", false, new ObjectValue());
-
-            engine.pushMsg(
-                false, tsEnv,
-                new Filename("jscript", "ts.js"),
-                Reading.resourceToString("me/topchetoeu/jscript/utils/assets/js/ts.js"), null
-            ).await();
-            System.out.println("Loaded typescript!");
-
-            var typescript = tsEnv.global.get(new Context(engine, bsEnv), "ts");
-            var libs = new ArrayValue(null, Reading.resourceToString("me/topchetoeu/jscript/utils/assets/js/lib.d.ts"));
-
-            engine.pushMsg(
-                false, bsEnv,
-                new Filename("jscript", "bootstrap.js"), Reading.resourceToString("me/topchetoeu/jscript/utils/assets/js/bootstrap.js"), null,
-                typescript, new EnvironmentLib(environment), libs
-            ).await();
-        }
-        catch (EngineException e) {
-            Values.printError(e, "(while initializing TS)");
-        }
-
-        bsEnv.add(Environment.HIDE_STACK, true);
-        tsEnv.add(Environment.HIDE_STACK, true);
     }
 
     public static void main(String args[]) {

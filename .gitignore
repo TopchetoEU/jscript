@@ -2,14 +2,12 @@
 
 !/src
 !/src/**/*
-/src/assets/js/ts.js
 
 !/doc
 !/doc/**/*
 
 !/tests
 !/tests/**/*
-
 
 !/.github
 !/.github/**/*
