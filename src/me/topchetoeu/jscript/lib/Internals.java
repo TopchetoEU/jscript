@@ -3,18 +3,19 @@ package me.topchetoeu.jscript.lib;
 import java.io.IOException;
 import java.util.HashMap;
 
-import me.topchetoeu.jscript.Reading;
-import me.topchetoeu.jscript.engine.Environment;
-import me.topchetoeu.jscript.engine.scope.GlobalScope;
-import me.topchetoeu.jscript.engine.values.FunctionValue;
-import me.topchetoeu.jscript.engine.values.Symbol;
-import me.topchetoeu.jscript.engine.values.Values;
-import me.topchetoeu.jscript.exceptions.EngineException;
-import me.topchetoeu.jscript.interop.Arguments;
-import me.topchetoeu.jscript.interop.Expose;
-import me.topchetoeu.jscript.interop.ExposeField;
-import me.topchetoeu.jscript.interop.ExposeTarget;
-import me.topchetoeu.jscript.modules.ModuleRepo;
+import me.topchetoeu.jscript.common.Reading;
+import me.topchetoeu.jscript.core.engine.Context;
+import me.topchetoeu.jscript.core.engine.Environment;
+import me.topchetoeu.jscript.core.engine.scope.GlobalScope;
+import me.topchetoeu.jscript.core.engine.values.FunctionValue;
+import me.topchetoeu.jscript.core.engine.values.Symbol;
+import me.topchetoeu.jscript.core.engine.values.Values;
+import me.topchetoeu.jscript.core.exceptions.EngineException;
+import me.topchetoeu.jscript.utils.interop.Arguments;
+import me.topchetoeu.jscript.utils.interop.Expose;
+import me.topchetoeu.jscript.utils.interop.ExposeField;
+import me.topchetoeu.jscript.utils.interop.ExposeTarget;
+import me.topchetoeu.jscript.utils.modules.ModuleRepo;
 
 public class Internals {
     private static final Symbol THREADS = new Symbol("Internals.threads");
@@ -208,7 +209,7 @@ public class Internals {
         env.add(Environment.TYPE_ERR_PROTO, wp.getProto(TypeErrorLib.class));
         env.add(Environment.RANGE_ERR_PROTO, wp.getProto(RangeErrorLib.class));
 
-        wp.getProto(ObjectLib.class).setPrototype(null, null);
+        Values.setPrototype(Context.NULL, wp.getProto(ObjectLib.class), null);
         env.add(Environment.REGEX_CONSTR, wp.getConstr(RegExpLib.class));
 
         return env;

@@ -1,16 +1,16 @@
 package me.topchetoeu.jscript.lib;
 
-import me.topchetoeu.jscript.engine.values.ArrayValue;
-import me.topchetoeu.jscript.engine.values.FunctionValue;
-import me.topchetoeu.jscript.engine.values.ObjectValue;
-import me.topchetoeu.jscript.engine.values.Symbol;
-import me.topchetoeu.jscript.engine.values.Values;
-import me.topchetoeu.jscript.exceptions.EngineException;
-import me.topchetoeu.jscript.interop.Arguments;
-import me.topchetoeu.jscript.interop.Expose;
-import me.topchetoeu.jscript.interop.ExposeConstructor;
-import me.topchetoeu.jscript.interop.ExposeTarget;
-import me.topchetoeu.jscript.interop.WrapperName;
+import me.topchetoeu.jscript.core.engine.values.ArrayValue;
+import me.topchetoeu.jscript.core.engine.values.FunctionValue;
+import me.topchetoeu.jscript.core.engine.values.ObjectValue;
+import me.topchetoeu.jscript.core.engine.values.Symbol;
+import me.topchetoeu.jscript.core.engine.values.Values;
+import me.topchetoeu.jscript.core.exceptions.EngineException;
+import me.topchetoeu.jscript.utils.interop.Arguments;
+import me.topchetoeu.jscript.utils.interop.Expose;
+import me.topchetoeu.jscript.utils.interop.ExposeConstructor;
+import me.topchetoeu.jscript.utils.interop.ExposeTarget;
+import me.topchetoeu.jscript.utils.interop.WrapperName;
 
 @WrapperName("Object")
 public class ObjectLib {
@@ -26,7 +26,7 @@ public class ObjectLib {
     @Expose(target = ExposeTarget.STATIC)
     public static ObjectValue __create(Arguments args) {
         var obj = new ObjectValue();
-        obj.setPrototype(args.ctx, args.get(0));
+        Values.setPrototype(args.ctx, obj, args.get(0));
 
         if (args.n() >= 1) {
             var newArgs = new Object[args.n()];
@@ -53,7 +53,7 @@ public class ObjectLib {
             if (hasGet || hasSet) throw EngineException.ofType("Cannot specify a value and accessors for a property.");
             if (!obj.defineProperty(
                 args.ctx, key,
-                attrib.getMember(args.ctx, "value"),
+                Values.getMember(args.ctx, attrib, "value"),
                 Values.toBoolean(Values.getMember(args.ctx, attrib, "writable")),
                 Values.toBoolean(Values.getMember(args.ctx, attrib, "configurable")),
                 Values.toBoolean(Values.getMember(args.ctx, attrib, "enumerable"))

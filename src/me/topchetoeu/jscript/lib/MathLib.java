@@ -1,10 +1,10 @@
 package me.topchetoeu.jscript.lib;
 
-import me.topchetoeu.jscript.interop.Arguments;
-import me.topchetoeu.jscript.interop.Expose;
-import me.topchetoeu.jscript.interop.ExposeField;
-import me.topchetoeu.jscript.interop.ExposeTarget;
-import me.topchetoeu.jscript.interop.WrapperName;
+import me.topchetoeu.jscript.utils.interop.Arguments;
+import me.topchetoeu.jscript.utils.interop.Expose;
+import me.topchetoeu.jscript.utils.interop.ExposeField;
+import me.topchetoeu.jscript.utils.interop.ExposeTarget;
+import me.topchetoeu.jscript.utils.interop.WrapperName;
 
 @WrapperName("Math")
 public class MathLib {
