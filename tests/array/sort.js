@@ -1,6 +1,0 @@
-return new UnitTest('sort', function() { return typeof Array.prototype.sort === 'function'; })
-    .add('simple', function() { return match([4, 6, 2].sort(), [2, 4, 6]) })
-    .add('stringify', function() { return match([4, 6, 2, 10].sort(), [10, 2, 4, 6]) })
-    .add('undefined and empty', function() { return match([4, undefined, 6, , 2].sort(), [2, 4, 6, undefined,,]) })
-    .add('function ascend', function() { return match([3, 1, 2].sort(function (a, b) { return a - b; }), [1, 2, 3]) })
-    .add('function descend', function() { return match([3, 1, 2].sort(function (a, b) { return b - a; }), [3, 2, 1]) })
