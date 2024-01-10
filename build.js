@@ -169,7 +169,7 @@ async function jar(conf, project, mainClass) {
             await Promise.all([
                 (async () => {
                     await copy('src', 'dst/classes', v => !v.endsWith('.java'));
-                    // await downloadTypescript('dst/classes/me/topchetoeu/jscript/utils/assets/js/ts.js');
+                    await downloadTypescript('dst/classes/me/topchetoeu/jscript/utils/assets/js/ts.js');
                 })(),
                 compileJava(conf),
             ]);

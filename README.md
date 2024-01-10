@@ -11,7 +11,7 @@ JScript is an engine, capable of running EcmaScript 5, written entirely in Java.
 The following is going to execute a simple javascript statement:
 
 ```java
-var engine = new Engine(false);
+var engine = new Engine();
 // Initialize a standard environment, with implementations of most basic standard libraries (Object, Array, Symbol, etc.)
 var env = Internals.apply(new Environment());
 
@@ -26,4 +26,4 @@ System.out.println(awaitable.await());
 
 ## NOTE:
 
-To setup the typescript bundle in your sources, run `node build.js init-ts`. This will download the latest version of typescript, minify it, and add it to your src/assets folder. If you are going to work with the `node build.js debug|release` command, this is not a necessary step.
+To setup the typescript bundle in your sources, run `node build.js init-ts`. This will download the latest version of typescript, minify it, and add it to your src folder. If you are going to work with the `node build.js debug|release` command, this is not a necessary step.
