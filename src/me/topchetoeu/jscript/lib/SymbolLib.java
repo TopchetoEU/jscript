@@ -3,16 +3,16 @@ package me.topchetoeu.jscript.lib;
 import java.util.HashMap;
 import java.util.Map;
 
-import me.topchetoeu.jscript.engine.values.ObjectValue;
-import me.topchetoeu.jscript.engine.values.Symbol;
-import me.topchetoeu.jscript.engine.values.Values;
-import me.topchetoeu.jscript.exceptions.EngineException;
-import me.topchetoeu.jscript.interop.Arguments;
-import me.topchetoeu.jscript.interop.Expose;
-import me.topchetoeu.jscript.interop.ExposeConstructor;
-import me.topchetoeu.jscript.interop.ExposeField;
-import me.topchetoeu.jscript.interop.ExposeTarget;
-import me.topchetoeu.jscript.interop.WrapperName;
+import me.topchetoeu.jscript.core.engine.values.ObjectValue;
+import me.topchetoeu.jscript.core.engine.values.Symbol;
+import me.topchetoeu.jscript.core.engine.values.Values;
+import me.topchetoeu.jscript.core.exceptions.EngineException;
+import me.topchetoeu.jscript.utils.interop.Arguments;
+import me.topchetoeu.jscript.utils.interop.Expose;
+import me.topchetoeu.jscript.utils.interop.ExposeConstructor;
+import me.topchetoeu.jscript.utils.interop.ExposeField;
+import me.topchetoeu.jscript.utils.interop.ExposeTarget;
+import me.topchetoeu.jscript.utils.interop.WrapperName;
 
 @WrapperName("Symbol")
 public class SymbolLib {

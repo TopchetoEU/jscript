@@ -1,15 +1,15 @@
 package me.topchetoeu.jscript.lib;
 
-import me.topchetoeu.jscript.engine.Context;
-import me.topchetoeu.jscript.engine.frame.CodeFrame;
-import me.topchetoeu.jscript.engine.values.CodeFunction;
-import me.topchetoeu.jscript.engine.values.FunctionValue;
-import me.topchetoeu.jscript.engine.values.NativeFunction;
-import me.topchetoeu.jscript.engine.values.Values;
-import me.topchetoeu.jscript.exceptions.EngineException;
-import me.topchetoeu.jscript.interop.Arguments;
-import me.topchetoeu.jscript.interop.WrapperName;
+import me.topchetoeu.jscript.core.engine.Context;
+import me.topchetoeu.jscript.core.engine.frame.CodeFrame;
+import me.topchetoeu.jscript.core.engine.values.CodeFunction;
+import me.topchetoeu.jscript.core.engine.values.FunctionValue;
+import me.topchetoeu.jscript.core.engine.values.NativeFunction;
+import me.topchetoeu.jscript.core.engine.values.Values;
+import me.topchetoeu.jscript.core.exceptions.EngineException;
 import me.topchetoeu.jscript.lib.PromiseLib.Handle;
+import me.topchetoeu.jscript.utils.interop.Arguments;
+import me.topchetoeu.jscript.utils.interop.WrapperName;
 
 @WrapperName("AsyncFunction")
 public class AsyncFunctionLib extends FunctionValue {

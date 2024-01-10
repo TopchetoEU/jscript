@@ -1,12 +1,12 @@
 package me.topchetoeu.jscript.lib;
 
-import me.topchetoeu.jscript.engine.values.ArrayValue;
-import me.topchetoeu.jscript.engine.values.Values;
-import me.topchetoeu.jscript.filesystem.File;
-import me.topchetoeu.jscript.filesystem.FilesystemException;
-import me.topchetoeu.jscript.interop.Arguments;
-import me.topchetoeu.jscript.interop.Expose;
-import me.topchetoeu.jscript.interop.WrapperName;
+import me.topchetoeu.jscript.core.engine.values.ArrayValue;
+import me.topchetoeu.jscript.core.engine.values.Values;
+import me.topchetoeu.jscript.utils.filesystem.File;
+import me.topchetoeu.jscript.utils.filesystem.FilesystemException;
+import me.topchetoeu.jscript.utils.interop.Arguments;
+import me.topchetoeu.jscript.utils.interop.Expose;
+import me.topchetoeu.jscript.utils.interop.WrapperName;
 
 @WrapperName("File")
 public class FileLib {
