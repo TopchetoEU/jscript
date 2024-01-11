@@ -17,4 +17,6 @@
 !/build.js
 !/LICENSE
 !/README.md
-!/?*.gradle
+!/settings.gradle
+!/build.gradle
+!/gradle.properties

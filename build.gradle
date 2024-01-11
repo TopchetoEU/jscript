@@ -1,26 +1,29 @@
-
-
-java {
-    // toolchain {
-    //     languageVersion = JavaLanguageVersion.of(11)
-    // }
-}
-
 plugins {
     id 'application'
 }
 
-repositories {
-    mavenCentral()
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
 }
 
-dependencies {
-    sourceSets {
-        main.java.srcDirs = [ 'src/java' ]
-        main.resources.srcDirs = [ 'src/assets' ]
+sourceSets {
+    main.java.srcDirs = [ 'src/java' ]
+    main.resources.srcDirs = [ 'src/assets' ]
+}
+
+processResources {
+    filesMatching('metadata.json') {
+        expand (
+            'version': project.project_version,
+            'name': project.project_name
+        )
     }
 }
 
 application {
-    mainClass = 'me.topchetoeu.jscript.utils.JScriptRepl'
+    mainClass = project.main_class
 }
+
+archivesBaseName = project.project_name
+version = project.project_version
