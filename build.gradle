@@ -7,6 +7,14 @@ java {
     targetCompatibility = JavaVersion.VERSION_11
 }
 
+jar {
+    manifest {
+        attributes (
+            'Main-Class': project.main_class
+        )
+    }
+}
+
 sourceSets {
     main.java.srcDirs = [ 'src/java' ]
     main.resources.srcDirs = [ 'src/assets' ]
