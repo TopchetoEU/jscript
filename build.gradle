@@ -1,0 +1,26 @@
+
+
+java {
+    // toolchain {
+    //     languageVersion = JavaLanguageVersion.of(11)
+    // }
+}
+
+plugins {
+    id 'application'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    sourceSets {
+        main.java.srcDirs = [ 'src/java' ]
+        main.resources.srcDirs = [ 'src/assets' ]
+    }
+}
+
+application {
+    mainClass = 'me.topchetoeu.jscript.utils.JScriptRepl'
+}
