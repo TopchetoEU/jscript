@@ -20,3 +20,6 @@
 !/settings.gradle
 !/build.gradle
 !/gradle.properties
+!/gradle
+!/gradle/wrapper
+!/gradle/wrapper/gradle-wrapper.properties
