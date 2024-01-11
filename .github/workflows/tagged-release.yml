@@ -16,15 +16,17 @@ jobs:
         with:
           distribution: 'adopt'
           java-version: '11'
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@v2
       - name: Clone repository
         uses: GuillaumeFalourd/clone-github-repo-action@main
         with:
-          branch: 'master' # fuck this political bullshitshit, took me an hour to fix this
+          branch: 'master'
           owner: 'TopchetoEU'
           repository: 'java-jscript'
-      - name: "Build"
+      - name: Build
         run: |
-          cd java-jscript; node ./build.js release ${{ github.ref }}
+          cd java-jscript; gradle build
 
       - uses: "marvinpinto/action-automatic-releases@latest"
         with:
@@ -32,4 +34,4 @@ jobs:
           prerelease: false
           files: |
             java-jscript/LICENSE
-            java-jscript/dst/*.jar
+            java-jscript/build/libs/*.jar
