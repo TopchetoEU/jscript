@@ -1,9 +1,7 @@
 package me.topchetoeu.jscript.lib;
 
-import java.io.IOException;
 import java.util.HashMap;
 
-import me.topchetoeu.jscript.common.Reading;
 import me.topchetoeu.jscript.core.engine.Context;
 import me.topchetoeu.jscript.core.engine.Environment;
 import me.topchetoeu.jscript.core.engine.scope.GlobalScope;
@@ -32,27 +30,6 @@ public class Internals {
         }
 
         else throw EngineException.ofError("Modules are not supported.");
-    }
-
-    @Expose(target = ExposeTarget.STATIC)
-    public static Object __log(Arguments args) {
-        for (var arg : args.args) {
-            Values.printValue(args.ctx, arg);
-            System.out.print(" ");
-        }
-        System.out.println();
-
-        return args.get(0);
-    }
-    @Expose(target = ExposeTarget.STATIC)
-    public static String __readline() {
-        try {
-            return Reading.readline();
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
     }
 
     @Expose(target = ExposeTarget.STATIC)

@@ -711,14 +711,14 @@ public class Values {
                 res.append("{\n");
 
                 for (var el : obj.values.entrySet()) {
-                    for (int i = 0; i < tab + 1; i++) System.out.print("    ");
+                    for (int i = 0; i < tab + 1; i++) res.append("    ");
                     res.append(toReadable(ctx, el.getKey(), passed, tab + 1));
                     res.append(": ");
                     res.append(toReadable(ctx, el.getValue(), passed, tab + 1));
                     res.append(",\n");
                 }
                 for (var el : obj.properties.entrySet()) {
-                    for (int i = 0; i < tab + 1; i++) System.out.print("    ");
+                    for (int i = 0; i < tab + 1; i++) res.append("    ");
                     res.append(toReadable(ctx, el.getKey(), passed, tab + 1));
                     res.append(": [prop],\n");
                 }
