@@ -1,39 +1,32 @@
 plugins {
-    id 'application'
+    id "application"
 }
 
 java {
     sourceCompatibility = JavaVersion.VERSION_11
     targetCompatibility = JavaVersion.VERSION_11
-
     toolchain.languageVersion = JavaLanguageVersion.of(11)
+    withSourcesJar()
 }
 
 jar {
-    manifest {
-        attributes (
-            'Main-Class': project.main_class
-        )
-    }
+    manifest.attributes["Main-class"] = project.main_class
 }
 
 sourceSets {
-    main.java.srcDirs = [ 'src/java' ]
-    main.resources.srcDirs = [ 'src/assets' ]
+    main.java.srcDirs = [ "src/java" ]
+    main.resources.srcDirs = [ "src/assets" ]
 }
 
 processResources {
-    filesMatching('metadata.json') {
-        expand (
-            'version': project.project_version,
-            'name': project.project_name
+    filesMatching "metadata.json", {
+        expand(
+            version: project.project_version,
+            name: project.project_name
         )
     }
 }
 
-application {
-    mainClass = project.main_class
-}
-
-archivesBaseName = project.project_name
+base.archivesName = project.project_name
 version = project.project_version
+group = project.project_group
