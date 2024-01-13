@@ -5,6 +5,7 @@ import java.util.Map;
 
 import me.topchetoeu.jscript.common.Filename;
 import me.topchetoeu.jscript.utils.filesystem.FilesystemException.FSCode;
+import me.topchetoeu.jscript.utils.permissions.Matcher;
 import me.topchetoeu.jscript.utils.permissions.PermissionsProvider;
 
 public class RootFilesystem implements Filesystem {
@@ -12,10 +13,10 @@ public class RootFilesystem implements Filesystem {
     public final PermissionsProvider perms;
 
     private boolean canRead(String _path) {
-        return perms.hasPermission("jscript.file.read:" + _path, '/');
+        return perms.hasPermission("jscript.file.read:" + _path, Matcher.fileWildcard());
     }
     private boolean canWrite(String _path) {
-        return perms.hasPermission("jscript.file.write:" + _path, '/');
+        return perms.hasPermission("jscript.file.write:" + _path, Matcher.fileWildcard());
     }
 
     private void modeAllowed(String _path, Mode mode) throws FilesystemException {
