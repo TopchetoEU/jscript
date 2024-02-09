@@ -8,13 +8,14 @@ import me.topchetoeu.jscript.core.engine.Context;
 import me.topchetoeu.jscript.core.engine.values.ObjectValue;
 import me.topchetoeu.jscript.core.engine.values.Values;
 import me.topchetoeu.jscript.core.exceptions.EngineException;
+import me.topchetoeu.jscript.utils.filesystem.ActionType;
 import me.topchetoeu.jscript.utils.filesystem.EntryType;
+import me.topchetoeu.jscript.utils.filesystem.ErrorReason;
 import me.topchetoeu.jscript.utils.filesystem.File;
 import me.topchetoeu.jscript.utils.filesystem.FileStat;
 import me.topchetoeu.jscript.utils.filesystem.Filesystem;
 import me.topchetoeu.jscript.utils.filesystem.FilesystemException;
 import me.topchetoeu.jscript.utils.filesystem.Mode;
-import me.topchetoeu.jscript.utils.filesystem.FilesystemException.FSCode;
 import me.topchetoeu.jscript.utils.interop.Arguments;
 import me.topchetoeu.jscript.utils.interop.Expose;
 import me.topchetoeu.jscript.utils.interop.ExposeField;
@@ -50,11 +51,10 @@ public class FilesystemLib {
 
             try {
                 if (fs.stat(path).type != EntryType.FILE) {
-                    throw new FilesystemException(path, FSCode.NOT_FILE);
+                    throw new FilesystemException(ErrorReason.DOESNT_EXIST, "Not a file").setAction(ActionType.OPEN);
                 }
 
-                var file = fs.open(path, _mode);
-                return new FileLib(file);
+                return new FileLib(fs.open(path, _mode));
             }
             catch (FilesystemException e) { throw e.toEngineException(); }
         });
@@ -75,7 +75,7 @@ public class FilesystemLib {
                         var path = fs.normalize(args.getString(0));
 
                         if (fs.stat(path).type != EntryType.FOLDER) {
-                            throw new FilesystemException(path, FSCode.NOT_FOLDER);
+                            throw new FilesystemException(ErrorReason.DOESNT_EXIST, "Not a directory").setAction(ActionType.OPEN);
                         }
 
                         file = fs.open(path, Mode.READ);

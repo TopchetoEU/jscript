@@ -1,68 +1,69 @@
 package me.topchetoeu.jscript.utils.filesystem;
 
 import java.io.IOException;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-
-import me.topchetoeu.jscript.utils.filesystem.FilesystemException.FSCode;
 
 public class PhysicalFilesystem implements Filesystem {
     public final String root;
+    private HandleManager handles = new HandleManager();
 
     private void checkMode(Path path, Mode mode) {
-        if (!path.startsWith(root)) throw new FilesystemException(path.toString(), FSCode.NO_PERMISSIONS_R);
+        if (!path.startsWith(root)) throw new FilesystemException(ErrorReason.NO_PERMISSION, "Tried to jailbreak the sandbox.");
 
-        if (mode.readable && !Files.isReadable(path)) throw new FilesystemException(path.toString(), FSCode.NO_PERMISSIONS_R);
-        if (mode.writable && !Files.isWritable(path)) throw new FilesystemException(path.toString(), FSCode.NO_PERMISSIONS_RW);
+        if (mode.readable && !Files.isReadable(path)) throw new FilesystemException(ErrorReason.NO_PERMISSION, "No read permissions");
+        if (mode.writable && !Files.isWritable(path)) throw new FilesystemException(ErrorReason.NO_PERMISSION, "No write permissions");
     }
 
     private Path realPath(String path) {
         return Path.of(Paths.chroot(root, path));
     }
 
-    @Override
-    public String normalize(String... paths) {
+    @Override public String normalize(String... paths) {
         return Paths.normalize(paths);
     }
-
-    @Override
-    public File open(String _path, Mode perms) {
-        _path = normalize(_path);
-        var path = realPath(_path);
-
-        checkMode(path, perms);
-
+    @Override public File open(String _path, Mode perms) {
         try {
-            if (Files.isDirectory(path)) return new ListFile(_path, Files.list(path).map((v -> v.getFileName().toString())));
-            else return new PhysicalFile(_path, path.toString(), perms);
+            var path = realPath(normalize(_path));
+            checkMode(path, perms);
+    
+            try {
+                if (Files.isDirectory(path)) return handles.put(File.ofIterator(
+                    Files.list(path).map(v -> v.getFileName().toString()).iterator()
+                ));
+                else return handles.put(new PhysicalFile(path, perms));
+            }
+            catch (IOException e) { throw new FilesystemException(ErrorReason.DOESNT_EXIST); }
         }
-        catch (IOException e) { throw new FilesystemException(path.toString(), FSCode.DOESNT_EXIST); }
+        catch (FilesystemException e) { throw e.setAction(ActionType.OPEN).setPath(_path); }
     }
-
-    @Override
-    public void create(String _path, EntryType type) {
-        var path = realPath(_path);
-
-        if (type == EntryType.NONE != Files.exists(path)) throw new FilesystemException(path.toString(), FSCode.ALREADY_EXISTS);
-
+    @Override public boolean create(String _path, EntryType type) {
         try {
-            switch (type) {
-                case FILE:
-                    Files.createFile(path);
-                    break;
-                case FOLDER:
-                    Files.createDirectories(path);
-                    break;
-                case NONE:
-                default:
-                    Files.delete(path);
-            } 
-        }
-        catch (IOException e) { throw new FilesystemException(path.toString(), FSCode.NO_PERMISSIONS_RW); }
-    }
+            var path = realPath(_path);
 
-    @Override
-    public FileStat stat(String _path) {
+            try {
+                switch (type) {
+                    case FILE:
+                        Files.createFile(path);
+                        break;
+                    case FOLDER:
+                        Files.createDirectories(path);
+                        break;
+                    case NONE:
+                    default:
+                        Files.delete(path);
+                } 
+            }
+            catch (FileAlreadyExistsException | NoSuchFileException e) { return false; }
+            catch (IOException e) { throw new FilesystemException(ErrorReason.NO_PARENT); }
+        }
+        catch (FilesystemException e) { throw e.setAction(ActionType.CREATE).setPath(_path); }
+
+        return true;
+    }
+    @Override public FileStat stat(String _path) {
         var path = realPath(_path);
 
         if (!Files.exists(path)) return new FileStat(Mode.NONE, EntryType.NONE);
@@ -80,6 +81,12 @@ public class PhysicalFilesystem implements Filesystem {
             perms,
             Files.isDirectory(path) ? EntryType.FOLDER : EntryType.FILE
         );
+    }
+    @Override public void close() throws FilesystemException {
+        try {
+            handles.close();
+        }
+        catch (FilesystemException e) { throw e.setAction(ActionType.CLOSE_FS); }
     }
 
     public PhysicalFilesystem(String root) {

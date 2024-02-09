@@ -152,6 +152,8 @@ public class Internals {
         glob.define(null, "Encoding", false, wp.getNamespace(EncodingLib.class));
         glob.define(null, "Filesystem", false, wp.getNamespace(FilesystemLib.class));
 
+        glob.define(false, wp.getConstr(FileLib.class));
+
         glob.define(false, wp.getConstr(DateLib.class));
         glob.define(false, wp.getConstr(ObjectLib.class));
         glob.define(false, wp.getConstr(FunctionLib.class));

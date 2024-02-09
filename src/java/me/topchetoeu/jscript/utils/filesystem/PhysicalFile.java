@@ -3,55 +3,33 @@ package me.topchetoeu.jscript.utils.filesystem;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.file.Path;
 
-import me.topchetoeu.jscript.utils.filesystem.FilesystemException.FSCode;
-
-public class PhysicalFile implements File {
-    private String filename;
-    private RandomAccessFile file;
-    private Mode mode;
-
-    @Override
-    public int read(byte[] buff) {
-        if (file == null || !mode.readable) throw new FilesystemException(filename, FSCode.NO_PERMISSIONS_R);
-        else try { return file.read(buff); }
-        catch (IOException e) { throw new FilesystemException(filename, FSCode.NO_PERMISSIONS_R); }
+public class PhysicalFile extends BaseFile<RandomAccessFile> {
+    @Override protected int onRead(byte[] buff) {
+        try { return handle().read(buff); }
+        catch (IOException e) { throw new FilesystemException(ErrorReason.NO_PERMISSION).setAction(ActionType.READ); }
     }
-    @Override
-    public void write(byte[] buff) {
-        if (file == null || !mode.writable) throw new FilesystemException(filename, FSCode.NO_PERMISSIONS_RW);
-        else try { file.write(buff); }
-        catch (IOException e) { throw new FilesystemException(filename, FSCode.NO_PERMISSIONS_RW); }
+    @Override protected void onWrite(byte[] buff) {
+        try { handle().write(buff); }
+        catch (IOException e) { throw new FilesystemException(ErrorReason.NO_PERMISSION).setAction(ActionType.WRITE); }
     }
-
-    @Override
-    public long seek(long offset, int pos) {
-        if (file == null || !mode.readable) throw new FilesystemException(filename, FSCode.NO_PERMISSIONS_R);
-
+    @Override protected long onSeek(long offset, int pos) {
         try {
-            if (pos == 1) offset += file.getFilePointer();
-            else if (pos == 2) offset += file.length();
-            file.seek(offset);
+            if (pos == 1) offset += handle().getFilePointer();
+            else if (pos == 2) offset += handle().length();
+            handle().seek(offset);
             return offset;
         }
-        catch (IOException e) { throw new FilesystemException(filename, FSCode.NO_PERMISSIONS_R); }
+        catch (IOException e) { throw new FilesystemException(ErrorReason.NO_PERMISSION).setAction(ActionType.SEEK); }
     }
-
-    @Override
-    public void close() {
-        if (file == null) return;
-        try { file.close(); }
+    @Override protected boolean onClose() {
+        try { handle().close(); }
         catch (IOException e) {} // SHUT
-        file = null;
-        mode = Mode.NONE;
+        return true;
     }
 
-    public PhysicalFile(String name, String path, Mode mode) throws FileNotFoundException {
-        this.filename = name;
-        this.mode = mode;
-
-        if (mode == Mode.NONE) file = null;
-        else try { file = new RandomAccessFile(path, mode.name); }
-        catch (FileNotFoundException e) { throw new FilesystemException(filename, FSCode.DOESNT_EXIST); }
+    public PhysicalFile(Path path, Mode mode) throws FileNotFoundException {
+        super(new RandomAccessFile(path.toFile(), mode.name), mode);
     }
 }

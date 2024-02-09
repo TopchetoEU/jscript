@@ -10,12 +10,12 @@ import me.topchetoeu.jscript.utils.interop.WrapperName;
 
 @WrapperName("File")
 public class FileLib {
-    public final File file;
+    public final File fd;
 
     @Expose public PromiseLib __pointer(Arguments args) {
         return PromiseLib.await(args.ctx, () -> {
             try {
-                return file.seek(0, 1);
+                return fd.seek(0, 1);
             }
             catch (FilesystemException e) { throw e.toEngineException(); }
         });
@@ -23,9 +23,9 @@ public class FileLib {
     @Expose public PromiseLib __length(Arguments args) {
         return PromiseLib.await(args.ctx, () -> {
             try {
-                long curr = file.seek(0, 1);
-                long res = file.seek(0, 2);
-                file.seek(curr, 0);
+                long curr = fd.seek(0, 1);
+                long res = fd.seek(0, 2);
+                fd.seek(curr, 0);
                 return res;
             }
             catch (FilesystemException e) { throw e.toEngineException(); }
@@ -38,8 +38,8 @@ public class FileLib {
             try {
                 var buff = new byte[n];
                 var res = new ArrayValue();
-                int resI = file.read(buff);
-    
+                int resI = fd.read(buff);
+
                 for (var i = resI - 1; i >= 0; i--) res.set(args.ctx, i, (int)buff[i]);
                 return res;
             }
@@ -53,7 +53,7 @@ public class FileLib {
                 var res = new byte[val.size()];
 
                 for (var i = 0; i < val.size(); i++) res[i] = (byte)Values.toNumber(args.ctx, val.get(i));
-                file.write(res);
+                fd.write(res);
 
                 return null;
             }
@@ -62,7 +62,7 @@ public class FileLib {
     }
     @Expose public PromiseLib __close(Arguments args) {
         return PromiseLib.await(args.ctx, () -> {
-            file.close();
+            fd.close();
             return null;
         });
     }
@@ -72,13 +72,13 @@ public class FileLib {
             var whence = args.getInt(1);
 
             try {
-                return file.seek(ptr, whence);
+                return fd.seek(ptr, whence);
             }
             catch (FilesystemException e) { throw e.toEngineException(); }
         });
     }
 
-    public FileLib(File file) {
-        this.file = file;
+    public FileLib(File fd) {
+        this.fd = fd;
     }
 }

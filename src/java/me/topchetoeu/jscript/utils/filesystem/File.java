@@ -3,51 +3,42 @@ package me.topchetoeu.jscript.utils.filesystem;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Iterator;
+import java.util.LinkedList;
 
 import me.topchetoeu.jscript.common.Buffer;
-import me.topchetoeu.jscript.utils.LineWriter;
-import me.topchetoeu.jscript.utils.filesystem.FilesystemException.FSCode;
-import me.topchetoeu.jscript.utils.permissions.Permission;
-import me.topchetoeu.jscript.utils.permissions.PermissionsProvider;
-
 public interface File {
-    int read(byte[] buff);
-    void write(byte[] buff);
-    long seek(long offset, int pos);
-    void close();
+    default int read(byte[] buff) { throw new FilesystemException(ErrorReason.UNSUPPORTED).setAction(ActionType.READ); }
+    default void write(byte[] buff) { throw new FilesystemException(ErrorReason.UNSUPPORTED).setAction(ActionType.WRITE); }
+    default long seek(long offset, int pos) { throw new FilesystemException(ErrorReason.UNSUPPORTED).setAction(ActionType.SEEK); }
+    default boolean close() { return false; }
 
-    default File wrap(String name, PermissionsProvider perms, Permission read, Permission write, Permission seek, Permission close) {
-        var self = this;
+    default byte[] readAll() {
+        var parts = new LinkedList<byte[]>();
+        var buff = new byte[1024];
+        var size = 0;
 
-        return new File() {
-            @Override public int read(byte[] buff) {
-                if (read != null && perms.hasPermission(read, name)) return self.read(buff);
-                else throw new FilesystemException(name, FSCode.NO_PERMISSIONS_R);
-            }
-            @Override public void write(byte[] buff) {
-                if (write != null && perms.hasPermission(write, name)) self.write(buff);
-                else throw new FilesystemException(name, FSCode.NO_PERMISSIONS_RW);
-            }
-            @Override public long seek(long offset, int pos) {
-                if (seek != null && perms.hasPermission(seek, name)) return self.seek(offset, pos);
-                else throw new FilesystemException(name, FSCode.NO_PERMISSIONS_R);
-            }
-            @Override public void close() {
-                if (close != null && perms.hasPermission(close, name)) self.close();
-                else throw new FilesystemException(name, FSCode.NO_PERMISSIONS_R);
-            }
-        };
+        while (true) {
+            var n = read(buff);
+            if (n == 0) break;
+
+            parts.add(buff);
+            size += n;
+        }
+
+        buff = new byte[size];
+
+        var i = 0;
+
+        for (var part : parts) {
+            System.arraycopy(part, 0, buff, i, part.length);
+            i += part.length;
+        }
+
+        return buff;
     }
-
     default String readToString() {
-        long len = seek(0, 2);
-        if (len < 0) return null;
-        seek(0, 0);
-
-        byte[] res = new byte[(int)len];
-        len = read(res);
-
-        return new String(res);
+        return new String(readAll());
     }
     default String readLine() {
         var res = new Buffer();
@@ -66,74 +57,105 @@ public interface File {
         return new String(res.data());
     }
 
-    public static File ofStream(String name, InputStream str) {
+    public static File ofStream(InputStream str) {
         return new File() {
             @Override public int read(byte[] buff) {
                 try {
-                    return str.read(buff);
+                    try { return str.read(buff); }
+                    catch (NullPointerException e) { throw new FilesystemException(ErrorReason.ILLEGAL_ARGS, e.getMessage()); }
+                    catch (IOException e) { throw new FilesystemException(ErrorReason.UNKNOWN, e.getMessage()); }
                 }
-                catch (IOException e) {
-                    throw new FilesystemException(name, FSCode.NO_PERMISSIONS_R);
-                }
-            }
-            @Override public void write(byte[] buff) {
-                throw new FilesystemException(name, FSCode.NO_PERMISSIONS_RW);
-            }
-            @Override public long seek(long offset, int pos) {
-                throw new FilesystemException(name, FSCode.UNSUPPORTED_OPERATION);
-            }
-            @Override public void close() {
-                throw new FilesystemException(name, FSCode.UNSUPPORTED_OPERATION);
+                catch (FilesystemException e) { throw e.setAction(ActionType.READ); }
             }
         };
     }
-    public static File ofStream(String name, OutputStream str) {
+    public static File ofStream(OutputStream str) {
         return new File() {
-            @Override public int read(byte[] buff) {
-                throw new FilesystemException(name, FSCode.NO_PERMISSIONS_R);
-            }
             @Override public void write(byte[] buff) {
                 try {
-                    str.write(buff);
+                    try { str.write(buff); }
+                    catch (NullPointerException e) {throw new FilesystemException(ErrorReason.ILLEGAL_ARGS, e.getMessage()); }
+                    catch (IOException e) { throw new FilesystemException(ErrorReason.UNKNOWN, e.getMessage()); }
                 }
-                catch (IOException e) {
-                    throw new FilesystemException(name, FSCode.NO_PERMISSIONS_RW);
-                }
-            }
-            @Override public long seek(long offset, int pos) {
-                throw new FilesystemException(name, FSCode.UNSUPPORTED_OPERATION);
-            }
-            @Override public void close() {
-                throw new FilesystemException(name, FSCode.UNSUPPORTED_OPERATION);
+                catch (FilesystemException e) { throw e.setAction(ActionType.WRITE); }
             }
         };
     }
-    public static File ofLineWriter(String name, LineWriter writer) {
+    public static File ofLineWriter(LineWriter writer) {
         var buff = new Buffer();
-
         return new File() {
-            @Override public int read(byte[] buff) {
-                throw new FilesystemException(name, FSCode.NO_PERMISSIONS_R);
-            }
             @Override public void write(byte[] val) {
-                for (var b : val) {
-                    if (b == '\n') {
-                        try {
-                            writer.writeLine(new String(buff.data()));
+                try {
+                    if (val == null) throw new FilesystemException(ErrorReason.ILLEGAL_ARGS, "Given buffer is null.");
+    
+                    for (var b : val) {
+                        if (b == '\n') {
+                            try {
+                                writer.writeLine(new String(buff.data()));
+                            }
+                            catch (IOException e) {
+                                throw new FilesystemException(ErrorReason.UNKNOWN, e.getMessage());
+                            }
                         }
-                        catch (IOException e) {
-                            throw new FilesystemException(name, FSCode.NO_PERMISSIONS_RW);
+                        else buff.append(b);
+                    }
+                }
+                catch (FilesystemException e) { throw e.setAction(ActionType.WRITE); }
+            }
+        };
+    }
+    public static File ofLineReader(LineReader reader) {
+        return new File() {
+            private int offset = 0;
+            private byte[] prev = new byte[0];
+
+            @Override
+            public int read(byte[] buff) {
+                try {
+                    if (buff == null) throw new FilesystemException(ErrorReason.ILLEGAL_ARGS, "Given buffer is null.");
+                    var ptr = 0;
+
+                    while (true) {
+                        if (prev == null) break;
+                        if (offset >= prev.length) {
+                            try {
+                                var line = reader.readLine();
+
+                                if (line == null) {
+                                    prev = null;
+                                    break;
+                                }
+                                else prev = (line + "\n").getBytes();
+
+                                offset = 0;
+                            }
+                            catch (IOException e) {
+                                throw new FilesystemException(ErrorReason.UNKNOWN, e.getMessage());
+                            }
+                        }
+
+                        if (ptr + prev.length - offset > buff.length) {
+                            var n = buff.length - ptr;
+                            System.arraycopy(prev, offset, buff, ptr, buff.length - ptr);
+                            offset += n;
+                            ptr += n;
+                            break;
+                        }
+                        else {
+                            var n = prev.length - offset;
+                            System.arraycopy(prev, offset, buff, ptr, n);
+                            offset += n;
+                            ptr += n;
                         }
                     }
-                    else buff.append(b);
+
+                    return ptr;
                 }
-            }
-            @Override public long seek(long offset, int pos) {
-                throw new FilesystemException(name, FSCode.UNSUPPORTED_OPERATION);
-            }
-            @Override public void close() {
-                throw new FilesystemException(name, FSCode.UNSUPPORTED_OPERATION);
+                catch (FilesystemException e) { throw e.setAction(ActionType.READ); }
             }
         };
+    }
+    public static File ofIterator(Iterator<String> it) {
+        return ofLineReader(LineReader.ofIterator(it));
     }
 }

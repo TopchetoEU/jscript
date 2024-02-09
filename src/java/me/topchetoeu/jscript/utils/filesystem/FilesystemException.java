@@ -1,57 +1,90 @@
 package me.topchetoeu.jscript.utils.filesystem;
 
+import java.util.ArrayList;
+
 import me.topchetoeu.jscript.core.engine.values.Values;
 import me.topchetoeu.jscript.core.exceptions.EngineException;
 
 public class FilesystemException extends RuntimeException {
-    public static enum FSCode {
-        DOESNT_EXIST(0x1),
-        NOT_FILE(0x2),
-        NOT_FOLDER(0x3),
-        NO_PERMISSIONS_R(0x4),
-        NO_PERMISSIONS_RW(0x5),
-        FOLDER_NOT_EMPTY(0x6),
-        ALREADY_EXISTS(0x7),
-        FOLDER_EXISTS(0x8),
-        UNSUPPORTED_OPERATION(0x9);
+    public final ErrorReason reason;
+    public final String details;
+    private ActionType action;
+    private EntryType entry = EntryType.FILE;
+    private String path;
 
-        public final int code;
+    public FilesystemException setPath(String path) {
+        this.path = path;
+        return this;
+    }
+    public FilesystemException setAction(ActionType action) {
+        if (action == null) action = ActionType.UNKNOWN;
 
-        private FSCode(int code) { this.code = code; }
+        this.action = action;
+        return this;
+    }
+    public FilesystemException setEntry(EntryType entry) {
+        if (entry == null) entry = EntryType.NONE;
+
+        this.entry = entry;
+        return this;
     }
 
-    public static final String[] MESSAGES = {
-        "How did we get here?",
-        "The file or folder '%s' doesn't exist or is inaccessible.",
-        "'%s' is not a file",
-        "'%s' is not a folder",
-        "No permissions to read '%s'",
-        "No permissions to write '%s'",
-        "Can't delete '%s', since it is a full folder.",
-        "'%s' already exists.",
-        "An unsupported operation was performed on the file '%s'."
-    };
-
-    public final String message, filename;
-    public final FSCode code;
-
-    public FilesystemException(String message, String filename, FSCode code) {
-        super(code + ": " + String.format(message, filename));
-        this.message = message;
-        this.code = code;
-        this.filename = filename;
+    public ActionType action() {
+        return action;
     }
-    public FilesystemException(String filename, FSCode code) {
-        super(code + ": " + String.format(MESSAGES[code.code], filename));
-        this.message = MESSAGES[code.code];
-        this.code = code;
-        this.filename = filename;
+    public String path() {
+        return path;
+    }
+    public EntryType entry() {
+        return entry;
     }
 
     public EngineException toEngineException() {
         var res = EngineException.ofError("IOError", getMessage());
-        Values.setMember(null, res.value, "code", code);
-        Values.setMember(null, res.value, "filename", filename.toString());
+
+        Values.setMember(null, res.value, "action", action.code);
+        Values.setMember(null, res.value, "reason", reason.code);
+        Values.setMember(null, res.value, "path", path);
+        Values.setMember(null, res.value, "entry", entry.name);
+        if (details != null) Values.setMember(null, res.value, "details", details);
+
         return res;
     }
+
+    @Override public String getMessage() {
+        var parts = new ArrayList<String>(10);
+
+        path = String.join(" ", parts).trim();
+        if (path.isEmpty()) path = null;
+        parts.clear();
+
+        parts.add(action == null ? "An action performed upon " : action.readable(reason.usePast));
+
+        if (entry == EntryType.FILE) parts.add("file");
+        if (entry == EntryType.FOLDER) parts.add("folder");
+
+        if (path != null) parts.add(path);
+
+        parts.add(reason.readable);
+
+        var msg = String.join(" ", parts);
+        if (details != null) msg += ": " + details;
+
+        return msg;
+    }
+
+    public FilesystemException(ErrorReason type, String details) {
+        super();
+        if (type == null) type = ErrorReason.UNKNOWN;
+
+        this.details = details;
+        this.reason = type;
+    }
+    public FilesystemException(ErrorReason type) {
+        this(type, null);
+    }
+    public FilesystemException() {
+        this(null);
+    }
+
 }

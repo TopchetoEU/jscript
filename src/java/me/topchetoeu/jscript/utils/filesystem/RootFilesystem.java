@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import me.topchetoeu.jscript.common.Filename;
-import me.topchetoeu.jscript.utils.filesystem.FilesystemException.FSCode;
 import me.topchetoeu.jscript.utils.permissions.Matcher;
 import me.topchetoeu.jscript.utils.permissions.PermissionsProvider;
 
@@ -20,8 +19,22 @@ public class RootFilesystem implements Filesystem {
     }
 
     private void modeAllowed(String _path, Mode mode) throws FilesystemException {
-        if (mode.readable && perms != null && !canRead(_path)) throw new FilesystemException(_path, FSCode.NO_PERMISSIONS_R);
-        if (mode.writable && perms != null && !canWrite(_path)) throw new FilesystemException(_path, FSCode.NO_PERMISSIONS_RW);
+        if (mode.readable && perms != null && !canRead(_path)) {
+            throw new FilesystemException(ErrorReason.NO_PERMISSION, "No read permissions").setPath(_path);
+        }
+        if (mode.writable && perms != null && !canWrite(_path)) {
+            throw new FilesystemException(ErrorReason.NO_PERMISSION, "No wtrite permissions").setPath(_path);
+        }
+    }
+
+    private Filesystem getProtocol(Filename filename) {
+        var protocol = protocols.get(filename.protocol);
+
+        if (protocol == null) {
+            throw new FilesystemException(ErrorReason.DOESNT_EXIST, "The protocol '" + filename.protocol + "' doesn't exist.");
+        }
+
+        return protocol;
     }
 
     @Override public String normalize(String... paths) {
@@ -37,30 +50,43 @@ public class RootFilesystem implements Filesystem {
         }
     }
     @Override public File open(String path, Mode perms) throws FilesystemException {
-        var filename = Filename.parse(path);
-        var protocol = protocols.get(filename.protocol);
-        if (protocol == null) throw new FilesystemException(filename.toString(), FSCode.DOESNT_EXIST);
-        modeAllowed(filename.toString(), perms);
+        try {
+            var filename = Filename.parse(path);
+            var protocol = getProtocol(filename);
 
-        try { return protocol.open(filename.path, perms); }
-        catch (FilesystemException e) { throw new FilesystemException(filename.toString(), e.code); }
+            modeAllowed(filename.toString(), perms);
+            return protocol.open(filename.path, perms);
+        }
+        catch (FilesystemException e) { throw e.setPath(path).setAction(ActionType.OPEN); }
     }
-    @Override public void create(String path, EntryType type) throws FilesystemException {
-        var filename = Filename.parse(path);
-        var protocol = protocols.get(filename.protocol);
-        if (protocol == null) throw new FilesystemException(filename.toString(), FSCode.DOESNT_EXIST);
-        modeAllowed(filename.toString(), Mode.READ_WRITE);
+    @Override public boolean create(String path, EntryType type) throws FilesystemException {
+        try {
+            var filename = Filename.parse(path);
+            var protocol = getProtocol(filename);
 
-        try { protocol.create(filename.path, type); }
-        catch (FilesystemException e) { throw new FilesystemException(filename.toString(), e.code); }
+            modeAllowed(filename.toString(), Mode.WRITE);
+            return protocol.create(filename.path, type);
+        }
+        catch (FilesystemException e) { throw e.setPath(path).setAction(ActionType.CREATE); }
     }
     @Override public FileStat stat(String path) throws FilesystemException {
-        var filename = Filename.parse(path);
-        var protocol = protocols.get(filename.protocol);
-        if (protocol == null) throw new FilesystemException(filename.toString(), FSCode.DOESNT_EXIST);
+        try {
+            var filename = Filename.parse(path);
+            var protocol = getProtocol(filename);
 
-        try { return protocol.stat(filename.path); }
-        catch (FilesystemException e) { throw new FilesystemException(filename.toString(), e.code); }
+            return protocol.stat(filename.path);
+        }
+        catch (FilesystemException e) { throw e.setPath(path).setAction(ActionType.STAT); }
+    }
+    @Override public void close() throws FilesystemException {
+        try {
+            for (var protocol : protocols.values()) {
+                protocol.close();
+            }
+
+            protocols.clear();
+        }
+        catch (FilesystemException e) { throw e.setAction(ActionType.CLOSE_FS); }
     }
 
     public RootFilesystem(PermissionsProvider perms) {

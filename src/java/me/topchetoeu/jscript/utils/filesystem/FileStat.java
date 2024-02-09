@@ -5,6 +5,9 @@ public class FileStat {
     public final EntryType type;
 
     public FileStat(Mode mode, EntryType type) {
+        if (mode == Mode.NONE) type = EntryType.NONE;
+        if (type == EntryType.NONE) mode = Mode.NONE;
+
         this.mode = mode;
         this.type = type;
     }

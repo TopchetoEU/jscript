@@ -24,6 +24,7 @@ import me.topchetoeu.jscript.utils.filesystem.MemoryFilesystem;
 import me.topchetoeu.jscript.utils.filesystem.Mode;
 import me.topchetoeu.jscript.utils.filesystem.PhysicalFilesystem;
 import me.topchetoeu.jscript.utils.filesystem.RootFilesystem;
+import me.topchetoeu.jscript.utils.filesystem.STDFilesystem;
 import me.topchetoeu.jscript.utils.modules.ModuleRepo;
 import me.topchetoeu.jscript.utils.permissions.PermissionsManager;
 import me.topchetoeu.jscript.utils.permissions.PermissionsProvider;
@@ -108,6 +109,7 @@ public class JScriptRepl {
         var fs = new RootFilesystem(PermissionsProvider.get(environment));
         fs.protocols.put("temp", new MemoryFilesystem(Mode.READ_WRITE));
         fs.protocols.put("file", new PhysicalFilesystem("."));
+        fs.protocols.put("std", STDFilesystem.ofStd(System.in, System.out, System.err));
 
         environment.add(PermissionsProvider.ENV_KEY, PermissionsManager.ALL_PERMS);
         environment.add(Filesystem.ENV_KEY, fs);

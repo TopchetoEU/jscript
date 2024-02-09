@@ -1,4 +1,4 @@
-package me.topchetoeu.jscript.utils;
+package me.topchetoeu.jscript.utils.filesystem;
 
 import java.io.IOException;
 
