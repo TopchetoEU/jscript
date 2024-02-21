@@ -94,7 +94,7 @@ public class ArrayLib {
             if (arrs.get(i) instanceof ArrayValue) {
                 var arrEl = arrs.convert(i, ArrayValue.class);
                 int n = arrEl.size();
-                arrEl.copyTo(args.ctx, res, 0, j, n);
+                arrEl.copyTo(res, 0, j, n);
                 j += n;
             }
             else {
@@ -382,7 +382,7 @@ public class ArrayLib {
         var end = normalizeI(arr.size(), args.getInt(1, arr.size()), true);
 
         var res = new ArrayValue(end - start);
-        arr.copyTo(args.ctx, res, start, 0, end - start);
+        arr.copyTo(res, start, 0, end - start);
         return res;
     }
 
@@ -396,7 +396,7 @@ public class ArrayLib {
 
         var size = arr.size() - deleteCount + items.length;
         var res = new ArrayValue(deleteCount);
-        arr.copyTo(args.ctx, res, start, 0, deleteCount);
+        arr.copyTo(res, start, 0, deleteCount);
         arr.move(start + deleteCount, start + items.length, arr.size() - start - deleteCount);
         arr.copyFrom(args.ctx, items, 0, start, items.length);
         arr.setSize(size);

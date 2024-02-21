@@ -82,15 +82,20 @@ public class ArrayValue extends ObjectValue implements Iterable<Object> {
             else arr[i + sourceStart] = values[i + destStart];
         }
     }
-    public void copyTo(Context ctx, ArrayValue arr, int sourceStart, int destStart, int count) {
+    public void copyTo(ArrayValue arr, int sourceStart, int destStart, int count) {
+        if (arr == this) {
+            move(sourceStart, destStart, count);
+            return;
+        }
+
         // Iterate in reverse to reallocate at most once
         if (destStart + count > arr.size) arr.size = destStart + count;
 
         for (var i = count - 1; i >= 0; i--) {
             if (i + sourceStart < 0 || i + sourceStart >= size) arr.remove(i + destStart);
-            if (values[i + sourceStart] == UNDEFINED) arr.set(ctx, i + destStart, null);
+            if (values[i + sourceStart] == UNDEFINED) arr.set(null, i + destStart, null);
             else if (values[i + sourceStart] == null) arr.remove(i + destStart);
-            else arr.set(ctx, i + destStart, values[i + sourceStart]);
+            else arr.set(null, i + destStart, values[i + sourceStart]);
         }
     }
 
