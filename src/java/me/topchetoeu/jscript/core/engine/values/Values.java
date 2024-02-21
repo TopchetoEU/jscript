@@ -411,7 +411,7 @@ public class Values {
 
             var ret = call(ctx, func, res, args);
 
-            if (ret != null && func instanceof FunctionValue && ((FunctionValue)func).special) return ret;
+            if (!isPrimitive(ret)) return ret;
             return res;
         }
         catch (IllegalArgumentException e) {

@@ -247,8 +247,6 @@ public class NativeWrapperProvider implements WrapperProvider {
             new NativeFunction(getName(clazz), args -> { throw EngineException.ofError("This constructor is not invokable."); }) :
             create(getName(clazz), constr);
 
-        res.special = true;
-
         apply(res, ctx, ExposeTarget.CONSTRUCTOR, clazz);
 
         return res;

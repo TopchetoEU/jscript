@@ -6,7 +6,6 @@ import me.topchetoeu.jscript.core.engine.Context;
 
 public abstract class FunctionValue extends ObjectValue {
     public String name = "";
-    public boolean special = false;
     public int length;
 
     @Override
