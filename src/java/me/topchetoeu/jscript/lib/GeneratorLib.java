@@ -1,9 +1,9 @@
 package me.topchetoeu.jscript.lib;
 
-import me.topchetoeu.jscript.core.engine.Context;
-import me.topchetoeu.jscript.core.engine.frame.CodeFrame;
-import me.topchetoeu.jscript.core.engine.values.ObjectValue;
-import me.topchetoeu.jscript.core.engine.values.Values;
+import me.topchetoeu.jscript.core.Context;
+import me.topchetoeu.jscript.core.Frame;
+import me.topchetoeu.jscript.core.values.ObjectValue;
+import me.topchetoeu.jscript.core.values.Values;
 import me.topchetoeu.jscript.core.exceptions.EngineException;
 import me.topchetoeu.jscript.utils.interop.Arguments;
 import me.topchetoeu.jscript.utils.interop.Expose;
@@ -13,7 +13,7 @@ import me.topchetoeu.jscript.utils.interop.WrapperName;
 public class GeneratorLib {
     private boolean yielding = true;
     private boolean done = false;
-    public CodeFrame frame;
+    public Frame frame;
 
     private ObjectValue next(Context ctx, Object inducedValue, Object inducedReturn, EngineException inducedError) {
         if (done) {

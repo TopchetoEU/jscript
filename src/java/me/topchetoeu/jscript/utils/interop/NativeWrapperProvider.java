@@ -10,14 +10,14 @@ import java.util.HashSet;
 import java.util.stream.Collectors;
 
 import me.topchetoeu.jscript.common.Location;
-import me.topchetoeu.jscript.core.engine.Context;
-import me.topchetoeu.jscript.core.engine.Environment;
-import me.topchetoeu.jscript.core.engine.WrapperProvider;
-import me.topchetoeu.jscript.core.engine.values.FunctionValue;
-import me.topchetoeu.jscript.core.engine.values.NativeFunction;
-import me.topchetoeu.jscript.core.engine.values.ObjectValue;
-import me.topchetoeu.jscript.core.engine.values.Symbol;
-import me.topchetoeu.jscript.core.engine.values.Values;
+import me.topchetoeu.jscript.core.Context;
+import me.topchetoeu.jscript.core.Environment;
+import me.topchetoeu.jscript.core.WrapperProvider;
+import me.topchetoeu.jscript.core.values.FunctionValue;
+import me.topchetoeu.jscript.core.values.NativeFunction;
+import me.topchetoeu.jscript.core.values.ObjectValue;
+import me.topchetoeu.jscript.core.values.Symbol;
+import me.topchetoeu.jscript.core.values.Values;
 import me.topchetoeu.jscript.core.exceptions.EngineException;
 import me.topchetoeu.jscript.core.exceptions.InterruptException;
 

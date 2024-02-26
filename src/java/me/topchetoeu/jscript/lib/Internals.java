@@ -2,12 +2,12 @@ package me.topchetoeu.jscript.lib;
 
 import java.util.HashMap;
 
-import me.topchetoeu.jscript.core.engine.Context;
-import me.topchetoeu.jscript.core.engine.Environment;
-import me.topchetoeu.jscript.core.engine.scope.GlobalScope;
-import me.topchetoeu.jscript.core.engine.values.FunctionValue;
-import me.topchetoeu.jscript.core.engine.values.Symbol;
-import me.topchetoeu.jscript.core.engine.values.Values;
+import me.topchetoeu.jscript.core.Context;
+import me.topchetoeu.jscript.core.Environment;
+import me.topchetoeu.jscript.core.scope.GlobalScope;
+import me.topchetoeu.jscript.core.values.FunctionValue;
+import me.topchetoeu.jscript.core.values.Symbol;
+import me.topchetoeu.jscript.core.values.Values;
 import me.topchetoeu.jscript.core.exceptions.EngineException;
 import me.topchetoeu.jscript.utils.interop.Arguments;
 import me.topchetoeu.jscript.utils.interop.Expose;

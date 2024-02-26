@@ -4,12 +4,12 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.regex.Pattern;
 
-import me.topchetoeu.jscript.core.engine.Context;
-import me.topchetoeu.jscript.core.engine.values.ArrayValue;
-import me.topchetoeu.jscript.core.engine.values.FunctionValue;
-import me.topchetoeu.jscript.core.engine.values.NativeWrapper;
-import me.topchetoeu.jscript.core.engine.values.ObjectValue;
-import me.topchetoeu.jscript.core.engine.values.Values;
+import me.topchetoeu.jscript.core.Context;
+import me.topchetoeu.jscript.core.values.ArrayValue;
+import me.topchetoeu.jscript.core.values.FunctionValue;
+import me.topchetoeu.jscript.core.values.NativeWrapper;
+import me.topchetoeu.jscript.core.values.ObjectValue;
+import me.topchetoeu.jscript.core.values.Values;
 import me.topchetoeu.jscript.utils.interop.Arguments;
 import me.topchetoeu.jscript.utils.interop.Expose;
 import me.topchetoeu.jscript.utils.interop.ExposeConstructor;
@@ -78,13 +78,13 @@ public class RegExpLib {
         }
 
         var obj = new ArrayValue();
-        var groups = new ObjectValue();
+        ObjectValue groups = null;
 
         for (var el : namedGroups) {
+            if (groups == null) groups = new ObjectValue();
             try { groups.defineProperty(null, el, matcher.group(el)); }
             catch (IllegalArgumentException e) { }
         }
-        if (groups.values.size() == 0) groups = null;
 
 
         for (int i = 0; i < matcher.groupCount() + 1; i++) {

@@ -4,13 +4,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 import me.topchetoeu.jscript.common.ResultRunnable;
-import me.topchetoeu.jscript.core.engine.Context;
-import me.topchetoeu.jscript.core.engine.EventLoop;
-import me.topchetoeu.jscript.core.engine.values.ArrayValue;
-import me.topchetoeu.jscript.core.engine.values.FunctionValue;
-import me.topchetoeu.jscript.core.engine.values.NativeFunction;
-import me.topchetoeu.jscript.core.engine.values.ObjectValue;
-import me.topchetoeu.jscript.core.engine.values.Values;
+import me.topchetoeu.jscript.core.Context;
+import me.topchetoeu.jscript.core.EventLoop;
+import me.topchetoeu.jscript.core.values.ArrayValue;
+import me.topchetoeu.jscript.core.values.FunctionValue;
+import me.topchetoeu.jscript.core.values.NativeFunction;
+import me.topchetoeu.jscript.core.values.ObjectValue;
+import me.topchetoeu.jscript.core.values.Values;
 import me.topchetoeu.jscript.core.exceptions.EngineException;
 import me.topchetoeu.jscript.utils.interop.Arguments;
 import me.topchetoeu.jscript.utils.interop.Expose;
@@ -61,7 +61,7 @@ public class PromiseLib {
             }
 
             if (state == STATE_REJECTED && !handled) {
-                Values.printError(((EngineException)val).setCtx(ctx.environment, ctx.engine), "(in promise)");
+                Values.printError(((EngineException)val).setCtx(ctx), "(in promise)");
             }
 
             handles = null;

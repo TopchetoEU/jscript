@@ -4,10 +4,10 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.stream.Collectors;
 
-import me.topchetoeu.jscript.core.engine.Context;
-import me.topchetoeu.jscript.core.engine.values.ArrayValue;
-import me.topchetoeu.jscript.core.engine.values.ObjectValue;
-import me.topchetoeu.jscript.core.engine.values.Values;
+import me.topchetoeu.jscript.core.Context;
+import me.topchetoeu.jscript.core.values.ArrayValue;
+import me.topchetoeu.jscript.core.values.ObjectValue;
+import me.topchetoeu.jscript.core.values.Values;
 import me.topchetoeu.jscript.utils.interop.Arguments;
 import me.topchetoeu.jscript.utils.interop.Expose;
 import me.topchetoeu.jscript.utils.interop.ExposeConstructor;

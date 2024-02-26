@@ -5,16 +5,16 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import me.topchetoeu.jscript.common.Filename;
-import me.topchetoeu.jscript.core.engine.Context;
-import me.topchetoeu.jscript.core.engine.values.ArrayValue;
-import me.topchetoeu.jscript.core.engine.values.ObjectValue;
-import me.topchetoeu.jscript.core.engine.values.Values;
+import me.topchetoeu.jscript.compilation.parsing.Operator;
+import me.topchetoeu.jscript.compilation.parsing.ParseRes;
+import me.topchetoeu.jscript.compilation.parsing.Parsing;
+import me.topchetoeu.jscript.compilation.parsing.Token;
+import me.topchetoeu.jscript.core.Context;
+import me.topchetoeu.jscript.core.values.ArrayValue;
+import me.topchetoeu.jscript.core.values.ObjectValue;
+import me.topchetoeu.jscript.core.values.Values;
 import me.topchetoeu.jscript.core.exceptions.EngineException;
 import me.topchetoeu.jscript.core.exceptions.SyntaxException;
-import me.topchetoeu.jscript.core.parsing.Operator;
-import me.topchetoeu.jscript.core.parsing.ParseRes;
-import me.topchetoeu.jscript.core.parsing.Parsing;
-import me.topchetoeu.jscript.core.parsing.Token;
 
 public class JSON {
     public static Object toJs(JSONElement val) {

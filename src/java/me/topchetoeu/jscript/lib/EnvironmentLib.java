@@ -1,8 +1,8 @@
 package me.topchetoeu.jscript.lib;
 
-import me.topchetoeu.jscript.core.engine.Environment;
-import me.topchetoeu.jscript.core.engine.values.FunctionValue;
-import me.topchetoeu.jscript.core.engine.values.ObjectValue;
+import me.topchetoeu.jscript.core.Environment;
+import me.topchetoeu.jscript.core.values.FunctionValue;
+import me.topchetoeu.jscript.core.values.ObjectValue;
 import me.topchetoeu.jscript.utils.interop.Arguments;
 import me.topchetoeu.jscript.utils.interop.Expose;
 import me.topchetoeu.jscript.utils.interop.ExposeType;

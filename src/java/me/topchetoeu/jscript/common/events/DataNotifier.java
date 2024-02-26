@@ -1,6 +1,6 @@
 package me.topchetoeu.jscript.common.events;
 
-public class DataNotifier<T> implements Awaitable<T> {
+public class DataNotifier<T> {
     private Notifier notifier = new Notifier();
     private boolean isErr;
     private T val;

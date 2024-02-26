@@ -8,17 +8,17 @@ import java.nio.file.Path;
 import me.topchetoeu.jscript.common.Filename;
 import me.topchetoeu.jscript.common.Metadata;
 import me.topchetoeu.jscript.common.Reading;
-import me.topchetoeu.jscript.core.engine.Engine;
-import me.topchetoeu.jscript.core.engine.Environment;
-import me.topchetoeu.jscript.core.engine.debug.DebugContext;
-import me.topchetoeu.jscript.core.engine.values.NativeFunction;
-import me.topchetoeu.jscript.core.engine.values.Values;
+import me.topchetoeu.jscript.core.Engine;
+import me.topchetoeu.jscript.core.Environment;
+import me.topchetoeu.jscript.core.debug.DebugContext;
+import me.topchetoeu.jscript.core.values.NativeFunction;
+import me.topchetoeu.jscript.core.values.Values;
 import me.topchetoeu.jscript.core.exceptions.EngineException;
 import me.topchetoeu.jscript.core.exceptions.InterruptException;
 import me.topchetoeu.jscript.core.exceptions.SyntaxException;
 import me.topchetoeu.jscript.lib.Internals;
 import me.topchetoeu.jscript.utils.debug.DebugServer;
-import me.topchetoeu.jscript.utils.debug.SimpleDebugger;
+// import me.topchetoeu.jscript.utils.debug.SimpleDebugger;
 import me.topchetoeu.jscript.utils.filesystem.Filesystem;
 import me.topchetoeu.jscript.utils.filesystem.MemoryFilesystem;
 import me.topchetoeu.jscript.utils.filesystem.Mode;
@@ -116,12 +116,12 @@ public class JScriptRepl {
         environment.add(ModuleRepo.ENV_KEY, ModuleRepo.ofFilesystem(fs));
     }
     private static void initEngine() {
-        var ctx = new DebugContext();
-        engine.add(DebugContext.ENV_KEY, ctx);
+        // var ctx = new DebugContext();
+        // engine.add(DebugContext.ENV_KEY, ctx);
 
-        debugServer.targets.put("target", (ws, req) -> new SimpleDebugger(ws).attach(ctx));
+        // debugServer.targets.put("target", (ws, req) -> new SimpleDebugger(ws).attach(ctx));
         engineTask = engine.start();
-        debugTask = debugServer.start(new InetSocketAddress("127.0.0.1", 9229), true);
+        // debugTask = debugServer.start(new InetSocketAddress("127.0.0.1", 9229), true);
     }
 
     public static void main(String args[]) {

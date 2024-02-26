@@ -1,11 +1,11 @@
 package me.topchetoeu.jscript.lib;
 
-import me.topchetoeu.jscript.core.engine.Context;
-import me.topchetoeu.jscript.core.engine.frame.CodeFrame;
-import me.topchetoeu.jscript.core.engine.values.CodeFunction;
-import me.topchetoeu.jscript.core.engine.values.FunctionValue;
-import me.topchetoeu.jscript.core.engine.values.NativeFunction;
-import me.topchetoeu.jscript.core.engine.values.Values;
+import me.topchetoeu.jscript.core.Context;
+import me.topchetoeu.jscript.core.Frame;
+import me.topchetoeu.jscript.core.values.CodeFunction;
+import me.topchetoeu.jscript.core.values.FunctionValue;
+import me.topchetoeu.jscript.core.values.NativeFunction;
+import me.topchetoeu.jscript.core.values.Values;
 import me.topchetoeu.jscript.core.exceptions.EngineException;
 import me.topchetoeu.jscript.lib.PromiseLib.Handle;
 import me.topchetoeu.jscript.utils.interop.Arguments;
@@ -17,7 +17,7 @@ public class AsyncFunctionLib extends FunctionValue {
 
     private static class AsyncHelper {
         public PromiseLib promise = new PromiseLib();
-        public CodeFrame frame;
+        public Frame frame;
 
         private boolean awaiting = false;
 
@@ -69,7 +69,7 @@ public class AsyncFunctionLib extends FunctionValue {
         var handler = new AsyncHelper();
         var func = factory.call(ctx, thisArg, new NativeFunction("await", handler::await));
         if (!(func instanceof CodeFunction)) throw EngineException.ofType("Return value of argument must be a js function.");
-        handler.frame = new CodeFrame(ctx, thisArg, args, (CodeFunction)func);
+        handler.frame = new Frame(ctx, thisArg, args, (CodeFunction)func);
         handler.next(ctx, Values.NO_RETURN, null);
         return handler.promise;
     }

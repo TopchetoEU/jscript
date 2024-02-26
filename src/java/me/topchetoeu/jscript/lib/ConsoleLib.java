@@ -2,7 +2,7 @@ package me.topchetoeu.jscript.lib;
 
 import java.io.IOException;
 
-import me.topchetoeu.jscript.core.engine.values.Values;
+import me.topchetoeu.jscript.core.values.Values;
 import me.topchetoeu.jscript.utils.filesystem.File;
 import me.topchetoeu.jscript.utils.interop.Arguments;
 import me.topchetoeu.jscript.utils.interop.Expose;

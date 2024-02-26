@@ -4,18 +4,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 import me.topchetoeu.jscript.common.Location;
-import me.topchetoeu.jscript.core.engine.Context;
-import me.topchetoeu.jscript.core.engine.Engine;
-import me.topchetoeu.jscript.core.engine.Environment;
-import me.topchetoeu.jscript.core.engine.debug.DebugContext;
-import me.topchetoeu.jscript.core.engine.values.ObjectValue;
-import me.topchetoeu.jscript.core.engine.values.Values;
-import me.topchetoeu.jscript.core.engine.values.ObjectValue.PlaceholderProto;
+import me.topchetoeu.jscript.core.Context;
+import me.topchetoeu.jscript.core.Engine;
+import me.topchetoeu.jscript.core.Environment;
+import me.topchetoeu.jscript.core.values.ObjectValue;
+import me.topchetoeu.jscript.core.values.Values;
+import me.topchetoeu.jscript.core.values.ObjectValue.PlaceholderProto;
 
 public class EngineException extends RuntimeException {
     public static class StackElement {
         public final Location location;
-        public final String function;
+        public final String name;
         public final Context ctx;
 
         public boolean visible() {
@@ -25,22 +24,20 @@ public class EngineException extends RuntimeException {
             var res = "";
             var loc = location;
 
-            if (loc != null && ctx != null && ctx.engine != null) loc = DebugContext.get(ctx).mapToCompiled(loc);
-
             if (loc != null) res += "at " + loc.toString() + " ";
-            if (function != null && !function.equals("")) res += "in " + function + " ";
+            if (name != null && !name.equals("")) res += "in " + name + " ";
 
             return res.trim();
         }
 
-        public StackElement(Context ctx, Location location, String function) {
-            if (function != null) function = function.trim();
-            if (function.equals("")) function = null;
+        public StackElement(Context ctx, Location location, String name) {
+            if (name != null) name = name.trim();
+            if (name.equals("")) name = null;
 
             if (ctx == null) this.ctx = null;
             else this.ctx = new Context(ctx.engine, ctx.environment);
             this.location = location;
-            this.function = function;
+            this.name = name;
         }
     }
 
@@ -52,18 +49,13 @@ public class EngineException extends RuntimeException {
 
     public EngineException add(Context ctx, String name, Location location) {
         var el = new StackElement(ctx, location, name);
-        if (el.function == null && el.location == null) return this;
-        setCtx(ctx.environment, ctx.engine);
+        if (el.name == null && el.location == null) return this;
+        setCtx(ctx);
         stackTrace.add(el);
         return this;
     }
     public EngineException setCause(EngineException cause) {
         this.cause = cause;
-        return this;
-    }
-    public EngineException setCtx(Environment env, Engine engine) {
-        if (this.env == null) this.env = env;
-        if (this.engine == null) this.engine = engine;
         return this;
     }
     public EngineException setCtx(Context ctx) {
@@ -107,9 +99,6 @@ public class EngineException extends RuntimeException {
     }
     public static EngineException ofError(String msg) {
         return new EngineException(err(null, msg, PlaceholderProto.ERROR));
-    }
-    public static EngineException ofSyntax(SyntaxException e) {
-        return new EngineException(err(null, e.msg, PlaceholderProto.SYNTAX_ERROR)).add(null, null, e.loc);
     }
     public static EngineException ofSyntax(String msg) {
         return new EngineException(err(null, msg, PlaceholderProto.SYNTAX_ERROR));

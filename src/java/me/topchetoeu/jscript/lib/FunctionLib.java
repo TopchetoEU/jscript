@@ -1,10 +1,8 @@
 package me.topchetoeu.jscript.lib;
 
-import me.topchetoeu.jscript.common.Location;
-import me.topchetoeu.jscript.core.engine.values.ArrayValue;
-import me.topchetoeu.jscript.core.engine.values.CodeFunction;
-import me.topchetoeu.jscript.core.engine.values.FunctionValue;
-import me.topchetoeu.jscript.core.engine.values.NativeFunction;
+import me.topchetoeu.jscript.core.values.ArrayValue;
+import me.topchetoeu.jscript.core.values.FunctionValue;
+import me.topchetoeu.jscript.core.values.NativeFunction;
 import me.topchetoeu.jscript.utils.interop.Arguments;
 import me.topchetoeu.jscript.utils.interop.Expose;
 import me.topchetoeu.jscript.utils.interop.ExposeTarget;
@@ -12,10 +10,6 @@ import me.topchetoeu.jscript.utils.interop.WrapperName;
 
 @WrapperName("Function")
 public class FunctionLib {
-    @Expose public static Object __location(Arguments args) {
-        if (args.self instanceof CodeFunction) return ((CodeFunction)args.self).loc().toString();
-        else return Location.INTERNAL.toString();
-    }
     @Expose public static Object __apply(Arguments args) {
         return args.self(FunctionValue.class).call(args.ctx, args.get(0), args.convert(1, ArrayValue.class).toArray());
     }

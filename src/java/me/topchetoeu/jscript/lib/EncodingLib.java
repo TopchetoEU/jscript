@@ -3,10 +3,10 @@ package me.topchetoeu.jscript.lib;
 import java.util.ArrayList;
 
 import me.topchetoeu.jscript.common.Buffer;
-import me.topchetoeu.jscript.core.engine.values.ArrayValue;
-import me.topchetoeu.jscript.core.engine.values.Values;
+import me.topchetoeu.jscript.compilation.parsing.Parsing;
+import me.topchetoeu.jscript.core.values.ArrayValue;
+import me.topchetoeu.jscript.core.values.Values;
 import me.topchetoeu.jscript.core.exceptions.EngineException;
-import me.topchetoeu.jscript.core.parsing.Parsing;
 import me.topchetoeu.jscript.utils.interop.Arguments;
 import me.topchetoeu.jscript.utils.interop.Expose;
 import me.topchetoeu.jscript.utils.interop.ExposeTarget;

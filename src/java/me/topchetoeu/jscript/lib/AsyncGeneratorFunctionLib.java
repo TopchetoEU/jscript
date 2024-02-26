@@ -1,10 +1,10 @@
 package me.topchetoeu.jscript.lib;
 
-import me.topchetoeu.jscript.core.engine.Context;
-import me.topchetoeu.jscript.core.engine.frame.CodeFrame;
-import me.topchetoeu.jscript.core.engine.values.CodeFunction;
-import me.topchetoeu.jscript.core.engine.values.FunctionValue;
-import me.topchetoeu.jscript.core.engine.values.NativeFunction;
+import me.topchetoeu.jscript.core.Context;
+import me.topchetoeu.jscript.core.Frame;
+import me.topchetoeu.jscript.core.values.CodeFunction;
+import me.topchetoeu.jscript.core.values.FunctionValue;
+import me.topchetoeu.jscript.core.values.NativeFunction;
 import me.topchetoeu.jscript.core.exceptions.EngineException;
 import me.topchetoeu.jscript.utils.interop.WrapperName;
 
@@ -20,7 +20,7 @@ public class AsyncGeneratorFunctionLib extends FunctionValue {
             new NativeFunction("yield", handler::yield)
         );
         if (!(func instanceof CodeFunction)) throw EngineException.ofType("Return value of argument must be a js function.");
-        handler.frame = new CodeFrame(ctx, thisArg, args, (CodeFunction)func);
+        handler.frame = new Frame(ctx, thisArg, args, (CodeFunction)func);
         return handler;
     }
 

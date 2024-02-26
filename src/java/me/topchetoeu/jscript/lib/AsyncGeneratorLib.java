@@ -2,10 +2,10 @@ package me.topchetoeu.jscript.lib;
 
 import java.util.Map;
 
-import me.topchetoeu.jscript.core.engine.Context;
-import me.topchetoeu.jscript.core.engine.frame.CodeFrame;
-import me.topchetoeu.jscript.core.engine.values.ObjectValue;
-import me.topchetoeu.jscript.core.engine.values.Values;
+import me.topchetoeu.jscript.core.Context;
+import me.topchetoeu.jscript.core.Frame;
+import me.topchetoeu.jscript.core.values.ObjectValue;
+import me.topchetoeu.jscript.core.values.Values;
 import me.topchetoeu.jscript.core.exceptions.EngineException;
 import me.topchetoeu.jscript.lib.PromiseLib.Handle;
 import me.topchetoeu.jscript.utils.interop.Arguments;
@@ -17,7 +17,7 @@ public class AsyncGeneratorLib {
     private int state = 0;
     private boolean done = false;
     private PromiseLib currPromise;
-    public CodeFrame frame;
+    public Frame frame;
 
     private void next(Context ctx, Object inducedValue, Object inducedReturn, EngineException inducedError) {
         if (done) {

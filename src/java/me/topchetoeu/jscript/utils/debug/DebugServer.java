@@ -92,7 +92,6 @@ public class DebugServer {
                 case "Runtime.releaseObject": debugger.releaseObject(msg); continue;
                 case "Runtime.getProperties": debugger.getProperties(msg); continue;
                 case "Runtime.callFunctionOn": debugger.callFunctionOn(msg); continue;
-                // case "NodeWorker.enable": debugger.nodeWorkerEnable(msg); continue;
                 case "Runtime.enable": debugger.runtimeEnable(msg); continue;
             }
 

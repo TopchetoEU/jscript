@@ -1,7 +1,7 @@
 package me.topchetoeu.jscript.utils.filesystem;
 
-import me.topchetoeu.jscript.core.engine.Extensions;
-import me.topchetoeu.jscript.core.engine.values.Symbol;
+import me.topchetoeu.jscript.core.Extensions;
+import me.topchetoeu.jscript.core.values.Symbol;
 
 public interface Filesystem {
     public static final Symbol ENV_KEY = Symbol.get("Environment.fs");
