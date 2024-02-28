@@ -1,4 +1,4 @@
-package me.topchetoeu.jscript.compilation.mapping;
+package me.topchetoeu.jscript.common.mapping;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -9,8 +9,9 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 import me.topchetoeu.jscript.common.Location;
-import me.topchetoeu.jscript.compilation.Instruction.BreakpointType;
+import me.topchetoeu.jscript.common.Instruction.BreakpointType;
 import me.topchetoeu.jscript.core.scope.LocalScopeRecord;
+import me.topchetoeu.jscript.utils.mapping.SourceMap;
 
 public class FunctionMap {
     public static class FunctionMapBuilder {
@@ -22,10 +23,12 @@ public class FunctionMap {
         }
 
         public FunctionMapBuilder setDebug(Location loc, BreakpointType type) {
+            if (loc == null || type == null || type == BreakpointType.NONE) return this;
             breakpoints.put(loc, type);
             return this;
         }
         public FunctionMapBuilder setLocation(int i, Location loc) {
+            if (loc == null || i < 0) return this;
             sourceMap.put(i, loc);
             return this;
         }
@@ -36,9 +39,11 @@ public class FunctionMap {
         }
 
         public Location first() {
+            if (sourceMap.size() == 0) return null;
             return sourceMap.firstEntry().getValue();
         }
         public Location last() {
+            if (sourceMap.size() == 0) return null;
             return sourceMap.lastEntry().getValue();
         }
 
@@ -68,7 +73,9 @@ public class FunctionMap {
     public Location toLocation(int pc, boolean approxiamte) {
         var res = pcToLoc.get(pc);
         if (!approxiamte || res != null) return res;
-        return pcToLoc.headMap(pc, true).lastEntry().getValue();
+        var entry = pcToLoc.headMap(pc, true).lastEntry();
+        if (entry == null) return null;
+        else return entry.getValue();
     }
     public Location toLocation(int pc) {
         return toLocation(pc, false);
@@ -85,9 +92,11 @@ public class FunctionMap {
     }
 
     public Location start() {
+        if (pcToLoc.size() == 0) return null;
         return pcToLoc.firstEntry().getValue();
     }
     public Location end() {
+        if (pcToLoc.size() == 0) return null;
         return pcToLoc.lastEntry().getValue();
     }
 
@@ -126,6 +135,9 @@ public class FunctionMap {
 
             if (b != null) pcToLoc.remove(b);
             if (a != null) locToPc.remove(a);
+
+            pcToLoc.put(pc, loc);
+            locToPc.put(loc, pc);
         }
         for (var el : breakpoints.entrySet()) {
             if (el.getValue() == null || el.getValue() == BreakpointType.NONE) continue;

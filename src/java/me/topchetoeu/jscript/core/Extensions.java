@@ -1,34 +1,33 @@
 package me.topchetoeu.jscript.core;
 
-import me.topchetoeu.jscript.core.values.Symbol;
-
 public interface Extensions {
-    <T> T get(Symbol key);
-    <T> void add(Symbol key, T obj);
-    Iterable<Symbol> keys();
+    <T> T get(Key<T> key);
+    <T> void add(Key<T> key, T obj);
+    Iterable<Key<?>> keys();
 
-    boolean has(Symbol key);
-    boolean remove(Symbol key);
+    boolean has(Key<?> key);
+    boolean remove(Key<?> key);
 
-    default boolean hasNotNull(Symbol key) {
+    default boolean hasNotNull(Key<?> key) {
         return has(key) && get(key) != null;
     }
 
-    default <T> T get(Symbol key, T defaultVal) {
+    default <T> T get(Key<T> key, T defaultVal) {
         if (has(key)) return get(key);
         else return defaultVal;
     }
 
-    default <T> T init(Symbol key, T val) {
+    default <T> T init(Key<T> key, T val) {
         if (has(key)) return get(key);
         else {
             add(key, val);
             return val;
         }
     }
+    @SuppressWarnings("unchecked")
     default void addAll(Extensions source) {
         for (var key : source.keys()) {
-            add(key, source.get(key));
+            add((Key<Object>)key, (Object)source.get(key));
         }
     }
 }

@@ -12,9 +12,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import me.topchetoeu.jscript.common.Operation;
 import me.topchetoeu.jscript.core.Context;
 import me.topchetoeu.jscript.core.Environment;
-import me.topchetoeu.jscript.core.Operation;
 import me.topchetoeu.jscript.core.debug.DebugContext;
 import me.topchetoeu.jscript.core.exceptions.ConvertException;
 import me.topchetoeu.jscript.core.exceptions.EngineException;
@@ -664,7 +664,7 @@ public class Values {
 
         if (val instanceof FunctionValue) {
             res.append(val.toString());
-            var loc = val instanceof CodeFunction ? dbg.getMap((CodeFunction)val).start() : null;
+            var loc = val instanceof CodeFunction ? dbg.getMapOrEmpty((CodeFunction)val).start() : null;
 
             if (loc != null) res.append(" @ " + loc);
         }
@@ -734,10 +734,10 @@ public class Values {
         if (err instanceof EngineException) {
             var ee = ((EngineException)err);
             try {
-                return prefix + " " + ee.toString(new Context(ee.engine, ee.env));
+                return prefix + " " + ee.toString(new Context(ee.env));
             }
             catch (EngineException ex) {
-                return prefix + " " + toReadable(new Context(ee.engine, ee.env), ee.value);
+                return prefix + " " + toReadable(new Context(ee.env), ee.value);
             }
         }
         else if (err instanceof SyntaxException) {

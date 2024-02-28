@@ -1,12 +1,12 @@
 package me.topchetoeu.jscript.compilation.values;
 
+import me.topchetoeu.jscript.common.Instruction;
 import me.topchetoeu.jscript.common.Location;
+import me.topchetoeu.jscript.common.Instruction.BreakpointType;
+import me.topchetoeu.jscript.common.Instruction.Type;
 import me.topchetoeu.jscript.compilation.CompileResult;
 import me.topchetoeu.jscript.compilation.CompoundStatement;
-import me.topchetoeu.jscript.compilation.Instruction;
 import me.topchetoeu.jscript.compilation.Statement;
-import me.topchetoeu.jscript.compilation.Instruction.BreakpointType;
-import me.topchetoeu.jscript.compilation.Instruction.Type;
 import me.topchetoeu.jscript.core.exceptions.SyntaxException;
 
 public class FunctionStatement extends Statement {

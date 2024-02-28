@@ -1,10 +1,10 @@
 package me.topchetoeu.jscript.utils.permissions;
 
 import me.topchetoeu.jscript.core.Extensions;
-import me.topchetoeu.jscript.core.values.Symbol;
+import me.topchetoeu.jscript.core.Key;
 
 public interface PermissionsProvider {
-    public static final Symbol ENV_KEY = new Symbol("Environment.perms");
+    public static final Key<PermissionsProvider> KEY = new Key<>();
     public static final PermissionsProvider ALL_PERMS = (perm, value) -> true;
 
     boolean hasPermission(Permission perm, String value);
@@ -22,7 +22,7 @@ public interface PermissionsProvider {
 
     public static PermissionsProvider get(Extensions exts) {
         return (perm, value) -> {
-            if (exts.hasNotNull(ENV_KEY)) return ((PermissionsProvider)exts.get(ENV_KEY)).hasPermission(perm);
+            if (exts.hasNotNull(KEY)) return exts.get(KEY).hasPermission(perm);
             else return true;
         };
     }

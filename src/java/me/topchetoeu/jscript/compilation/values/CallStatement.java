@@ -1,10 +1,10 @@
 package me.topchetoeu.jscript.compilation.values;
 
+import me.topchetoeu.jscript.common.Instruction;
 import me.topchetoeu.jscript.common.Location;
+import me.topchetoeu.jscript.common.Instruction.BreakpointType;
 import me.topchetoeu.jscript.compilation.CompileResult;
-import me.topchetoeu.jscript.compilation.Instruction;
 import me.topchetoeu.jscript.compilation.Statement;
-import me.topchetoeu.jscript.compilation.Instruction.BreakpointType;
 
 public class CallStatement extends Statement {
     public final Statement func;
@@ -24,8 +24,8 @@ public class CallStatement extends Statement {
 
         for (var arg : args) arg.compile(target, true);
 
-        if (isNew) target.add(Instruction.callNew(args.length));
-        else target.add(Instruction.call(args.length)).setDebug(loc(), type);
+        if (isNew) target.add(Instruction.callNew(args.length)).setLocationAndDebug(loc(), type);
+        else target.add(Instruction.call(args.length)).setLocationAndDebug(loc(), type);
 
         if (!pollute) target.add(Instruction.discard());
     }

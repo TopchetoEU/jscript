@@ -1,5 +1,6 @@
 package me.topchetoeu.jscript.compilation;
 
+import me.topchetoeu.jscript.common.Instruction;
 import me.topchetoeu.jscript.core.exceptions.SyntaxException;
 
 public class ThrowSyntaxStatement extends Statement {

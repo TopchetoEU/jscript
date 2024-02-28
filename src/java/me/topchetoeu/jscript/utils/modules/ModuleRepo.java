@@ -5,13 +5,13 @@ import java.util.HashMap;
 import me.topchetoeu.jscript.common.Filename;
 import me.topchetoeu.jscript.core.Context;
 import me.topchetoeu.jscript.core.Extensions;
-import me.topchetoeu.jscript.core.values.Symbol;
+import me.topchetoeu.jscript.core.Key;
 import me.topchetoeu.jscript.utils.filesystem.Filesystem;
 import me.topchetoeu.jscript.utils.filesystem.Mode;
 
 public interface ModuleRepo {
-    public static final Symbol ENV_KEY = Symbol.get("Environment.modules");
-    public static final Symbol CWD = Symbol.get("Environment.moduleCwd");
+    public static final Key<ModuleRepo> KEY = new Key<>();
+    public static final Key<String> CWD = new Key<>();
 
     public Module getModule(Context ctx, String cwd, String name);
 
@@ -39,6 +39,6 @@ public interface ModuleRepo {
         return exts.init(CWD, "/");
     }
     public static ModuleRepo get(Extensions exts) {
-        return exts.get(ENV_KEY);
+        return exts.get(KEY);
     }
 }

@@ -1,4 +1,4 @@
-package me.topchetoeu.jscript.core;
+package me.topchetoeu.jscript.common;
 
 import java.util.HashMap;
 

@@ -1,12 +1,12 @@
 package me.topchetoeu.jscript.compilation.values;
 
+import me.topchetoeu.jscript.common.Instruction;
 import me.topchetoeu.jscript.common.Location;
+import me.topchetoeu.jscript.common.Operation;
+import me.topchetoeu.jscript.common.Instruction.BreakpointType;
 import me.topchetoeu.jscript.compilation.AssignableStatement;
 import me.topchetoeu.jscript.compilation.CompileResult;
-import me.topchetoeu.jscript.compilation.Instruction;
 import me.topchetoeu.jscript.compilation.Statement;
-import me.topchetoeu.jscript.compilation.Instruction.BreakpointType;
-import me.topchetoeu.jscript.core.Operation;
 
 public class IndexStatement extends AssignableStatement {
     public final Statement object;

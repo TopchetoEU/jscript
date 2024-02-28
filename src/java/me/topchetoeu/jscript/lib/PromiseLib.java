@@ -6,12 +6,14 @@ import java.util.List;
 import me.topchetoeu.jscript.common.ResultRunnable;
 import me.topchetoeu.jscript.core.Context;
 import me.topchetoeu.jscript.core.EventLoop;
+import me.topchetoeu.jscript.core.Extensions;
 import me.topchetoeu.jscript.core.values.ArrayValue;
 import me.topchetoeu.jscript.core.values.FunctionValue;
 import me.topchetoeu.jscript.core.values.NativeFunction;
 import me.topchetoeu.jscript.core.values.ObjectValue;
 import me.topchetoeu.jscript.core.values.Values;
 import me.topchetoeu.jscript.core.exceptions.EngineException;
+import me.topchetoeu.jscript.core.exceptions.InterruptException;
 import me.topchetoeu.jscript.utils.interop.Arguments;
 import me.topchetoeu.jscript.utils.interop.Expose;
 import me.topchetoeu.jscript.utils.interop.ExposeConstructor;
@@ -24,14 +26,17 @@ public class PromiseLib {
         void onFulfil(Object val);
         void onReject(EngineException err);
 
-        default Handle defer(EventLoop loop) {
+        default Handle defer(Extensions loop) {
             var self = this;
+
             return new Handle() {
                 @Override public void onFulfil(Object val) {
-                    loop.pushMsg(() -> self.onFulfil(val), true);
+                    if (!loop.hasNotNull(EventLoop.KEY)) throw EngineException.ofError("No event loop");
+                    loop.get(EventLoop.KEY).pushMsg(() -> self.onFulfil(val), true);
                 }
                 @Override public void onReject(EngineException val) {
-                    loop.pushMsg(() -> self.onReject(val), true);
+                    if (!loop.hasNotNull(EventLoop.KEY)) throw EngineException.ofError("No event loop");
+                    loop.get(EventLoop.KEY).pushMsg(() -> self.onReject(val), true);
                 }
             };
         }
@@ -48,7 +53,9 @@ public class PromiseLib {
     private Object val;
 
     private void resolveSynchronized(Context ctx, Object val, int newState) {
-        ctx.engine.pushMsg(() -> {
+        if (!ctx.hasNotNull(EventLoop.KEY)) throw EngineException.ofError("No event loop");
+
+        ctx.get(EventLoop.KEY).pushMsg(() -> {
             this.val = val;
             this.state = newState;
 
@@ -118,6 +125,12 @@ public class PromiseLib {
             catch (EngineException e) {
                 res.reject(ctx, e);
             }
+            catch (Exception e) {
+                if (e instanceof InterruptException) throw e;
+                else {
+                    res.reject(ctx, EngineException.ofError("Native code failed with " + e.getMessage()));
+                }
+            }
         }, "Promisifier").start();
 
         return res;
@@ -144,7 +157,8 @@ public class PromiseLib {
 
         try {
             var then = Values.getMember(ctx, obj, "then");
-            Values.call(ctx, then, obj,
+
+            if (then instanceof FunctionValue) Values.call(ctx, then, obj,
                 new NativeFunction(args -> {
                     try { handle.onFulfil(args.get(0)); }
                     catch (Exception e) {
@@ -162,6 +176,7 @@ public class PromiseLib {
                     return null;
                 })
             );
+            else handle.onFulfil(obj);
 
             return;
         }
@@ -325,7 +340,7 @@ public class PromiseLib {
                 try { res.fulfill(args.ctx, onReject.call(args.ctx, null, err.value)); }
                 catch (EngineException e) { res.reject(args.ctx, e); }
             }
-        }.defer(args.ctx.engine));
+        }.defer(args.ctx));
 
         return res;
     }
@@ -354,7 +369,7 @@ public class PromiseLib {
                 }
                 catch (EngineException e) { res.reject(args.ctx, e); }
             }
-        }.defer(args.ctx.engine));
+        }.defer(args.ctx));
 
         return res;
     }

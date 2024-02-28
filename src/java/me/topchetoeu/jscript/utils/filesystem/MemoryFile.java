@@ -6,6 +6,7 @@ class MemoryFile extends BaseFile<Buffer> {
     private int ptr;
 
     @Override protected int onRead(byte[] buff) {
+        if (ptr >= handle().length()) return -1;
         var res = handle().read(ptr, buff);
         ptr += res;
         return res;

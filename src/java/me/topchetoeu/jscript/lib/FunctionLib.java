@@ -1,6 +1,7 @@
 package me.topchetoeu.jscript.lib;
 
 import me.topchetoeu.jscript.core.values.ArrayValue;
+import me.topchetoeu.jscript.core.values.CodeFunction;
 import me.topchetoeu.jscript.core.values.FunctionValue;
 import me.topchetoeu.jscript.core.values.NativeFunction;
 import me.topchetoeu.jscript.utils.interop.Arguments;
@@ -44,10 +45,10 @@ public class FunctionLib {
     }
     @Expose(target = ExposeTarget.STATIC)
     public static FunctionValue __asyncGenerator(Arguments args) {
-        return new AsyncGeneratorFunctionLib(args.convert(0, FunctionValue.class));
+        return new AsyncGeneratorFunctionLib(args.convert(0, CodeFunction.class));
     }
     @Expose(target = ExposeTarget.STATIC)
     public static FunctionValue __generator(Arguments args) {
-        return new GeneratorFunctionLib(args.convert(0, FunctionValue.class));
+        return new GeneratorFunctionLib(args.convert(0, CodeFunction.class));
     }
 }

@@ -3,7 +3,7 @@ package me.topchetoeu.jscript.compilation.parsing;
 import java.util.HashMap;
 import java.util.Map;
 
-import me.topchetoeu.jscript.core.Operation;
+import me.topchetoeu.jscript.common.Operation;
 
 public enum Operator {
     MULTIPLY("*", Operation.MULTIPLY, 13),

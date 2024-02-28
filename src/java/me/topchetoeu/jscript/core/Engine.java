@@ -1,54 +1,92 @@
 package me.topchetoeu.jscript.core;
 
-import java.util.HashMap;
+import java.util.concurrent.PriorityBlockingQueue;
 
 import me.topchetoeu.jscript.common.Filename;
+import me.topchetoeu.jscript.common.ResultRunnable;
 import me.topchetoeu.jscript.common.events.DataNotifier;
-import me.topchetoeu.jscript.compilation.FunctionBody;
+import me.topchetoeu.jscript.core.exceptions.InterruptException;
 import me.topchetoeu.jscript.core.values.FunctionValue;
-import me.topchetoeu.jscript.core.values.Symbol;
 
-public class Engine extends EventLoop implements Extensions {
-    public static final HashMap<Integer, FunctionBody> functions = new HashMap<>();
+public class Engine implements EventLoop {
+    private static class Task<T> implements Comparable<Task<?>> {
+        public final ResultRunnable<?> runnable;
+        public final DataNotifier<T> notifier = new DataNotifier<>();
+        public final boolean micro;
 
-    private final Environment env = new Environment();
+        public Task(ResultRunnable<T> runnable, boolean micro) {
+            this.runnable = runnable;
+            this.micro = micro;
+        }
 
-    @Override
-    public <T> void add(Symbol key, T obj) {
-        this.env.add(key, obj);
-    }
-    @Override
-    public <T> T get(Symbol key) {
-        return this.env.get(key);
-    }
-    @Override
-    public boolean has(Symbol key) {
-        return this.env.has(key);
-    }
-    @Override
-    public boolean remove(Symbol key) {
-        return this.env.remove(key);
-    }
-    @Override
-    public Iterable<Symbol> keys() {
-        return env.keys();
+        @Override
+        public int compareTo(Task<?> other) {
+            return Integer.compare(this.micro ? 0 : 1, other.micro ? 0 : 1);
+        }
     }
 
-    public Engine copy() {
-        var res = new Engine();
-        res.env.addAll(env);
-        return res;
+    private PriorityBlockingQueue<Task<?>> tasks = new PriorityBlockingQueue<>();
+    private Thread thread;
+
+    @Override
+    public <T> DataNotifier<T> pushMsg(ResultRunnable<T> runnable, boolean micro) {
+        var msg = new Task<T>(runnable, micro);
+        tasks.add(msg);
+        return msg.notifier;
+    }
+
+    @SuppressWarnings("unchecked")
+    public void run(boolean untilEmpty) {
+        while (!untilEmpty || !tasks.isEmpty()) {
+            try {
+                var task = tasks.take();
+
+                try {
+                    ((Task<Object>)task).notifier.next(task.runnable.run());
+                }
+                catch (RuntimeException e) {
+                    if (e instanceof InterruptException) throw e;
+                    task.notifier.error(e);
+                }
+            }
+            catch (InterruptedException | InterruptException e) {
+                for (var msg : tasks) msg.notifier.error(new InterruptException(e));
+                break;
+            }
+        }
+    }
+
+    public Thread thread() {
+        return thread;
+    }
+    public Thread start() {
+        if (thread == null) {
+            thread = new Thread(() -> run(false), "Event loop #" + hashCode());
+            thread.start();
+        }
+        return thread;
+    }
+    public void stop() {
+        if (thread != null) thread.interrupt();
+        thread = null;
+    }
+
+    public boolean inLoopThread() {
+        return Thread.currentThread() == thread;
+    }
+    public boolean isRunning() {
+        return this.thread != null;
     }
 
     public DataNotifier<Object> pushMsg(boolean micro, Environment env, FunctionValue func, Object thisArg, Object ...args) {
         return pushMsg(() -> {
-            return func.call(new Context(this, env), thisArg, args);
+            return func.call(new Context(env), thisArg, args);
         }, micro);
     }
     public DataNotifier<Object> pushMsg(boolean micro, Environment env, Filename filename, String raw, Object thisArg, Object ...args) {
         return pushMsg(() -> {
-            var ctx = new Context(this, env);
-            return ctx.compile(filename, raw).call(new Context(this, env), thisArg, args);
+            var ctx = new Context(env);
+            return ctx.compile(filename, raw).call(new Context(env), thisArg, args);
         }, micro);
     }
 

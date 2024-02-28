@@ -1,7 +1,7 @@
 package me.topchetoeu.jscript.compilation;
 
 import me.topchetoeu.jscript.common.Location;
-import me.topchetoeu.jscript.compilation.Instruction.BreakpointType;
+import me.topchetoeu.jscript.common.Instruction.BreakpointType;
 
 public abstract class Statement {
     private Location _loc;

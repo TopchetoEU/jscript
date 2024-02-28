@@ -3,9 +3,9 @@ package me.topchetoeu.jscript.compilation.values;
 import java.util.ArrayList;
 import java.util.Map;
 
+import me.topchetoeu.jscript.common.Instruction;
 import me.topchetoeu.jscript.common.Location;
 import me.topchetoeu.jscript.compilation.CompileResult;
-import me.topchetoeu.jscript.compilation.Instruction;
 import me.topchetoeu.jscript.compilation.Statement;
 
 public class ObjectStatement extends Statement {

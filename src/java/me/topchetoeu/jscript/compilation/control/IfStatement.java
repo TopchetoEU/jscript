@@ -1,10 +1,10 @@
 package me.topchetoeu.jscript.compilation.control;
 
+import me.topchetoeu.jscript.common.Instruction;
 import me.topchetoeu.jscript.common.Location;
+import me.topchetoeu.jscript.common.Instruction.BreakpointType;
 import me.topchetoeu.jscript.compilation.CompileResult;
-import me.topchetoeu.jscript.compilation.Instruction;
 import me.topchetoeu.jscript.compilation.Statement;
-import me.topchetoeu.jscript.compilation.Instruction.BreakpointType;
 
 public class IfStatement extends Statement {
     public final Statement condition, body, elseBody;
@@ -31,7 +31,7 @@ public class IfStatement extends Statement {
             elseBody.compile(target, pollute, breakpoint);
             int end = target.size();
 
-            target.set(start, Instruction.jmpIfNot(mid - start - 1));
+            target.set(start, Instruction.jmpIfNot(mid - start + 1));
             target.set(mid, Instruction.jmp(end - mid));
         }
     }

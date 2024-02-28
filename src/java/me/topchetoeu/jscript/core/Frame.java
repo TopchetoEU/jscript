@@ -3,7 +3,7 @@ package me.topchetoeu.jscript.core;
 import java.util.List;
 import java.util.Stack;
 
-import me.topchetoeu.jscript.compilation.Instruction;
+import me.topchetoeu.jscript.common.Instruction;
 import me.topchetoeu.jscript.core.debug.DebugContext;
 import me.topchetoeu.jscript.core.scope.LocalScope;
 import me.topchetoeu.jscript.core.scope.ValueVariable;
@@ -159,7 +159,7 @@ public class Frame {
                         returnValue = InstructionRunner.exec(ctx, instr, this);
                     }
                     catch (EngineException e) {
-                        error = e.add(ctx, function.name, DebugContext.get(ctx).getMap(function).toLocation(codePtr, true));
+                        error = e.add(ctx, function.name, DebugContext.get(ctx).getMapOrEmpty(function).toLocation(codePtr, true));
                     }
                 }
             }

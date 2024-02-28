@@ -1,4 +1,4 @@
-package me.topchetoeu.jscript.compilation;
+package me.topchetoeu.jscript.common;
 
 public class FunctionBody {
     public final FunctionBody[] children;

@@ -1,4 +1,4 @@
-package me.topchetoeu.jscript.compilation.mapping;
+package me.topchetoeu.jscript.utils.mapping;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -6,7 +6,6 @@ import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import me.topchetoeu.jscript.common.Location;
-import me.topchetoeu.jscript.common.VLQ;
 import me.topchetoeu.jscript.common.json.JSON;
 
 public class SourceMap {

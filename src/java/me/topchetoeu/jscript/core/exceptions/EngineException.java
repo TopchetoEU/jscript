@@ -5,7 +5,6 @@ import java.util.List;
 
 import me.topchetoeu.jscript.common.Location;
 import me.topchetoeu.jscript.core.Context;
-import me.topchetoeu.jscript.core.Engine;
 import me.topchetoeu.jscript.core.Environment;
 import me.topchetoeu.jscript.core.values.ObjectValue;
 import me.topchetoeu.jscript.core.values.Values;
@@ -35,7 +34,7 @@ public class EngineException extends RuntimeException {
             if (name.equals("")) name = null;
 
             if (ctx == null) this.ctx = null;
-            else this.ctx = new Context(ctx.engine, ctx.environment);
+            else this.ctx = new Context(ctx.environment);
             this.location = location;
             this.name = name;
         }
@@ -44,7 +43,6 @@ public class EngineException extends RuntimeException {
     public final Object value;
     public EngineException cause;
     public Environment env = null;
-    public Engine engine = null;
     public final List<StackElement> stackTrace = new ArrayList<>();
 
     public EngineException add(Context ctx, String name, Location location) {
@@ -60,7 +58,6 @@ public class EngineException extends RuntimeException {
     }
     public EngineException setCtx(Context ctx) {
         if (this.env == null) this.env = ctx.environment;
-        if (this.engine == null) this.engine = ctx.engine;
         return this;
     }
 

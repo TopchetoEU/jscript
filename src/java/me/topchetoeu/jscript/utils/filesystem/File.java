@@ -15,24 +15,31 @@ public interface File {
 
     default byte[] readAll() {
         var parts = new LinkedList<byte[]>();
+        var sizes = new LinkedList<Integer>();
         var buff = new byte[1024];
         var size = 0;
 
         while (true) {
             var n = read(buff);
-            if (n == 0) break;
+            if (n < 0) break;
+            else if (n == 0) continue;
 
             parts.add(buff);
+            sizes.add(n);
             size += n;
+            buff = new byte[1024];
         }
 
         buff = new byte[size];
 
         var i = 0;
+        var j = 0;
 
         for (var part : parts) {
-            System.arraycopy(part, 0, buff, i, part.length);
-            i += part.length;
+            var currSize = sizes.get(j++);
+
+            System.arraycopy(part, 0, buff, i, currSize);
+            i += currSize;
         }
 
         return buff;

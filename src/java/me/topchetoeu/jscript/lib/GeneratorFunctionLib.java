@@ -10,18 +10,22 @@ import me.topchetoeu.jscript.utils.interop.WrapperName;
 
 @WrapperName("GeneratorFunction")
 public class GeneratorFunctionLib extends FunctionValue {
-    public final FunctionValue factory;
+    public final CodeFunction func;
 
     @Override public Object call(Context ctx, Object thisArg, Object ...args) {
         var handler = new GeneratorLib();
-        var func = factory.call(ctx, thisArg, new NativeFunction("yield", handler::yield));
-        if (!(func instanceof CodeFunction)) throw EngineException.ofType("Return value of argument must be a js function.");
-        handler.frame = new Frame(ctx, thisArg, args, (CodeFunction)func);
+
+        var newArgs = new Object[args.length + 1];
+        newArgs[0] = new NativeFunction("yield", handler::yield);
+        System.arraycopy(args, 0, newArgs, 1, args.length);
+
+        handler.frame = new Frame(ctx, thisArg, newArgs, func);
         return handler;
     }
 
-    public GeneratorFunctionLib(FunctionValue factory) {
-        super(factory.name, factory.length);
-        this.factory = factory;
+    public GeneratorFunctionLib(CodeFunction func) {
+        super(func.name, func.length);
+        if (!(func instanceof CodeFunction)) throw EngineException.ofType("Return value of argument must be a js function.");
+        this.func = func;
     }
 }

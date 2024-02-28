@@ -3,8 +3,9 @@ package me.topchetoeu.jscript.compilation;
 import java.util.List;
 import java.util.Vector;
 
+import me.topchetoeu.jscript.common.Instruction;
 import me.topchetoeu.jscript.common.Location;
-import me.topchetoeu.jscript.compilation.Instruction.BreakpointType;
+import me.topchetoeu.jscript.common.Instruction.BreakpointType;
 import me.topchetoeu.jscript.compilation.values.FunctionStatement;
 
 public class CompoundStatement extends Statement {

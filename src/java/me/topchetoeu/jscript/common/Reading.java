@@ -13,11 +13,6 @@ public class Reading {
         return reader.readLine();
     }
 
-    /**
-     * Reads the given stream to a string
-     * @param in 
-     * @return
-     */
     public static String streamToString(InputStream in) {
         try {
             return new String(in.readAllBytes());

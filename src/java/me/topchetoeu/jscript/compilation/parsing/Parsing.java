@@ -8,14 +8,15 @@ import java.util.LinkedHashMap;
 import java.util.List;
 
 import me.topchetoeu.jscript.common.Filename;
+import me.topchetoeu.jscript.common.Instruction;
 import me.topchetoeu.jscript.common.Location;
+import me.topchetoeu.jscript.common.Operation;
 import me.topchetoeu.jscript.compilation.*;
 import me.topchetoeu.jscript.compilation.VariableDeclareStatement.Pair;
 import me.topchetoeu.jscript.compilation.control.*;
 import me.topchetoeu.jscript.compilation.control.SwitchStatement.SwitchCase;
 import me.topchetoeu.jscript.compilation.parsing.ParseRes.State;
 import me.topchetoeu.jscript.compilation.values.*;
-import me.topchetoeu.jscript.core.Operation;
 import me.topchetoeu.jscript.core.scope.LocalScopeRecord;
 import me.topchetoeu.jscript.core.exceptions.SyntaxException;
 
@@ -400,6 +401,10 @@ public class Parsing {
         return -1;
     }
 
+    private static boolean inBounds(List<Token> tokens, int i) {
+        return i >= 0 && i < tokens.size();
+    }
+
     private static String parseString(Location loc, String literal) {
         var res = new StringBuilder();
 
@@ -605,49 +610,41 @@ public class Parsing {
     }
 
     public static ParseRes<String> parseIdentifier(List<Token> tokens, int i) {
-        try {
+        if (inBounds(tokens, i)) {
             if (tokens.get(i).isIdentifier()) {
                 return ParseRes.res(tokens.get(i).identifier(), 1);
             }
             else return ParseRes.failed();
         }
-        catch (IndexOutOfBoundsException e) {
-            return ParseRes.failed();
-        }
+        else return ParseRes.failed();
     }
     public static ParseRes<Operator> parseOperator(List<Token> tokens, int i) {
-        try {
+        if (inBounds(tokens, i)) {
             if (tokens.get(i).isOperator()) {
                 return ParseRes.res(tokens.get(i).operator(), 1);
             }
             else return ParseRes.failed();
         }
-        catch (IndexOutOfBoundsException e) {
-            return ParseRes.failed();
-        }
+        else return ParseRes.failed();
     }
 
     public static boolean isIdentifier(List<Token> tokens, int i, String lit) {
-        try {
+        if (inBounds(tokens, i)) {
             if (tokens.get(i).isIdentifier(lit)) {
                 return true;
             }
             else return false;
         }
-        catch (IndexOutOfBoundsException e) {
-            return false;
-        }
+        else return false;
     }
     public static boolean isOperator(List<Token> tokens, int i, Operator op) {
-        try {
+        if (inBounds(tokens, i)) {
             if (tokens.get(i).isOperator(op)) {
                 return true;
             }
             else return false;
         }
-        catch (IndexOutOfBoundsException e) {
-            return false;
-        }
+        else return false;
     }
     public static boolean isStatementEnd(List<Token> tokens, int i) {
         if (isOperator(tokens, i, Operator.SEMICOLON)) return true;
@@ -662,32 +659,27 @@ public class Parsing {
 
     public static ParseRes<ConstantStatement> parseString(Filename filename, List<Token> tokens, int i) {
         var loc = getLoc(filename, tokens, i);
-        try {
+        if (inBounds(tokens, i)) {
             if (tokens.get(i).isString()) {
                 return ParseRes.res(new ConstantStatement(loc, tokens.get(i).string()), 1);
             }
             else return ParseRes.failed();
         }
-        catch (IndexOutOfBoundsException e) {
-            return ParseRes.failed();
-        }
+        else return ParseRes.failed();
     }
     public static ParseRes<ConstantStatement> parseNumber(Filename filename, List<Token> tokens, int i) {
         var loc = getLoc(filename, tokens, i);
-        try {
+        if (inBounds(tokens, i)) {
             if (tokens.get(i).isNumber()) {
                 return ParseRes.res(new ConstantStatement(loc, tokens.get(i).number()), 1);
             }
             else return ParseRes.failed();
         }
-        catch (IndexOutOfBoundsException e) {
-            return ParseRes.failed();
-        }
-
+        else return ParseRes.failed();
     }
     public static ParseRes<RegexStatement> parseRegex(Filename filename, List<Token> tokens, int i) {
         var loc = getLoc(filename, tokens, i);
-        try {
+        if (inBounds(tokens, i)) {
             if (tokens.get(i).isRegex()) {
                 var val = tokens.get(i).regex();
                 var index = val.lastIndexOf('/');
@@ -697,9 +689,7 @@ public class Parsing {
             }
             else return ParseRes.failed();
         }
-        catch (IndexOutOfBoundsException e) {
-            return ParseRes.failed();
-        }
+        return ParseRes.failed();
     }
 
     public static ParseRes<ArrayStatement> parseArray(Filename filename, List<Token> tokens, int i) {
@@ -776,15 +766,13 @@ public class Parsing {
     public static ParseRes<String> parsePropName(Filename filename, List<Token> tokens, int i) {
         var loc = getLoc(filename, tokens, i);
 
-        try {
+        if (inBounds(tokens, i)) {
             var token = tokens.get(i);
 
             if (token.isNumber() || token.isIdentifier() || token.isString()) return ParseRes.res(token.rawValue, 1);
             else return ParseRes.error(loc, "Expected identifier, string or number literal.");
         }
-        catch (IndexOutOfBoundsException e) {
-            return ParseRes.failed();
-        }
+        else return ParseRes.failed();
     }
     public static ParseRes<ObjProp> parseObjectProp(Filename filename, List<Token> tokens, int i) {
         var loc = getLoc(filename, tokens, i);
@@ -1900,7 +1888,6 @@ public class Parsing {
         return target;
     }
     public static CompileResult compile(Filename filename, String raw) {
-        try { return compile(parse(filename, raw)); }
-        catch (SyntaxException e) { return compile(new ThrowSyntaxStatement(e)); }
+        return compile(parse(filename, raw));
     }
 }

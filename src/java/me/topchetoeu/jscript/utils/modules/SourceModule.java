@@ -11,7 +11,7 @@ public class SourceModule extends Module {
 
     @Override
     protected Object onLoad(Context ctx) {
-        var res = new Context(ctx.engine, env).compile(filename, source);
+        var res = new Context(env).compile(filename, source);
         return res.call(ctx);
     }
 

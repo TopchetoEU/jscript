@@ -1,6 +1,6 @@
 package me.topchetoeu.jscript.core.values;
 
-import me.topchetoeu.jscript.compilation.FunctionBody;
+import me.topchetoeu.jscript.common.FunctionBody;
 import me.topchetoeu.jscript.core.Context;
 import me.topchetoeu.jscript.core.Environment;
 import me.topchetoeu.jscript.core.Frame;

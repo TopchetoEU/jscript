@@ -1,12 +1,14 @@
 package me.topchetoeu.jscript.core.debug;
 
 import me.topchetoeu.jscript.common.Filename;
-import me.topchetoeu.jscript.compilation.Instruction;
+import me.topchetoeu.jscript.common.FunctionBody;
+import me.topchetoeu.jscript.common.Instruction;
+import me.topchetoeu.jscript.common.mapping.FunctionMap;
 import me.topchetoeu.jscript.core.Context;
 import me.topchetoeu.jscript.core.Frame;
 import me.topchetoeu.jscript.core.exceptions.EngineException;
 
-public interface DebugController {
+public interface DebugHandler {
     /**
      * Called when a script has been loaded
      * @param filename The name of the source
@@ -14,7 +16,21 @@ public interface DebugController {
      * @param breakpoints A set of all the breakpointable locations in this source
      * @param map The source map associated with this file. null if this source map isn't mapped
      */
-    void onSource(Filename filename, String source);
+    void onSourceLoad(Filename filename, String source);
+
+    /**
+     * Called when a function body has been loaded
+     * @param body The body loaded
+     * @param map The map of the function
+     */
+    void onFunctionLoad(FunctionBody body, FunctionMap map);
+
+    // /**
+    //  * Called when a function body has been loaded
+    //  * @param body The body loaded
+    //  * @param map The map of the function
+    //  */
+    // void onFunctionUnload(FunctionBody body, FunctionMap map);
 
     /**
      * Called immediatly before an instruction is executed, as well as after an instruction, if it has threw or returned.
@@ -44,14 +60,15 @@ public interface DebugController {
      */
     void onFramePop(Context ctx, Frame frame);
 
-    public static DebugController empty() {
-        return new DebugController () {
+    public static DebugHandler empty() {
+        return new DebugHandler () {
             @Override public void onFramePop(Context ctx, Frame frame) { }
             @Override public void onFramePush(Context ctx, Frame frame) { }
             @Override public boolean onInstruction(Context ctx, Frame frame, Instruction instruction, Object returnVal, EngineException error, boolean caught) {
                 return false;
             }
-            @Override public void onSource(Filename filename, String source) { }
+            @Override public void onSourceLoad(Filename filename, String source) { }
+            @Override public void onFunctionLoad(FunctionBody body, FunctionMap map) { }
         };
     }
 }

@@ -4,10 +4,12 @@ import java.util.List;
 import java.util.LinkedList;
 import java.util.Vector;
 
+import me.topchetoeu.jscript.common.FunctionBody;
+import me.topchetoeu.jscript.common.Instruction;
 import me.topchetoeu.jscript.common.Location;
-import me.topchetoeu.jscript.compilation.Instruction.BreakpointType;
-import me.topchetoeu.jscript.compilation.mapping.FunctionMap;
-import me.topchetoeu.jscript.compilation.mapping.FunctionMap.FunctionMapBuilder;
+import me.topchetoeu.jscript.common.Instruction.BreakpointType;
+import me.topchetoeu.jscript.common.mapping.FunctionMap;
+import me.topchetoeu.jscript.common.mapping.FunctionMap.FunctionMapBuilder;
 import me.topchetoeu.jscript.core.scope.LocalScopeRecord;
 
 public class CompileResult {
@@ -59,16 +61,15 @@ public class CompileResult {
         return child;
     }
 
+    public FunctionMap map() {
+        return map.build(scope);
+    }
     public FunctionBody body() {
         var builtChildren = new FunctionBody[children.size()];
 
         for (var i = 0; i < children.size(); i++) builtChildren[i] = children.get(i).body();
 
         return new FunctionBody(scope.localsCount(), length, instructions.toArray(Instruction[]::new), builtChildren);
-    }
-
-    public FunctionMap map() {
-        return map.build();
     }
 
     public CompileResult(LocalScopeRecord scope) {

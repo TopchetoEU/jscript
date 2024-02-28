@@ -39,7 +39,7 @@ public class NativeWrapperProvider implements WrapperProvider {
                 throw ((EngineException)e.getTargetException()).add(ctx, name, Location.INTERNAL);
             }
             else if (e.getTargetException() instanceof NullPointerException) {
-                e.printStackTrace();
+                // e.getTargetException().printStackTrace();
                 throw EngineException.ofType("Unexpected value of 'undefined'.").add(ctx, name, Location.INTERNAL);
             }
             else if (e.getTargetException() instanceof InterruptException || e.getTargetException() instanceof InterruptedException) {
@@ -172,7 +172,7 @@ public class NativeWrapperProvider implements WrapperProvider {
                 if (props.contains(key) || nonProps.contains(key)) repeat = true;
                 else {
                     checkSignature(method, true, Environment.class);
-                    obj.defineProperty(null, key, call(new Context(null, env), name, method, null, env), true, true, false);
+                    obj.defineProperty(null, key, call(new Context(env), name, method, null, env), true, true, false);
                     nonProps.add(key);
                 }
 
@@ -195,7 +195,7 @@ public class NativeWrapperProvider implements WrapperProvider {
                 if (props.contains(key) || nonProps.contains(key)) repeat = true;
                 else {
                     try {
-                        obj.defineProperty(null, key, Values.normalize(new Context(null, env), field.get(null)), true, true, false);
+                        obj.defineProperty(null, key, Values.normalize(new Context(env), field.get(null)), true, true, false);
                         nonProps.add(key);
                     }
                     catch (IllegalArgumentException | IllegalAccessException e) { }

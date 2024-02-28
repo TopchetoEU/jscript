@@ -1,7 +1,9 @@
 package me.topchetoeu.jscript.common;
 
+import java.util.ArrayList;
+
 public class Location implements Comparable<Location> {
-    public static final Location INTERNAL = new Location(0, 0, new Filename("jscript", "native"));
+    public static final Location INTERNAL = new Location(-1, -1, new Filename("jscript", "native"));
     private int line;
     private int start;
     private Filename filename;
@@ -12,7 +14,13 @@ public class Location implements Comparable<Location> {
 
     @Override
     public String toString() {
-        return filename.toString() + ":" + line + ":" + start;
+        var res = new ArrayList<String>();
+
+        if (filename != null) res.add(filename.toString());
+        if (line >= 0) res.add(line + "");
+        if (start >= 0) res.add(start + "");
+
+        return String.join(":", res);
     }
 
     public Location add(int n, boolean clone) {

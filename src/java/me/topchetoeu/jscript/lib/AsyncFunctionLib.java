@@ -13,7 +13,7 @@ import me.topchetoeu.jscript.utils.interop.WrapperName;
 
 @WrapperName("AsyncFunction")
 public class AsyncFunctionLib extends FunctionValue {
-    public final FunctionValue factory;
+    public final CodeFunction func;
 
     private static class AsyncHelper {
         public PromiseLib promise = new PromiseLib();
@@ -67,15 +67,19 @@ public class AsyncFunctionLib extends FunctionValue {
     @Override
     public Object call(Context ctx, Object thisArg, Object ...args) {
         var handler = new AsyncHelper();
-        var func = factory.call(ctx, thisArg, new NativeFunction("await", handler::await));
-        if (!(func instanceof CodeFunction)) throw EngineException.ofType("Return value of argument must be a js function.");
-        handler.frame = new Frame(ctx, thisArg, args, (CodeFunction)func);
+
+        var newArgs = new Object[args.length + 1];
+        newArgs[0] = new NativeFunction("await", handler::await);
+        System.arraycopy(args, 0, newArgs, 1, args.length);
+
+        handler.frame = new Frame(ctx, thisArg, newArgs, (CodeFunction)func);
         handler.next(ctx, Values.NO_RETURN, null);
         return handler.promise;
     }
 
-    public AsyncFunctionLib(FunctionValue factory) {
-        super(factory.name, factory.length);
-        this.factory = factory;
+    public AsyncFunctionLib(FunctionValue func) {
+        super(func.name, func.length);
+        if (!(func instanceof CodeFunction)) throw EngineException.ofType("Return value of argument must be a js function.");
+        this.func = (CodeFunction)func;
     }
 }

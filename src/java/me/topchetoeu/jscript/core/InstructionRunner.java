@@ -2,7 +2,6 @@ package me.topchetoeu.jscript.core;
 
 import java.util.Collections;
 
-import me.topchetoeu.jscript.compilation.Instruction;
 import me.topchetoeu.jscript.core.scope.ValueVariable;
 import me.topchetoeu.jscript.core.values.ArrayValue;
 import me.topchetoeu.jscript.core.values.CodeFunction;
@@ -10,6 +9,8 @@ import me.topchetoeu.jscript.core.values.FunctionValue;
 import me.topchetoeu.jscript.core.values.ObjectValue;
 import me.topchetoeu.jscript.core.values.Symbol;
 import me.topchetoeu.jscript.core.values.Values;
+import me.topchetoeu.jscript.common.Instruction;
+import me.topchetoeu.jscript.common.Operation;
 import me.topchetoeu.jscript.core.exceptions.EngineException;
 
 public class InstructionRunner {

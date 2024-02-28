@@ -4,9 +4,10 @@ import java.util.HashMap;
 
 import me.topchetoeu.jscript.core.Context;
 import me.topchetoeu.jscript.core.Environment;
+import me.topchetoeu.jscript.core.EventLoop;
+import me.topchetoeu.jscript.core.Key;
 import me.topchetoeu.jscript.core.scope.GlobalScope;
 import me.topchetoeu.jscript.core.values.FunctionValue;
-import me.topchetoeu.jscript.core.values.Symbol;
 import me.topchetoeu.jscript.core.values.Values;
 import me.topchetoeu.jscript.core.exceptions.EngineException;
 import me.topchetoeu.jscript.utils.interop.Arguments;
@@ -16,8 +17,8 @@ import me.topchetoeu.jscript.utils.interop.ExposeTarget;
 import me.topchetoeu.jscript.utils.modules.ModuleRepo;
 
 public class Internals {
-    private static final Symbol THREADS = new Symbol("Internals.threads");
-    private static final Symbol I = new Symbol("Internals.i");
+    private static final Key<HashMap<Integer, Thread>> THREADS = new Key<>();
+    private static final Key<Integer> I = new Key<>();
 
     @Expose(target = ExposeTarget.STATIC)
     public static Object __require(Arguments args) {
@@ -38,6 +39,8 @@ public class Internals {
         var delay = args.getDouble(1);
         var arguments = args.slice(2).args;
 
+        if (!args.ctx.hasNotNull(EventLoop.KEY)) throw EngineException.ofError("No event loop");
+
         var thread = new Thread(() -> {
             var ms = (long)delay;
             var ns = (int)((delay - ms) * 10000000);
@@ -45,7 +48,7 @@ public class Internals {
             try { Thread.sleep(ms, ns); }
             catch (InterruptedException e) { return; }
 
-            args.ctx.engine.pushMsg(false, args.ctx.environment, func, null, arguments);
+            args.ctx.get(EventLoop.KEY).pushMsg(() -> func.call(new Context(args.ctx.environment), null, arguments), false);
         });
 
         thread.start();
@@ -61,6 +64,8 @@ public class Internals {
         var delay = args.getDouble(1);
         var arguments = args.slice(2).args;
 
+        if (!args.ctx.hasNotNull(EventLoop.KEY)) throw EngineException.ofError("No event loop");
+
         var thread = new Thread(() -> {
             var ms = (long)delay;
             var ns = (int)((delay - ms) * 10000000);
@@ -71,7 +76,7 @@ public class Internals {
                 }
                 catch (InterruptedException e) { return; }
 
-                args.ctx.engine.pushMsg(false, args.ctx.environment, func, null, arguments);
+                args.ctx.get(EventLoop.KEY).pushMsg(() -> func.call(new Context(args.ctx.environment), null, arguments), false);
             }
         });
         thread.start();

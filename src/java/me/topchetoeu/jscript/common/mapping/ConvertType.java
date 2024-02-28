@@ -1,4 +1,4 @@
-package me.topchetoeu.jscript.compilation.mapping;
+package me.topchetoeu.jscript.common.mapping;
 
 public enum ConvertType {
     Exact,

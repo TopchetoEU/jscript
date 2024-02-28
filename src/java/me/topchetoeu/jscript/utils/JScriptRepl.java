@@ -8,8 +8,11 @@ import java.nio.file.Path;
 import me.topchetoeu.jscript.common.Filename;
 import me.topchetoeu.jscript.common.Metadata;
 import me.topchetoeu.jscript.common.Reading;
+import me.topchetoeu.jscript.core.Compiler;
+import me.topchetoeu.jscript.core.Context;
 import me.topchetoeu.jscript.core.Engine;
 import me.topchetoeu.jscript.core.Environment;
+import me.topchetoeu.jscript.core.EventLoop;
 import me.topchetoeu.jscript.core.debug.DebugContext;
 import me.topchetoeu.jscript.core.values.NativeFunction;
 import me.topchetoeu.jscript.core.values.Values;
@@ -36,7 +39,6 @@ public class JScriptRepl {
     static Environment environment = new Environment();
 
     static int j = 0;
-    static boolean exited = false;
     static String[] args;
 
     private static void reader() {
@@ -74,17 +76,14 @@ public class JScriptRepl {
         }
         catch (IOException e) {
             System.out.println(e.toString());
-            exited = true;
+            engine.thread().interrupt();
         }
         catch (RuntimeException ex) {
-            if (!exited) {
+            if (ex instanceof InterruptException) return;
+            else {
                 System.out.println("Internal error ocurred:");
                 ex.printStackTrace();
             }
-        }
-        if (exited) {
-            debugTask.interrupt();
-            engineTask.interrupt();
         }
     }
 
@@ -92,7 +91,6 @@ public class JScriptRepl {
         environment = Internals.apply(environment);
 
         environment.global.define(false, new NativeFunction("exit", args -> {
-            exited = true;
             throw new InterruptException();
         }));
         environment.global.define(false, new NativeFunction("go", args -> {
@@ -105,26 +103,35 @@ public class JScriptRepl {
                 throw new EngineException("Couldn't open do.js");
             }
         }));
+        environment.global.define(false, new NativeFunction("log", args -> {
+            for (var el : args.args) {
+                Values.printValue(args.ctx, el);
+            }
+
+            return null;
+        }));
 
         var fs = new RootFilesystem(PermissionsProvider.get(environment));
         fs.protocols.put("temp", new MemoryFilesystem(Mode.READ_WRITE));
         fs.protocols.put("file", new PhysicalFilesystem("."));
         fs.protocols.put("std", STDFilesystem.ofStd(System.in, System.out, System.err));
 
-        environment.add(PermissionsProvider.ENV_KEY, PermissionsManager.ALL_PERMS);
-        environment.add(Filesystem.ENV_KEY, fs);
-        environment.add(ModuleRepo.ENV_KEY, ModuleRepo.ofFilesystem(fs));
+        environment.add(PermissionsProvider.KEY, PermissionsManager.ALL_PERMS);
+        environment.add(Filesystem.KEY, fs);
+        environment.add(ModuleRepo.KEY, ModuleRepo.ofFilesystem(fs));
+        environment.add(Compiler.KEY, new JSCompiler(new Context(environment)));
+        environment.add(EventLoop.KEY, engine);
     }
     private static void initEngine() {
-        // var ctx = new DebugContext();
-        // engine.add(DebugContext.ENV_KEY, ctx);
+        var ctx = new DebugContext();
+        environment.add(DebugContext.KEY, ctx);
 
         // debugServer.targets.put("target", (ws, req) -> new SimpleDebugger(ws).attach(ctx));
         engineTask = engine.start();
-        // debugTask = debugServer.start(new InetSocketAddress("127.0.0.1", 9229), true);
+        debugTask = debugServer.start(new InetSocketAddress("127.0.0.1", 9229), true);
     }
 
-    public static void main(String args[]) {
+    public static void main(String args[]) throws InterruptedException {
         System.out.println(String.format("Running %s v%s by %s", Metadata.name(), Metadata.version(), Metadata.author()));
 
         JScriptRepl.args = args;
@@ -136,5 +143,9 @@ public class JScriptRepl {
         reader.setDaemon(true);
         reader.setName("STD Reader");
         reader.start();
+
+        engine.thread().join();
+        debugTask.interrupt();
+        engineTask.interrupt();
     }
 }

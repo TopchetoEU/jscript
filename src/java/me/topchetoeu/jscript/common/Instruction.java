@@ -1,11 +1,10 @@
-package me.topchetoeu.jscript.compilation;
+package me.topchetoeu.jscript.common;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.HashMap;
 
-import me.topchetoeu.jscript.core.Operation;
 import me.topchetoeu.jscript.core.exceptions.SyntaxException;
 
 public class Instruction {
