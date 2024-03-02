@@ -1326,7 +1326,6 @@ public class Parsing {
     }
 
     public static ParseRes<? extends Statement> parseValueStatement(Filename filename, List<Token> tokens, int i) {
-        var loc = getLoc(filename, tokens, i);
         var valRes = parseValue(filename, tokens, i, 0, true);
         if (!valRes.isSuccess()) return valRes.transform();
 
