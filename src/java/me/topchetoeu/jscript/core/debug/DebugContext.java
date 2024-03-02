@@ -81,6 +81,7 @@ public class DebugContext {
     }
     public void onFunctionLoad(FunctionBody func, FunctionMap map) {
         if (maps != null) maps.put(func, map);
+        if (debugger != null) debugger.onFunctionLoad(func, map);
     }
 
     private DebugContext(boolean enabled) {

@@ -8,6 +8,10 @@ public interface Extensions {
     boolean has(Key<?> key);
     boolean remove(Key<?> key);
 
+    default void add(Key<Void> key) {
+        add(key, null);
+    }
+
     default boolean hasNotNull(Key<?> key) {
         return has(key) && get(key) != null;
     }
@@ -26,6 +30,7 @@ public interface Extensions {
     }
     @SuppressWarnings("unchecked")
     default void addAll(Extensions source) {
+        if (source == null) return;
         for (var key : source.keys()) {
             add((Key<Object>)key, (Object)source.get(key));
         }

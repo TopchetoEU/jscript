@@ -6,30 +6,31 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.TreeSet;
+import java.util.WeakHashMap;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import me.topchetoeu.jscript.common.Filename;
+import me.topchetoeu.jscript.common.FunctionBody;
+import me.topchetoeu.jscript.common.Instruction;
 import me.topchetoeu.jscript.common.Location;
+import me.topchetoeu.jscript.common.Instruction.BreakpointType;
+import me.topchetoeu.jscript.common.Instruction.Type;
 import me.topchetoeu.jscript.common.events.Notifier;
 import me.topchetoeu.jscript.common.json.JSON;
 import me.topchetoeu.jscript.common.json.JSONElement;
 import me.topchetoeu.jscript.common.json.JSONList;
 import me.topchetoeu.jscript.common.json.JSONMap;
-import me.topchetoeu.jscript.compilation.Instruction;
-import me.topchetoeu.jscript.compilation.Instruction.BreakpointType;
-import me.topchetoeu.jscript.compilation.Instruction.Type;
+import me.topchetoeu.jscript.common.mapping.FunctionMap;
 import me.topchetoeu.jscript.compilation.parsing.Parsing;
 import me.topchetoeu.jscript.core.Context;
 import me.topchetoeu.jscript.core.Engine;
 import me.topchetoeu.jscript.core.Environment;
-import me.topchetoeu.jscript.core.Extensions;
+import me.topchetoeu.jscript.core.EventLoop;
 import me.topchetoeu.jscript.core.Frame;
 import me.topchetoeu.jscript.core.debug.DebugContext;
 import me.topchetoeu.jscript.core.scope.GlobalScope;
 import me.topchetoeu.jscript.core.values.ArrayValue;
-import me.topchetoeu.jscript.core.values.CodeFunction;
 import me.topchetoeu.jscript.core.values.FunctionValue;
 import me.topchetoeu.jscript.core.values.ObjectValue;
 import me.topchetoeu.jscript.core.values.Symbol;
@@ -76,36 +77,48 @@ public class SimpleDebugger implements Debugger {
             this.source = source;
         }
     }
-    private static class Breakpoint {
-        public final int id;
-        public final Location location;
-        public final String condition;
 
-        public Breakpoint(int id, Location location, String condition) {
-            this.id = id;
-            this.location = location;
-            this.condition = condition;
-        }
-    }
-    private static class BreakpointCandidate {
+    private class Breakpoint {
         public final int id;
         public final String condition;
         public final Pattern pattern;
         public final int line, start;
-        public final HashSet<Breakpoint> resolvedBreakpoints = new HashSet<>();
+        public final WeakHashMap<FunctionBody, Set<Location>> resolvedLocations = new WeakHashMap<>();
 
-        public BreakpointCandidate(int id, Pattern pattern, int line, int start, String condition) {
+        public Breakpoint(int id, Pattern pattern, int line, int start, String condition) {
             this.id = id;
+            this.condition = condition;
             this.pattern = pattern;
             this.line = line;
             this.start = start;
+
             if (condition != null && condition.trim().equals("")) condition = null;
-            this.condition = condition;
+        }
+
+        // TODO: Figure out how to unload a breakpoint
+        public void addFunc(FunctionBody body, FunctionMap map) {
+            try {
+                for (var loc : map.correctBreakpoint(pattern, line, start)) {
+                    if (!resolvedLocations.containsKey(body)) resolvedLocations.put(body, new HashSet<>());
+                    var set = resolvedLocations.get(body);
+                    set.add(loc);
+
+                    ws.send(new V8Event("Debugger.breakpointResolved", new JSONMap()
+                        .set("breakpointId", id)
+                        .set("location", serializeLocation(loc))
+                    ));
+                }
+
+                updateBreakpoints();
+            }
+            catch (IOException e) {
+                ws.close();
+                close();
+            }
         }
     }
     private class DebugFrame {
         public Frame frame;
-        public CodeFunction func;
         public int id;
         public ObjectValue local, capture, global, valstack;
         public JSONMap serialized;
@@ -118,18 +131,17 @@ public class SimpleDebugger implements Debugger {
 
         public DebugFrame(Frame frame, int id) {
             this.frame = frame;
-            this.func = frame.function;
             this.id = id;
 
             this.global = frame.function.environment.global.obj;
-            this.local = frame.getLocalScope(true);
-            this.capture = frame.getCaptureScope(true);
+            this.local = frame.getLocalScope();
+            this.capture = frame.getCaptureScope();
             Values.makePrototypeChain(frame.ctx, global, capture, local);
             this.valstack = frame.getValStackScope();
 
             this.serialized = new JSONMap()
                 .set("callFrameId", id + "")
-                .set("functionName", func.name)
+                .set("functionName", frame.function.name)
                 .set("scopeChain", new JSONList()
                     .add(new JSONMap()
                         .set("type", "local")
@@ -190,11 +202,10 @@ public class SimpleDebugger implements Debugger {
 
     private ObjectValue emptyObject = new ObjectValue();
 
-    private HashMap<Integer, BreakpointCandidate> idToBptCand = new HashMap<>();
+    private WeakHashMap<FunctionBody, FunctionMap> mappings = new WeakHashMap<>();
+    private WeakHashMap<FunctionBody, HashMap<Location, Breakpoint>> bpLocs = new WeakHashMap<>();
 
     private HashMap<Integer, Breakpoint> idToBreakpoint = new HashMap<>();
-    private HashMap<Location, Breakpoint> locToBreakpoint = new HashMap<>();
-    private HashSet<Location> tmpBreakpts = new HashSet<>();
 
     private HashMap<Filename, Integer> filenameToId = new HashMap<>();
     private HashMap<Integer, DebugSource> idToSource = new HashMap<>();
@@ -276,17 +287,22 @@ public class SimpleDebugger implements Debugger {
         return res;
     }
 
-    private Location correctLocation(DebugSource source, Location loc) {
-        var set = source.breakpoints;
+    private void updateBreakpoints() {
+        bpLocs.clear();
 
-        if (set.contains(loc)) return loc;
+        for (var bp : idToBreakpoint.values()) {
+            for (var el : bp.resolvedLocations.entrySet()) {
+                if (!bpLocs.containsKey(el.getKey())) bpLocs.put(el.getKey(), new HashMap<>());
+                var map = bpLocs.get(el.getKey());
 
-        var tail = set.tailSet(loc);
-        if (tail.isEmpty()) return null;
-
-        return tail.first();
+                for (var loc : el.getValue()) {
+                    map.put(loc, bp);
+                }
+            }
+        }
     }
-    private Location deserializeLocation(JSONElement el, boolean correct) {
+
+    private Location deserializeLocation(JSONElement el) {
         if (!el.isMap()) throw new RuntimeException("Expected location to be a map.");
         var id = Integer.parseInt(el.map().string("scriptId"));
         var line = (int)el.map().number("lineNumber") + 1;
@@ -295,7 +311,6 @@ public class SimpleDebugger implements Debugger {
         if (!idToSource.containsKey(id)) throw new RuntimeException(String.format("The specified source %s doesn't exist.", id));
 
         var res = new Location(line, column, idToSource.get(id).filename);
-        if (correct) res = correctLocation(idToSource.get(id), res);
         return res;
     }
     private JSONMap serializeLocation(Location loc) {
@@ -318,8 +333,10 @@ public class SimpleDebugger implements Debugger {
     }
     private JSONMap serializeObj(Context ctx, Object val, boolean byValue) {
         val = Values.normalize(null, val);
-        ctx = new Context(ctx.engine.copy(), ctx.environment);
-        ctx.engine.add(DebugContext.IGNORE, true);
+        var newCtx = new Context();
+        newCtx.addAll(ctx);
+        newCtx.add(DebugContext.IGNORE);
+        ctx = newCtx;
 
         if (val == Values.NULL) {
             return new JSONMap()
@@ -507,30 +524,17 @@ public class SimpleDebugger implements Debugger {
         }
     }
 
-    private void addBreakpoint(Breakpoint bpt) {
-        try {
-            idToBreakpoint.put(bpt.id, bpt);
-            locToBreakpoint.put(bpt.location, bpt);
-
-            ws.send(new V8Event("Debugger.breakpointResolved", new JSONMap()
-                .set("breakpointId", bpt.id)
-                .set("location", serializeLocation(bpt.location))
-            ));
-        }
-        catch (IOException e) {
-            ws.close();
-            close();
-        }
-    }
-
     private RunResult run(DebugFrame codeFrame, String code) {
         if (codeFrame == null) return new RunResult(null, code, new EngineException("Invalid code frame!"));
         var engine = new Engine();
-        var env = codeFrame.func.environment.copy();
+        var env = codeFrame.frame.function.environment.copy();
 
         env.global = new GlobalScope(codeFrame.local);
+        env.remove(EventLoop.KEY);
+        env.remove(DebugContext.KEY);
+        env.add(EventLoop.KEY, engine);
 
-        var ctx = new Context(engine, env);
+        var ctx = new Context(env);
         var awaiter = engine.pushMsg(false, ctx.environment, new Filename("jscript", "eval"), code, codeFrame.frame.thisArg, codeFrame.frame.args);
 
         engine.run(true);
@@ -625,16 +629,16 @@ public class SimpleDebugger implements Debugger {
         close();
         ws.send(msg.respond());
     }
-    public synchronized void close() {
+    @Override public synchronized void close() {
         enabled = false;
         execptionType = CatchType.NONE;
         state = State.RESUMED;
 
-        idToBptCand.clear();
+        // idToBptCand.clear();
 
         idToBreakpoint.clear();
-        locToBreakpoint.clear();
-        tmpBreakpts.clear();
+        // locToBreakpoint.clear();
+        // tmpBreakpts.clear();
 
         filenameToId.clear();
         idToSource.clear();
@@ -660,15 +664,14 @@ public class SimpleDebugger implements Debugger {
         ws.send(msg.respond(new JSONMap().set("scriptSource", idToSource.get(id).source)));
     }
     @Override public synchronized void getPossibleBreakpoints(V8Message msg) throws IOException {
-        var src = idToSource.get(Integer.parseInt(msg.params.map("start").string("scriptId")));
-        var start = deserializeLocation(msg.params.get("start"), false);
-        var end = msg.params.isMap("end") ? deserializeLocation(msg.params.get("end"), false) : null;
-
+        var start = deserializeLocation(msg.params.get("start"));
+        var end = msg.params.isMap("end") ? deserializeLocation(msg.params.get("end")) : null;
         var res = new JSONList();
 
-        for (var loc : src.breakpoints.tailSet(start, true)) {
-            if (end != null && loc.compareTo(end) > 0) break;
-            res.add(serializeLocation(loc));
+        for (var el : mappings.values()) {
+            for (var bp : el.breakpoints(start, end)) {
+                res.add(serializeLocation(bp));
+            }
         }
 
         ws.send(msg.respond(new JSONMap().set("locations", res)));
@@ -694,54 +697,50 @@ public class SimpleDebugger implements Debugger {
         Pattern regex;
 
         if (msg.params.isString("url")) regex = Pattern.compile(Pattern.quote(msg.params.string("url")));
-        else regex = Pattern.compile(msg.params.string("urlRegex"));
+        else if (msg.params.isString("urlRegex")) regex = Pattern.compile(msg.params.string("urlRegex"));
+        else {
+            ws.send(msg.respond(new JSONMap()
+                .set("breakpointId", "john-doe")
+                .set("locations", new JSONList())
+            ));
+            return;
+        }
 
-        var bpcd = new BreakpointCandidate(nextId(), regex, line, col, cond);
-        idToBptCand.put(bpcd.id, bpcd);
+        var bpt = new Breakpoint(nextId(), regex, line, col, cond);
+        idToBreakpoint.put(bpt.id, bpt);
 
         var locs = new JSONList();
 
-        for (var src : idToSource.values()) {
-            if (regex.matcher(src.filename.toString()).matches()) {
-                var loc = correctLocation(src, new Location(line, col, src.filename));
-                if (loc == null) continue;
-                var bp = new Breakpoint(nextId(), loc, bpcd.condition);
+        for (var el : mappings.entrySet()) {
+            bpt.addFunc(el.getKey(), el.getValue());
+        }
 
-                bpcd.resolvedBreakpoints.add(bp);
+        for (var el : bpt.resolvedLocations.values()) {
+            for (var loc : el) {
                 locs.add(serializeLocation(loc));
-                addBreakpoint(bp);
             }
         }
 
         ws.send(msg.respond(new JSONMap()
-            .set("breakpointId", bpcd.id + "")
+            .set("breakpointId", bpt.id + "")
             .set("locations", locs)
         ));
     }
     @Override public synchronized void removeBreakpoint(V8Message msg) throws IOException {
         var id = Integer.parseInt(msg.params.string("breakpointId"));
 
-        if (idToBptCand.containsKey(id)) {
-            var bpcd = idToBptCand.get(id);
-            for (var bp : bpcd.resolvedBreakpoints) {
-                idToBreakpoint.remove(bp.id);
-                locToBreakpoint.remove(bp.location);
-            }
-            idToBptCand.remove(id);
-        }
-        else if (idToBreakpoint.containsKey(id)) {
-            var bp = idToBreakpoint.remove(id);
-            locToBreakpoint.remove(bp.location);
-        }
+        idToBreakpoint.remove(id);
         ws.send(msg.respond());
     }
     @Override public synchronized void continueToLocation(V8Message msg) throws IOException {
-        var loc = deserializeLocation(msg.params.get("location"), true);
+        // TODO: Figure out if we need this
 
-        tmpBreakpts.add(loc);
+        // var loc = correctLocation(deserializeLocation(msg.params.get("location")));
 
-        resume(State.RESUMED);
-        ws.send(msg.respond());
+        // tmpBreakpts.add(loc);
+
+        // resume(State.RESUMED);
+        // ws.send(msg.respond());
     }
 
     @Override public synchronized void setPauseOnExceptions(V8Message msg) throws IOException {
@@ -915,24 +914,21 @@ public class SimpleDebugger implements Debugger {
         ws.send(msg.respond());
     }
 
-    @Override public void onSource(Filename filename, String source) {
+    @Override public void onSourceLoad(Filename filename, String source) {
         int id = nextId();
         var src = new DebugSource(id, filename, source);
 
         idToSource.put(id, src);
         filenameToId.put(filename, id);
 
-        for (var bpcd : idToBptCand.values()) {
-            if (!bpcd.pattern.matcher(filename.toString()).matches()) continue;
-            var loc = correctLocation(src, new Location(bpcd.line, bpcd.start, filename));
-            var bp = new Breakpoint(nextId(), loc, bpcd.condition);
-            if (loc == null) continue;
-            bpcd.resolvedBreakpoints.add(bp);
-            addBreakpoint(bp);
-        }
-
         if (!enabled) pendingSources.add(src);
         else sendSource(src);
+    }
+    @Override public void onFunctionLoad(FunctionBody body, FunctionMap map) {
+        for (var bpt : idToBreakpoint.values()) {
+            bpt.addFunc(body, map);
+        }
+        mappings.put(body, map);
     }
     @Override public boolean onInstruction(Context ctx, Frame cf, Instruction instruction, Object returnVal, EngineException error, boolean caught) {
         if (!enabled) return false;
@@ -945,11 +941,11 @@ public class SimpleDebugger implements Debugger {
         synchronized (this) {
             frame = getFrame(cf);
 
-            var map = DebugContext.get(ctx).getMap(frame.func);
+            var map = DebugContext.get(ctx).getMap(frame.frame.function);
 
             frame.updateLoc(map.toLocation(frame.frame.codePtr));
             loc = frame.location;
-            bptType = DebugContext.get(ctx).getMap(frame.func).getBreakpoint(loc);
+            bptType = map.getBreakpoint(frame.frame.codePtr);
             isBreakpointable = loc != null && (bptType.shouldStepIn());
 
             if (error != null && (execptionType == CatchType.ALL || execptionType == CatchType.UNCAUGHT && !caught)) {
@@ -962,12 +958,12 @@ public class SimpleDebugger implements Debugger {
             ) {
                 pauseDebug(ctx, null);
             }
-            else if (isBreakpointable && locToBreakpoint.containsKey(loc)) {
-                var bp = locToBreakpoint.get(loc);
+            else if (isBreakpointable && bpLocs.getOrDefault(cf.function.body, new HashMap<>()).containsKey(loc)) {
+                var bp = bpLocs.get(cf.function.body).get(loc);
                 var ok = bp.condition == null ? true : Values.toBoolean(run(currFrame, bp.condition).result);
-                if (ok) pauseDebug(ctx, locToBreakpoint.get(loc));
+                if (ok) pauseDebug(ctx, bp);
             }
-            else if (isBreakpointable && tmpBreakpts.remove(loc)) pauseDebug(ctx, null);
+            // else if (isBreakpointable && tmpBreakpts.remove(loc)) pauseDebug(ctx, null);
             else if (isBreakpointable && pendingPause) {
                 pauseDebug(ctx, null);
                 pendingPause = false;

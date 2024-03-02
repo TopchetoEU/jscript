@@ -140,6 +140,7 @@ public class DebugServer {
             try { handle(ws, debugger); }
             catch (RuntimeException | IOException e) {
                 try {
+                    e.printStackTrace();
                     ws.send(new V8Error(e.getMessage()));
                 }
                 catch (IOException e2) { /* Shit outta luck */ }

@@ -21,7 +21,7 @@ import me.topchetoeu.jscript.core.exceptions.InterruptException;
 import me.topchetoeu.jscript.core.exceptions.SyntaxException;
 import me.topchetoeu.jscript.lib.Internals;
 import me.topchetoeu.jscript.utils.debug.DebugServer;
-// import me.topchetoeu.jscript.utils.debug.SimpleDebugger;
+import me.topchetoeu.jscript.utils.debug.SimpleDebugger;
 import me.topchetoeu.jscript.utils.filesystem.Filesystem;
 import me.topchetoeu.jscript.utils.filesystem.MemoryFilesystem;
 import me.topchetoeu.jscript.utils.filesystem.Mode;
@@ -62,11 +62,8 @@ public class JScriptRepl {
                     var raw = Reading.readline();
 
                     if (raw == null) break;
-                    var res = engine.pushMsg(
-                        false, environment,
-                        new Filename("jscript", "repl/" + i + ".js"),
-                        raw, null
-                    ).await();
+                    var func = Compiler.compile(environment, new Filename("jscript", "repl/" + i + ".js"), raw);
+                    var res = engine.pushMsg(false, environment, func, null).await();
                     Values.printValue(null, res);
                     System.out.println();
                 }
@@ -126,7 +123,7 @@ public class JScriptRepl {
         var ctx = new DebugContext();
         environment.add(DebugContext.KEY, ctx);
 
-        // debugServer.targets.put("target", (ws, req) -> new SimpleDebugger(ws).attach(ctx));
+        debugServer.targets.put("target", (ws, req) -> new SimpleDebugger(ws).attach(ctx));
         engineTask = engine.start();
         debugTask = debugServer.start(new InetSocketAddress("127.0.0.1", 9229), true);
     }

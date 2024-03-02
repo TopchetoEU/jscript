@@ -1330,7 +1330,7 @@ public class Parsing {
         var valRes = parseValue(filename, tokens, i, 0, true);
         if (!valRes.isSuccess()) return valRes.transform();
 
-        valRes.result.setLoc(loc);
+        // valRes.result.setLoc(loc);
         var res = ParseRes.res(valRes.result, valRes.n);
 
         if (isStatementEnd(tokens, i + res.n)) {

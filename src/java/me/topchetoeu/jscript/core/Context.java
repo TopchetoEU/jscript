@@ -1,6 +1,7 @@
 package me.topchetoeu.jscript.core;
 
 import java.util.Iterator;
+import java.util.List;
 
 import me.topchetoeu.jscript.common.Filename;
 import me.topchetoeu.jscript.core.debug.DebugContext;
@@ -41,7 +42,8 @@ public class Context implements Extensions {
         return res;
     }
     @Override public Iterable<Key<?>> keys() {
-        return environment.keys();
+        if (environment == null) return List.of();
+        else return environment.keys();
 
         // if (engine == null && environment == null) return List.of();
         // if (engine == null) return environment.keys();

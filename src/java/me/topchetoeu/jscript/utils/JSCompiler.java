@@ -13,6 +13,7 @@ public class JSCompiler implements Compiler {
 
     private void registerFunc(FunctionBody body, CompileResult res) {
         var map = res.map();
+
         DebugContext.get(ext).onFunctionLoad(body, map);
 
         for (var i = 0; i < body.children.length; i++) {
@@ -23,6 +24,7 @@ public class JSCompiler implements Compiler {
     @Override public FunctionBody compile(Filename filename, String source) {
         var res = Parsing.compile(filename, source);
         var func = res.body();
+        DebugContext.get(ext).onSource(filename, source);
         registerFunc(func, res);
 
         return func;

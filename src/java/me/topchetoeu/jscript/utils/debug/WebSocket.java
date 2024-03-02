@@ -180,7 +180,9 @@ public class WebSocket implements AutoCloseable {
             if (!fin) continue;
             var raw = data.toByteArray();
 
-            if (type == 1) return new WebSocketMessage(new String(raw));
+            if (type == 1) {
+                return new WebSocketMessage(new String(raw));
+            }
             else return new WebSocketMessage(raw);
         }
 

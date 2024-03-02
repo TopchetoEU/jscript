@@ -1,13 +1,17 @@
 package me.topchetoeu.jscript.common.mapping;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.SortedSet;
+import java.util.NavigableSet;
+import java.util.Objects;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
+import me.topchetoeu.jscript.common.Filename;
 import me.topchetoeu.jscript.common.Location;
 import me.topchetoeu.jscript.common.Instruction.BreakpointType;
 import me.topchetoeu.jscript.core.scope.LocalScopeRecord;
@@ -62,15 +66,15 @@ public class FunctionMap {
 
     public static final FunctionMap EMPTY = new FunctionMap();
 
-    private final HashMap<Location, BreakpointType> bps = new HashMap<>();
-    private final TreeSet<Location> bpLocs = new TreeSet<>();
+    private final HashMap<Integer, BreakpointType> bps = new HashMap<>();
+    private final HashMap<Filename, TreeSet<Location>> bpLocs = new HashMap<>();
 
     private final TreeMap<Integer, Location> pcToLoc = new TreeMap<>();
-    private final HashMap<Location, Integer> locToPc = new HashMap<>();
 
     public final String[] localNames, captureNames;
 
     public Location toLocation(int pc, boolean approxiamte) {
+        if (pcToLoc.size() == 0 || pc < 0 || pc > pcToLoc.lastKey()) return null;
         var res = pcToLoc.get(pc);
         if (!approxiamte || res != null) return res;
         var entry = pcToLoc.headMap(pc, true).lastEntry();
@@ -81,14 +85,39 @@ public class FunctionMap {
         return toLocation(pc, false);
     }
 
-    public BreakpointType getBreakpoint(Location loc) {
-        return bps.getOrDefault(loc, BreakpointType.NONE);
+    public BreakpointType getBreakpoint(int pc) {
+        return bps.getOrDefault(pc, BreakpointType.NONE);
     }
     public Location correctBreakpoint(Location loc) {
-        return bpLocs.ceiling(loc);
+        var set = bpLocs.get(loc.filename());
+        if (set == null) return null;
+        else return set.ceiling(loc);
     }
-    public SortedSet<Location> breakpoints() {
-        return Collections.unmodifiableSortedSet(bpLocs);
+    public List<Location> correctBreakpoint(Pattern filename, int line, int column) {
+        var candidates = new HashMap<Filename, TreeSet<Location>>();
+
+        for (var name : bpLocs.keySet()) {
+            if (filename.matcher(name.toString()).matches()) {
+                candidates.put(name, bpLocs.get(name));
+            }
+        }
+
+        var res = new ArrayList<Location>(candidates.size());
+        for (var candidate : candidates.entrySet()) {
+            res.add(candidate.getValue().ceiling(new Location(line, column, candidate.getKey())));
+        }
+
+        return res;
+    }
+    public List<Location> breakpoints(Location start, Location end) {
+        if (!Objects.equals(start.filename(), end.filename())) return List.of();
+        NavigableSet<Location> set = bpLocs.get(start.filename());
+        if (set == null) return List.of();
+
+        if (start != null) set = set.tailSet(start, true);
+        if (end != null) set = set.headSet(end, true);
+
+        return set.stream().collect(Collectors.toList());
     }
 
     public Location start() {
@@ -100,49 +129,51 @@ public class FunctionMap {
         return pcToLoc.lastEntry().getValue();
     }
 
-    public Integer toProgramCounter(Location loc) {
-        return locToPc.get(loc);
-    }
-
     public FunctionMap apply(SourceMap map) {
-        var res = new FunctionMap();
+        var res = new FunctionMap(Map.of(), Map.of(), localNames, captureNames);
 
-        for (var el : new ArrayList<>(pcToLoc.entrySet())) {
+        for (var el : pcToLoc.entrySet()) {
             res.pcToLoc.put(el.getKey(), map.toCompiled(el.getValue()));
         }
-        for (var el : new ArrayList<>(locToPc.entrySet())) {
-            var mapped = map.toOriginal(el.getKey());
-            res.locToPc.put(mapped, el.getValue());
+
+        res.bps.putAll(bps);
+
+        for (var el : bpLocs.entrySet()) {
+            for (var loc : el.getValue()) {
+                loc = map.toCompiled(loc);
+                if (loc == null) continue;
+
+                if (!res.bpLocs.containsKey(loc.filename())) res.bpLocs.put(loc.filename(), new TreeSet<>());
+                res.bpLocs.get(loc.filename()).add(loc);
+            }
         }
 
         return res;
     }
 
     public FunctionMap clone() {
-        var res = new FunctionMap();
+        var res = new FunctionMap(Map.of(), Map.of(), localNames, captureNames);
         res.pcToLoc.putAll(this.pcToLoc);
-        res.locToPc.putAll(this.locToPc);
+        res.bps.putAll(bps);
+        res.bpLocs.putAll(bpLocs);
+        res.pcToLoc.putAll(pcToLoc);
         return res;
     }
 
     public FunctionMap(Map<Integer, Location> map, Map<Location, BreakpointType> breakpoints, String[] localNames, String[] captureNames) {
+        var locToPc = new HashMap<Location, Integer>();
+
         for (var el : map.entrySet()) {
-            var pc = el.getKey();
-            var loc = el.getValue();
-
-            var a = pcToLoc.remove(pc);
-            var b = locToPc.remove(loc);
-
-            if (b != null) pcToLoc.remove(b);
-            if (a != null) locToPc.remove(a);
-
-            pcToLoc.put(pc, loc);
-            locToPc.put(loc, pc);
+            pcToLoc.put(el.getKey(), el.getValue());
+            locToPc.putIfAbsent(el.getValue(), el.getKey());
         }
+
         for (var el : breakpoints.entrySet()) {
             if (el.getValue() == null || el.getValue() == BreakpointType.NONE) continue;
-            bps.put(el.getKey(), el.getValue());
-            bpLocs.add(el.getKey());
+            bps.put(locToPc.get(el.getKey()), el.getValue());
+
+            if (!bpLocs.containsKey(el.getKey().filename())) bpLocs.put(el.getKey().filename(), new TreeSet<>());
+            bpLocs.get(el.getKey().filename()).add(el.getKey());
         }
 
         this.localNames = localNames;
