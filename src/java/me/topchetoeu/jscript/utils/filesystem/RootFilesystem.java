@@ -5,17 +5,21 @@ import java.util.Map;
 
 import me.topchetoeu.jscript.common.Filename;
 import me.topchetoeu.jscript.utils.permissions.Matcher;
+import me.topchetoeu.jscript.utils.permissions.Permission;
 import me.topchetoeu.jscript.utils.permissions.PermissionsProvider;
 
 public class RootFilesystem implements Filesystem {
     public final Map<String, Filesystem> protocols = new HashMap<>();
     public final PermissionsProvider perms;
 
+    public static final Permission PERM_READ = new Permission("jscript.file.read", Matcher.fileWildcard());
+    public static final Permission PERM_WRITE = new Permission("jscript.file.read", Matcher.fileWildcard());
+
     private boolean canRead(String _path) {
-        return perms.hasPermission("jscript.file.read:" + _path, Matcher.fileWildcard());
+        return perms.hasPermission(PERM_READ, _path);
     }
     private boolean canWrite(String _path) {
-        return perms.hasPermission("jscript.file.write:" + _path, Matcher.fileWildcard());
+        return perms.hasPermission(PERM_WRITE, _path);
     }
 
     private void modeAllowed(String _path, Mode mode) throws FilesystemException {
