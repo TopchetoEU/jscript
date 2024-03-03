@@ -10,10 +10,13 @@ import me.topchetoeu.jscript.core.scope.GlobalScope;
 import me.topchetoeu.jscript.core.values.FunctionValue;
 import me.topchetoeu.jscript.core.values.Values;
 import me.topchetoeu.jscript.core.exceptions.EngineException;
+import me.topchetoeu.jscript.utils.filesystem.Filesystem;
+import me.topchetoeu.jscript.utils.filesystem.Mode;
 import me.topchetoeu.jscript.utils.interop.Arguments;
 import me.topchetoeu.jscript.utils.interop.Expose;
 import me.topchetoeu.jscript.utils.interop.ExposeField;
 import me.topchetoeu.jscript.utils.interop.ExposeTarget;
+import me.topchetoeu.jscript.utils.interop.ExposeType;
 import me.topchetoeu.jscript.utils.modules.ModuleRepo;
 
 public class Internals {
@@ -124,6 +127,19 @@ public class Internals {
     @Expose(target = ExposeTarget.STATIC)
     public static boolean __isInfinite(Arguments args) {
         return NumberLib.__isInfinite(args);
+    }
+
+    @Expose(target = ExposeTarget.STATIC, type = ExposeType.GETTER)
+    public static FileLib __stdin(Arguments args) {
+        return new FileLib(Filesystem.get(args.ctx).open("std://in", Mode.READ));
+    }
+    @Expose(target = ExposeTarget.STATIC, type = ExposeType.GETTER)
+    public static FileLib __stdout(Arguments args) {
+        return new FileLib(Filesystem.get(args.ctx).open("std://out", Mode.READ));
+    }
+    @Expose(target = ExposeTarget.STATIC, type = ExposeType.GETTER)
+    public static FileLib __stderr(Arguments args) {
+        return new FileLib(Filesystem.get(args.ctx).open("std://err", Mode.READ));
     }
 
     @ExposeField(target = ExposeTarget.STATIC)
