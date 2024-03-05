@@ -24,12 +24,12 @@ public class GlobalScope {
     }
 
     public Object define(Context ctx, String name) {
-        if (Values.hasMember(Context.NULL, obj, name, false)) return name;
-        obj.defineProperty(Context.NULL, name, null);
+        if (Values.hasMember(ctx, obj, name, false)) return name;
+        obj.defineProperty(ctx, name, null);
         return name;
     }
     public void define(Context ctx, String name, Variable val) {
-        obj.defineProperty(Context.NULL, name,
+        obj.defineProperty(ctx, name,
             new NativeFunction("get " + name, args -> val.get(args.ctx)),
             new NativeFunction("set " + name, args -> { val.set(args.ctx, args.get(0)); return null; }),
             true, true
@@ -42,7 +42,7 @@ public class GlobalScope {
         for (var n : names) define(ctx, n);
     }
     public void define(Context ctx, boolean readonly, FunctionValue val) {
-        define(null, val.name, readonly, val);
+        define(ctx, val.name, readonly, val);
     }
 
     public Object get(Context ctx, String name) {
