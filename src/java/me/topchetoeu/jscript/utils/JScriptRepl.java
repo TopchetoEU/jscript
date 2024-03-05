@@ -87,10 +87,10 @@ public class JScriptRepl {
     private static void initEnv() {
         environment = Internals.apply(environment);
 
-        environment.global.define(false, new NativeFunction("exit", args -> {
+        environment.global.define(null, false, new NativeFunction("exit", args -> {
             throw new InterruptException();
         }));
-        environment.global.define(false, new NativeFunction("go", args -> {
+        environment.global.define(null, false, new NativeFunction("go", args -> {
             try {
                 var f = Path.of("do.js");
                 var func = args.ctx.compile(new Filename("do", "do/" + j++ + ".js"), new String(Files.readAllBytes(f)));
@@ -100,7 +100,7 @@ public class JScriptRepl {
                 throw new EngineException("Couldn't open do.js");
             }
         }));
-        environment.global.define(false, new NativeFunction("log", args -> {
+        environment.global.define(null, false, new NativeFunction("log", args -> {
             for (var el : args.args) {
                 Values.printValue(args.ctx, el);
             }
