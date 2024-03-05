@@ -24,6 +24,11 @@ public class Buffer {
         return n;
     }
 
+    public void clear() {
+        data = new byte[128];
+        length = 0;
+    }
+
     public void append(byte b) {
         write(length, new byte[] { b });
     }

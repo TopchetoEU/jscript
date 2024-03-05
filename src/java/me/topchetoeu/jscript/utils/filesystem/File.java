@@ -99,6 +99,7 @@ public interface File {
                         if (b == '\n') {
                             try {
                                 writer.writeLine(new String(buff.data()));
+                                buff.clear();
                             }
                             catch (IOException e) {
                                 throw new FilesystemException(ErrorReason.UNKNOWN, e.getMessage());
