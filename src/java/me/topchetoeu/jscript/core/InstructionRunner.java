@@ -46,7 +46,7 @@ public class InstructionRunner {
 
     private static Object execMakeVar(Context ctx, Instruction instr, Frame frame) {
         var name = (String)instr.get(0);
-        ctx.environment.global.define(name);
+        ctx.environment.global.define(ctx, name);
         frame.codePtr++;
         return Values.NO_RETURN;
     }

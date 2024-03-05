@@ -16,8 +16,8 @@ import me.topchetoeu.jscript.compilation.VariableDeclareStatement.Pair;
 import me.topchetoeu.jscript.compilation.control.*;
 import me.topchetoeu.jscript.compilation.control.SwitchStatement.SwitchCase;
 import me.topchetoeu.jscript.compilation.parsing.ParseRes.State;
+import me.topchetoeu.jscript.compilation.scope.LocalScopeRecord;
 import me.topchetoeu.jscript.compilation.values.*;
-import me.topchetoeu.jscript.core.scope.LocalScopeRecord;
 import me.topchetoeu.jscript.core.exceptions.SyntaxException;
 
 // TODO: this has to be rewritten

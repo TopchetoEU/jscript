@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 import me.topchetoeu.jscript.common.Filename;
 import me.topchetoeu.jscript.common.Location;
 import me.topchetoeu.jscript.common.Instruction.BreakpointType;
-import me.topchetoeu.jscript.core.scope.LocalScopeRecord;
+import me.topchetoeu.jscript.compilation.scope.LocalScopeRecord;
 import me.topchetoeu.jscript.utils.mapping.SourceMap;
 
 public class FunctionMap {

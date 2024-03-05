@@ -173,27 +173,27 @@ public class Internals {
         glob.define(null, "Encoding", false, wp.getNamespace(EncodingLib.class));
         glob.define(null, "Filesystem", false, wp.getNamespace(FilesystemLib.class));
 
-        glob.define(false, wp.getConstr(FileLib.class));
+        glob.define(null, false, wp.getConstr(FileLib.class));
 
-        glob.define(false, wp.getConstr(DateLib.class));
-        glob.define(false, wp.getConstr(ObjectLib.class));
-        glob.define(false, wp.getConstr(FunctionLib.class));
-        glob.define(false, wp.getConstr(ArrayLib.class));
+        glob.define(null, false, wp.getConstr(DateLib.class));
+        glob.define(null, false, wp.getConstr(ObjectLib.class));
+        glob.define(null, false, wp.getConstr(FunctionLib.class));
+        glob.define(null, false, wp.getConstr(ArrayLib.class));
 
-        glob.define(false, wp.getConstr(BooleanLib.class));
-        glob.define(false, wp.getConstr(NumberLib.class));
-        glob.define(false, wp.getConstr(StringLib.class));
-        glob.define(false, wp.getConstr(SymbolLib.class));
+        glob.define(null, false, wp.getConstr(BooleanLib.class));
+        glob.define(null, false, wp.getConstr(NumberLib.class));
+        glob.define(null, false, wp.getConstr(StringLib.class));
+        glob.define(null, false, wp.getConstr(SymbolLib.class));
 
-        glob.define(false, wp.getConstr(PromiseLib.class));
-        glob.define(false, wp.getConstr(RegExpLib.class));
-        glob.define(false, wp.getConstr(MapLib.class));
-        glob.define(false, wp.getConstr(SetLib.class));
+        glob.define(null, false, wp.getConstr(PromiseLib.class));
+        glob.define(null, false, wp.getConstr(RegExpLib.class));
+        glob.define(null, false, wp.getConstr(MapLib.class));
+        glob.define(null, false, wp.getConstr(SetLib.class));
 
-        glob.define(false, wp.getConstr(ErrorLib.class));
-        glob.define(false, wp.getConstr(SyntaxErrorLib.class));
-        glob.define(false, wp.getConstr(TypeErrorLib.class));
-        glob.define(false, wp.getConstr(RangeErrorLib.class));
+        glob.define(null, false, wp.getConstr(ErrorLib.class));
+        glob.define(null, false, wp.getConstr(SyntaxErrorLib.class));
+        glob.define(null, false, wp.getConstr(TypeErrorLib.class));
+        glob.define(null, false, wp.getConstr(RangeErrorLib.class));
 
         env.add(Environment.OBJECT_PROTO, wp.getProto(ObjectLib.class));
         env.add(Environment.FUNCTION_PROTO, wp.getProto(FunctionLib.class));

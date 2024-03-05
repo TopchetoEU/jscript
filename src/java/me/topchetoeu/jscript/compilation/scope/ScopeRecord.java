@@ -1,6 +1,4 @@
-package me.topchetoeu.jscript.common;
-
-import me.topchetoeu.jscript.core.scope.LocalScopeRecord;
+package me.topchetoeu.jscript.compilation.scope;
 
 public interface ScopeRecord {
     public Object getKey(String name);

@@ -3,7 +3,6 @@ package me.topchetoeu.jscript.core.scope;
 import java.util.HashSet;
 import java.util.Set;
 
-import me.topchetoeu.jscript.common.ScopeRecord;
 import me.topchetoeu.jscript.core.Context;
 import me.topchetoeu.jscript.core.values.FunctionValue;
 import me.topchetoeu.jscript.core.values.NativeFunction;
@@ -11,14 +10,11 @@ import me.topchetoeu.jscript.core.values.ObjectValue;
 import me.topchetoeu.jscript.core.values.Values;
 import me.topchetoeu.jscript.core.exceptions.EngineException;
 
-public class GlobalScope implements ScopeRecord {
+public class GlobalScope {
     public final ObjectValue obj;
 
     public boolean has(Context ctx, String name) {
         return Values.hasMember(null, obj, name, false);
-    }
-    public Object getKey(String name) {
-        return name;
     }
 
     public GlobalScope globalChild() {
@@ -26,16 +22,13 @@ public class GlobalScope implements ScopeRecord {
         Values.setPrototype(null, obj, this.obj);
         return new GlobalScope(obj);
     }
-    public LocalScopeRecord child() {
-        return new LocalScopeRecord();
-    }
 
-    public Object define(String name) {
+    public Object define(Context ctx, String name) {
         if (Values.hasMember(Context.NULL, obj, name, false)) return name;
         obj.defineProperty(Context.NULL, name, null);
         return name;
     }
-    public void define(String name, Variable val) {
+    public void define(Context ctx, String name, Variable val) {
         obj.defineProperty(Context.NULL, name,
             new NativeFunction("get " + name, args -> val.get(args.ctx)),
             new NativeFunction("set " + name, args -> { val.set(args.ctx, args.get(0)); return null; }),
@@ -45,10 +38,10 @@ public class GlobalScope implements ScopeRecord {
     public void define(Context ctx, String name, boolean readonly, Object val) {
         obj.defineProperty(ctx, name, val, readonly, true, true);
     }
-    public void define(String ...names) {
-        for (var n : names) define(n);
+    public void define(Context ctx, String ...names) {
+        for (var n : names) define(ctx, n);
     }
-    public void define(boolean readonly, FunctionValue val) {
+    public void define(Context ctx, boolean readonly, FunctionValue val) {
         define(null, val.name, readonly, val);
     }
 

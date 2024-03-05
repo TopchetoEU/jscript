@@ -1,8 +1,6 @@
-package me.topchetoeu.jscript.core.scope;
+package me.topchetoeu.jscript.compilation.scope;
 
 import java.util.ArrayList;
-
-import me.topchetoeu.jscript.common.ScopeRecord;
 
 public class LocalScopeRecord implements ScopeRecord {
     public final LocalScopeRecord parent;
