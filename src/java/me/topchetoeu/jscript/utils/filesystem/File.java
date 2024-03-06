@@ -66,7 +66,7 @@ public interface File {
 
     public static File ofStream(InputStream str) {
         return new File() {
-            @Override public int read(byte[] buff) {
+            @Override public synchronized int read(byte[] buff) {
                 try {
                     try { return str.read(buff); }
                     catch (NullPointerException e) { throw new FilesystemException(ErrorReason.ILLEGAL_ARGS, e.getMessage()); }
@@ -78,7 +78,7 @@ public interface File {
     }
     public static File ofStream(OutputStream str) {
         return new File() {
-            @Override public void write(byte[] buff) {
+            @Override public synchronized void write(byte[] buff) {
                 try {
                     try { str.write(buff); }
                     catch (NullPointerException e) {throw new FilesystemException(ErrorReason.ILLEGAL_ARGS, e.getMessage()); }
@@ -91,7 +91,7 @@ public interface File {
     public static File ofLineWriter(LineWriter writer) {
         var buff = new Buffer();
         return new File() {
-            @Override public void write(byte[] val) {
+            @Override public synchronized void write(byte[] val) {
                 try {
                     if (val == null) throw new FilesystemException(ErrorReason.ILLEGAL_ARGS, "Given buffer is null.");
     
@@ -118,7 +118,7 @@ public interface File {
             private byte[] prev = new byte[0];
 
             @Override
-            public int read(byte[] buff) {
+            public synchronized int read(byte[] buff) {
                 try {
                     if (buff == null) throw new FilesystemException(ErrorReason.ILLEGAL_ARGS, "Given buffer is null.");
                     var ptr = 0;

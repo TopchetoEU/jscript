@@ -24,7 +24,7 @@ public class PhysicalFilesystem implements Filesystem {
     @Override public String normalize(String... paths) {
         return Paths.normalize(paths);
     }
-    @Override public File open(String _path, Mode perms) {
+    @Override public synchronized File open(String _path, Mode perms) {
         try {
             var path = realPath(normalize(_path));
             checkMode(path, perms);
@@ -39,7 +39,7 @@ public class PhysicalFilesystem implements Filesystem {
         }
         catch (FilesystemException e) { throw e.setAction(ActionType.OPEN).setPath(_path); }
     }
-    @Override public boolean create(String _path, EntryType type) {
+    @Override public synchronized boolean create(String _path, EntryType type) {
         try {
             var path = realPath(_path);
 
@@ -63,7 +63,7 @@ public class PhysicalFilesystem implements Filesystem {
 
         return true;
     }
-    @Override public FileStat stat(String _path) {
+    @Override public synchronized FileStat stat(String _path) {
         var path = realPath(_path);
 
         if (!Files.exists(path)) return new FileStat(Mode.NONE, EntryType.NONE);
@@ -82,7 +82,7 @@ public class PhysicalFilesystem implements Filesystem {
             Files.isDirectory(path) ? EntryType.FOLDER : EntryType.FILE
         );
     }
-    @Override public void close() throws FilesystemException {
+    @Override public synchronized void close() throws FilesystemException {
         try {
             handles.close();
         }

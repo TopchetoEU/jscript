@@ -111,7 +111,7 @@ public class JScriptRepl {
         var fs = new RootFilesystem(PermissionsProvider.get(environment));
         fs.protocols.put("temp", new MemoryFilesystem(Mode.READ_WRITE));
         fs.protocols.put("file", new PhysicalFilesystem("."));
-        fs.protocols.put("std", STDFilesystem.ofStd(System.in, System.out, System.err));
+        fs.protocols.put("std", new STDFilesystem(System.in, System.out, System.err));
 
         environment.add(PermissionsProvider.KEY, PermissionsManager.ALL_PERMS);
         environment.add(Filesystem.KEY, fs);

@@ -13,7 +13,7 @@ public abstract class BaseFile<T> implements File {
     protected abstract long onSeek(long offset, int pos);
     protected abstract boolean onClose();
 
-    @Override public int read(byte[] buff) {
+    @Override public synchronized int read(byte[] buff) {
         try {
             if (handle == null) throw new FilesystemException(ErrorReason.CLOSED);
             if (!mode.readable) throw new FilesystemException(ErrorReason.NO_PERMISSION, "File not open for reading.");
@@ -21,7 +21,7 @@ public abstract class BaseFile<T> implements File {
         }
         catch (FilesystemException e) { throw e.setAction(ActionType.READ); }
     }
-    @Override public void write(byte[] buff) {
+    @Override public synchronized void write(byte[] buff) {
         try {
             if (handle == null) throw new FilesystemException(ErrorReason.CLOSED);
             if (!mode.writable) throw new FilesystemException(ErrorReason.NO_PERMISSION, "File not open for writting.");
@@ -29,7 +29,7 @@ public abstract class BaseFile<T> implements File {
         }
         catch (FilesystemException e) { throw e.setAction(ActionType.WRITE); }
     }
-    @Override public long seek(long offset, int pos) {
+    @Override public synchronized long seek(long offset, int pos) {
         try {
             if (handle == null) throw new FilesystemException(ErrorReason.CLOSED);
             if (!mode.writable) throw new FilesystemException(ErrorReason.NO_PERMISSION, "File not open for seeking.");
@@ -37,7 +37,7 @@ public abstract class BaseFile<T> implements File {
         }
         catch (FilesystemException e) { throw e.setAction(ActionType.SEEK); }
     }
-    @Override public boolean close() {
+    @Override public synchronized boolean close() {
         if (handle != null) {
             try {
                 var res = onClose();

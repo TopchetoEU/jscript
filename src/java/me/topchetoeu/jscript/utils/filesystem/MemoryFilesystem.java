@@ -20,7 +20,7 @@ public class MemoryFilesystem implements Filesystem {
     @Override public String normalize(String... path) {
         return Paths.normalize(path);
     }
-    @Override public File open(String _path, Mode perms) {
+    @Override public synchronized File open(String _path, Mode perms) {
         try {
             var path = realPath(_path);
             var pcount = path.getNameCount();
@@ -47,7 +47,7 @@ public class MemoryFilesystem implements Filesystem {
         }
         catch (FilesystemException e) { throw e.setPath(_path).setAction(ActionType.OPEN); }
     }
-    @Override public boolean create(String _path, EntryType type) {
+    @Override public synchronized boolean create(String _path, EntryType type) {
         try {
             var path = realPath(_path);
     
@@ -69,14 +69,14 @@ public class MemoryFilesystem implements Filesystem {
         }
         catch (FilesystemException e) { throw e.setPath(_path).setAction(ActionType.CREATE); }
     }
-    @Override public FileStat stat(String _path) {
+    @Override public synchronized FileStat stat(String _path) {
         var path = realPath(_path);
 
         if (files.containsKey(path)) return new FileStat(mode, EntryType.FILE);
         else if (folders.contains(path)) return new FileStat(mode, EntryType.FOLDER);
         else return new FileStat(Mode.NONE, EntryType.NONE);
     }
-    @Override public void close() throws FilesystemException {
+    @Override public synchronized void close() throws FilesystemException {
         handles.close();
     }
 

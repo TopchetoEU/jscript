@@ -53,7 +53,7 @@ public class RootFilesystem implements Filesystem {
             else return filename.protocol + "://" + protocol.normalize(paths);
         }
     }
-    @Override public File open(String path, Mode perms) throws FilesystemException {
+    @Override public synchronized File open(String path, Mode perms) throws FilesystemException {
         try {
             var filename = Filename.parse(path);
             var protocol = getProtocol(filename);
@@ -63,7 +63,7 @@ public class RootFilesystem implements Filesystem {
         }
         catch (FilesystemException e) { throw e.setPath(path).setAction(ActionType.OPEN); }
     }
-    @Override public boolean create(String path, EntryType type) throws FilesystemException {
+    @Override public synchronized boolean create(String path, EntryType type) throws FilesystemException {
         try {
             var filename = Filename.parse(path);
             var protocol = getProtocol(filename);
@@ -73,7 +73,7 @@ public class RootFilesystem implements Filesystem {
         }
         catch (FilesystemException e) { throw e.setPath(path).setAction(ActionType.CREATE); }
     }
-    @Override public FileStat stat(String path) throws FilesystemException {
+    @Override public synchronized FileStat stat(String path) throws FilesystemException {
         try {
             var filename = Filename.parse(path);
             var protocol = getProtocol(filename);
@@ -82,7 +82,7 @@ public class RootFilesystem implements Filesystem {
         }
         catch (FilesystemException e) { throw e.setPath(path).setAction(ActionType.STAT); }
     }
-    @Override public void close() throws FilesystemException {
+    @Override public synchronized void close() throws FilesystemException {
         try {
             for (var protocol : protocols.values()) {
                 protocol.close();
