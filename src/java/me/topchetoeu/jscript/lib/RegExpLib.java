@@ -4,12 +4,12 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.regex.Pattern;
 
-import me.topchetoeu.jscript.core.Context;
-import me.topchetoeu.jscript.core.values.ArrayValue;
-import me.topchetoeu.jscript.core.values.FunctionValue;
-import me.topchetoeu.jscript.core.values.NativeWrapper;
-import me.topchetoeu.jscript.core.values.ObjectValue;
-import me.topchetoeu.jscript.core.values.Values;
+import me.topchetoeu.jscript.runtime.Context;
+import me.topchetoeu.jscript.runtime.values.ArrayValue;
+import me.topchetoeu.jscript.runtime.values.FunctionValue;
+import me.topchetoeu.jscript.runtime.values.NativeWrapper;
+import me.topchetoeu.jscript.runtime.values.ObjectValue;
+import me.topchetoeu.jscript.runtime.values.Values;
 import me.topchetoeu.jscript.utils.interop.Arguments;
 import me.topchetoeu.jscript.utils.interop.Expose;
 import me.topchetoeu.jscript.utils.interop.ExposeConstructor;

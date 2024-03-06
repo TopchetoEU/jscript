@@ -18,7 +18,7 @@ import me.topchetoeu.jscript.compilation.control.SwitchStatement.SwitchCase;
 import me.topchetoeu.jscript.compilation.parsing.ParseRes.State;
 import me.topchetoeu.jscript.compilation.scope.LocalScopeRecord;
 import me.topchetoeu.jscript.compilation.values.*;
-import me.topchetoeu.jscript.core.exceptions.SyntaxException;
+import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 
 // TODO: this has to be rewritten
 public class Parsing {

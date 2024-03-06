@@ -10,16 +10,16 @@ import java.util.HashSet;
 import java.util.stream.Collectors;
 
 import me.topchetoeu.jscript.common.Location;
-import me.topchetoeu.jscript.core.Context;
-import me.topchetoeu.jscript.core.Environment;
-import me.topchetoeu.jscript.core.WrapperProvider;
-import me.topchetoeu.jscript.core.values.FunctionValue;
-import me.topchetoeu.jscript.core.values.NativeFunction;
-import me.topchetoeu.jscript.core.values.ObjectValue;
-import me.topchetoeu.jscript.core.values.Symbol;
-import me.topchetoeu.jscript.core.values.Values;
-import me.topchetoeu.jscript.core.exceptions.EngineException;
-import me.topchetoeu.jscript.core.exceptions.InterruptException;
+import me.topchetoeu.jscript.runtime.Context;
+import me.topchetoeu.jscript.runtime.Environment;
+import me.topchetoeu.jscript.runtime.WrapperProvider;
+import me.topchetoeu.jscript.runtime.exceptions.EngineException;
+import me.topchetoeu.jscript.runtime.exceptions.InterruptException;
+import me.topchetoeu.jscript.runtime.values.FunctionValue;
+import me.topchetoeu.jscript.runtime.values.NativeFunction;
+import me.topchetoeu.jscript.runtime.values.ObjectValue;
+import me.topchetoeu.jscript.runtime.values.Symbol;
+import me.topchetoeu.jscript.runtime.values.Values;
 
 public class NativeWrapperProvider implements WrapperProvider {
     private final HashMap<Class<?>, FunctionValue> constructors = new HashMap<>();

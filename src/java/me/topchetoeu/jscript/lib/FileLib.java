@@ -1,7 +1,7 @@
 package me.topchetoeu.jscript.lib;
 
-import me.topchetoeu.jscript.core.values.ArrayValue;
-import me.topchetoeu.jscript.core.values.Values;
+import me.topchetoeu.jscript.runtime.values.ArrayValue;
+import me.topchetoeu.jscript.runtime.values.Values;
 import me.topchetoeu.jscript.utils.filesystem.File;
 import me.topchetoeu.jscript.utils.filesystem.FilesystemException;
 import me.topchetoeu.jscript.utils.interop.Arguments;

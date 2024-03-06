@@ -2,14 +2,14 @@ package me.topchetoeu.jscript.lib;
 
 import java.util.HashMap;
 
-import me.topchetoeu.jscript.core.Context;
-import me.topchetoeu.jscript.core.Environment;
-import me.topchetoeu.jscript.core.EventLoop;
-import me.topchetoeu.jscript.core.Key;
-import me.topchetoeu.jscript.core.scope.GlobalScope;
-import me.topchetoeu.jscript.core.values.FunctionValue;
-import me.topchetoeu.jscript.core.values.Values;
-import me.topchetoeu.jscript.core.exceptions.EngineException;
+import me.topchetoeu.jscript.runtime.Context;
+import me.topchetoeu.jscript.runtime.Environment;
+import me.topchetoeu.jscript.runtime.EventLoop;
+import me.topchetoeu.jscript.runtime.Key;
+import me.topchetoeu.jscript.runtime.exceptions.EngineException;
+import me.topchetoeu.jscript.runtime.scope.GlobalScope;
+import me.topchetoeu.jscript.runtime.values.FunctionValue;
+import me.topchetoeu.jscript.runtime.values.Values;
 import me.topchetoeu.jscript.utils.filesystem.Filesystem;
 import me.topchetoeu.jscript.utils.filesystem.Mode;
 import me.topchetoeu.jscript.utils.interop.Arguments;

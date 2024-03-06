@@ -1,7 +1,7 @@
 package me.topchetoeu.jscript.lib;
 
-import me.topchetoeu.jscript.core.values.ObjectValue;
-import me.topchetoeu.jscript.core.values.ObjectValue.PlaceholderProto;
+import me.topchetoeu.jscript.runtime.values.ObjectValue;
+import me.topchetoeu.jscript.runtime.values.ObjectValue.PlaceholderProto;
 import me.topchetoeu.jscript.utils.interop.Arguments;
 import me.topchetoeu.jscript.utils.interop.ExposeConstructor;
 import me.topchetoeu.jscript.utils.interop.ExposeField;

@@ -15,8 +15,8 @@ import me.topchetoeu.jscript.common.events.Notifier;
 import me.topchetoeu.jscript.common.json.JSON;
 import me.topchetoeu.jscript.common.json.JSONList;
 import me.topchetoeu.jscript.common.json.JSONMap;
+import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 import me.topchetoeu.jscript.utils.debug.WebSocketMessage.Type;
-import me.topchetoeu.jscript.core.exceptions.SyntaxException;
 
 public class DebugServer {
     public static String browserDisplayName = Metadata.name() + "/" + Metadata.version();

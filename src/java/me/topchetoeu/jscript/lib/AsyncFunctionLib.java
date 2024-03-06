@@ -1,13 +1,13 @@
 package me.topchetoeu.jscript.lib;
 
-import me.topchetoeu.jscript.core.Context;
-import me.topchetoeu.jscript.core.Frame;
-import me.topchetoeu.jscript.core.values.CodeFunction;
-import me.topchetoeu.jscript.core.values.FunctionValue;
-import me.topchetoeu.jscript.core.values.NativeFunction;
-import me.topchetoeu.jscript.core.values.Values;
-import me.topchetoeu.jscript.core.exceptions.EngineException;
 import me.topchetoeu.jscript.lib.PromiseLib.Handle;
+import me.topchetoeu.jscript.runtime.Context;
+import me.topchetoeu.jscript.runtime.Frame;
+import me.topchetoeu.jscript.runtime.exceptions.EngineException;
+import me.topchetoeu.jscript.runtime.values.CodeFunction;
+import me.topchetoeu.jscript.runtime.values.FunctionValue;
+import me.topchetoeu.jscript.runtime.values.NativeFunction;
+import me.topchetoeu.jscript.runtime.values.Values;
 import me.topchetoeu.jscript.utils.interop.Arguments;
 import me.topchetoeu.jscript.utils.interop.WrapperName;
 

@@ -2,13 +2,13 @@ package me.topchetoeu.jscript.lib;
 
 import java.util.regex.Pattern;
 
-import me.topchetoeu.jscript.core.Environment;
-import me.topchetoeu.jscript.core.values.ArrayValue;
-import me.topchetoeu.jscript.core.values.FunctionValue;
-import me.topchetoeu.jscript.core.values.ObjectValue;
-import me.topchetoeu.jscript.core.values.Symbol;
-import me.topchetoeu.jscript.core.values.Values;
-import me.topchetoeu.jscript.core.exceptions.EngineException;
+import me.topchetoeu.jscript.runtime.Environment;
+import me.topchetoeu.jscript.runtime.exceptions.EngineException;
+import me.topchetoeu.jscript.runtime.values.ArrayValue;
+import me.topchetoeu.jscript.runtime.values.FunctionValue;
+import me.topchetoeu.jscript.runtime.values.ObjectValue;
+import me.topchetoeu.jscript.runtime.values.Symbol;
+import me.topchetoeu.jscript.runtime.values.Values;
 import me.topchetoeu.jscript.utils.interop.Arguments;
 import me.topchetoeu.jscript.utils.interop.Expose;
 import me.topchetoeu.jscript.utils.interop.ExposeConstructor;

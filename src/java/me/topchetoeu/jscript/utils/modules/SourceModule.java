@@ -1,8 +1,8 @@
 package me.topchetoeu.jscript.utils.modules;
 
 import me.topchetoeu.jscript.common.Filename;
-import me.topchetoeu.jscript.core.Context;
-import me.topchetoeu.jscript.core.Environment;
+import me.topchetoeu.jscript.runtime.Context;
+import me.topchetoeu.jscript.runtime.Environment;
 
 public class SourceModule extends Module {
     public final Filename filename;

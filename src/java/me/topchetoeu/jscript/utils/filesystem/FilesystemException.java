@@ -2,8 +2,8 @@ package me.topchetoeu.jscript.utils.filesystem;
 
 import java.util.ArrayList;
 
-import me.topchetoeu.jscript.core.values.Values;
-import me.topchetoeu.jscript.core.exceptions.EngineException;
+import me.topchetoeu.jscript.runtime.exceptions.EngineException;
+import me.topchetoeu.jscript.runtime.values.Values;
 
 public class FilesystemException extends RuntimeException {
     public final ErrorReason reason;

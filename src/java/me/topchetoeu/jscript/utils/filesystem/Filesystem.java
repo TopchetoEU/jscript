@@ -1,7 +1,7 @@
 package me.topchetoeu.jscript.utils.filesystem;
 
-import me.topchetoeu.jscript.core.Extensions;
-import me.topchetoeu.jscript.core.Key;
+import me.topchetoeu.jscript.runtime.Extensions;
+import me.topchetoeu.jscript.runtime.Key;
 
 public interface Filesystem {
     public static final Key<Filesystem> KEY = new Key<>();

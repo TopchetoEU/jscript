@@ -2,8 +2,8 @@ package me.topchetoeu.jscript.utils.modules;
 
 import java.util.HashMap;
 
-import me.topchetoeu.jscript.core.Context;
-import me.topchetoeu.jscript.core.exceptions.EngineException;
+import me.topchetoeu.jscript.runtime.Context;
+import me.topchetoeu.jscript.runtime.exceptions.EngineException;
 
 public class RootModuleRepo implements ModuleRepo {
     public final HashMap<String, ModuleRepo> repos = new HashMap<>();

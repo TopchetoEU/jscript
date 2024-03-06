@@ -7,7 +7,7 @@ import me.topchetoeu.jscript.common.Instruction.Type;
 import me.topchetoeu.jscript.compilation.CompileResult;
 import me.topchetoeu.jscript.compilation.CompoundStatement;
 import me.topchetoeu.jscript.compilation.Statement;
-import me.topchetoeu.jscript.core.exceptions.SyntaxException;
+import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 
 public class FunctionStatement extends Statement {
     public final CompoundStatement body;

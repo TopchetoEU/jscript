@@ -1,6 +1,6 @@
 package me.topchetoeu.jscript.utils.modules;
 
-import me.topchetoeu.jscript.core.Context;
+import me.topchetoeu.jscript.runtime.Context;
 
 public abstract class Module {
     private Object value;

@@ -4,10 +4,10 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.Stack;
 
-import me.topchetoeu.jscript.core.Context;
-import me.topchetoeu.jscript.core.values.ObjectValue;
-import me.topchetoeu.jscript.core.values.Values;
-import me.topchetoeu.jscript.core.exceptions.EngineException;
+import me.topchetoeu.jscript.runtime.Context;
+import me.topchetoeu.jscript.runtime.exceptions.EngineException;
+import me.topchetoeu.jscript.runtime.values.ObjectValue;
+import me.topchetoeu.jscript.runtime.values.Values;
 import me.topchetoeu.jscript.utils.filesystem.ActionType;
 import me.topchetoeu.jscript.utils.filesystem.EntryType;
 import me.topchetoeu.jscript.utils.filesystem.ErrorReason;

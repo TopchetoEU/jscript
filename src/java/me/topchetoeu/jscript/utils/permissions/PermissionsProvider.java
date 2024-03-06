@@ -1,7 +1,7 @@
 package me.topchetoeu.jscript.utils.permissions;
 
-import me.topchetoeu.jscript.core.Extensions;
-import me.topchetoeu.jscript.core.Key;
+import me.topchetoeu.jscript.runtime.Extensions;
+import me.topchetoeu.jscript.runtime.Key;
 
 public interface PermissionsProvider {
     public static final Key<PermissionsProvider> KEY = new Key<>();

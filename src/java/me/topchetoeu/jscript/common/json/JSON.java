@@ -9,12 +9,12 @@ import me.topchetoeu.jscript.compilation.parsing.Operator;
 import me.topchetoeu.jscript.compilation.parsing.ParseRes;
 import me.topchetoeu.jscript.compilation.parsing.Parsing;
 import me.topchetoeu.jscript.compilation.parsing.Token;
-import me.topchetoeu.jscript.core.Context;
-import me.topchetoeu.jscript.core.values.ArrayValue;
-import me.topchetoeu.jscript.core.values.ObjectValue;
-import me.topchetoeu.jscript.core.values.Values;
-import me.topchetoeu.jscript.core.exceptions.EngineException;
-import me.topchetoeu.jscript.core.exceptions.SyntaxException;
+import me.topchetoeu.jscript.runtime.Context;
+import me.topchetoeu.jscript.runtime.exceptions.EngineException;
+import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
+import me.topchetoeu.jscript.runtime.values.ArrayValue;
+import me.topchetoeu.jscript.runtime.values.ObjectValue;
+import me.topchetoeu.jscript.runtime.values.Values;
 
 public class JSON {
     public static Object toJs(JSONElement val) {

@@ -1,7 +1,8 @@
 package me.topchetoeu.jscript.utils.debug;
 
-import me.topchetoeu.jscript.core.debug.DebugHandler;
 import java.io.IOException;
+
+import me.topchetoeu.jscript.runtime.debug.DebugHandler;
 
 public interface Debugger extends DebugHandler {
     void close();

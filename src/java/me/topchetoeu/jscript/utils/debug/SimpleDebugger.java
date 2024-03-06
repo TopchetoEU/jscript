@@ -23,19 +23,19 @@ import me.topchetoeu.jscript.common.json.JSONList;
 import me.topchetoeu.jscript.common.json.JSONMap;
 import me.topchetoeu.jscript.common.mapping.FunctionMap;
 import me.topchetoeu.jscript.compilation.parsing.Parsing;
-import me.topchetoeu.jscript.core.Context;
-import me.topchetoeu.jscript.core.Engine;
-import me.topchetoeu.jscript.core.Environment;
-import me.topchetoeu.jscript.core.EventLoop;
-import me.topchetoeu.jscript.core.Frame;
-import me.topchetoeu.jscript.core.debug.DebugContext;
-import me.topchetoeu.jscript.core.scope.GlobalScope;
-import me.topchetoeu.jscript.core.values.ArrayValue;
-import me.topchetoeu.jscript.core.values.FunctionValue;
-import me.topchetoeu.jscript.core.values.ObjectValue;
-import me.topchetoeu.jscript.core.values.Symbol;
-import me.topchetoeu.jscript.core.values.Values;
-import me.topchetoeu.jscript.core.exceptions.EngineException;
+import me.topchetoeu.jscript.runtime.Context;
+import me.topchetoeu.jscript.runtime.Engine;
+import me.topchetoeu.jscript.runtime.Environment;
+import me.topchetoeu.jscript.runtime.EventLoop;
+import me.topchetoeu.jscript.runtime.Frame;
+import me.topchetoeu.jscript.runtime.debug.DebugContext;
+import me.topchetoeu.jscript.runtime.exceptions.EngineException;
+import me.topchetoeu.jscript.runtime.scope.GlobalScope;
+import me.topchetoeu.jscript.runtime.values.ArrayValue;
+import me.topchetoeu.jscript.runtime.values.FunctionValue;
+import me.topchetoeu.jscript.runtime.values.ObjectValue;
+import me.topchetoeu.jscript.runtime.values.Symbol;
+import me.topchetoeu.jscript.runtime.values.Values;
 
 // very simple indeed
 public class SimpleDebugger implements Debugger {

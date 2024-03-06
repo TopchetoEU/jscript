@@ -1,8 +1,8 @@
 package me.topchetoeu.jscript.lib;
 
 import me.topchetoeu.jscript.common.json.JSON;
-import me.topchetoeu.jscript.core.exceptions.EngineException;
-import me.topchetoeu.jscript.core.exceptions.SyntaxException;
+import me.topchetoeu.jscript.runtime.exceptions.EngineException;
+import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 import me.topchetoeu.jscript.utils.interop.Arguments;
 import me.topchetoeu.jscript.utils.interop.Expose;
 import me.topchetoeu.jscript.utils.interop.ExposeTarget;

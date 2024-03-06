@@ -2,9 +2,9 @@ package me.topchetoeu.jscript.utils.interop;
 
 import java.lang.reflect.Array;
 
-import me.topchetoeu.jscript.core.Context;
-import me.topchetoeu.jscript.core.values.NativeWrapper;
-import me.topchetoeu.jscript.core.values.Values;
+import me.topchetoeu.jscript.runtime.Context;
+import me.topchetoeu.jscript.runtime.values.NativeWrapper;
+import me.topchetoeu.jscript.runtime.values.Values;
 
 public class Arguments {
     public final Object self;

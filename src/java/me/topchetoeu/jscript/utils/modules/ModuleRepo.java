@@ -3,9 +3,9 @@ package me.topchetoeu.jscript.utils.modules;
 import java.util.HashMap;
 
 import me.topchetoeu.jscript.common.Filename;
-import me.topchetoeu.jscript.core.Context;
-import me.topchetoeu.jscript.core.Extensions;
-import me.topchetoeu.jscript.core.Key;
+import me.topchetoeu.jscript.runtime.Context;
+import me.topchetoeu.jscript.runtime.Extensions;
+import me.topchetoeu.jscript.runtime.Key;
 import me.topchetoeu.jscript.utils.filesystem.Filesystem;
 import me.topchetoeu.jscript.utils.filesystem.Mode;
 

@@ -1,10 +1,10 @@
 package me.topchetoeu.jscript.lib;
 
-import me.topchetoeu.jscript.core.Context;
-import me.topchetoeu.jscript.core.values.ObjectValue;
-import me.topchetoeu.jscript.core.values.Values;
-import me.topchetoeu.jscript.core.values.ObjectValue.PlaceholderProto;
-import me.topchetoeu.jscript.core.exceptions.ConvertException;
+import me.topchetoeu.jscript.runtime.Context;
+import me.topchetoeu.jscript.runtime.exceptions.ConvertException;
+import me.topchetoeu.jscript.runtime.values.ObjectValue;
+import me.topchetoeu.jscript.runtime.values.Values;
+import me.topchetoeu.jscript.runtime.values.ObjectValue.PlaceholderProto;
 import me.topchetoeu.jscript.utils.interop.Arguments;
 import me.topchetoeu.jscript.utils.interop.Expose;
 import me.topchetoeu.jscript.utils.interop.ExposeConstructor;

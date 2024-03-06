@@ -4,9 +4,9 @@ import me.topchetoeu.jscript.common.Filename;
 import me.topchetoeu.jscript.common.FunctionBody;
 import me.topchetoeu.jscript.compilation.CompileResult;
 import me.topchetoeu.jscript.compilation.parsing.Parsing;
-import me.topchetoeu.jscript.core.Compiler;
-import me.topchetoeu.jscript.core.Extensions;
-import me.topchetoeu.jscript.core.debug.DebugContext;
+import me.topchetoeu.jscript.runtime.Compiler;
+import me.topchetoeu.jscript.runtime.Extensions;
+import me.topchetoeu.jscript.runtime.debug.DebugContext;
 
 public class JSCompiler implements Compiler {
     public final Extensions ext;

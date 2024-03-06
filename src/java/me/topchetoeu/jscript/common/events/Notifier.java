@@ -1,6 +1,6 @@
 package me.topchetoeu.jscript.common.events;
 
-import me.topchetoeu.jscript.core.exceptions.InterruptException;
+import me.topchetoeu.jscript.runtime.exceptions.InterruptException;
 
 public class Notifier {
     private boolean ok = false;

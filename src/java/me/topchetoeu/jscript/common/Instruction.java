@@ -5,7 +5,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.HashMap;
 
-import me.topchetoeu.jscript.core.exceptions.SyntaxException;
+import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 
 public class Instruction {
     public static enum Type {
