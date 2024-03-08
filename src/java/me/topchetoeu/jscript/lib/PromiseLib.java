@@ -53,26 +53,29 @@ public class PromiseLib {
     private Object val;
 
     private void resolveSynchronized(Context ctx, Object val, int newState) {
-        if (!ctx.hasNotNull(EventLoop.KEY)) throw EngineException.ofError("No event loop");
-
-        ctx.get(EventLoop.KEY).pushMsg(() -> {
-            this.val = val;
-            this.state = newState;
-
-            for (var handle : handles) {
-                if (newState == STATE_FULFILLED) handle.onFulfil(val);
-                if (newState == STATE_REJECTED) {
-                    handle.onReject((EngineException)val);
-                    handled = true;
-                }
+        this.val = val;
+        this.state = newState;
+    
+        for (var handle : handles) {
+            if (newState == STATE_FULFILLED) handle.onFulfil(val);
+            if (newState == STATE_REJECTED) {
+                handle.onReject((EngineException)val);
+                handled = true;
             }
+        }
 
-            if (state == STATE_REJECTED && !handled) {
-                Values.printError(((EngineException)val).setCtx(ctx), "(in promise)");
-            }
+        if (state == STATE_REJECTED && !handled) {
+            Values.printError(((EngineException)val).setCtx(ctx), "(in promise)");
+        }
 
-            handles = null;
-        }, true);
+        handles = null;
+
+        // ctx.get(EventLoop.KEY).pushMsg(() -> {
+        //     if (!ctx.hasNotNull(EventLoop.KEY)) throw EngineException.ofError("No event loop");
+
+
+        //     handles = null;
+        // }, true);
         
     }
     private synchronized void resolve(Context ctx, Object val, int newState) {
