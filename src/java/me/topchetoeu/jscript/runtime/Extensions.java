@@ -1,6 +1,17 @@
 package me.topchetoeu.jscript.runtime;
 
+import java.util.List;
+
 public interface Extensions {
+    public static Extensions EMPTY = new Extensions() {
+        @Override public <T> void add(Key<T> key, T obj) { }
+        @Override public boolean remove(Key<?> key) { return false; }
+
+        @Override public <T> T get(Key<T> key) { return null; }
+        @Override public boolean has(Key<?> key) { return false; }
+        @Override public Iterable<Key<?>> keys() { return List.of(); }
+    };
+
     <T> T get(Key<T> key);
     <T> void add(Key<T> key, T obj);
     Iterable<Key<?>> keys();
@@ -34,5 +45,10 @@ public interface Extensions {
         for (var key : source.keys()) {
             add((Key<Object>)key, (Object)source.get(key));
         }
+    }
+
+    public static Extensions wrap(Extensions ext) {
+        if (ext == null) return EMPTY;
+        else return ext;
     }
 }

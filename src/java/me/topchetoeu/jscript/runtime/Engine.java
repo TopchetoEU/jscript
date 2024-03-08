@@ -2,11 +2,9 @@ package me.topchetoeu.jscript.runtime;
 
 import java.util.concurrent.PriorityBlockingQueue;
 
-import me.topchetoeu.jscript.common.Filename;
 import me.topchetoeu.jscript.common.ResultRunnable;
 import me.topchetoeu.jscript.common.events.DataNotifier;
 import me.topchetoeu.jscript.runtime.exceptions.InterruptException;
-import me.topchetoeu.jscript.runtime.values.FunctionValue;
 
 public class Engine implements EventLoop {
     private static class Task<T> implements Comparable<Task<?>> {
@@ -76,18 +74,6 @@ public class Engine implements EventLoop {
     }
     public boolean isRunning() {
         return this.thread != null;
-    }
-
-    public DataNotifier<Object> pushMsg(boolean micro, Environment env, FunctionValue func, Object thisArg, Object ...args) {
-        return pushMsg(() -> {
-            return func.call(new Context(env), thisArg, args);
-        }, micro);
-    }
-    public DataNotifier<Object> pushMsg(boolean micro, Environment env, Filename filename, String raw, Object thisArg, Object ...args) {
-        return pushMsg(() -> {
-            var ctx = new Context(env);
-            return ctx.compile(filename, raw).call(new Context(env), thisArg, args);
-        }, micro);
     }
 
     public Engine() {
