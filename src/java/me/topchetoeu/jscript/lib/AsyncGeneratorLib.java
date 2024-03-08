@@ -62,7 +62,7 @@ public class AsyncGeneratorLib {
                 @Override public void onReject(EngineException err) {
                     next(ctx, Values.NO_RETURN, Values.NO_RETURN, err);
                 }
-            });
+            }.defer(ctx));
         }
         else if (state == 2) {
             var obj = new ObjectValue();

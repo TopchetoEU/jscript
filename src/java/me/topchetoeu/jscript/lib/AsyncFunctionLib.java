@@ -54,7 +54,7 @@ public class AsyncFunctionLib extends FunctionValue {
                     public void onReject(EngineException err) {
                         next(ctx, Values.NO_RETURN, err);
                     }
-                });
+                }.defer(ctx));
             }
         }
 
