@@ -195,7 +195,24 @@ public class NativeWrapperProvider implements WrapperProvider {
                 if (props.contains(key) || nonProps.contains(key)) repeat = true;
                 else {
                     try {
-                        obj.defineProperty(null, key, Values.normalize(new Context(env), field.get(null)), true, true, false);
+                        if (Modifier.isStatic(field.getModifiers())) {
+                            obj.defineProperty(null, key, Values.normalize(new Context(env), field.get(null)), true, true, false);
+                        }
+                        else {
+                            obj.defineProperty(
+                                null, key,
+                                new NativeFunction("get " + key, args -> {
+                                    try { return field.get(args.self(clazz)); }
+                                    catch (IllegalAccessException e) { e.printStackTrace(); return null; }
+                                }),
+                                Modifier.isFinal(field.getModifiers()) ? null : new NativeFunction("get " + key, args -> {
+                                    try { field.set(args.self(clazz), args.convert(0, field.getType())); }
+                                    catch (IllegalAccessException e) { e.printStackTrace(); }
+                                    return null;
+                                }),
+                                true, false
+                            );
+                        }
                         nonProps.add(key);
                     }
                     catch (IllegalArgumentException | IllegalAccessException e) { }
