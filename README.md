@@ -23,7 +23,3 @@ engine.run(true);
 // Get our result
 System.out.println(awaitable.await());
 ```
-
-## NOTE:
-
-To setup the typescript bundle in your sources, run `node build.js init-ts`. This will download the latest version of typescript, minify it, and add it to your src folder. If you are going to work with the `node build.js debug|release` command, this is not a necessary step.
