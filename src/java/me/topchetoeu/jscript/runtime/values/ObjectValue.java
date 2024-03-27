@@ -153,18 +153,18 @@ public class ObjectValue {
     }
 
     public ObjectValue getPrototype(Context ctx) {
+        if (prototype instanceof ObjectValue || prototype == null) return (ObjectValue)prototype;
+
         try {
-            if (prototype == OBJ_PROTO) return ctx.get(Environment.OBJECT_PROTO);
             if (prototype == ARR_PROTO) return ctx.get(Environment.ARRAY_PROTO);
             if (prototype == FUNC_PROTO) return ctx.get(Environment.FUNCTION_PROTO);
             if (prototype == ERR_PROTO) return ctx.get(Environment.ERROR_PROTO);
             if (prototype == RANGE_ERR_PROTO) return ctx.get(Environment.RANGE_ERR_PROTO);
             if (prototype == SYNTAX_ERR_PROTO) return ctx.get(Environment.SYNTAX_ERR_PROTO);
             if (prototype == TYPE_ERR_PROTO) return ctx.get(Environment.TYPE_ERR_PROTO);
+            return ctx.get(Environment.OBJECT_PROTO);
         }
         catch (NullPointerException e) { return null; }
-
-        return (ObjectValue)prototype;
     }
     public final boolean setPrototype(PlaceholderProto val) {
         if (!extensible()) return false;

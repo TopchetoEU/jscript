@@ -8,8 +8,11 @@ public class NativeWrapper extends ObjectValue {
 
     @Override
     public ObjectValue getPrototype(Context ctx) {
-        if (ctx.environment != null && prototype == NATIVE_PROTO) return ctx.environment.wrappers.getProto(wrapped.getClass());
-        else return super.getPrototype(ctx);
+        if (ctx.environment != null && prototype == NATIVE_PROTO) {
+            var res = ctx.environment.wrappers.getProto(wrapped.getClass());
+            if (res != null) return res;
+        }
+        return super.getPrototype(ctx);
     }
 
     @Override

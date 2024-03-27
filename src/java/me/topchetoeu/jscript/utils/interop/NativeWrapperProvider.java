@@ -25,6 +25,7 @@ public class NativeWrapperProvider implements WrapperProvider {
     private final HashMap<Class<?>, FunctionValue> constructors = new HashMap<>();
     private final HashMap<Class<?>, ObjectValue> prototypes = new HashMap<>();
     private final HashMap<Class<?>, ObjectValue> namespaces = new HashMap<>();
+    private final HashSet<Class<?>> ignore = new HashSet<>();
     private final Environment env;
 
     private static Object call(Context ctx, String name, Method method, Object thisArg, Object... args) {
@@ -106,11 +107,12 @@ public class NativeWrapperProvider implements WrapperProvider {
         else return name;
     }
 
-    private static void apply(ObjectValue obj, Environment env, ExposeTarget target, Class<?> clazz) {
+    private static boolean apply(ObjectValue obj, Environment env, ExposeTarget target, Class<?> clazz) {
         var getters = new HashMap<Object, FunctionValue>();
         var setters = new HashMap<Object, FunctionValue>();
         var props = new HashSet<Object>();
         var nonProps = new HashSet<Object>();
+        var any = false;
 
         for (var method : clazz.getDeclaredMethods()) {
             for (var annotation : method.getAnnotationsByType(Expose.class)) {
@@ -120,6 +122,7 @@ public class NativeWrapperProvider implements WrapperProvider {
                 var name = getName(method, annotation.value());
                 var key = getKey(name);
                 var repeat = false;
+                any = true;
 
                 switch (annotation.type()) {
                     case INIT:
@@ -168,6 +171,7 @@ public class NativeWrapperProvider implements WrapperProvider {
                 var name = getName(method, annotation.value());
                 var key = getKey(name);
                 var repeat = false;
+                any = true;
 
                 if (props.contains(key) || nonProps.contains(key)) repeat = true;
                 else {
@@ -191,6 +195,7 @@ public class NativeWrapperProvider implements WrapperProvider {
                 var name = getName(field, annotation.value());
                 var key = getKey(name);
                 var repeat = false;
+                any = true;
 
                 if (props.contains(key) || nonProps.contains(key)) repeat = true;
                 else {
@@ -227,6 +232,8 @@ public class NativeWrapperProvider implements WrapperProvider {
         }
 
         for (var key : props) obj.defineProperty(null, key, getters.get(key), setters.get(key), true, false);
+
+        return any;
     }
 
     private static Method getConstructor(Environment env, Class<?> clazz) {
@@ -248,7 +255,7 @@ public class NativeWrapperProvider implements WrapperProvider {
     public static ObjectValue makeProto(Environment env, Class<?> clazz) {
         var res = new ObjectValue();
         res.defineProperty(null, Symbol.get("Symbol.typeName"), getName(clazz));
-        apply(res, env, ExposeTarget.PROTOTYPE, clazz);
+        if (!apply(res, env, ExposeTarget.PROTOTYPE, clazz)) return null;
         return res;
     }
     /**
@@ -277,7 +284,7 @@ public class NativeWrapperProvider implements WrapperProvider {
     public static ObjectValue makeNamespace(Environment ctx, Class<?> clazz) {
         var res = new ObjectValue();
         res.defineProperty(null, Symbol.get("Symbol.typeName"), getName(clazz));
-        apply(res, ctx, ExposeTarget.NAMESPACE, clazz);
+        if (!apply(res, ctx, ExposeTarget.NAMESPACE, clazz)) return null;
         return res;
     }
 
@@ -301,20 +308,27 @@ public class NativeWrapperProvider implements WrapperProvider {
         if (constr == null) constr = makeConstructor(env, clazz);
         if (proto == null) proto = makeProto(env, clazz);
 
+        if (constr == null || proto == null) return;
+
         proto.defineProperty(null, "constructor", constr, true, false, false);
         constr.defineProperty(null, "prototype", proto, true, false, false);
 
         prototypes.put(clazz, proto);
         constructors.put(clazz, constr);
 
-        var parent = clazz.getSuperclass();
-        if (parent == null) return;
+        var parent = clazz;
 
-        var parentProto = getProto(parent);
-        var parentConstr = getConstr(parent);
+        while (true) {
+            parent = parent.getSuperclass();
+            if (parent == null) return;
 
-        if (parentProto != null) Values.setPrototype(Context.NULL, proto, parentProto);
-        if (parentConstr != null) Values.setPrototype(Context.NULL, constr, parentConstr);
+            var parentProto = getProto(parent);
+            var parentConstr = getConstr(parent);
+
+            if (parentProto != null) Values.setPrototype(Context.NULL, proto, parentProto);
+            if (parentConstr != null) Values.setPrototype(Context.NULL, constr, parentConstr);
+
+        }
     }
 
     public ObjectValue getProto(Class<?> clazz) {
@@ -334,11 +348,23 @@ public class NativeWrapperProvider implements WrapperProvider {
         return new NativeWrapperProvider(env);
     }
 
-    public void setProto(Class<?> clazz, ObjectValue value) {
-        prototypes.put(clazz, value);
+    public void set(Class<?> clazz, Class<?> wrapper) {
+        if (wrapper == null) set(clazz, null, null);
+        else set(clazz, makeProto(env, wrapper), makeConstructor(env, wrapper));
     }
-    public void setConstr(Class<?> clazz, FunctionValue value) {
-        constructors.put(clazz, value);
+    public void set(Class<?> clazz, ObjectValue proto, FunctionValue constructor) {
+        if (proto != null && constructor != null) {
+            prototypes.put(clazz, proto);
+            constructors.put(clazz, constructor);
+            ignore.remove(clazz);
+        }
+        else {
+            prototypes.remove(clazz);
+            constructors.remove(clazz);
+            ignore.remove(clazz);
+
+            initType(clazz, constructor, proto);
+        }
     }
 
     private void initError() {
@@ -354,8 +380,7 @@ public class NativeWrapperProvider implements WrapperProvider {
         proto.defineProperty(null, "constructor", constr, true, false, false);
         constr.defineProperty(null, "prototype", proto, true, false, false);
 
-        setProto(Throwable.class, proto);
-        setConstr(Throwable.class, constr);
+        set(Throwable.class, proto, constr);
     }
 
     public NativeWrapperProvider(Environment env) {
