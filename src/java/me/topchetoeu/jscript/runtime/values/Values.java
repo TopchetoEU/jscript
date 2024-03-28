@@ -58,9 +58,8 @@ public class Values {
 
     @SuppressWarnings("unchecked")
     public static <T> T wrapper(Object val, Class<T> clazz) { 
-        if (!isWrapper(val)) val = new NativeWrapper(val);
-        var res = (NativeWrapper)val;
-        if (res != null && clazz.isInstance(res.wrapped)) return (T)res.wrapped;
+        if (isWrapper(val)) val = ((NativeWrapper)val).wrapped;
+        if (val != null && clazz.isInstance(val)) return (T)val;
         else return null;
     }
 
@@ -471,7 +470,7 @@ public class Values {
             else return ctx.environment.wrappers.getConstr((Class<?>)val);
         }
 
-        return new NativeWrapper(val);
+        return NativeWrapper.of(ctx, val);
     }
 
     @SuppressWarnings("unchecked")
@@ -536,7 +535,7 @@ public class Values {
         if (obj == null) return null;
         if (clazz.isInstance(obj)) return (T)obj;
         if (clazz.isAssignableFrom(NativeWrapper.class)) {
-            return (T)new NativeWrapper(obj);
+            return (T)NativeWrapper.of(ctx, obj);
         }
 
         throw new ConvertException(type(obj), clazz.getSimpleName());
