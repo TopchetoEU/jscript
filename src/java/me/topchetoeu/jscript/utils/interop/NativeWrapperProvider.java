@@ -289,7 +289,7 @@ public class NativeWrapperProvider implements WrapperProvider {
     }
 
     private void initType(Class<?> clazz, FunctionValue constr, ObjectValue proto) {
-        if (constr != null && proto != null) return;
+        if (constr != null && proto != null || ignore.contains(clazz)) return;
         // i vomit
         if (
             clazz == Object.class ||
