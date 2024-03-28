@@ -288,6 +288,21 @@ public class NativeWrapperProvider implements WrapperProvider {
         return res;
     }
 
+    private void updateProtoChain(Class<?> clazz, ObjectValue proto, FunctionValue constr) {
+        var parent = clazz;
+
+        while (true) {
+            parent = parent.getSuperclass();
+            if (parent == null) return;
+
+            var parentProto = getProto(parent);
+            var parentConstr = getConstr(parent);
+
+            if (parentProto != null) Values.setPrototype(Context.NULL, proto, parentProto);
+            if (parentConstr != null) Values.setPrototype(Context.NULL, constr, parentConstr);
+        }
+    }
+
     private void initType(Class<?> clazz, FunctionValue constr, ObjectValue proto) {
         if (constr != null && proto != null || ignore.contains(clazz)) return;
         // i vomit
@@ -316,32 +331,35 @@ public class NativeWrapperProvider implements WrapperProvider {
         prototypes.put(clazz, proto);
         constructors.put(clazz, constr);
 
-        var parent = clazz;
-
-        while (true) {
-            parent = parent.getSuperclass();
-            if (parent == null) return;
-
-            var parentProto = getProto(parent);
-            var parentConstr = getConstr(parent);
-
-            if (parentProto != null) Values.setPrototype(Context.NULL, proto, parentProto);
-            if (parentConstr != null) Values.setPrototype(Context.NULL, constr, parentConstr);
-
-        }
+        updateProtoChain(clazz, proto, constr);
     }
 
     public ObjectValue getProto(Class<?> clazz) {
         initType(clazz, constructors.get(clazz), prototypes.get(clazz));
-        return prototypes.get(clazz);
+        while (clazz != null) {
+            var res = prototypes.get(clazz);
+            if (res != null) return res;
+            clazz = clazz.getSuperclass();
+        }
+        return null;
     }
     public ObjectValue getNamespace(Class<?> clazz) {
         if (!namespaces.containsKey(clazz)) namespaces.put(clazz, makeNamespace(env, clazz));
-        return namespaces.get(clazz);
+        while (clazz != null) {
+            var res = namespaces.get(clazz);
+            if (res != null) return res;
+            clazz = clazz.getSuperclass();
+        }
+        return null;
     }
     public FunctionValue getConstr(Class<?> clazz) {
         initType(clazz, constructors.get(clazz), prototypes.get(clazz));
-        return constructors.get(clazz);
+        while (clazz != null) {
+            var res = constructors.get(clazz);
+            if (res != null) return res;
+            clazz = clazz.getSuperclass();
+        }
+        return null;
     }
 
     @Override public WrapperProvider fork(Environment env) {
@@ -357,6 +375,12 @@ public class NativeWrapperProvider implements WrapperProvider {
             prototypes.put(clazz, proto);
             constructors.put(clazz, constructor);
             ignore.remove(clazz);
+
+            for (var el : prototypes.keySet()) {
+                if (clazz.isAssignableFrom(el)) {
+                    updateProtoChain(el, getProto(el), getConstr(el));
+                }
+            }
         }
         else {
             prototypes.remove(clazz);

@@ -10,12 +10,8 @@ public class NativeWrapper extends ObjectValue {
     public ObjectValue getPrototype(Context ctx) {
         if (ctx.environment != null && prototype == NATIVE_PROTO) {
             var clazz = wrapped.getClass();
-
-            while (true) {
-                var res = ctx.environment.wrappers.getProto(clazz);
-                if (res != null) return res;
-                clazz = clazz.getSuperclass();
-            }
+            var res = ctx.environment.wrappers.getProto(clazz);
+            if (res != null) return res;
         }
         return super.getPrototype(ctx);
     }
