@@ -42,6 +42,7 @@ public class SimpleDebugger implements Debugger {
     public static final Set<String> VSCODE_EMPTY = Set.of(
         "function(...runtimeArgs){\n    let t = 1024; let e = null;\n    if(e)try{let r=\"<<default preview>>\",i=e.call(this,r);if(i!==r)return String(i)}catch(r){return`<<indescribable>>${JSON.stringify([String(r),\"object\"])}`}if(typeof this==\"object\"&&this){let r;for(let i of[Symbol.for(\"debug.description\"),Symbol.for(\"nodejs.util.inspect.custom\")])try{r=this[i]();break}catch{}if(!r&&!String(this.toString).includes(\"[native code]\")&&(r=String(this)),r&&!r.startsWith(\"[object \"))return r.length>=t?r.slice(0,t)+\"\\u2026\":r}\n  ;\n\n}",
         "function(...runtimeArgs){\n    let t = 1024; let e = null;\n    let r={},i=\"<<default preview>>\";if(typeof this!=\"object\"||!this)return r;for(let[n,s]of Object.entries(this)){if(e)try{let o=e.call(s,i);if(o!==i){r[n]=String(o);continue}}catch(o){r[n]=`<<indescribable>>${JSON.stringify([String(o),n])}`;continue}if(typeof s==\"object\"&&s){let o;for(let a of runtimeArgs[0])try{o=s[a]();break}catch{}!o&&!String(s.toString).includes(\"[native code]\")&&(o=String(s)),o&&!o.startsWith(\"[object \")&&(r[n]=o.length>=t?o.slice(0,t)+\"\\u2026\":o)}}return r\n  ;\n\n}",
+        "function(...runtimeArgs){\n    let r = 1024; let e = null;\n    let t={},n=\"<<default preview>>\";if(typeof this!=\"object\"||!this)return t;for(let[i,o]of Object.entries(this)){if(e)try{let s=e.call(o,n);if(s!==n){t[i]=String(s);continue}}catch(s){t[i]=`<<indescribable>>${JSON.stringify([String(s),i])}`;continue}if(typeof o==\"object\"&&o){let s;for(let a of runtimeArgs[0])if(typeof o[a]==\"function\")try{s=o[a]();break}catch{}!s&&!String(o.toString).includes(\"[native code]\")&&(s=String(o)),s&&!s.startsWith(\"[object \")&&(t[i]=s.length>=r?s.slice(0,r)+\"\\u2026\":s)}}return t\n  ;\n\n}",
         "function(){let t={__proto__:this.__proto__\n},e=Object.getOwnPropertyNames(this);for(let r=0;r<e.length;++r){let i=e[r],n=i>>>0;if(String(n>>>0)===i&&n>>>0!==4294967295)continue;let s=Object.getOwnPropertyDescriptor(this,i);s&&Object.defineProperty(t,i,s)}return t}",
         "function(){return[Symbol.for(\"debug.description\"),Symbol.for(\"nodejs.util.inspect.custom\")]\n}"
     );
@@ -226,6 +227,8 @@ public class SimpleDebugger implements Debugger {
     private int stepOutPtr = 0;
 
     private boolean compare(String src, String target) {
+        src = src.replaceAll("\\s", "");
+        target = target.replaceAll("\\s", "");
         if (src.length() != target.length()) return false;
         var diff = 0;
         var all = 0;
