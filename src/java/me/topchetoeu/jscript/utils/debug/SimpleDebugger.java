@@ -750,6 +750,7 @@ public class SimpleDebugger implements Debugger {
         var id = Integer.parseInt(msg.params.string("breakpointId"));
 
         idToBreakpoint.remove(id);
+        updateBreakpoints();
         ws.send(msg.respond());
     }
     @Override public synchronized void continueToLocation(V8Message msg) throws IOException {
