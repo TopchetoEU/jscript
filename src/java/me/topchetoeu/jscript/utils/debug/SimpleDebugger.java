@@ -30,6 +30,7 @@ import me.topchetoeu.jscript.runtime.EventLoop;
 import me.topchetoeu.jscript.runtime.Frame;
 import me.topchetoeu.jscript.runtime.debug.DebugContext;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
+import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 import me.topchetoeu.jscript.runtime.scope.GlobalScope;
 import me.topchetoeu.jscript.runtime.values.ArrayValue;
 import me.topchetoeu.jscript.runtime.values.FunctionValue;
@@ -41,6 +42,7 @@ import me.topchetoeu.jscript.runtime.values.Values;
 public class SimpleDebugger implements Debugger {
     public static final Set<String> VSCODE_EMPTY = Set.of(
         "function(...runtimeArgs){\n    let t = 1024; let e = null;\n    if(e)try{let r=\"<<default preview>>\",i=e.call(this,r);if(i!==r)return String(i)}catch(r){return`<<indescribable>>${JSON.stringify([String(r),\"object\"])}`}if(typeof this==\"object\"&&this){let r;for(let i of[Symbol.for(\"debug.description\"),Symbol.for(\"nodejs.util.inspect.custom\")])try{r=this[i]();break}catch{}if(!r&&!String(this.toString).includes(\"[native code]\")&&(r=String(this)),r&&!r.startsWith(\"[object \"))return r.length>=t?r.slice(0,t)+\"\\u2026\":r}\n  ;\n\n}",
+        "function(...runtimeArgs){\n    let r = 1024; let e = null;\n    if(e)try{let t=\"<<default preview>>\",n=e.call(this,t);if(n!==t)return String(n)}catch(t){return`<<indescribable>>${JSON.stringify([String(t),\"object\"])}`}if(typeof this==\"object\"&&this){let t;for(let n of[Symbol.for(\"debug.description\"),Symbol.for(\"nodejs.util.inspect.custom\")])if(typeof this[n]==\"function\")try{t=this[n]();break}catch{}if(!t&&!String(this.toString).includes(\"[native code]\")&&(t=String(this)),t&&!t.startsWith(\"[object\"))return t.length>=r?t.slice(0,r)+\"\\u2026\":t};}",
         "function(...runtimeArgs){\n    let t = 1024; let e = null;\n    let r={},i=\"<<default preview>>\";if(typeof this!=\"object\"||!this)return r;for(let[n,s]of Object.entries(this)){if(e)try{let o=e.call(s,i);if(o!==i){r[n]=String(o);continue}}catch(o){r[n]=`<<indescribable>>${JSON.stringify([String(o),n])}`;continue}if(typeof s==\"object\"&&s){let o;for(let a of runtimeArgs[0])try{o=s[a]();break}catch{}!o&&!String(s.toString).includes(\"[native code]\")&&(o=String(s)),o&&!o.startsWith(\"[object \")&&(r[n]=o.length>=t?o.slice(0,t)+\"\\u2026\":o)}}return r\n  ;\n\n}",
         "function(...runtimeArgs){\n    let r = 1024; let e = null;\n    let t={},n=\"<<default preview>>\";if(typeof this!=\"object\"||!this)return t;for(let[i,o]of Object.entries(this)){if(e)try{let s=e.call(o,n);if(s!==n){t[i]=String(s);continue}}catch(s){t[i]=`<<indescribable>>${JSON.stringify([String(s),i])}`;continue}if(typeof o==\"object\"&&o){let s;for(let a of runtimeArgs[0])if(typeof o[a]==\"function\")try{s=o[a]();break}catch{}!s&&!String(o.toString).includes(\"[native code]\")&&(s=String(o)),s&&!s.startsWith(\"[object \")&&(t[i]=s.length>=r?s.slice(0,r)+\"\\u2026\":s)}}return t\n  ;\n\n}",
         "function(){let t={__proto__:this.__proto__\n},e=Object.getOwnPropertyNames(this);for(let r=0;r<e.length;++r){let i=e[r],n=i>>>0;if(String(n>>>0)===i&&n>>>0!==4294967295)continue;let s=Object.getOwnPropertyDescriptor(this,i);s&&Object.defineProperty(t,i,s)}return t}",
@@ -336,10 +338,10 @@ public class SimpleDebugger implements Debugger {
     }
     private JSONMap serializeObj(Context ctx, Object val, boolean byValue) {
         val = Values.normalize(null, val);
-        var newCtx = new Context();
-        newCtx.addAll(ctx);
-        newCtx.add(DebugContext.IGNORE);
-        ctx = newCtx;
+        var newEnv = new Environment();
+        newEnv.addAll(ctx);
+        newEnv.add(DebugContext.IGNORE);
+        ctx = newEnv.context();
 
         if (val == Values.NULL) {
             return new JSONMap()
@@ -369,6 +371,7 @@ public class SimpleDebugger implements Debugger {
             if (subtype != null) res.set("subtype", subtype);
             if (className != null) {
                 res.set("className", className);
+                res.set("description", className);
             }
 
             if (obj instanceof ArrayValue) res.set("description", "Array(" + ((ArrayValue)obj).size() + ")");
@@ -384,7 +387,7 @@ public class SimpleDebugger implements Debugger {
                 catch (Exception e) { }
 
                 try { res.set("description", className + (defaultToString ? "" : " { " + Values.toString(ctx, obj) + " }")); }
-                catch (EngineException e) { res.set("description", className); }
+                catch (EngineException e) {  }
             }
 
 
@@ -540,10 +543,12 @@ public class SimpleDebugger implements Debugger {
         var ctx = new Context(env);
         var awaiter = engine.pushMsg(false, ctx.environment, new Filename("jscript", "eval"), code, codeFrame.frame.thisArg, codeFrame.frame.args);
 
-        engine.run(true);
-
-        try { return new RunResult(ctx, awaiter.await(), null); }
+        try {
+            engine.run(true);
+            return new RunResult(ctx, awaiter.await(), null);
+        }
         catch (EngineException e) { return new RunResult(ctx, null, e); }
+        catch (SyntaxException e) { return new RunResult(ctx, null, EngineException.ofSyntax(e.toString())); }
     }
 
     private ObjectValue vscodeAutoSuggest(Context ctx, Object target, String query, boolean variable) {
