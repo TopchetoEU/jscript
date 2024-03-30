@@ -86,7 +86,9 @@ public class SimpleDebugger implements Debugger {
         public final String condition;
         public final Pattern pattern;
         public final int line, start;
-        public final WeakHashMap<FunctionBody, Set<Location>> resolvedLocations = new WeakHashMap<>();
+        public final long locNum;
+        public final HashMap<Filename, Location> resolvedLocations = new HashMap<>();
+        public final HashMap<Filename, Long> resolvedDistances = new HashMap<>();
 
         public Breakpoint(int id, Pattern pattern, int line, int start, String condition) {
             this.id = id;
@@ -94,18 +96,28 @@ public class SimpleDebugger implements Debugger {
             this.pattern = pattern;
             this.line = line;
             this.start = start;
+            this.locNum = start | ((long)line << 32);
 
             if (condition != null && condition.trim().equals("")) condition = null;
         }
 
         // TODO: Figure out how to unload a breakpoint
+        // TODO: Do location resolution with function boundaries
         public void addFunc(FunctionBody body, FunctionMap map) {
             try {
                 for (var loc : map.correctBreakpoint(pattern, line, start)) {
-                    if (!resolvedLocations.containsKey(body)) resolvedLocations.put(body, new HashSet<>());
-                    var set = resolvedLocations.get(body);
-                    set.add(loc);
+                    var currNum = loc.start() + ((long)loc.line() << 32);
+                    long currDist = 0;
+                    if (currNum > locNum) currDist = currNum - locNum;
+                    else currDist = locNum - currNum;
 
+                    if ( currDist > resolvedDistances.getOrDefault(loc.filename(), Long.MAX_VALUE)) continue;
+
+                    resolvedLocations.put(loc.filename(), loc);
+                    resolvedDistances.put(loc.filename(), currDist);
+                }
+
+                for (var loc : resolvedLocations.values()) {
                     ws.send(new V8Event("Debugger.breakpointResolved", new JSONMap()
                         .set("breakpointId", id)
                         .set("location", serializeLocation(loc))
@@ -207,7 +219,7 @@ public class SimpleDebugger implements Debugger {
 
     private WeakHashMap<DebugContext, DebugContext> contexts = new WeakHashMap<>();
     private WeakHashMap<FunctionBody, FunctionMap> mappings = new WeakHashMap<>();
-    private WeakHashMap<FunctionBody, HashMap<Location, Breakpoint>> bpLocs = new WeakHashMap<>();
+    private HashMap<Location, HashSet<Breakpoint>> bpLocs = new HashMap<>();
 
     private HashMap<Integer, Breakpoint> idToBreakpoint = new HashMap<>();
 
@@ -297,13 +309,11 @@ public class SimpleDebugger implements Debugger {
         bpLocs.clear();
 
         for (var bp : idToBreakpoint.values()) {
-            for (var el : bp.resolvedLocations.entrySet()) {
-                if (!bpLocs.containsKey(el.getKey())) bpLocs.put(el.getKey(), new HashMap<>());
-                var map = bpLocs.get(el.getKey());
+            for (var loc : bp.resolvedLocations.values()) {
+                bpLocs.putIfAbsent(loc, new HashSet<>());
+                var set = bpLocs.get(loc);
 
-                for (var loc : el.getValue()) {
-                    map.put(loc, bp);
-                }
+                set.add(bp);
             }
         }
     }
@@ -720,16 +730,15 @@ public class SimpleDebugger implements Debugger {
         var bpt = new Breakpoint(nextId(), regex, line, col, cond);
         idToBreakpoint.put(bpt.id, bpt);
 
-        var locs = new JSONList();
 
         for (var el : mappings.entrySet()) {
             bpt.addFunc(el.getKey(), el.getValue());
         }
 
-        for (var el : bpt.resolvedLocations.values()) {
-            for (var loc : el) {
-                locs.add(serializeLocation(loc));
-            }
+        var locs = new JSONList();
+
+        for (var loc : bpt.resolvedLocations.values()) {
+            locs.add(serializeLocation(loc));
         }
 
         ws.send(msg.respond(new JSONMap()
@@ -969,10 +978,11 @@ public class SimpleDebugger implements Debugger {
             ) {
                 pauseDebug(ctx, null);
             }
-            else if (isBreakpointable && bpLocs.getOrDefault(cf.function.body, new HashMap<>()).containsKey(loc)) {
-                var bp = bpLocs.get(cf.function.body).get(loc);
-                var ok = bp.condition == null ? true : Values.toBoolean(run(currFrame, bp.condition).result);
-                if (ok) pauseDebug(ctx, bp);
+            else if (isBreakpointable && bpLocs.containsKey(loc)) {
+                for (var bp : bpLocs.get(loc)) {
+                    var ok = bp.condition == null ? true : Values.toBoolean(run(currFrame, bp.condition).result);
+                    if (ok) pauseDebug(ctx, bp);
+                }
             }
             // else if (isBreakpointable && tmpBreakpts.remove(loc)) pauseDebug(ctx, null);
             else if (isBreakpointable && pendingPause) {

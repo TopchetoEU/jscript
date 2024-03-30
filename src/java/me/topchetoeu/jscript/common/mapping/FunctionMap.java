@@ -104,7 +104,9 @@ public class FunctionMap {
 
         var res = new ArrayList<Location>(candidates.size());
         for (var candidate : candidates.entrySet()) {
-            res.add(candidate.getValue().ceiling(new Location(line, column, candidate.getKey())));
+            var val = correctBreakpoint(new Location(line, column, candidate.getKey()));
+            if (val == null) continue;
+            res.add(val);
         }
 
         return res;
