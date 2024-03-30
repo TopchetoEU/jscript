@@ -32,6 +32,9 @@ public class DebugContext {
         if (sources != null) {
             for (var source : sources.entrySet()) debugger.onSourceLoad(source.getKey(), source.getValue());
         }
+        if (maps != null) {
+            for (var map : maps.entrySet()) debugger.onFunctionLoad(map.getKey(), map.getValue());
+        }
 
         this.debugger = debugger;
         return true;
