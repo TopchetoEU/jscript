@@ -36,6 +36,10 @@ public class DebugContext {
         this.debugger = debugger;
         return true;
     }
+    public boolean detachDebugger(DebugHandler debugger) {
+        if (this.debugger != debugger) return false;
+        return detachDebugger();
+    }
     public boolean detachDebugger() {
         this.debugger = null;
         return true;

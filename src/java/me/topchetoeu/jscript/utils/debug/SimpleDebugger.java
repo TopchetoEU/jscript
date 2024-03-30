@@ -205,6 +205,7 @@ public class SimpleDebugger implements Debugger {
 
     private ObjectValue emptyObject = new ObjectValue();
 
+    private WeakHashMap<DebugContext, DebugContext> contexts = new WeakHashMap<>();
     private WeakHashMap<FunctionBody, FunctionMap> mappings = new WeakHashMap<>();
     private WeakHashMap<FunctionBody, HashMap<Location, Breakpoint>> bpLocs = new WeakHashMap<>();
 
@@ -642,11 +643,10 @@ public class SimpleDebugger implements Debugger {
         execptionType = CatchType.NONE;
         state = State.RESUMED;
 
-        // idToBptCand.clear();
+        mappings.clear();
+        bpLocs.clear();
 
         idToBreakpoint.clear();
-        // locToBreakpoint.clear();
-        // tmpBreakpts.clear();
 
         filenameToId.clear();
         idToSource.clear();
@@ -663,6 +663,9 @@ public class SimpleDebugger implements Debugger {
 
         stepOutFrame = currFrame = null;
         stepOutPtr = 0;
+
+        for (var ctx : contexts.keySet()) ctx.detachDebugger(this);
+        contexts.clear();
 
         updateNotifier.next();
     }
@@ -1041,6 +1044,7 @@ public class SimpleDebugger implements Debugger {
 
     public SimpleDebugger attach(DebugContext ctx) {
         ctx.attachDebugger(this);
+        contexts.put(ctx, ctx);
         return this;
     }
 
