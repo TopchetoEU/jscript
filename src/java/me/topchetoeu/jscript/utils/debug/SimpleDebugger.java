@@ -192,7 +192,7 @@ public class SimpleDebugger implements Debugger {
         }
 
         public ObjRef(Context ctx, ObjectValue obj) {
-            this.ctx = ctx;
+            this.ctx = ctx.environment.context();
             this.obj = obj;
         }
     }
@@ -349,8 +349,7 @@ public class SimpleDebugger implements Debugger {
     }
     private JSONMap serializeObj(Context ctx, Object val, boolean byValue) {
         val = Values.normalize(null, val);
-        var newEnv = new Environment();
-        newEnv.addAll(ctx);
+        var newEnv = ctx.environment.child();
         newEnv.add(DebugContext.IGNORE);
         ctx = newEnv.context();
 
