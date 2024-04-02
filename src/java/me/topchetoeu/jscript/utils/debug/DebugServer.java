@@ -137,6 +137,13 @@ public class DebugServer {
         }
 
         runAsync(() -> {
+            var handle = new Thread(() -> {
+                System.out.println("test");
+                debugger.close();
+            });
+
+            Runtime.getRuntime().addShutdownHook(handle);
+
             try { handle(ws, debugger); }
             catch (RuntimeException | IOException e) {
                 try {
@@ -145,7 +152,11 @@ public class DebugServer {
                 }
                 catch (IOException e2) { /* Shit outta luck */ }
             }
-            finally { ws.close(); debugger.close(); }
+            finally {
+                Runtime.getRuntime().removeShutdownHook(handle);
+                ws.close();
+                debugger.close();
+            }
         }, "Debug Handler");
     }
 
@@ -164,7 +175,6 @@ public class DebugServer {
                     var req = HttpRequest.read(socket);
 
                     if (req == null) continue;
-    
                     switch (req.path) {
                         case "/json/version":
                             send(req, "{\"Browser\":\"" + browserDisplayName + "\",\"Protocol-Version\":\"1.1\"}");
