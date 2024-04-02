@@ -289,7 +289,10 @@ public class NativeWrapperProvider implements WrapperProvider {
     private void updateProtoChain(Class<?> clazz, ObjectValue proto, FunctionValue constr) {
         var parent = clazz;
 
-        while (parent != null) {
+        while (true) {
+            parent = parent.getSuperclass();
+            if (parent == null) break;
+
             var parentProto = getProto(parent);
             var parentConstr = getConstr(parent);
 
@@ -299,8 +302,6 @@ public class NativeWrapperProvider implements WrapperProvider {
 
                 return;
             }
-
-            parent = parent.getSuperclass();
         }
     }
 
