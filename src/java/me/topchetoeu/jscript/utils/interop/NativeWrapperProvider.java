@@ -289,15 +289,18 @@ public class NativeWrapperProvider implements WrapperProvider {
     private void updateProtoChain(Class<?> clazz, ObjectValue proto, FunctionValue constr) {
         var parent = clazz;
 
-        while (true) {
-            parent = parent.getSuperclass();
-            if (parent == null) return;
-
+        while (parent != null) {
             var parentProto = getProto(parent);
             var parentConstr = getConstr(parent);
 
-            if (parentProto != null) Values.setPrototype(Context.NULL, proto, parentProto);
-            if (parentConstr != null) Values.setPrototype(Context.NULL, constr, parentConstr);
+            if (parentProto != null && parentConstr != null) {
+                Values.setPrototype(Context.NULL, proto, parentProto);
+                Values.setPrototype(Context.NULL, constr, parentConstr);
+
+                return;
+            }
+
+            parent = parent.getSuperclass();
         }
     }
 
