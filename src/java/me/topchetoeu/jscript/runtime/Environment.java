@@ -61,7 +61,7 @@ public class Environment implements Extensions {
     }
 
     public Environment copy() {
-        var res = new Environment(null, global);
+        var res = new Environment();
 
         res.wrappers = wrappers.fork(res);
         res.global = global;
@@ -80,7 +80,7 @@ public class Environment implements Extensions {
     }
 
     public Environment(WrapperProvider nativeConverter, GlobalScope global) {
-        if (nativeConverter == null) nativeConverter = new NativeWrapperProvider(this);
+        if (nativeConverter == null) nativeConverter = new NativeWrapperProvider();
         if (global == null) global = new GlobalScope();
 
         this.wrappers = nativeConverter;

@@ -25,8 +25,8 @@ public class NativeWrapperProvider implements WrapperProvider {
     private final HashMap<Class<?>, FunctionValue> constructors = new HashMap<>();
     private final HashMap<Class<?>, ObjectValue> prototypes = new HashMap<>();
     private final HashMap<Class<?>, ObjectValue> namespaces = new HashMap<>();
+    private final HashMap<Class<?>, Class<?>> proxies = new HashMap<>();
     private final HashSet<Class<?>> ignore = new HashSet<>();
-    private final Environment env;
 
     private static Object call(Context ctx, String name, Method method, Object thisArg, Object... args) {
         try {
@@ -107,7 +107,7 @@ public class NativeWrapperProvider implements WrapperProvider {
         else return name;
     }
 
-    private static boolean apply(ObjectValue obj, Environment env, ExposeTarget target, Class<?> clazz) {
+    private static boolean apply(ObjectValue obj, ExposeTarget target, Class<?> clazz) {
         var getters = new HashMap<Object, FunctionValue>();
         var setters = new HashMap<Object, FunctionValue>();
         var props = new HashSet<Object>();
@@ -125,13 +125,6 @@ public class NativeWrapperProvider implements WrapperProvider {
                 any = true;
 
                 switch (annotation.type()) {
-                    case INIT:
-                        checkSignature(method, true,
-                            target == ExposeTarget.CONSTRUCTOR ? FunctionValue.class : ObjectValue.class,
-                            Environment.class
-                        );
-                        call(null, null, method, obj, null, env);
-                        break;
                     case METHOD:
                         if (props.contains(key) || nonProps.contains(key)) repeat = true;
                         else {
@@ -175,8 +168,13 @@ public class NativeWrapperProvider implements WrapperProvider {
 
                 if (props.contains(key) || nonProps.contains(key)) repeat = true;
                 else {
-                    checkSignature(method, true, Environment.class);
-                    obj.defineProperty(null, key, call(new Context(env), name, method, null, env), true, true, false);
+                    checkSignature(method, true);
+                    try {
+                        obj.defineProperty(null, key, method.invoke(null), true, true, false);
+                    }
+                    catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+                        throw new RuntimeException(e);
+                    }
                     nonProps.add(key);
                 }
 
@@ -201,7 +199,7 @@ public class NativeWrapperProvider implements WrapperProvider {
                 else {
                     try {
                         if (Modifier.isStatic(field.getModifiers())) {
-                            obj.defineProperty(null, key, Values.normalize(new Context(env), field.get(null)), true, true, false);
+                            obj.defineProperty(null, key, Values.normalize(null, field.get(null)), true, true, false);
                         }
                         else {
                             obj.defineProperty(
@@ -236,7 +234,7 @@ public class NativeWrapperProvider implements WrapperProvider {
         return any;
     }
 
-    private static Method getConstructor(Environment env, Class<?> clazz) {
+    private static Method getConstructor(Class<?> clazz) {
         for (var method : clazz.getDeclaredMethods()) {
             if (!method.isAnnotationPresent(ExposeConstructor.class)) continue;
             checkSignature(method, true, Arguments.class);
@@ -252,10 +250,10 @@ public class NativeWrapperProvider implements WrapperProvider {
      * All accessors and methods will expect the this argument to be a native wrapper of the given class type.
      * @param clazz The class for which a prototype should be generated
      */
-    public static ObjectValue makeProto(Environment env, Class<?> clazz) {
+    public static ObjectValue makeProto(Class<?> clazz) {
         var res = new ObjectValue();
         res.defineProperty(null, Symbol.get("Symbol.typeName"), getName(clazz));
-        if (!apply(res, env, ExposeTarget.PROTOTYPE, clazz)) return null;
+        if (!apply(res, ExposeTarget.PROTOTYPE, clazz)) return null;
         return res;
     }
     /**
@@ -264,14 +262,14 @@ public class NativeWrapperProvider implements WrapperProvider {
      * When the function gets called, the underlying constructor will get called, unless the constructor is inaccessible.
      * @param clazz The class for which a constructor should be generated
      */
-    public static FunctionValue makeConstructor(Environment ctx, Class<?> clazz) {
-        var constr = getConstructor(ctx, clazz);
+    public static FunctionValue makeConstructor(Class<?> clazz) {
+        var constr = getConstructor(clazz);
 
         FunctionValue res = constr == null ?
             new NativeFunction(getName(clazz), args -> { throw EngineException.ofError("This constructor is not invokable."); }) :
             create(getName(clazz), constr);
 
-        apply(res, ctx, ExposeTarget.CONSTRUCTOR, clazz);
+        apply(res, ExposeTarget.CONSTRUCTOR, clazz);
 
         return res;
     }
@@ -281,10 +279,10 @@ public class NativeWrapperProvider implements WrapperProvider {
      * This method behaves almost like {@link NativeWrapperProvider#makeConstructor}, but will return an object instead.
      * @param clazz The class for which a constructor should be generated
      */
-    public static ObjectValue makeNamespace(Environment ctx, Class<?> clazz) {
+    public static ObjectValue makeNamespace(Class<?> clazz) {
         var res = new ObjectValue();
         res.defineProperty(null, Symbol.get("Symbol.typeName"), getName(clazz));
-        if (!apply(res, ctx, ExposeTarget.NAMESPACE, clazz)) return null;
+        if (!apply(res, ExposeTarget.NAMESPACE, clazz)) return null;
         return res;
     }
 
@@ -320,8 +318,8 @@ public class NativeWrapperProvider implements WrapperProvider {
             clazz.isSynthetic()
         ) return;
 
-        if (constr == null) constr = makeConstructor(env, clazz);
-        if (proto == null) proto = makeProto(env, clazz);
+        if (constr == null) constr = makeConstructor(clazz);
+        if (proto == null) proto = makeProto(clazz);
 
         if (constr == null || proto == null) return;
 
@@ -344,7 +342,7 @@ public class NativeWrapperProvider implements WrapperProvider {
         return null;
     }
     public ObjectValue getNamespace(Class<?> clazz) {
-        if (!namespaces.containsKey(clazz)) namespaces.put(clazz, makeNamespace(env, clazz));
+        if (!namespaces.containsKey(clazz)) namespaces.put(clazz, makeNamespace(clazz));
         while (clazz != null) {
             var res = namespaces.get(clazz);
             if (res != null) return res;
@@ -363,52 +361,34 @@ public class NativeWrapperProvider implements WrapperProvider {
     }
 
     @Override public WrapperProvider fork(Environment env) {
-        return new NativeWrapperProvider(env);
+        var res = new NativeWrapperProvider();
+        for (var pair : proxies.entrySet()) {
+            res.set(pair.getKey(), pair.getValue());
+        }
+        return this;
     }
 
     public void set(Class<?> clazz, Class<?> wrapper) {
-        if (wrapper == null) set(clazz, null, null);
-        else set(clazz, makeProto(env, wrapper), makeConstructor(env, wrapper));
-    }
-    public void set(Class<?> clazz, ObjectValue proto, FunctionValue constructor) {
-        if (proto != null && constructor != null) {
-            prototypes.put(clazz, proto);
-            constructors.put(clazz, constructor);
-            ignore.remove(clazz);
+        if (clazz == null) return;
+        if (wrapper == null) wrapper = clazz;
 
-            for (var el : prototypes.keySet()) {
-                if (clazz.isAssignableFrom(el)) {
-                    updateProtoChain(el, getProto(el), getConstr(el));
-                }
-            }
-        }
-        else {
-            prototypes.remove(clazz);
-            constructors.remove(clazz);
-            ignore.remove(clazz);
+        ignore.remove(clazz);
 
-            initType(clazz, constructor, proto);
-        }
-    }
+        var proto = makeProto(wrapper);
+        var constr = makeConstructor(wrapper);
 
-    private void initError() {
-        var proto = new ObjectValue();
-        proto.defineProperty(null, "message", new NativeFunction("message", args -> {
-            if (args.self instanceof Throwable) return ((Throwable)args.self).getMessage();
-            else return null;
-        }));
-        proto.defineProperty(null, "name", new NativeFunction("name", args -> getName(args.self.getClass())));
-        proto.defineProperty(null, "toString", new NativeFunction("toString", args -> args.self.toString()));
+        prototypes.put(clazz, proto);
+        constructors.put(clazz, constr);
 
-        var constr = makeConstructor(null, Throwable.class);
         proto.defineProperty(null, "constructor", constr, true, false, false);
         constr.defineProperty(null, "prototype", proto, true, false, false);
 
-        set(Throwable.class, proto, constr);
+        for (var el : prototypes.keySet()) {
+            if (clazz.isAssignableFrom(el)) {
+                updateProtoChain(el, getProto(el), getConstr(el));
+            }
+        }
     }
 
-    public NativeWrapperProvider(Environment env) {
-        this.env = env;
-        initError();
-    }
+    public NativeWrapperProvider() { }
 }
