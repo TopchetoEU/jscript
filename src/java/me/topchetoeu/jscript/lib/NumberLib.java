@@ -1,5 +1,7 @@
 package me.topchetoeu.jscript.lib;
 
+import java.text.NumberFormat;
+
 import me.topchetoeu.jscript.runtime.values.ObjectValue;
 import me.topchetoeu.jscript.runtime.values.Values;
 import me.topchetoeu.jscript.utils.interop.Arguments;
@@ -84,6 +86,14 @@ public class NumberLib {
     }
     @Expose public static String __toString(Arguments args) {
         return Values.toString(args.ctx, args.self);
+    }
+    @Expose public static String __toFixed(Arguments args) {
+        var digits = args.getInt(0, 0);
+
+        var nf = NumberFormat.getNumberInstance();
+        nf.setMaximumFractionDigits(digits);
+
+        return nf.format(args.getDouble(-1));
     }
     @Expose public static double __valueOf(Arguments args) {
         if (Values.isWrapper(args.self, NumberLib.class)) return Values.wrapper(args.self, NumberLib.class).value;
