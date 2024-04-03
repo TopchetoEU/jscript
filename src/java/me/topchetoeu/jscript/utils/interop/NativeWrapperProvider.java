@@ -25,7 +25,8 @@ public class NativeWrapperProvider implements WrapperProvider {
     private final HashMap<Class<?>, FunctionValue> constructors = new HashMap<>();
     private final HashMap<Class<?>, ObjectValue> prototypes = new HashMap<>();
     private final HashMap<Class<?>, ObjectValue> namespaces = new HashMap<>();
-    private final HashMap<Class<?>, Class<?>> proxies = new HashMap<>();
+    private final HashMap<Class<?>, Class<?>> classToProxy = new HashMap<>();
+    private final HashMap<Class<?>, Class<?>> proxyToClass = new HashMap<>();
     private final HashSet<Class<?>> ignore = new HashSet<>();
 
     private static Object call(Context ctx, String name, Method method, Object thisArg, Object... args) {
@@ -337,6 +338,8 @@ public class NativeWrapperProvider implements WrapperProvider {
     }
 
     public ObjectValue getProto(Class<?> clazz) {
+        if (proxyToClass.containsKey(clazz)) return getProto(proxyToClass.get(clazz));
+
         initType(clazz, constructors.get(clazz), prototypes.get(clazz));
         while (clazz != null) {
             var res = prototypes.get(clazz);
@@ -346,6 +349,8 @@ public class NativeWrapperProvider implements WrapperProvider {
         return null;
     }
     public ObjectValue getNamespace(Class<?> clazz) {
+        if (proxyToClass.containsKey(clazz)) return getNamespace(proxyToClass.get(clazz));
+
         if (!namespaces.containsKey(clazz)) namespaces.put(clazz, makeNamespace(clazz));
         while (clazz != null) {
             var res = namespaces.get(clazz);
@@ -355,6 +360,8 @@ public class NativeWrapperProvider implements WrapperProvider {
         return null;
     }
     public FunctionValue getConstr(Class<?> clazz) {
+        if (proxyToClass.containsKey(clazz)) return getConstr(proxyToClass.get(clazz));
+
         initType(clazz, constructors.get(clazz), prototypes.get(clazz));
         while (clazz != null) {
             var res = constructors.get(clazz);
@@ -366,7 +373,7 @@ public class NativeWrapperProvider implements WrapperProvider {
 
     @Override public WrapperProvider fork(Environment env) {
         var res = new NativeWrapperProvider();
-        for (var pair : proxies.entrySet()) {
+        for (var pair : classToProxy.entrySet()) {
             res.set(pair.getKey(), pair.getValue());
         }
         return this;
@@ -375,6 +382,13 @@ public class NativeWrapperProvider implements WrapperProvider {
     public void set(Class<?> clazz, Class<?> wrapper) {
         if (clazz == null) return;
         if (wrapper == null) wrapper = clazz;
+        if (classToProxy.get(clazz) == wrapper) return;
+
+        classToProxy.remove(wrapper);
+        proxyToClass.remove(clazz);
+
+        classToProxy.put(clazz, wrapper);
+        proxyToClass.put(wrapper, clazz);
 
         ignore.remove(clazz);
 
