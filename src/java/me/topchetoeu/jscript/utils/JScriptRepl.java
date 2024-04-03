@@ -18,6 +18,7 @@ import me.topchetoeu.jscript.runtime.debug.DebugContext;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
 import me.topchetoeu.jscript.runtime.exceptions.InterruptException;
 import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
+import me.topchetoeu.jscript.runtime.scope.GlobalScope;
 import me.topchetoeu.jscript.runtime.values.NativeFunction;
 import me.topchetoeu.jscript.runtime.values.Values;
 import me.topchetoeu.jscript.utils.debug.DebugServer;
@@ -28,6 +29,7 @@ import me.topchetoeu.jscript.utils.filesystem.Mode;
 import me.topchetoeu.jscript.utils.filesystem.PhysicalFilesystem;
 import me.topchetoeu.jscript.utils.filesystem.RootFilesystem;
 import me.topchetoeu.jscript.utils.filesystem.STDFilesystem;
+import me.topchetoeu.jscript.utils.interop.NativeWrapperProvider;
 import me.topchetoeu.jscript.utils.modules.ModuleRepo;
 import me.topchetoeu.jscript.utils.permissions.PermissionsManager;
 import me.topchetoeu.jscript.utils.permissions.PermissionsProvider;
@@ -87,10 +89,13 @@ public class JScriptRepl {
     private static void initEnv() {
         environment = Internals.apply(environment);
 
-        environment.global.define(null, false, new NativeFunction("exit", args -> {
+        var wp = NativeWrapperProvider.get(environment);
+        var glob = GlobalScope.get(environment);
+
+        glob.define(null, false, new NativeFunction("exit", args -> {
             throw new InterruptException();
         }));
-        environment.global.define(null, false, new NativeFunction("go", args -> {
+        glob.define(null, false, new NativeFunction("go", args -> {
             try {
                 var f = Path.of("do.js");
                 var func = args.ctx.compile(new Filename("do", "do/" + j++ + ".js"), new String(Files.readAllBytes(f)));
@@ -100,7 +105,7 @@ public class JScriptRepl {
                 throw new EngineException("Couldn't open do.js");
             }
         }));
-        environment.global.define(null, false, new NativeFunction("log", args -> {
+        glob.define(null, false, new NativeFunction("log", args -> {
             for (var el : args.args) {
                 Values.printValue(args.ctx, el);
             }
