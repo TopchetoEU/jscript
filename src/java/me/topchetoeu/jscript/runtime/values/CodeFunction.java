@@ -44,7 +44,7 @@ public class CodeFunction extends FunctionValue {
     public CodeFunction(Extensions extensions, String name, FunctionBody body, ValueVariable[] captures) {
         super(name, body.argsN);
         this.captures = captures;
-        this.extensions = extensions;
+        this.extensions = Context.clean(extensions);
         this.body = body;
     }
 }

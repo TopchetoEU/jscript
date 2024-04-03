@@ -14,43 +14,26 @@ public class Context implements Extensions {
     public final Context parent;
     public final Extensions extensions;
     public final Frame frame;
-    // public final Engine engine;
     public final int stackSize;
 
     @Override public <T> void add(Key<T> key, T obj) {
         if (extensions != null) extensions.add(key, obj);
-        // else if (engine != null) engine.add(key, obj);
     }
     @Override public <T> T get(Key<T> key) {
         if (extensions != null && extensions.has(key)) return extensions.get(key);
-        // else if (engine != null && engine.has(key)) return engine.get(key);
         return null;
     }
     @Override public boolean has(Key<?> key) {
-        return
-            extensions != null && extensions.has(key);
-            // engine != null && engine.has(key);
+        return extensions != null && extensions.has(key);
     }
     @Override public boolean remove(Key<?> key) {
         var res = false;
-
         if (extensions != null) res |= extensions.remove(key);
-        // else if (engine != null) res |= engine.remove(key);
-
         return res;
     }
     @Override public Iterable<Key<?>> keys() {
         if (extensions == null) return List.of();
         else return extensions.keys();
-
-        // if (engine == null && environment == null) return List.of();
-        // if (engine == null) return environment.keys();
-        // if (environment == null) return engine.keys();
-
-        // return () -> Stream.concat(
-        //     StreamSupport.stream(engine.keys().spliterator(), false),
-        //     StreamSupport.stream(environment.keys().spliterator(), false)
-        // ).distinct().iterator();
     }
 
     public FunctionValue compile(Filename filename, String raw) {
@@ -101,7 +84,7 @@ public class Context implements Extensions {
         this(null, null, null, 0);
     }
     public Context(Extensions ext) {
-        this(null, ext, null, 0);
+        this(null, clean(ext), null, 0);
     }
 
     public static Context of(Extensions ext) {
