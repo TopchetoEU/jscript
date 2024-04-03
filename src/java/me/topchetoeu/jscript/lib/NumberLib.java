@@ -91,6 +91,7 @@ public class NumberLib {
         var digits = args.getInt(0, 0);
 
         var nf = NumberFormat.getNumberInstance();
+        nf.setMinimumFractionDigits(digits);
         nf.setMaximumFractionDigits(digits);
 
         return nf.format(args.getDouble(-1));
