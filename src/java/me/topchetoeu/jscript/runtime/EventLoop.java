@@ -23,15 +23,15 @@ public interface EventLoop {
         return pushMsg(() -> { runnable.run(); return null; }, micro);
     }
 
-    public default DataNotifier<Object> pushMsg(boolean micro, Environment env, FunctionValue func, Object thisArg, Object ...args) {
+    public default DataNotifier<Object> pushMsg(boolean micro, Extensions ext, FunctionValue func, Object thisArg, Object ...args) {
         return pushMsg(() -> {
-            return func.call(new Context(env), thisArg, args);
+            return func.call(Context.of(ext), thisArg, args);
         }, micro);
     }
-    public default DataNotifier<Object> pushMsg(boolean micro, Environment env, Filename filename, String raw, Object thisArg, Object ...args) {
+    public default DataNotifier<Object> pushMsg(boolean micro, Extensions ext, Filename filename, String raw, Object thisArg, Object ...args) {
         return pushMsg(() -> {
-            var ctx = new Context(env);
-            return ctx.compile(filename, raw).call(new Context(env), thisArg, args);
+            var ctx = Context.of(ext);
+            return ctx.compile(filename, raw).call(Context.of(ext), thisArg, args);
         }, micro);
     }
 }

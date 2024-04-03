@@ -294,13 +294,13 @@ public class Frame {
     public ObjectValue getValStackScope() {
         return new ObjectValue() {
             @Override
-            protected Object getField(Context ctx, Object key) {
-                var i = (int)Values.toNumber(ctx, key);
+            protected Object getField(Extensions ext, Object key) {
+                var i = (int)Values.toNumber(ext, key);
                 if (i < 0 || i >= stackPtr) return null;
                 else return stack[i];
             }
             @Override
-            protected boolean hasField(Context ctx, Object key) {
+            protected boolean hasField(Extensions ext, Object key) {
                 return true;
             }
             @Override

@@ -59,7 +59,7 @@ public class GeneratorLib {
         else return next(args.ctx, args.get(0), Values.NO_RETURN, null);
     }
     @Expose public ObjectValue __throw(Arguments args) {
-        return next(args.ctx, Values.NO_RETURN, Values.NO_RETURN, new EngineException(args.get(0)).setCtx(args.ctx));
+        return next(args.ctx, Values.NO_RETURN, Values.NO_RETURN, new EngineException(args.get(0)).setExtensions(args.ctx));
     }
     @Expose public ObjectValue __return(Arguments args) {
         return next(args.ctx, Values.NO_RETURN, args.get(0), null);

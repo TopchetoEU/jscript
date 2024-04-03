@@ -2,14 +2,14 @@ package me.topchetoeu.jscript.runtime.values;
 
 import me.topchetoeu.jscript.common.FunctionBody;
 import me.topchetoeu.jscript.runtime.Context;
-import me.topchetoeu.jscript.runtime.Environment;
+import me.topchetoeu.jscript.runtime.Extensions;
 import me.topchetoeu.jscript.runtime.Frame;
 import me.topchetoeu.jscript.runtime.scope.ValueVariable;
 
 public class CodeFunction extends FunctionValue {
     public final FunctionBody body;
     public final ValueVariable[] captures;
-    public Environment environment;
+    public Extensions extensions;
 
     // public Location loc() {
     //     for (var instr : body.instructions) {
@@ -25,8 +25,8 @@ public class CodeFunction extends FunctionValue {
     // }
 
     @Override
-    public Object call(Context ctx, Object thisArg, Object ...args) {
-        var frame = new Frame(ctx, thisArg, args, this);
+    public Object call(Extensions ext, Object thisArg, Object ...args) {
+        var frame = new Frame(Context.of(ext), thisArg, args, this);
 
         frame.onPush();
 
@@ -41,10 +41,10 @@ public class CodeFunction extends FunctionValue {
         }
     }
 
-    public CodeFunction(Environment environment, String name, FunctionBody body, ValueVariable[] captures) {
+    public CodeFunction(Extensions extensions, String name, FunctionBody body, ValueVariable[] captures) {
         super(name, body.argsN);
         this.captures = captures;
-        this.environment = environment;
+        this.extensions = extensions;
         this.body = body;
     }
 }

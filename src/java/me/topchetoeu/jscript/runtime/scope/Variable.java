@@ -1,9 +1,9 @@
 package me.topchetoeu.jscript.runtime.scope;
 
-import me.topchetoeu.jscript.runtime.Context;
+import me.topchetoeu.jscript.runtime.Extensions;
 
 public interface Variable {
-    Object get(Context ctx);
+    Object get(Extensions ext);
     default boolean readonly() { return true; }
-    default void set(Context ctx, Object val) { }
+    default void set(Extensions ext, Object val) { }
 }

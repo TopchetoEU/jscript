@@ -14,12 +14,13 @@ import java.util.Map;
 
 import me.topchetoeu.jscript.common.Operation;
 import me.topchetoeu.jscript.lib.PromiseLib;
-import me.topchetoeu.jscript.runtime.Context;
 import me.topchetoeu.jscript.runtime.Environment;
+import me.topchetoeu.jscript.runtime.Extensions;
 import me.topchetoeu.jscript.runtime.debug.DebugContext;
 import me.topchetoeu.jscript.runtime.exceptions.ConvertException;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
 import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
+import me.topchetoeu.jscript.utils.interop.NativeWrapperProvider;
 
 public class Values {
     public static enum CompareResult {
@@ -73,11 +74,11 @@ public class Values {
         return "object";
     }
 
-    private static Object tryCallConvertFunc(Context ctx, Object obj, String name) {
-        var func = getMember(ctx, obj, name);
+    private static Object tryCallConvertFunc(Extensions ext, Object obj, String name) {
+        var func = getMember(ext, obj, name);
 
         if (func instanceof FunctionValue) {
-            var res = Values.call(ctx, func, obj);
+            var res = Values.call(ext, func, obj);
             if (isPrimitive(res)) return res;
         }
 
@@ -94,16 +95,16 @@ public class Values {
             obj == NULL;
     }
 
-    public static Object toPrimitive(Context ctx, Object obj, ConvertHint hint) {
-        obj = normalize(ctx, obj);
+    public static Object toPrimitive(Extensions ext, Object obj, ConvertHint hint) {
+        obj = normalize(ext, obj);
         if (isPrimitive(obj)) return obj;
 
         var first = hint == ConvertHint.VALUEOF ? "valueOf" : "toString";
         var second = hint == ConvertHint.VALUEOF ? "toString" : "valueOf";
 
-        if (ctx != null) {
-            try { return tryCallConvertFunc(ctx, obj, first); }
-            catch (EngineException unused) { return tryCallConvertFunc(ctx, obj, second); }
+        if (ext != null) {
+            try { return tryCallConvertFunc(ext, obj, first); }
+            catch (EngineException unused) { return tryCallConvertFunc(ext, obj, second); }
         }
 
         throw EngineException.ofType("Value couldn't be converted to a primitive.");
@@ -115,8 +116,8 @@ public class Values {
         if (obj instanceof Boolean) return (Boolean)obj;
         return true;
     }
-    public static double toNumber(Context ctx, Object obj) {
-        var val = toPrimitive(ctx, obj, ConvertHint.VALUEOF);
+    public static double toNumber(Extensions ext, Object obj) {
+        var val = toPrimitive(ext, obj, ConvertHint.VALUEOF);
 
         if (val instanceof Number) return number(val);
         if (val instanceof Boolean) return ((Boolean)val) ? 1 : 0;
@@ -126,8 +127,8 @@ public class Values {
         }
         return Double.NaN;
     }
-    public static String toString(Context ctx, Object obj) {
-        var val = toPrimitive(ctx, obj, ConvertHint.VALUEOF);
+    public static String toString(Extensions ext, Object obj) {
+        var val = toPrimitive(ext, obj, ConvertHint.VALUEOF);
 
         if (val == null) return "undefined";
         if (val == NULL) return "null";
@@ -146,63 +147,63 @@ public class Values {
         return "Unknown value";
     }
 
-    public static Object add(Context ctx, Object a, Object b) {
-        if (a instanceof String || b instanceof String) return toString(ctx, a) + toString(ctx, b);
-        else return toNumber(ctx, a) + toNumber(ctx, b);
+    public static Object add(Extensions ext, Object a, Object b) {
+        if (a instanceof String || b instanceof String) return toString(ext, a) + toString(ext, b);
+        else return toNumber(ext, a) + toNumber(ext, b);
     }
-    public static double subtract(Context ctx, Object a, Object b) {
-        return toNumber(ctx, a) - toNumber(ctx, b);
+    public static double subtract(Extensions ext, Object a, Object b) {
+        return toNumber(ext, a) - toNumber(ext, b);
     }
-    public static double multiply(Context ctx, Object a, Object b) {
-        return toNumber(ctx, a) * toNumber(ctx, b);
+    public static double multiply(Extensions ext, Object a, Object b) {
+        return toNumber(ext, a) * toNumber(ext, b);
     }
-    public static double divide(Context ctx, Object a, Object b) {
-        return toNumber(ctx, a) / toNumber(ctx, b);
+    public static double divide(Extensions ext, Object a, Object b) {
+        return toNumber(ext, a) / toNumber(ext, b);
     }
-    public static double modulo(Context ctx, Object a, Object b) {
-        return toNumber(ctx, a) % toNumber(ctx, b);
+    public static double modulo(Extensions ext, Object a, Object b) {
+        return toNumber(ext, a) % toNumber(ext, b);
     }
     
-    public static double negative(Context ctx, Object obj) {
-        return -toNumber(ctx, obj);
+    public static double negative(Extensions ext, Object obj) {
+        return -toNumber(ext, obj);
     }
 
-    public static int and(Context ctx, Object a, Object b) {
-        return (int)toNumber(ctx, a) & (int)toNumber(ctx, b);
+    public static int and(Extensions ext, Object a, Object b) {
+        return (int)toNumber(ext, a) & (int)toNumber(ext, b);
     }
-    public static int or(Context ctx, Object a, Object b) {
-        return (int)toNumber(ctx, a) | (int)toNumber(ctx, b);
+    public static int or(Extensions ext, Object a, Object b) {
+        return (int)toNumber(ext, a) | (int)toNumber(ext, b);
     }
-    public static int xor(Context ctx, Object a, Object b) {
-        return (int)toNumber(ctx, a) ^ (int)toNumber(ctx, b);
+    public static int xor(Extensions ext, Object a, Object b) {
+        return (int)toNumber(ext, a) ^ (int)toNumber(ext, b);
     }
-    public static int bitwiseNot(Context ctx, Object obj) {
-        return ~(int)toNumber(ctx, obj);
+    public static int bitwiseNot(Extensions ext, Object obj) {
+        return ~(int)toNumber(ext, obj);
     }
 
-    public static int shiftLeft(Context ctx, Object a, Object b) {
-        return (int)toNumber(ctx, a) << (int)toNumber(ctx, b);
+    public static int shiftLeft(Extensions ext, Object a, Object b) {
+        return (int)toNumber(ext, a) << (int)toNumber(ext, b);
     }
-    public static int shiftRight(Context ctx, Object a, Object b) {
-        return (int)toNumber(ctx, a) >> (int)toNumber(ctx, b);
+    public static int shiftRight(Extensions ext, Object a, Object b) {
+        return (int)toNumber(ext, a) >> (int)toNumber(ext, b);
     }
-    public static long unsignedShiftRight(Context ctx, Object a, Object b) {
-        long _a = (long)toNumber(ctx, a);
-        long _b = (long)toNumber(ctx, b);
+    public static long unsignedShiftRight(Extensions ext, Object a, Object b) {
+        long _a = (long)toNumber(ext, a);
+        long _b = (long)toNumber(ext, b);
 
         if (_a < 0) _a += 0x100000000l;
         if (_b < 0) _b += 0x100000000l;
         return _a >>> _b;
     }
 
-    public static CompareResult compare(Context ctx, Object a, Object b) {
-        a = toPrimitive(ctx, a, ConvertHint.VALUEOF);
-        b = toPrimitive(ctx, b, ConvertHint.VALUEOF);
+    public static CompareResult compare(Extensions ext, Object a, Object b) {
+        a = toPrimitive(ext, a, ConvertHint.VALUEOF);
+        b = toPrimitive(ext, b, ConvertHint.VALUEOF);
 
         if (a instanceof String && b instanceof String) CompareResult.from(((String)a).compareTo((String)b));
 
-        var _a = toNumber(ctx, a);
-        var _b = toNumber(ctx, b);
+        var _a = toNumber(ext, a);
+        var _b = toNumber(ext, b);
 
         if (Double.isNaN(_a) || Double.isNaN(_b)) return CompareResult.NOT_EQUAL;
 
@@ -213,60 +214,60 @@ public class Values {
         return !toBoolean(obj);
     }
 
-    public static boolean isInstanceOf(Context ctx, Object obj, Object proto) {
+    public static boolean isInstanceOf(Extensions ext, Object obj, Object proto) {
         if (obj == null || obj == NULL || proto == null || proto == NULL) return false;
-        var val = getPrototype(ctx, obj);
+        var val = getPrototype(ext, obj);
 
         while (val != null) {
             if (val.equals(proto)) return true;
-            val = val.getPrototype(ctx);
+            val = val.getPrototype(ext);
         }
 
         return false;
     }
 
-    public static Object operation(Context ctx, Operation op, Object ...args) {
+    public static Object operation(Extensions ext, Operation op, Object ...args) {
         switch (op) {
-            case ADD: return add(ctx, args[0], args[1]);
-            case SUBTRACT: return subtract(ctx, args[0], args[1]);
-            case DIVIDE: return divide(ctx, args[0], args[1]);
-            case MULTIPLY: return multiply(ctx, args[0], args[1]);
-            case MODULO: return modulo(ctx, args[0], args[1]);
+            case ADD: return add(ext, args[0], args[1]);
+            case SUBTRACT: return subtract(ext, args[0], args[1]);
+            case DIVIDE: return divide(ext, args[0], args[1]);
+            case MULTIPLY: return multiply(ext, args[0], args[1]);
+            case MODULO: return modulo(ext, args[0], args[1]);
 
-            case AND: return and(ctx, args[0], args[1]);
-            case OR: return or(ctx, args[0], args[1]);
-            case XOR: return xor(ctx, args[0], args[1]);
+            case AND: return and(ext, args[0], args[1]);
+            case OR: return or(ext, args[0], args[1]);
+            case XOR: return xor(ext, args[0], args[1]);
 
-            case EQUALS: return strictEquals(ctx, args[0], args[1]);
-            case NOT_EQUALS: return !strictEquals(ctx, args[0], args[1]);
-            case LOOSE_EQUALS: return looseEqual(ctx, args[0], args[1]);
-            case LOOSE_NOT_EQUALS: return !looseEqual(ctx, args[0], args[1]);
+            case EQUALS: return strictEquals(ext, args[0], args[1]);
+            case NOT_EQUALS: return !strictEquals(ext, args[0], args[1]);
+            case LOOSE_EQUALS: return looseEqual(ext, args[0], args[1]);
+            case LOOSE_NOT_EQUALS: return !looseEqual(ext, args[0], args[1]);
 
-            case GREATER: return compare(ctx, args[0], args[1]).greater();
-            case GREATER_EQUALS: return compare(ctx, args[0], args[1]).greaterOrEqual();
-            case LESS: return compare(ctx, args[0], args[1]).less();
-            case LESS_EQUALS: return compare(ctx, args[0], args[1]).lessOrEqual();
+            case GREATER: return compare(ext, args[0], args[1]).greater();
+            case GREATER_EQUALS: return compare(ext, args[0], args[1]).greaterOrEqual();
+            case LESS: return compare(ext, args[0], args[1]).less();
+            case LESS_EQUALS: return compare(ext, args[0], args[1]).lessOrEqual();
 
-            case INVERSE: return bitwiseNot(ctx, args[0]);
+            case INVERSE: return bitwiseNot(ext, args[0]);
             case NOT: return not(args[0]);
-            case POS: return toNumber(ctx, args[0]);
-            case NEG: return negative(ctx, args[0]);
+            case POS: return toNumber(ext, args[0]);
+            case NEG: return negative(ext, args[0]);
 
-            case SHIFT_LEFT: return shiftLeft(ctx, args[0], args[1]);
-            case SHIFT_RIGHT: return shiftRight(ctx, args[0], args[1]);
-            case USHIFT_RIGHT: return unsignedShiftRight(ctx, args[0], args[1]);
+            case SHIFT_LEFT: return shiftLeft(ext, args[0], args[1]);
+            case SHIFT_RIGHT: return shiftRight(ext, args[0], args[1]);
+            case USHIFT_RIGHT: return unsignedShiftRight(ext, args[0], args[1]);
 
-            case IN: return hasMember(ctx, args[1], args[0], false);
+            case IN: return hasMember(ext, args[1], args[0], false);
             case INSTANCEOF: {
-                var proto = getMember(ctx, args[1], "prototype");
-                return isInstanceOf(ctx, args[0], proto);
+                var proto = getMember(ext, args[1], "prototype");
+                return isInstanceOf(ext, args[0], proto);
             }
 
             default: return null;
         }
     }
 
-    public static Object getMember(Context ctx, Object obj, Object key) {
+    public static Object getMember(Extensions ctx, Object obj, Object key) {
         obj = normalize(ctx, obj); key = normalize(ctx, key);
         if (obj == null) throw new IllegalArgumentException("Tried to access member of undefined.");
         if (obj == NULL) throw new IllegalArgumentException("Tried to access member of null.");
@@ -286,12 +287,12 @@ public class Values {
         else if (key != null && "__proto__".equals(key)) return proto;
         else return proto.getMember(ctx, key, obj);
     }
-    public static Object getMemberPath(Context ctx, Object obj, Object ...path) {
+    public static Object getMemberPath(Extensions ctx, Object obj, Object ...path) {
         var res = obj;
         for (var key : path) res = getMember(ctx, res, key);
         return res;
     }
-    public static boolean setMember(Context ctx, Object obj, Object key, Object val) {
+    public static boolean setMember(Extensions ctx, Object obj, Object key, Object val) {
         obj = normalize(ctx, obj); key = normalize(ctx, key); val = normalize(ctx, val);
         if (obj == null) throw EngineException.ofType("Tried to access member of undefined.");
         if (obj == NULL) throw EngineException.ofType("Tried to access member of null.");
@@ -301,7 +302,7 @@ public class Values {
         var proto = getPrototype(ctx, obj);
         return proto.setMember(ctx, key, val, obj, true);
     }
-    public static boolean hasMember(Context ctx, Object obj, Object key, boolean own) {
+    public static boolean hasMember(Extensions ctx, Object obj, Object key, boolean own) {
         if (obj == null || obj == NULL) return false;
         obj = normalize(ctx, obj); key = normalize(ctx, key);
 
@@ -319,36 +320,36 @@ public class Values {
         var proto = getPrototype(ctx, obj);
         return proto != null && proto.hasMember(ctx, key, own);
     }
-    public static boolean deleteMember(Context ctx, Object obj, Object key) {
+    public static boolean deleteMember(Extensions ext, Object obj, Object key) {
         if (obj == null || obj == NULL) return false;
-        obj = normalize(ctx, obj); key = normalize(ctx, key);
+        obj = normalize(ext, obj); key = normalize(ext, key);
 
-        if (obj instanceof ObjectValue) return ((ObjectValue)obj).deleteMember(ctx, key);
+        if (obj instanceof ObjectValue) return ((ObjectValue)obj).deleteMember(ext, key);
         else return false;
     }
-    public static ObjectValue getPrototype(Context ctx, Object obj) {
+    public static ObjectValue getPrototype(Extensions ext, Object obj) {
         if (obj == null || obj == NULL) return null;
-        obj = normalize(ctx, obj);
-        if (obj instanceof ObjectValue) return ((ObjectValue)obj).getPrototype(ctx);
-        if (ctx == null) return null;
+        obj = normalize(ext, obj);
+        if (obj instanceof ObjectValue) return ((ObjectValue)obj).getPrototype(ext);
+        if (ext == null) return null;
 
-        if (obj instanceof String) return ctx.get(Environment.STRING_PROTO);
-        else if (obj instanceof Number) return ctx.get(Environment.NUMBER_PROTO);
-        else if (obj instanceof Boolean) return ctx.get(Environment.BOOL_PROTO);
-        else if (obj instanceof Symbol) return ctx.get(Environment.SYMBOL_PROTO);
+        if (obj instanceof String) return ext.get(Environment.STRING_PROTO);
+        else if (obj instanceof Number) return ext.get(Environment.NUMBER_PROTO);
+        else if (obj instanceof Boolean) return ext.get(Environment.BOOL_PROTO);
+        else if (obj instanceof Symbol) return ext.get(Environment.SYMBOL_PROTO);
 
         return null;
     }
-    public static boolean setPrototype(Context ctx, Object obj, Object proto) {
-        obj = normalize(ctx, obj);
-        return obj instanceof ObjectValue && ((ObjectValue)obj).setPrototype(ctx, proto);
+    public static boolean setPrototype(Extensions ext, Object obj, Object proto) {
+        obj = normalize(ext, obj);
+        return obj instanceof ObjectValue && ((ObjectValue)obj).setPrototype(ext, proto);
     }
-    public static void makePrototypeChain(Context ctx, Object... chain) {
+    public static void makePrototypeChain(Extensions ext, Object... chain) {
         for(var i = 1; i < chain.length; i++) {
-            setPrototype(ctx, chain[i], chain[i - 1]);
+            setPrototype(ext, chain[i], chain[i - 1]);
         }
     }
-    public static List<Object> getMembers(Context ctx, Object obj, boolean own, boolean includeNonEnumerable) {  
+    public static List<Object> getMembers(Extensions ext, Object obj, boolean own, boolean includeNonEnumerable) {  
         List<Object> res = new ArrayList<>();
 
         if (obj instanceof ObjectValue) res = ((ObjectValue)obj).keys(includeNonEnumerable);
@@ -357,26 +358,26 @@ public class Values {
         }
 
         if (!own) {
-            var proto = getPrototype(ctx, obj);
+            var proto = getPrototype(ext, obj);
 
             while (proto != null) {
                 res.addAll(proto.keys(includeNonEnumerable));
-                proto = getPrototype(ctx, proto);
+                proto = getPrototype(ext, proto);
             }
         }
 
 
         return res;
     }
-    public static ObjectValue getMemberDescriptor(Context ctx, Object obj, Object key) {
-        if (obj instanceof ObjectValue) return ((ObjectValue)obj).getMemberDescriptor(ctx, key);
+    public static ObjectValue getMemberDescriptor(Extensions ext, Object obj, Object key) {
+        if (obj instanceof ObjectValue) return ((ObjectValue)obj).getMemberDescriptor(ext, key);
         else if (obj instanceof String && key instanceof Number) {
             var i = ((Number)key).intValue();
             var _i = ((Number)key).doubleValue();
             if (i - _i != 0) return null;
             if (i < 0 || i >= ((String)obj).length()) return null;
 
-            return new ObjectValue(ctx, Map.of(
+            return new ObjectValue(ext, Map.of(
                 "value", ((String)obj).charAt(i) + "",
                 "writable", false,
                 "enumerable", true,
@@ -386,17 +387,17 @@ public class Values {
         else return null;
     }
 
-    public static Object call(Context ctx, Object func, Object thisArg, Object ...args) {
+    public static Object call(Extensions ext, Object func, Object thisArg, Object ...args) {
         if (!(func instanceof FunctionValue)) throw EngineException.ofType("Tried to call a non-function value.");
-        return ((FunctionValue)func).call(ctx, thisArg, args);
+        return ((FunctionValue)func).call(ext, thisArg, args);
     }
-    public static Object callNew(Context ctx, Object func, Object ...args) {
+    public static Object callNew(Extensions ext, Object func, Object ...args) {
         var res = new ObjectValue();
         try {
-            var proto = Values.getMember(ctx, func, "prototype");
-            setPrototype(ctx, res, proto);
+            var proto = Values.getMember(ext, func, "prototype");
+            setPrototype(ext, res, proto);
 
-            var ret = call(ctx, func, res, args);
+            var ret = call(ext, func, res, args);
 
             if (!isPrimitive(ret)) return ret;
             return res;
@@ -406,8 +407,9 @@ public class Values {
         }
     }
 
-    public static boolean strictEquals(Context ctx, Object a, Object b) {
-        a = normalize(ctx, a); b = normalize(ctx, b);
+    public static boolean strictEquals(Extensions ext, Object a, Object b) {
+        a = normalize(ext, a);
+        b = normalize(ext, b);
 
         if (a == null || b == null) return a == null && b == null;
         if (isNan(a) || isNan(b)) return false;
@@ -416,8 +418,8 @@ public class Values {
 
         return a == b || a.equals(b);
     }
-    public static boolean looseEqual(Context ctx, Object a, Object b) {
-        a = normalize(ctx, a); b = normalize(ctx, b);
+    public static boolean looseEqual(Extensions ext, Object a, Object b) {
+        a = normalize(ext, a); b = normalize(ext, b);
 
         // In loose equality, null is equivalent to undefined
         if (a == NULL) a = null;
@@ -428,19 +430,19 @@ public class Values {
         if (!isPrimitive(a) && !isPrimitive(b)) return a == b;
 
         // Convert values to primitives
-        a = toPrimitive(ctx, a, ConvertHint.VALUEOF);
-        b = toPrimitive(ctx, b, ConvertHint.VALUEOF);
+        a = toPrimitive(ext, a, ConvertHint.VALUEOF);
+        b = toPrimitive(ext, b, ConvertHint.VALUEOF);
 
         // Compare symbols by reference
         if (a instanceof Symbol || b instanceof Symbol) return a == b;
         if (a instanceof Boolean || b instanceof Boolean) return toBoolean(a) == toBoolean(b);
-        if (a instanceof Number || b instanceof Number) return strictEquals(ctx, toNumber(ctx, a), toNumber(ctx, b));
+        if (a instanceof Number || b instanceof Number) return strictEquals(ext, toNumber(ext, a), toNumber(ext, b));
 
         // Default to strings
-        return toString(ctx, a).equals(toString(ctx, b));
+        return toString(ext, a).equals(toString(ext, b));
     }
 
-    public static Object normalize(Context ctx, Object val) {
+    public static Object normalize(Extensions ext, Object val) {
         if (val instanceof Number) return number(val);
         if (isPrimitive(val) || val instanceof ObjectValue) return val;
         if (val instanceof Character) return val + "";
@@ -449,7 +451,7 @@ public class Values {
             var res = new ObjectValue();
 
             for (var entry : ((Map<?, ?>)val).entrySet()) {
-                res.defineProperty(ctx, entry.getKey(), entry.getValue());
+                res.defineProperty(ext, entry.getKey(), entry.getValue());
             }
 
             return res;
@@ -459,22 +461,22 @@ public class Values {
             var res = new ArrayValue();
 
             for (var entry : ((Iterable<?>)val)) {
-                res.set(ctx, res.size(), entry);
+                res.set(ext, res.size(), entry);
             }
 
             return res;
         }
 
         if (val instanceof Class) {
-            if (ctx == null) return null;
-            else return ctx.environment.wrappers.getConstr((Class<?>)val);
+            if (ext == null) return null;
+            else return NativeWrapperProvider.get(ext).getConstr((Class<?>)val);
         }
 
-        return NativeWrapper.of(ctx, val);
+        return NativeWrapper.of(ext, val);
     }
 
     @SuppressWarnings("unchecked")
-    public static <T> T convert(Context ctx, Object obj, Class<T> clazz) {
+    public static <T> T convert(Extensions ext, Object obj, Class<T> clazz) {
         if (clazz == Void.class) return null;
 
         if (obj instanceof NativeWrapper) {
@@ -488,19 +490,19 @@ public class Values {
             if (clazz.isAssignableFrom(ArrayList.class)) {
                 var raw = ((ArrayValue)obj).toArray();
                 var res = new ArrayList<>();
-                for (var i = 0; i < raw.length; i++) res.add(convert(ctx, raw[i], Object.class));
+                for (var i = 0; i < raw.length; i++) res.add(convert(ext, raw[i], Object.class));
                 return (T)new ArrayList<>(res);
             }
             if (clazz.isAssignableFrom(HashSet.class)) {
                 var raw = ((ArrayValue)obj).toArray();
                 var res = new HashSet<>();
-                for (var i = 0; i < raw.length; i++) res.add(convert(ctx, raw[i], Object.class));
+                for (var i = 0; i < raw.length; i++) res.add(convert(ext, raw[i], Object.class));
                 return (T)new HashSet<>(res);
             }
             if (clazz.isArray()) {
                 var raw = ((ArrayValue)obj).toArray();
                 Object res = Array.newInstance(clazz.getComponentType(), raw.length);
-                for (var i = 0; i < raw.length; i++) Array.set(res, i, convert(ctx, raw[i], Object.class));
+                for (var i = 0; i < raw.length; i++) Array.set(res, i, convert(ext, raw[i], Object.class));
                 return (T)res;
             }
         }
@@ -508,25 +510,25 @@ public class Values {
         if (obj instanceof ObjectValue && clazz.isAssignableFrom(HashMap.class)) {
             var res = new HashMap<>();
             for (var el : ((ObjectValue)obj).values.entrySet()) res.put(
-                convert(ctx, el.getKey(), null),
-                convert(ctx, el.getValue(), null)
+                convert(ext, el.getKey(), null),
+                convert(ext, el.getValue(), null)
             );
             return (T)res;
         }
 
-        if (clazz == String.class) return (T)toString(ctx, obj);
+        if (clazz == String.class) return (T)toString(ext, obj);
         if (clazz == Boolean.class || clazz == Boolean.TYPE) return (T)(Boolean)toBoolean(obj);
-        if (clazz == Byte.class || clazz == byte.class) return (T)(Byte)(byte)toNumber(ctx, obj);
-        if (clazz == Integer.class || clazz == int.class) return (T)(Integer)(int)toNumber(ctx, obj);
-        if (clazz == Long.class || clazz == long.class) return (T)(Long)(long)toNumber(ctx, obj);
-        if (clazz == Short.class || clazz == short.class) return (T)(Short)(short)toNumber(ctx, obj);
-        if (clazz == Float.class || clazz == float.class) return (T)(Float)(float)toNumber(ctx, obj);
-        if (clazz == Double.class || clazz == double.class) return (T)(Double)toNumber(ctx, obj);
+        if (clazz == Byte.class || clazz == byte.class) return (T)(Byte)(byte)toNumber(ext, obj);
+        if (clazz == Integer.class || clazz == int.class) return (T)(Integer)(int)toNumber(ext, obj);
+        if (clazz == Long.class || clazz == long.class) return (T)(Long)(long)toNumber(ext, obj);
+        if (clazz == Short.class || clazz == short.class) return (T)(Short)(short)toNumber(ext, obj);
+        if (clazz == Float.class || clazz == float.class) return (T)(Float)(float)toNumber(ext, obj);
+        if (clazz == Double.class || clazz == double.class) return (T)(Double)toNumber(ext, obj);
 
         if (clazz == Character.class || clazz == char.class) {
             if (obj instanceof Number) return (T)(Character)(char)number(obj);
             else {
-                var res = toString(ctx, obj);
+                var res = toString(ext, obj);
                 if (res.length() == 0) throw new ConvertException("\"\"", "Character");
                 else return (T)(Character)res.charAt(0);
             }
@@ -535,23 +537,23 @@ public class Values {
         if (obj == null) return null;
         if (clazz.isInstance(obj)) return (T)obj;
         if (clazz.isAssignableFrom(NativeWrapper.class)) {
-            return (T)NativeWrapper.of(ctx, obj);
+            return (T)NativeWrapper.of(ext, obj);
         }
 
         throw new ConvertException(type(obj), clazz.getSimpleName());
     }
 
-    public static Iterable<Object> fromJSIterator(Context ctx, Object obj) {
+    public static Iterable<Object> fromJSIterator(Extensions ext, Object obj) {
         return () -> {
             try {
                 var symbol = Symbol.get("Symbol.iterator");
 
-                var iteratorFunc = getMember(ctx, obj, symbol);
+                var iteratorFunc = getMember(ext, obj, symbol);
                 if (!(iteratorFunc instanceof FunctionValue)) return Collections.emptyIterator();
                 var iterator = iteratorFunc instanceof FunctionValue ?
-                    ((FunctionValue)iteratorFunc).call(ctx, obj, obj) :
+                    ((FunctionValue)iteratorFunc).call(ext, obj, obj) :
                     iteratorFunc;
-                var nextFunc = getMember(ctx, call(ctx, iteratorFunc, obj), "next");
+                var nextFunc = getMember(ext, call(ext, iteratorFunc, obj), "next");
 
                 if (!(nextFunc instanceof FunctionValue)) return Collections.emptyIterator();
 
@@ -563,11 +565,11 @@ public class Values {
                     private void loadNext() {
                         if (next == null) value = null;
                         else if (consumed) {
-                            var curr = next.call(ctx, iterator);
+                            var curr = next.call(ext, iterator);
                             if (curr == null) { next = null; value = null; }
-                            if (toBoolean(Values.getMember(ctx, curr, "done"))) { next = null; value = null; }
+                            if (toBoolean(Values.getMember(ext, curr, "done"))) { next = null; value = null; }
                             else {
-                                this.value = Values.getMember(ctx, curr, "value");
+                                this.value = Values.getMember(ext, curr, "value");
                                 consumed = false;
                             }
                         }
@@ -594,17 +596,17 @@ public class Values {
         };
     }
 
-    public static ObjectValue toJSIterator(Context ctx, Iterator<?> it) {
+    public static ObjectValue toJSIterator(Extensions ext, Iterator<?> it) {
         var res = new ObjectValue();
 
         try {
-            var key = getMember(ctx, getMember(ctx, ctx.get(Environment.SYMBOL_PROTO), "constructor"), "iterator");
-            res.defineProperty(ctx, key, new NativeFunction("", args -> args.self));
+            var key = getMember(ext, getMember(ext, ext.get(Environment.SYMBOL_PROTO), "constructor"), "iterator");
+            res.defineProperty(ext, key, new NativeFunction("", args -> args.self));
         }
         catch (IllegalArgumentException | NullPointerException e) { }
 
-        res.defineProperty(ctx, "next", new NativeFunction("", args -> {
-            if (!it.hasNext()) return new ObjectValue(ctx, Map.of("done", true));
+        res.defineProperty(ext, "next", new NativeFunction("", args -> {
+            if (!it.hasNext()) return new ObjectValue(ext, Map.of("done", true));
             else {
                 var obj = new ObjectValue();
                 obj.defineProperty(args.ctx, "value", it.next());
@@ -615,22 +617,22 @@ public class Values {
         return res;
     }
 
-    public static ObjectValue toJSIterator(Context ctx, Iterable<?> it) {
-        return toJSIterator(ctx, it.iterator());
+    public static ObjectValue toJSIterator(Extensions ext, Iterable<?> it) {
+        return toJSIterator(ext, it.iterator());
     }
 
-    public static ObjectValue toJSAsyncIterator(Context ctx, Iterator<?> it) {
+    public static ObjectValue toJSAsyncIterator(Extensions ext, Iterator<?> it) {
         var res = new ObjectValue();
 
         try {
-            var key = getMemberPath(ctx, ctx.get(Environment.SYMBOL_PROTO), "constructor", "asyncIterator");
-            res.defineProperty(ctx, key, new NativeFunction("", args -> args.self));
+            var key = getMemberPath(ext, ext.get(Environment.SYMBOL_PROTO), "constructor", "asyncIterator");
+            res.defineProperty(ext, key, new NativeFunction("", args -> args.self));
         }
         catch (IllegalArgumentException | NullPointerException e) { }
 
-        res.defineProperty(ctx, "next", new NativeFunction("", args -> {
+        res.defineProperty(ext, "next", new NativeFunction("", args -> {
             return PromiseLib.await(args.ctx, () -> {
-                if (!it.hasNext()) return new ObjectValue(ctx, Map.of("done", true));
+                if (!it.hasNext()) return new ObjectValue(ext, Map.of("done", true));
                 else {
                     var obj = new ObjectValue();
                     obj.defineProperty(args.ctx, "value", it.next());
@@ -652,14 +654,14 @@ public class Values {
         if (protoObj.values.size() + protoObj.properties.size() != 1) return false;
         return true;
     }
-    private static String toReadable(Context ctx, Object val, HashSet<Object> passed, int tab) {
+    private static String toReadable(Extensions ext, Object val, HashSet<Object> passed, int tab) {
         if (tab == 0 && val instanceof String) return (String)val;
 
         if (passed.contains(val)) return "[circular]";
 
         var printed = true;
         var res = new StringBuilder();
-        var dbg = DebugContext.get(ctx);
+        var dbg = DebugContext.get(ext);
 
         if (val instanceof FunctionValue) {
             res.append(val.toString());
@@ -673,7 +675,7 @@ public class Values {
             for (int i = 0; i < obj.size(); i++) {
                 if (i != 0) res.append(", ");
                 else res.append(" ");
-                if (obj.has(i)) res.append(toReadable(ctx, obj.get(i), passed, tab));
+                if (obj.has(i)) res.append(toReadable(ext, obj.get(i), passed, tab));
                 else res.append("<empty>");
             }
             res.append(" ] ");
@@ -700,14 +702,14 @@ public class Values {
 
                 for (var el : obj.values.entrySet()) {
                     for (int i = 0; i < tab + 1; i++) res.append("    ");
-                    res.append(toReadable(ctx, el.getKey(), passed, tab + 1));
+                    res.append(toReadable(ext, el.getKey(), passed, tab + 1));
                     res.append(": ");
-                    res.append(toReadable(ctx, el.getValue(), passed, tab + 1));
+                    res.append(toReadable(ext, el.getValue(), passed, tab + 1));
                     res.append(",\n");
                 }
                 for (var el : obj.properties.entrySet()) {
                     for (int i = 0; i < tab + 1; i++) res.append("    ");
-                    res.append(toReadable(ctx, el.getKey(), passed, tab + 1));
+                    res.append(toReadable(ext, el.getKey(), passed, tab + 1));
                     res.append(": [prop],\n");
                 }
 
@@ -720,23 +722,23 @@ public class Values {
         else if (val == null) return "undefined";
         else if (val == Values.NULL) return "null";
         else if (val instanceof String) return "'" + val + "'";
-        else return Values.toString(ctx, val);
+        else return Values.toString(ext, val);
 
         return res.toString();
     }
 
-    public static String toReadable(Context ctx, Object val) {
-        return toReadable(ctx, val, new HashSet<>(), 0);
+    public static String toReadable(Extensions ext, Object val) {
+        return toReadable(ext, val, new HashSet<>(), 0);
     }
     public static String errorToReadable(RuntimeException err, String prefix) {
         prefix = prefix == null ? "Uncaught" : "Uncaught " + prefix;
         if (err instanceof EngineException) {
             var ee = ((EngineException)err);
             try {
-                return prefix + " " + ee.toString(new Context(ee.env));
+                return prefix + " " + ee.toString(ee.ext);
             }
             catch (EngineException ex) {
-                return prefix + " " + toReadable(new Context(ee.env), ee.value);
+                return prefix + " " + toReadable(ee.ext, ee.value);
             }
         }
         else if (err instanceof SyntaxException) {
@@ -750,8 +752,8 @@ public class Values {
             return prefix + " internal error " + str.toString();
         }
     }
-    public static void printValue(Context ctx, Object val) {
-        System.out.print(toReadable(ctx, val));
+    public static void printValue(Extensions ext, Object val) {
+        System.out.print(toReadable(ext, val));
     }
     public static void printError(RuntimeException err, String prefix) {
         System.out.println(errorToReadable(err, prefix));

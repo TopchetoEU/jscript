@@ -3,13 +3,31 @@ package me.topchetoeu.jscript.utils.interop;
 import java.lang.reflect.Array;
 
 import me.topchetoeu.jscript.runtime.Context;
+import me.topchetoeu.jscript.runtime.Extensions;
+import me.topchetoeu.jscript.runtime.Key;
 import me.topchetoeu.jscript.runtime.values.NativeWrapper;
 import me.topchetoeu.jscript.runtime.values.Values;
 
-public class Arguments {
+public class Arguments implements Extensions {
     public final Object self;
     public final Object[] args;
     public final Context ctx;
+
+    @Override public <T> void add(Key<T> key, T obj) {
+        ctx.add(key, obj);
+    }
+    @Override public <T> T get(Key<T> key) {
+        return ctx.get(key);
+    }
+    @Override public boolean has(Key<?> key) {
+        return ctx.has(key);
+    }
+    @Override public boolean remove(Key<?> key) {
+        return ctx.remove(key);
+    }
+    @Override public Iterable<Key<?>> keys() {
+        return ctx.keys();
+    }
 
     public int n() {
         return args.length;

@@ -9,7 +9,7 @@ import me.topchetoeu.jscript.compilation.parsing.Operator;
 import me.topchetoeu.jscript.compilation.parsing.ParseRes;
 import me.topchetoeu.jscript.compilation.parsing.Parsing;
 import me.topchetoeu.jscript.compilation.parsing.Token;
-import me.topchetoeu.jscript.runtime.Context;
+import me.topchetoeu.jscript.runtime.Extensions;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
 import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 import me.topchetoeu.jscript.runtime.values.ArrayValue;
@@ -32,7 +32,7 @@ public class JSON {
         if (val.isNull()) return Values.NULL;
         return null;
     }
-    private static JSONElement fromJs(Context ctx, Object val, HashSet<Object> prev) {
+    private static JSONElement fromJs(Extensions ext, Object val, HashSet<Object> prev) {
         if (val instanceof Boolean) return JSONElement.bool((boolean)val);
         if (val instanceof Number) return JSONElement.number(((Number)val).doubleValue());
         if (val instanceof String) return JSONElement.string((String)val);
@@ -44,7 +44,7 @@ public class JSON {
             var res = new JSONList();
 
             for (var el : ((ArrayValue)val).toArray()) {
-                var jsonEl = fromJs(ctx, el, prev);
+                var jsonEl = fromJs(ext, el, prev);
                 if (jsonEl == null) jsonEl = JSONElement.NULL;
                 res.add(jsonEl);
             }
@@ -58,8 +58,8 @@ public class JSON {
 
             var res = new JSONMap();
 
-            for (var el : Values.getMembers(ctx, val, false, false)) {
-                var jsonEl = fromJs(ctx, Values.getMember(ctx, val, el), prev);
+            for (var el : Values.getMembers(ext, val, false, false)) {
+                var jsonEl = fromJs(ext, Values.getMember(ext, val, el), prev);
                 if (jsonEl == null) continue;
                 if (el instanceof String || el instanceof Number) res.put(el.toString(), jsonEl);
             }
@@ -70,8 +70,8 @@ public class JSON {
         if (val == null) return null;
         return null;
     }
-    public static JSONElement fromJs(Context ctx, Object val) {
-        return fromJs(ctx, val, new HashSet<>());
+    public static JSONElement fromJs(Extensions ext, Object val) {
+        return fromJs(ext, val, new HashSet<>());
     }
 
     public static ParseRes<String> parseIdentifier(List<Token> tokens, int i) {

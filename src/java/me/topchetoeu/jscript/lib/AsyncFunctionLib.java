@@ -2,6 +2,7 @@ package me.topchetoeu.jscript.lib;
 
 import me.topchetoeu.jscript.lib.PromiseLib.Handle;
 import me.topchetoeu.jscript.runtime.Context;
+import me.topchetoeu.jscript.runtime.Extensions;
 import me.topchetoeu.jscript.runtime.Frame;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
 import me.topchetoeu.jscript.runtime.values.CodeFunction;
@@ -65,8 +66,9 @@ public class AsyncFunctionLib extends FunctionValue {
     }
 
     @Override
-    public Object call(Context ctx, Object thisArg, Object ...args) {
+    public Object call(Extensions ext, Object thisArg, Object ...args) {
         var handler = new AsyncHelper();
+        var ctx = Context.of(ext);
 
         var newArgs = new Object[args.length + 1];
         newArgs[0] = new NativeFunction("await", handler::await);

@@ -6,7 +6,7 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 
-import me.topchetoeu.jscript.runtime.Context;
+import me.topchetoeu.jscript.runtime.Extensions;
 
 // TODO: Make methods generic
 public class ArrayValue extends ObjectValue implements Iterable<Object> {
@@ -41,12 +41,12 @@ public class ArrayValue extends ObjectValue implements Iterable<Object> {
         if (res == UNDEFINED) return null;
         else return res;
     }
-    public void set(Context ctx, int i, Object val) {
+    public void set(Extensions ext, int i, Object val) {
         if (i < 0) return;
 
         values = alloc(i);
 
-        val = Values.normalize(ctx, val);
+        val = Values.normalize(ext, val);
         if (val == null) val = UNDEFINED;
         values[i] = val;
         if (i >= size) size = i + 1;
@@ -99,9 +99,9 @@ public class ArrayValue extends ObjectValue implements Iterable<Object> {
         }
     }
 
-    public void copyFrom(Context ctx, Object[] arr, int sourceStart, int destStart, int count) {
+    public void copyFrom(Extensions ext, Object[] arr, int sourceStart, int destStart, int count) {
         for (var i = 0; i < count; i++) {
-            set(ctx, i + destStart, arr[i + sourceStart]);
+            set(ext, i + destStart, arr[i + sourceStart]);
         }
     }
 
@@ -131,7 +131,7 @@ public class ArrayValue extends ObjectValue implements Iterable<Object> {
     }
 
     @Override
-    protected Object getField(Context ctx, Object key) {
+    protected Object getField(Extensions ext, Object key) {
         if (key instanceof Number) {
             var i = ((Number)key).doubleValue();
             if (i >= 0 && i - Math.floor(i) == 0) {
@@ -139,22 +139,22 @@ public class ArrayValue extends ObjectValue implements Iterable<Object> {
             }
         }
 
-        return super.getField(ctx, key);
+        return super.getField(ext, key);
     }
     @Override
-    protected boolean setField(Context ctx, Object key, Object val) {
+    protected boolean setField(Extensions ext, Object key, Object val) {
         if (key instanceof Number) {
             var i = Values.number(key);
             if (i >= 0 && i - Math.floor(i) == 0) {
-                set(ctx, (int)i, val);
+                set(ext, (int)i, val);
                 return true;
             }
         }
 
-        return super.setField(ctx, key, val);
+        return super.setField(ext, key, val);
     }
     @Override
-    protected boolean hasField(Context ctx, Object key) {
+    protected boolean hasField(Extensions ext, Object key) {
         if (key instanceof Number) {
             var i = Values.number(key);
             if (i >= 0 && i - Math.floor(i) == 0) {
@@ -162,10 +162,10 @@ public class ArrayValue extends ObjectValue implements Iterable<Object> {
             }
         }
 
-        return super.hasField(ctx, key);
+        return super.hasField(ext, key);
     }
     @Override
-    protected void deleteField(Context ctx, Object key) {
+    protected void deleteField(Extensions ext, Object key) {
         if (key instanceof Number) {
             var i = Values.number(key);
             if (i >= 0 && i - Math.floor(i) == 0) {
@@ -174,7 +174,7 @@ public class ArrayValue extends ObjectValue implements Iterable<Object> {
             }
         }
 
-        super.deleteField(ctx, key);
+        super.deleteField(ext, key);
     }
 
     @Override
@@ -213,15 +213,15 @@ public class ArrayValue extends ObjectValue implements Iterable<Object> {
         values = new Object[cap];
         size = 0;
     }
-    public ArrayValue(Context ctx, Object ...values) {
+    public ArrayValue(Extensions ext, Object ...values) {
         this();
         this.values = new Object[values.length];
         size = values.length;
 
-        for (var i = 0; i < size; i++) this.values[i] = Values.normalize(ctx, values[i]);
+        for (var i = 0; i < size; i++) this.values[i] = Values.normalize(ext, values[i]);
     }
 
-    public static ArrayValue of(Context ctx, Collection<?> values) {
-        return new ArrayValue(ctx, values.toArray(Object[]::new));
+    public static ArrayValue of(Extensions ext, Collection<?> values) {
+        return new ArrayValue(ext, values.toArray(Object[]::new));
     }
 }

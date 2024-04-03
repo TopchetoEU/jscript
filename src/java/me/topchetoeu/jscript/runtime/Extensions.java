@@ -2,7 +2,7 @@ package me.topchetoeu.jscript.runtime;
 
 import java.util.List;
 
-public interface Extensions {
+public interface Extensions extends Childable, Copyable {
     public static Extensions EMPTY = new Extensions() {
         @Override public <T> void add(Key<T> key, T obj) { }
         @Override public boolean remove(Key<?> key) { return false; }
@@ -45,6 +45,29 @@ public interface Extensions {
         for (var key : source.keys()) {
             add((Key<Object>)key, (Object)source.get(key));
         }
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    default Extensions copy() {
+        var res = new Environment();
+        for (var key : keys()) {
+            var val = get(key);
+            if (val instanceof Copyable) val = ((Copyable)val).copy();
+            res.add((Key<Object>)key, val);
+        }
+        return res;
+    }
+    @Override
+    @SuppressWarnings("unchecked")
+    default Extensions child() {
+        var res = new Environment();
+        for (var key : keys()) {
+            var val = get(key);
+            if (val instanceof Childable) val = ((Childable)val).child();
+            res.add((Key<Object>)key, val);
+        }
+        return res;
     }
 
     public static Extensions wrap(Extensions ext) {

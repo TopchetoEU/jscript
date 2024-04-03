@@ -3,7 +3,7 @@ package me.topchetoeu.jscript.runtime.values;
 import java.util.HashMap;
 import java.util.List;
 
-import me.topchetoeu.jscript.runtime.Context;
+import me.topchetoeu.jscript.runtime.Extensions;
 import me.topchetoeu.jscript.runtime.scope.ValueVariable;
 
 public class ScopeValue extends ObjectValue {
@@ -11,31 +11,31 @@ public class ScopeValue extends ObjectValue {
     public final HashMap<String, Integer> names = new HashMap<>();
 
     @Override
-    protected Object getField(Context ctx, Object key) {
-        if (names.containsKey(key)) return variables[names.get(key)].get(ctx);
-        return super.getField(ctx, key);
+    protected Object getField(Extensions ext, Object key) {
+        if (names.containsKey(key)) return variables[names.get(key)].get(ext);
+        return super.getField(ext, key);
     }
     @Override
-    protected boolean setField(Context ctx, Object key, Object val) {
+    protected boolean setField(Extensions ext, Object key, Object val) {
         if (names.containsKey(key)) {
-            variables[names.get(key)].set(ctx, val);
+            variables[names.get(key)].set(ext, val);
             return true;
         }
 
-        var proto = getPrototype(ctx);
-        if (proto != null && proto.hasMember(ctx, key, false) && proto.setField(ctx, key, val)) return true;
+        var proto = getPrototype(ext);
+        if (proto != null && proto.hasMember(ext, key, false) && proto.setField(ext, key, val)) return true;
 
-        return super.setField(ctx, key, val);
+        return super.setField(ext, key, val);
     }
     @Override
-    protected void deleteField(Context ctx, Object key) {
+    protected void deleteField(Extensions ext, Object key) {
         if (names.containsKey(key)) return;
-        super.deleteField(ctx, key);
+        super.deleteField(ext, key);
     }
     @Override
-    protected boolean hasField(Context ctx, Object key) {
+    protected boolean hasField(Extensions ext, Object key) {
         if (names.containsKey(key)) return true;
-        return super.hasField(ctx, key);
+        return super.hasField(ext, key);
     }
     @Override
     public List<Object> keys(boolean includeNonEnumerable) {

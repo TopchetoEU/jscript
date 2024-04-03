@@ -17,6 +17,7 @@ import me.topchetoeu.jscript.utils.interop.Expose;
 import me.topchetoeu.jscript.utils.interop.ExposeField;
 import me.topchetoeu.jscript.utils.interop.ExposeTarget;
 import me.topchetoeu.jscript.utils.interop.ExposeType;
+import me.topchetoeu.jscript.utils.interop.NativeWrapperProvider;
 import me.topchetoeu.jscript.utils.modules.ModuleRepo;
 
 public class Internals {
@@ -51,7 +52,7 @@ public class Internals {
             try { Thread.sleep(ms, ns); }
             catch (InterruptedException e) { return; }
 
-            args.ctx.get(EventLoop.KEY).pushMsg(() -> func.call(new Context(args.ctx.environment), null, arguments), false);
+            args.ctx.get(EventLoop.KEY).pushMsg(() -> func.call(new Context(args.ctx.extensions), null, arguments), false);
         });
 
         thread.start();
@@ -79,7 +80,7 @@ public class Internals {
                 }
                 catch (InterruptedException e) { return; }
 
-                args.ctx.get(EventLoop.KEY).pushMsg(() -> func.call(new Context(args.ctx.environment), null, arguments), false);
+                args.ctx.get(EventLoop.KEY).pushMsg(() -> func.call(new Context(args.ctx.extensions), null, arguments), false);
             }
         });
         thread.start();
@@ -165,8 +166,8 @@ public class Internals {
     }
 
     public static Environment apply(Environment env) {
-        var wp = env.wrappers;
-        var glob = env.global = new GlobalScope(wp.getNamespace(Internals.class));
+        var wp = new NativeWrapperProvider();
+        var glob = new GlobalScope(wp.getNamespace(Internals.class));
 
         glob.define(null, "Math", false, wp.getNamespace(MathLib.class));
         glob.define(null, "JSON", false, wp.getNamespace(JSONLib.class));
@@ -209,8 +210,12 @@ public class Internals {
         env.add(Environment.TYPE_ERR_PROTO, wp.getProto(TypeErrorLib.class));
         env.add(Environment.RANGE_ERR_PROTO, wp.getProto(RangeErrorLib.class));
 
-        Values.setPrototype(Context.NULL, wp.getProto(ObjectLib.class), null);
         env.add(Environment.REGEX_CONSTR, wp.getConstr(RegExpLib.class));
+        Values.setPrototype(new Context(), wp.getProto(ObjectLib.class), null);
+
+        env.add(NativeWrapperProvider.KEY, wp);
+        env.add(GlobalScope.KEY, glob);
+
 
         return env;
     }

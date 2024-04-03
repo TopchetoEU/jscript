@@ -65,7 +65,7 @@ public class PromiseLib {
         }
 
         if (state == STATE_REJECTED && !handled) {
-            Values.printError(((EngineException)val).setCtx(ctx), "(in promise)");
+            Values.printError(((EngineException)val).setExtensions(ctx), "(in promise)");
         }
 
         handles = null;
@@ -207,7 +207,7 @@ public class PromiseLib {
     }
     @Expose(value = "reject", target = ExposeTarget.STATIC)
     public static PromiseLib __ofRejected(Arguments args) {
-        return ofRejected(args.ctx, new EngineException(args.get(0)).setCtx(args.ctx));
+        return ofRejected(args.ctx, new EngineException(args.get(0)).setExtensions(args.ctx));
     }
 
     @Expose(target = ExposeTarget.STATIC)
@@ -215,7 +215,7 @@ public class PromiseLib {
         if (!(args.get(0) instanceof ArrayValue)) throw EngineException.ofType("Expected argument for any to be an array.");
         var promises = args.convert(0, ArrayValue.class); 
 
-        if (promises.size() == 0) return ofRejected(args.ctx, EngineException.ofError("No promises passed to 'Promise.any'.").setCtx(args.ctx));
+        if (promises.size() == 0) return ofRejected(args.ctx, EngineException.ofError("No promises passed to 'Promise.any'.").setExtensions(args.ctx));
         var n = new int[] { promises.size() };
         var res = new PromiseLib();
         var errors = new ArrayValue();
@@ -230,7 +230,7 @@ public class PromiseLib {
                 public void onReject(EngineException err) {
                     errors.set(args.ctx, index, err.value);
                     n[0]--;
-                    if (n[0] <= 0) res.reject(args.ctx, new EngineException(errors).setCtx(args.ctx));
+                    if (n[0] <= 0) res.reject(args.ctx, new EngineException(errors).setExtensions(args.ctx));
                 }
             });
         }
@@ -390,7 +390,7 @@ public class PromiseLib {
                     return null;
                 }),
                 new NativeFunction(null, _args -> {
-                    res.reject(_args.ctx, new EngineException(_args.get(0)).setCtx(_args.ctx));
+                    res.reject(_args.ctx, new EngineException(_args.get(0)).setExtensions(_args.ctx));
                     return null;
                 })
             );

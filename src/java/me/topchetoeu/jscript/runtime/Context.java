@@ -11,39 +11,37 @@ import me.topchetoeu.jscript.runtime.values.CodeFunction;
 import me.topchetoeu.jscript.runtime.values.FunctionValue;
 
 public class Context implements Extensions {
-    public static final Context NULL = new Context();
-
     public final Context parent;
-    public final Environment environment;
+    public final Extensions extensions;
     public final Frame frame;
     // public final Engine engine;
     public final int stackSize;
 
     @Override public <T> void add(Key<T> key, T obj) {
-        if (environment != null) environment.add(key, obj);
+        if (extensions != null) extensions.add(key, obj);
         // else if (engine != null) engine.add(key, obj);
     }
     @Override public <T> T get(Key<T> key) {
-        if (environment != null && environment.has(key)) return environment.get(key);
+        if (extensions != null && extensions.has(key)) return extensions.get(key);
         // else if (engine != null && engine.has(key)) return engine.get(key);
         return null;
     }
     @Override public boolean has(Key<?> key) {
         return
-            environment != null && environment.has(key);
+            extensions != null && extensions.has(key);
             // engine != null && engine.has(key);
     }
     @Override public boolean remove(Key<?> key) {
         var res = false;
 
-        if (environment != null) res |= environment.remove(key);
+        if (extensions != null) res |= extensions.remove(key);
         // else if (engine != null) res |= engine.remove(key);
 
         return res;
     }
     @Override public Iterable<Key<?>> keys() {
-        if (environment == null) return List.of();
-        else return environment.keys();
+        if (extensions == null) return List.of();
+        else return extensions.keys();
 
         // if (engine == null && environment == null) return List.of();
         // if (engine == null) return environment.keys();
@@ -57,12 +55,12 @@ public class Context implements Extensions {
 
     public FunctionValue compile(Filename filename, String raw) {
         DebugContext.get(this).onSource(filename, raw);
-        var result = new CodeFunction(environment, filename.toString(), Compiler.get(this).compile(filename, raw), new ValueVariable[0]);
+        var result = new CodeFunction(extensions, filename.toString(), Compiler.get(this).compile(filename, raw), new ValueVariable[0]);
         return result;
     }
 
     public Context pushFrame(Frame frame) {
-        var res = new Context(this, frame.function.environment, frame, stackSize + 1);
+        var res = new Context(this, frame.function.extensions, frame, stackSize + 1);
         return res;
     }
 
@@ -88,10 +86,9 @@ public class Context implements Extensions {
         };
     }
 
-
-    private Context(Context parent, Environment environment, Frame frame, int stackSize) {
+    private Context(Context parent, Extensions ext, Frame frame, int stackSize) {
         this.parent = parent;
-        this.environment = environment;
+        this.extensions = ext;
         this.frame = frame;
         this.stackSize = stackSize;
 
@@ -103,7 +100,16 @@ public class Context implements Extensions {
     public Context() {
         this(null, null, null, 0);
     }
-    public Context(Environment env) {
-        this(null, env, null, 0);
+    public Context(Extensions ext) {
+        this(null, ext, null, 0);
+    }
+
+    public static Context of(Extensions ext) {
+        if (ext instanceof Context) return (Context)ext;
+        return new Context(ext);
+    }
+    public static Extensions clean(Extensions ext) {
+        if (ext instanceof Context) return ((Context)ext).extensions;
+        else return ext;
     }
 }

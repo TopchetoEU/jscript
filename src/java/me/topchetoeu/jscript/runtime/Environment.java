@@ -3,11 +3,9 @@ package me.topchetoeu.jscript.runtime;
 import java.util.HashMap;
 
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
-import me.topchetoeu.jscript.runtime.scope.GlobalScope;
 import me.topchetoeu.jscript.runtime.values.FunctionValue;
 import me.topchetoeu.jscript.runtime.values.NativeFunction;
 import me.topchetoeu.jscript.runtime.values.ObjectValue;
-import me.topchetoeu.jscript.utils.interop.NativeWrapperProvider;
 
 @SuppressWarnings("unchecked")
 public class Environment implements Extensions {
@@ -31,9 +29,6 @@ public class Environment implements Extensions {
 
     private HashMap<Key<?>, Object> data = new HashMap<>();
 
-    public GlobalScope global;
-    public WrapperProvider wrappers;
-
     @Override public <T> void add(Key<T> key, T obj) {
         data.put(key, obj);
     }
@@ -56,37 +51,11 @@ public class Environment implements Extensions {
 
     public static FunctionValue regexConstructor(Extensions ext) {
         return ext.init(REGEX_CONSTR, new NativeFunction("RegExp", args -> {
-            throw EngineException.ofError("Regular expressions not supported.").setCtx(args.ctx);
+            throw EngineException.ofError("Regular expressions not supported.").setExtensions(args.ctx);
         }));
-    }
-
-    public Environment copy() {
-        var res = new Environment();
-
-        res.wrappers = wrappers.fork(res);
-        res.global = global;
-        res.data.putAll(data);
-
-        return res;
-    }
-    public Environment child() {
-        var res = copy();
-        res.global = res.global.globalChild();
-        return res;
     }
 
     public Context context() {
         return new Context(this);
-    }
-
-    public Environment(WrapperProvider nativeConverter, GlobalScope global) {
-        if (nativeConverter == null) nativeConverter = new NativeWrapperProvider();
-        if (global == null) global = new GlobalScope();
-
-        this.wrappers = nativeConverter;
-        this.global = global;
-    }
-    public Environment() {
-        this(null, null);
     }
 }

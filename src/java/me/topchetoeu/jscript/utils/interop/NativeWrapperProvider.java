@@ -11,8 +11,9 @@ import java.util.stream.Collectors;
 
 import me.topchetoeu.jscript.common.Location;
 import me.topchetoeu.jscript.runtime.Context;
-import me.topchetoeu.jscript.runtime.Environment;
-import me.topchetoeu.jscript.runtime.WrapperProvider;
+import me.topchetoeu.jscript.runtime.Copyable;
+import me.topchetoeu.jscript.runtime.Extensions;
+import me.topchetoeu.jscript.runtime.Key;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
 import me.topchetoeu.jscript.runtime.exceptions.InterruptException;
 import me.topchetoeu.jscript.runtime.values.FunctionValue;
@@ -21,7 +22,9 @@ import me.topchetoeu.jscript.runtime.values.ObjectValue;
 import me.topchetoeu.jscript.runtime.values.Symbol;
 import me.topchetoeu.jscript.runtime.values.Values;
 
-public class NativeWrapperProvider implements WrapperProvider {
+public class NativeWrapperProvider implements Copyable {
+    public static final Key<NativeWrapperProvider> KEY = new Key<>();
+
     private final HashMap<Class<?>, FunctionValue> constructors = new HashMap<>();
     private final HashMap<Class<?>, ObjectValue> prototypes = new HashMap<>();
     private final HashMap<Class<?>, ObjectValue> namespaces = new HashMap<>();
@@ -298,8 +301,8 @@ public class NativeWrapperProvider implements WrapperProvider {
             var parentConstr = getConstr(parent);
 
             if (parentProto != null && parentConstr != null) {
-                Values.setPrototype(Context.NULL, proto, parentProto);
-                Values.setPrototype(Context.NULL, constr, parentConstr);
+                Values.setPrototype(Extensions.EMPTY, proto, parentProto);
+                Values.setPrototype(Extensions.EMPTY, constr, parentConstr);
 
                 return;
             }
@@ -371,11 +374,13 @@ public class NativeWrapperProvider implements WrapperProvider {
         return null;
     }
 
-    @Override public WrapperProvider fork(Environment env) {
+    public NativeWrapperProvider copy() {
         var res = new NativeWrapperProvider();
+
         for (var pair : classToProxy.entrySet()) {
             res.set(pair.getKey(), pair.getValue());
         }
+
         return this;
     }
 
@@ -409,4 +414,8 @@ public class NativeWrapperProvider implements WrapperProvider {
     }
 
     public NativeWrapperProvider() { }
+
+    public static NativeWrapperProvider get(Extensions ext) {
+        return ext.get(KEY);
+    }
 }

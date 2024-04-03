@@ -25,7 +25,7 @@ public interface ModuleRepo {
 
             if (modules.containsKey(name)) return modules.get(name);
 
-            var env = ctx.environment.child();
+            var env = ctx.extensions.child();
             env.add(CWD, fs.normalize(name, ".."));
 
             var mod = new SourceModule(filename, src, env);

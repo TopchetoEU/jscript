@@ -1,6 +1,7 @@
 package me.topchetoeu.jscript.lib;
 
 import me.topchetoeu.jscript.runtime.Context;
+import me.topchetoeu.jscript.runtime.Extensions;
 import me.topchetoeu.jscript.runtime.Frame;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
 import me.topchetoeu.jscript.runtime.values.CodeFunction;
@@ -13,7 +14,7 @@ public class AsyncGeneratorFunctionLib extends FunctionValue {
     public final CodeFunction func;
 
     @Override
-    public Object call(Context ctx, Object thisArg, Object ...args) {
+    public Object call(Extensions ext, Object thisArg, Object ...args) {
         var handler = new AsyncGeneratorLib();
 
         var newArgs = new Object[args.length + 2];
@@ -21,7 +22,7 @@ public class AsyncGeneratorFunctionLib extends FunctionValue {
         newArgs[1] = new NativeFunction("yield", handler::yield);
         System.arraycopy(args, 0, newArgs, 2, args.length);
 
-        handler.frame = new Frame(ctx, thisArg, newArgs, func);
+        handler.frame = new Frame(Context.of(ext), thisArg, newArgs, func);
         return handler;
     }
 

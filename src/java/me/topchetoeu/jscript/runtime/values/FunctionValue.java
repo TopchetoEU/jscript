@@ -2,7 +2,7 @@ package me.topchetoeu.jscript.runtime.values;
 
 import java.util.List;
 
-import me.topchetoeu.jscript.runtime.Context;
+import me.topchetoeu.jscript.runtime.Extensions;
 
 public abstract class FunctionValue extends ObjectValue {
     public String name = "";
@@ -13,29 +13,29 @@ public abstract class FunctionValue extends ObjectValue {
         return String.format("function %s(...)", name);
     }
 
-    public abstract Object call(Context ctx, Object thisArg, Object ...args);
-    public Object call(Context ctx) {
-        return call(ctx, null);
+    public abstract Object call(Extensions ext, Object thisArg, Object ...args);
+    public Object call(Extensions ext) {
+        return call(ext, null);
     }
 
     @Override
-    protected Object getField(Context ctx, Object key) {
+    protected Object getField(Extensions ext, Object key) {
         if ("name".equals(key)) return name;
         if ("length".equals(key)) return length;
-        return super.getField(ctx, key);
+        return super.getField(ext, key);
     }
     @Override
-    protected boolean setField(Context ctx, Object key, Object val) {
-        if ("name".equals(key)) name = Values.toString(ctx, val);
-        else if ("length".equals(key)) length = (int)Values.toNumber(ctx, val);
-        else return super.setField(ctx, key, val);
+    protected boolean setField(Extensions ext, Object key, Object val) {
+        if ("name".equals(key)) name = Values.toString(ext, val);
+        else if ("length".equals(key)) length = (int)Values.toNumber(ext, val);
+        else return super.setField(ext, key, val);
         return true;
     }
     @Override
-    protected boolean hasField(Context ctx, Object key) {
+    protected boolean hasField(Extensions ext, Object key) {
         if ("name".equals(key)) return true;
         if ("length".equals(key)) return true;
-        return super.hasField(ctx, key);
+        return super.hasField(ext, key);
     }
 
     @Override

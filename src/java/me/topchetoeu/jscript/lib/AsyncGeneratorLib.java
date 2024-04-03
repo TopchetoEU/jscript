@@ -101,7 +101,7 @@ public class AsyncGeneratorLib {
     }
     @Expose public PromiseLib __throw(Arguments args) {
         this.currPromise = new PromiseLib();
-        next(args.ctx, Values.NO_RETURN, Values.NO_RETURN, new EngineException(args.get(0)).setCtx(args.ctx));
+        next(args.ctx, Values.NO_RETURN, Values.NO_RETURN, new EngineException(args.get(0)).setExtensions(args.ctx));
         return this.currPromise;
     }
 }
