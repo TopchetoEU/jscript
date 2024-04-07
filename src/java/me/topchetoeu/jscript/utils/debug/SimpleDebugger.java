@@ -397,7 +397,7 @@ public class SimpleDebugger implements Debugger {
                 catch (Exception e) { }
 
                 try { res.set("description", className + (defaultToString ? "" : " { " + Values.toString(ctx, obj) + " }")); }
-                catch (EngineException e) {  }
+                catch (Exception e) { }
             }
 
 
