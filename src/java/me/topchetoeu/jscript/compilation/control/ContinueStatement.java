@@ -10,7 +10,7 @@ public class ContinueStatement extends Statement {
 
     @Override
     public void compile(CompileResult target, boolean pollute) {
-        target.add(Instruction.nop(loc(), "cont", label));
+        target.add(Instruction.nop("cont", label));
         if (pollute) target.add(Instruction.pushUndefined());
     }
 
