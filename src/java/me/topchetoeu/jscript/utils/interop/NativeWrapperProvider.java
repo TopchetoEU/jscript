@@ -293,7 +293,7 @@ public class NativeWrapperProvider implements Copyable {
             new NativeFunction(getName(appliers), args -> { throw EngineException.ofError("This constructor is not invokable."); }) :
             create(getName(appliers), constr);
 
-        if (constr == null && !apply(res, ExposeTarget.CONSTRUCTOR, appliers)) return null;
+        if (!apply(res, ExposeTarget.CONSTRUCTOR, appliers) && constr == null) return null;
 
         return res;
     }
