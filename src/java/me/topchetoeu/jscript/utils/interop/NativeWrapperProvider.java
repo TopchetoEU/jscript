@@ -4,10 +4,12 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import me.topchetoeu.jscript.common.Location;
 import me.topchetoeu.jscript.runtime.Context;
@@ -30,6 +32,7 @@ public class NativeWrapperProvider implements Copyable {
     private final HashMap<Class<?>, ObjectValue> namespaces = new HashMap<>();
     private final HashMap<Class<?>, Class<?>> classToProxy = new HashMap<>();
     private final HashMap<Class<?>, Class<?>> proxyToClass = new HashMap<>();
+    private final HashMap<Class<?>, Class<?>> interfaceToProxy = new HashMap<>();
     private final HashSet<Class<?>> ignore = new HashSet<>();
 
     private static Object call(Context ctx, String name, Method method, Object thisArg, Object... args) {
@@ -83,10 +86,16 @@ public class NativeWrapperProvider implements Copyable {
             String.join(", ", Arrays.stream(actual).map(v -> v.getName()).collect(Collectors.toList()))
         ));
     }
-    private static String getName(Class<?> clazz) {
-        var classNat = clazz.getAnnotation(WrapperName.class);
-        if (classNat != null && !classNat.value().trim().equals("")) return classNat.value().trim();
-        else return clazz.getSimpleName();
+    private static String getName(Class<?> ...classes) {
+        String last = null;
+
+        for (var clazz : classes) {
+            var classNat = clazz.getAnnotation(WrapperName.class);
+            if (classNat != null && !classNat.value().trim().equals("")) return classNat.value().trim();
+            else if (last != null) last = clazz.getSimpleName();
+        }
+
+        return last;
     }
 
     private static void checkUnderscore(Member member) {
@@ -120,13 +129,13 @@ public class NativeWrapperProvider implements Copyable {
 
         for (var method : clazz.getDeclaredMethods()) {
             for (var annotation : method.getAnnotationsByType(Expose.class)) {
+                any = true;
                 if (!annotation.target().shouldApply(target)) continue;
 
                 checkUnderscore(method);
                 var name = getName(method, annotation.value());
                 var key = getKey(name);
                 var repeat = false;
-                any = true;
 
                 switch (annotation.type()) {
                     case METHOD:
@@ -162,13 +171,13 @@ public class NativeWrapperProvider implements Copyable {
                 ));
             }
             for (var annotation : method.getAnnotationsByType(ExposeField.class)) {
+                any = true;
                 if (!annotation.target().shouldApply(target)) continue;
 
                 checkUnderscore(method);
                 var name = getName(method, annotation.value());
                 var key = getKey(name);
                 var repeat = false;
-                any = true;
 
                 if (props.contains(key) || nonProps.contains(key)) repeat = true;
                 else {
@@ -191,13 +200,13 @@ public class NativeWrapperProvider implements Copyable {
         }
         for (var field : clazz.getDeclaredFields()) {
             for (var annotation : field.getAnnotationsByType(ExposeField.class)) {
+                any = true;
                 if (!annotation.target().shouldApply(target)) continue;
 
                 checkUnderscore(field);
                 var name = getName(field, annotation.value());
                 var key = getKey(name);
                 var repeat = false;
-                any = true;
 
                 if (props.contains(key) || nonProps.contains(key)) repeat = true;
                 else {
@@ -237,12 +246,23 @@ public class NativeWrapperProvider implements Copyable {
 
         return any;
     }
+    private static boolean apply(ObjectValue obj, ExposeTarget target, Class<?> ...appliers) {
+        var res = false;
 
-    private static Method getConstructor(Class<?> clazz) {
-        for (var method : clazz.getDeclaredMethods()) {
-            if (!method.isAnnotationPresent(ExposeConstructor.class)) continue;
-            checkSignature(method, true, Arguments.class);
-            return method;
+        for (var i = appliers.length - 1; i >= 0; i--) {
+            res |= apply(obj, target, appliers[i]);
+        }
+
+        return res;
+    }
+
+    private static Method getConstructor(Class<?> ...appliers) {
+        for (var clazz : appliers) {
+            for (var method : clazz.getDeclaredMethods()) {
+                if (!method.isAnnotationPresent(ExposeConstructor.class)) continue;
+                checkSignature(method, true, Arguments.class);
+                return method;
+            }
         }
 
         return null;
@@ -254,10 +274,10 @@ public class NativeWrapperProvider implements Copyable {
      * All accessors and methods will expect the this argument to be a native wrapper of the given class type.
      * @param clazz The class for which a prototype should be generated
      */
-    public static ObjectValue makeProto(Class<?> clazz) {
+    public static ObjectValue makeProto(Class<?> ...appliers) {
         var res = new ObjectValue();
-        res.defineProperty(null, Symbol.get("Symbol.typeName"), getName(clazz));
-        if (!apply(res, ExposeTarget.PROTOTYPE, clazz)) return null;
+        res.defineProperty(null, Symbol.get("Symbol.typeName"), getName(appliers));
+        if (!apply(res, ExposeTarget.PROTOTYPE, appliers)) return null;
         return res;
     }
     /**
@@ -266,14 +286,14 @@ public class NativeWrapperProvider implements Copyable {
      * When the function gets called, the underlying constructor will get called, unless the constructor is inaccessible.
      * @param clazz The class for which a constructor should be generated
      */
-    public static FunctionValue makeConstructor(Class<?> clazz) {
-        var constr = getConstructor(clazz);
+    public static FunctionValue makeConstructor(Class<?> ...appliers) {
+        var constr = getConstructor(appliers);
 
         FunctionValue res = constr == null ?
-            new NativeFunction(getName(clazz), args -> { throw EngineException.ofError("This constructor is not invokable."); }) :
-            create(getName(clazz), constr);
+            new NativeFunction(getName(appliers), args -> { throw EngineException.ofError("This constructor is not invokable."); }) :
+            create(getName(appliers), constr);
 
-        apply(res, ExposeTarget.CONSTRUCTOR, clazz);
+        if (constr == null && !apply(res, ExposeTarget.CONSTRUCTOR, appliers)) return null;
 
         return res;
     }
@@ -283,11 +303,25 @@ public class NativeWrapperProvider implements Copyable {
      * This method behaves almost like {@link NativeWrapperProvider#makeConstructor}, but will return an object instead.
      * @param clazz The class for which a constructor should be generated
      */
-    public static ObjectValue makeNamespace(Class<?> clazz) {
+    public static ObjectValue makeNamespace(Class<?> ...appliers) {
         var res = new ObjectValue();
-        res.defineProperty(null, Symbol.get("Symbol.typeName"), getName(clazz));
-        if (!apply(res, ExposeTarget.NAMESPACE, clazz)) return null;
+
+        if (!apply(res, ExposeTarget.NAMESPACE, appliers)) return null;
+
         return res;
+    }
+
+    private Class<?>[] getAppliers(Class<?> clazz) {
+        var res = new ArrayList<Class<?>>();
+
+        res.add(clazz);
+
+        if (classToProxy.containsKey(clazz)) res.add(classToProxy.get(clazz));
+        for (var intf : interfaceToProxy.keySet()) {
+            if (intf.isAssignableFrom(clazz)) res.add(interfaceToProxy.get(intf));
+        }
+
+        return res.toArray(Class<?>[]::new);
     }
 
     private void updateProtoChain(Class<?> clazz, ObjectValue proto, FunctionValue constr) {
@@ -326,8 +360,10 @@ public class NativeWrapperProvider implements Copyable {
             clazz.isSynthetic()
         ) return;
 
-        if (constr == null) constr = makeConstructor(clazz);
-        if (proto == null) proto = makeProto(clazz);
+        var appliers = getAppliers(clazz);
+
+        if (constr == null) constr = makeConstructor(appliers);
+        if (proto == null) proto = makeProto(appliers);
 
         if (constr == null || proto == null) return;
 
@@ -386,30 +422,29 @@ public class NativeWrapperProvider implements Copyable {
 
     public void set(Class<?> clazz, Class<?> wrapper) {
         if (clazz == null) return;
-        if (wrapper == null) wrapper = clazz;
-        if (classToProxy.get(clazz) == wrapper) return;
 
-        classToProxy.remove(wrapper);
-        proxyToClass.remove(clazz);
+        if (clazz.isInterface()) {
+            if (wrapper == null || wrapper == clazz) interfaceToProxy.remove(clazz);
+            else interfaceToProxy.put(clazz, wrapper);
+        }
+        else {
+            if (wrapper == null || wrapper == clazz) classToProxy.remove(clazz);
+            else classToProxy.put(clazz, wrapper);
+        }
 
-        classToProxy.put(clazz, wrapper);
-        proxyToClass.put(wrapper, clazz);
+        var classes = Stream.concat(
+            Stream.of(clazz),
+            prototypes.keySet().stream().filter(clazz::isAssignableFrom)
+        ).toArray(Class<?>[]::new);
 
-        ignore.remove(clazz);
+        for (var el : classes) {
+            prototypes.remove(el);
+            constructors.remove(el);
+            namespaces.remove(el);
+        }
 
-        var proto = makeProto(wrapper);
-        var constr = makeConstructor(wrapper);
-
-        prototypes.put(clazz, proto);
-        constructors.put(clazz, constr);
-
-        proto.defineProperty(null, "constructor", constr, true, false, false);
-        constr.defineProperty(null, "prototype", proto, true, false, false);
-
-        for (var el : prototypes.keySet()) {
-            if (clazz.isAssignableFrom(el)) {
-                updateProtoChain(el, getProto(el), getConstr(el));
-            }
+        for (var el : classes) {
+            initType(el, null, null);
         }
     }
 
