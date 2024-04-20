@@ -92,7 +92,7 @@ public class Context implements Extensions {
         return new Context(ext);
     }
     public static Extensions clean(Extensions ext) {
-        if (ext instanceof Context) return ((Context)ext).extensions;
+        if (ext instanceof Context) return clean(((Context)ext).extensions);
         else return ext;
     }
 }

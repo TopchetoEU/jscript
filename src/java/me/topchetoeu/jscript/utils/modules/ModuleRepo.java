@@ -6,6 +6,7 @@ import me.topchetoeu.jscript.common.Filename;
 import me.topchetoeu.jscript.runtime.Context;
 import me.topchetoeu.jscript.runtime.Extensions;
 import me.topchetoeu.jscript.runtime.Key;
+import me.topchetoeu.jscript.runtime.scope.GlobalScope;
 import me.topchetoeu.jscript.utils.filesystem.Filesystem;
 import me.topchetoeu.jscript.utils.filesystem.Mode;
 
@@ -25,8 +26,10 @@ public interface ModuleRepo {
 
             if (modules.containsKey(name)) return modules.get(name);
 
-            var env = ctx.extensions.child();
+            var env = Context.clean(ctx.extensions).child();
             env.add(CWD, fs.normalize(name, ".."));
+            var glob = env.get(GlobalScope.KEY);
+            env.add(GlobalScope.KEY, glob.child());
 
             var mod = new SourceModule(filename, src, env);
             modules.put(name, mod);

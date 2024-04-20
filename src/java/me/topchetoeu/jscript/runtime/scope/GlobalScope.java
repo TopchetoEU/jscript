@@ -20,7 +20,7 @@ public class GlobalScope {
         return Values.hasMember(ext, obj, name, false);
     }
 
-    public GlobalScope globalChild() {
+    public GlobalScope child() {
         var obj = new ObjectValue();
         Values.setPrototype(null, obj, this.obj);
         return new GlobalScope(obj);
