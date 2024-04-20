@@ -54,16 +54,12 @@ public class FilesystemException extends RuntimeException {
     @Override public String getMessage() {
         var parts = new ArrayList<String>(10);
 
-        path = String.join(" ", parts).trim();
-        if (path.isEmpty()) path = null;
-        parts.clear();
-
         parts.add(action == null ? "An action performed upon " : action.readable(reason.usePast));
 
         if (entry == EntryType.FILE) parts.add("file");
         if (entry == EntryType.FOLDER) parts.add("folder");
 
-        if (path != null) parts.add(path);
+        if (path != null && !path.isBlank()) parts.add(path.trim());
 
         parts.add(reason.readable);
 

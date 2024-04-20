@@ -29,7 +29,11 @@ import me.topchetoeu.jscript.utils.filesystem.Mode;
 import me.topchetoeu.jscript.utils.filesystem.PhysicalFilesystem;
 import me.topchetoeu.jscript.utils.filesystem.RootFilesystem;
 import me.topchetoeu.jscript.utils.filesystem.STDFilesystem;
+import me.topchetoeu.jscript.utils.interop.Arguments;
+import me.topchetoeu.jscript.utils.interop.Expose;
+import me.topchetoeu.jscript.utils.interop.ExposeType;
 import me.topchetoeu.jscript.utils.interop.NativeWrapperProvider;
+import me.topchetoeu.jscript.utils.interop.WrapperName;
 import me.topchetoeu.jscript.utils.modules.ModuleRepo;
 import me.topchetoeu.jscript.utils.permissions.PermissionsManager;
 import me.topchetoeu.jscript.utils.permissions.PermissionsProvider;
@@ -42,6 +46,37 @@ public class JScriptRepl {
 
     static int j = 0;
     static String[] args;
+
+    public static interface Interface {
+        void print();
+    }
+
+    public static class Test implements Interface {
+        public final int a = 10;
+        public final int b = 5;
+
+        @Override
+        public void print() {
+            System.out.println("test!");
+        }
+    }
+
+    @WrapperName("Interface")
+    public static class InterfaceLib {
+        @Expose
+        public static void __print(Arguments args) { args.self(Interface.class).print(); }
+    }
+
+    @WrapperName("Testificate")
+    public static class TestLib {
+        @Expose(type = ExposeType.GETTER)
+        public static int __a(Arguments args) { return args.self(Test.class).a; }
+        @Expose(type = ExposeType.GETTER)
+        public static int __b(Arguments args) { return args.self(Test.class).b; }
+
+        @Expose
+        public static void __print(Arguments args) { System.out.println("NO!"); }
+    }
 
     private static void reader() {
         try {
@@ -92,6 +127,9 @@ public class JScriptRepl {
         var wp = NativeWrapperProvider.get(environment);
         var glob = GlobalScope.get(environment);
 
+        wp.set(Interface.class, InterfaceLib.class);
+        wp.set(Test.class, TestLib.class);
+
         glob.define(null, false, new NativeFunction("exit", args -> {
             throw new InterruptException();
         }));
@@ -112,6 +150,12 @@ public class JScriptRepl {
 
             return null;
         }));
+
+        var test = new Test();
+
+        glob.define(environment, "test1", false, test);
+        glob.define(environment, "test2", false, test);
+        glob.define(environment, false, wp.getConstr(TestLib.class));
 
         var fs = new RootFilesystem(PermissionsProvider.get(environment));
         fs.protocols.put("temp", new MemoryFilesystem(Mode.READ_WRITE));

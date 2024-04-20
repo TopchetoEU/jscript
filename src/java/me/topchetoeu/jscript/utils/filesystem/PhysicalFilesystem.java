@@ -1,5 +1,6 @@
 package me.topchetoeu.jscript.utils.filesystem;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
@@ -35,7 +36,8 @@ public class PhysicalFilesystem implements Filesystem {
                 ));
                 else return handles.put(new PhysicalFile(path, perms));
             }
-            catch (IOException e) { throw new FilesystemException(ErrorReason.DOESNT_EXIST); }
+            catch (FileNotFoundException e) { throw new FilesystemException(ErrorReason.DOESNT_EXIST); }
+            catch (IOException e) { throw new FilesystemException(ErrorReason.NO_PERMISSION); }
         }
         catch (FilesystemException e) { throw e.setAction(ActionType.OPEN).setPath(_path); }
     }
@@ -68,12 +70,7 @@ public class PhysicalFilesystem implements Filesystem {
 
         if (!Files.exists(path)) return new FileStat(Mode.NONE, EntryType.NONE);
 
-        var perms = Mode.NONE;
-
-        if (Files.isReadable(path)) {
-            if (Files.isWritable(path)) perms = Mode.READ_WRITE;
-            else perms = Mode.READ;
-        }
+        var perms = Mode.of(Files.isReadable(path), Files.isWritable(path));
 
         if (perms == Mode.NONE) return new FileStat(Mode.NONE, EntryType.NONE);
 

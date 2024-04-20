@@ -51,7 +51,7 @@ public class FilesystemLib {
 
             try {
                 if (fs.stat(path).type != EntryType.FILE) {
-                    throw new FilesystemException(ErrorReason.DOESNT_EXIST, "Not a file").setAction(ActionType.OPEN);
+                    throw new FilesystemException(ErrorReason.DOESNT_EXIST, "Not a file").setAction(ActionType.OPEN).setPath(path);
                 }
 
                 return new FileLib(fs.open(path, _mode));

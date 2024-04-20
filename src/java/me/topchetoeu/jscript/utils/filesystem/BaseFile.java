@@ -32,7 +32,7 @@ public abstract class BaseFile<T> implements File {
     @Override public synchronized long seek(long offset, int pos) {
         try {
             if (handle == null) throw new FilesystemException(ErrorReason.CLOSED);
-            if (!mode.writable) throw new FilesystemException(ErrorReason.NO_PERMISSION, "File not open for seeking.");
+            if (mode == Mode.NONE) throw new FilesystemException(ErrorReason.NO_PERMISSION, "File not open for seeking.");
             return onSeek(offset, pos);
         }
         catch (FilesystemException e) { throw e.setAction(ActionType.SEEK); }
