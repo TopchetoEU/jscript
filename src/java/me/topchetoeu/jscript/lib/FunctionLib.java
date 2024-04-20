@@ -1,16 +1,24 @@
 package me.topchetoeu.jscript.lib;
 
+import me.topchetoeu.jscript.common.Filename;
+import me.topchetoeu.jscript.runtime.Compiler;
+import me.topchetoeu.jscript.runtime.Context;
+import me.topchetoeu.jscript.runtime.scope.ValueVariable;
 import me.topchetoeu.jscript.runtime.values.ArrayValue;
 import me.topchetoeu.jscript.runtime.values.CodeFunction;
 import me.topchetoeu.jscript.runtime.values.FunctionValue;
 import me.topchetoeu.jscript.runtime.values.NativeFunction;
+import me.topchetoeu.jscript.runtime.values.Values;
 import me.topchetoeu.jscript.utils.interop.Arguments;
 import me.topchetoeu.jscript.utils.interop.Expose;
+import me.topchetoeu.jscript.utils.interop.ExposeConstructor;
 import me.topchetoeu.jscript.utils.interop.ExposeTarget;
 import me.topchetoeu.jscript.utils.interop.WrapperName;
 
 @WrapperName("Function")
 public class FunctionLib {
+    private static int i;
+
     @Expose public static Object __apply(Arguments args) {
         return args.self(FunctionValue.class).call(args.ctx, args.get(0), args.convert(1, ArrayValue.class).toArray());
     }
@@ -50,5 +58,26 @@ public class FunctionLib {
     @Expose(target = ExposeTarget.STATIC)
     public static FunctionValue __generator(Arguments args) {
         return new GeneratorFunctionLib(args.convert(0, CodeFunction.class));
+    }
+
+    @ExposeConstructor
+    public static Object __constructor(Arguments args) {
+        var compiler = Compiler.get(args);
+
+        var parts = args.convert(String.class);
+        if (parts.length == 0) parts = new String[] { "" };
+
+        var src = "return function(";
+
+        for (var i = 0; i < parts.length - 1; i++) {
+            if (i != 0) src += ",";
+            src += parts[i];
+        }
+
+        src += "){" + parts[parts.length - 1] + "}";
+
+        var body = compiler.compile(new Filename("jscript", "func/" + i++), src);
+        var func = new CodeFunction(Context.clean(args.ctx), "", body, new ValueVariable[0]);
+        return Values.call(args, func, null);
     }
 }
