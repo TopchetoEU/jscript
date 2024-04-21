@@ -7,7 +7,28 @@ import me.topchetoeu.jscript.runtime.Key;
 import me.topchetoeu.jscript.utils.interop.NativeWrapperProvider;
 
 public class NativeWrapper extends ObjectValue {
-    private static final Key<WeakHashMap<Object, NativeWrapper>> WRAPPERS = new Key<>();
+    private static class MapKey {
+        public final Object key;
+
+        @Override
+        public int hashCode() {
+            return System.identityHashCode(key);
+        }
+        @Override
+        public boolean equals(Object obj) {
+            if (this == null || obj == null) return this == null && obj == null;
+            if (!(obj instanceof MapKey)) return false;
+            var other = (MapKey)obj;
+
+            return other.key == key;
+        }
+
+        public MapKey(Object key) {
+            this.key = key;
+        }
+    }
+
+    private static final Key<WeakHashMap<MapKey, NativeWrapper>> WRAPPERS = new Key<>();
     private static final Object NATIVE_PROTO = new Object();
     public final Object wrapped;
 
@@ -48,10 +69,12 @@ public class NativeWrapper extends ObjectValue {
             exts.add(WRAPPERS, wrappers);
         }
 
-        if (wrappers.containsKey(wrapped)) return wrappers.get(wrapped);
+        var key = new MapKey(wrapped);
+
+        if (wrappers.containsKey(key)) return wrappers.get(key);
 
         var res = new NativeWrapper(wrapped);
-        wrappers.put(wrapped, res);
+        wrappers.put(key, res);
 
         return res;
     }
