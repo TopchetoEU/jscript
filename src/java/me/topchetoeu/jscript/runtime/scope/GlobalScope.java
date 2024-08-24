@@ -3,8 +3,8 @@ package me.topchetoeu.jscript.runtime.scope;
 import java.util.HashSet;
 import java.util.Set;
 
-import me.topchetoeu.jscript.runtime.Extensions;
-import me.topchetoeu.jscript.runtime.Key;
+import me.topchetoeu.jscript.runtime.environment.Environment;
+import me.topchetoeu.jscript.runtime.environment.Key;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
 import me.topchetoeu.jscript.runtime.values.FunctionValue;
 import me.topchetoeu.jscript.runtime.values.NativeFunction;
@@ -16,7 +16,7 @@ public class GlobalScope {
 
     public final ObjectValue obj;
 
-    public boolean has(Extensions ext, String name) {
+    public boolean has(Environment ext, String name) {
         return Values.hasMember(ext, obj, name, false);
     }
 
@@ -26,33 +26,33 @@ public class GlobalScope {
         return new GlobalScope(obj);
     }
 
-    public Object define(Extensions ext, String name) {
+    public Object define(Environment ext, String name) {
         if (Values.hasMember(ext, obj, name, false)) return name;
         obj.defineProperty(ext, name, null);
         return name;
     }
-    public void define(Extensions ext, String name, Variable val) {
+    public void define(Environment ext, String name, Variable val) {
         obj.defineProperty(ext, name,
-            new NativeFunction("get " + name, args -> val.get(args.ctx)),
-            new NativeFunction("set " + name, args -> { val.set(args.ctx, args.get(0)); return null; }),
+            new NativeFunction("get " + name, args -> val.get(args.env)),
+            new NativeFunction("set " + name, args -> { val.set(args.env, args.get(0)); return null; }),
             true, true
         );
     }
-    public void define(Extensions ext, String name, boolean readonly, Object val) {
+    public void define(Environment ext, String name, boolean readonly, Object val) {
         obj.defineProperty(ext, name, val, readonly, true, true);
     }
-    public void define(Extensions ext, String ...names) {
+    public void define(Environment ext, String ...names) {
         for (var n : names) define(ext, n);
     }
-    public void define(Extensions ext, boolean readonly, FunctionValue val) {
+    public void define(Environment ext, boolean readonly, FunctionValue val) {
         define(ext, val.name, readonly, val);
     }
 
-    public Object get(Extensions ext, String name) {
+    public Object get(Environment ext, String name) {
         if (!Values.hasMember(ext, obj, name, false)) throw EngineException.ofSyntax("The variable '" + name + "' doesn't exist.");
         else return Values.getMember(ext, obj, name);
     }
-    public void set(Extensions ext, String name, Object val) {
+    public void set(Environment ext, String name, Object val) {
         if (!Values.hasMember(ext, obj, name, false)) throw EngineException.ofSyntax("The variable '" + name + "' doesn't exist.");
         if (!Values.setMember(ext, obj, name, val)) throw EngineException.ofSyntax("The global '" + name + "' is readonly.");
     }
@@ -74,7 +74,7 @@ public class GlobalScope {
         this.obj = val;
     }
 
-    public static GlobalScope get(Extensions ext) {
+    public static GlobalScope get(Environment ext) {
         if (ext.has(KEY)) return ext.get(KEY);
         else return new GlobalScope();
     }

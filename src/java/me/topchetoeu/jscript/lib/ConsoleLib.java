@@ -24,7 +24,7 @@ public class ConsoleLib {
         for (var el : args.args) {
             if (!first) res.append(" ");
             first = false;
-            res.append(Values.toReadable(args.ctx, el).getBytes());
+            res.append(Values.toReadable(args.env, el).getBytes());
         }
 
         for (var line : res.toString().split("\n", -1)) {

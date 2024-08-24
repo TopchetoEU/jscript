@@ -1,5 +1,6 @@
 package me.topchetoeu.jscript.runtime;
 
+import me.topchetoeu.jscript.runtime.environment.Environment;
 import me.topchetoeu.jscript.runtime.values.FunctionValue;
 import me.topchetoeu.jscript.runtime.values.ObjectValue;
 

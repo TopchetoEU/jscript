@@ -17,8 +17,8 @@ public class ObjectLib {
     @Expose(target = ExposeTarget.STATIC)
     public static Object __assign(Arguments args) {
         for (var obj : args.slice(1).args) {
-            for (var key : Values.getMembers(args.ctx, obj, true, true)) {
-                Values.setMember(args.ctx, args.get(0), key, Values.getMember(args.ctx, obj, key));
+            for (var key : Values.getMembers(args.env, obj, true, true)) {
+                Values.setMember(args.env, args.get(0), key, Values.getMember(args.env, obj, key));
             }
         }
         return args.get(0);
@@ -26,14 +26,14 @@ public class ObjectLib {
     @Expose(target = ExposeTarget.STATIC)
     public static ObjectValue __create(Arguments args) {
         var obj = new ObjectValue();
-        Values.setPrototype(args.ctx, obj, args.get(0));
+        Values.setPrototype(args.env, obj, args.get(0));
 
         if (args.n() >= 1) {
             var newArgs = new Object[args.n()];
             System.arraycopy(args.args, 1, args, 1, args.n() - 1);
             newArgs[0] = obj;
 
-            __defineProperties(new Arguments(args.ctx, null, newArgs));
+            __defineProperties(new Arguments(args.env, null, newArgs));
         }
 
         return obj;
@@ -45,31 +45,31 @@ public class ObjectLib {
         var key = args.get(1);
         var attrib = args.convert(2, ObjectValue.class);
 
-        var hasVal = Values.hasMember(args.ctx, attrib, "value", false);
-        var hasGet = Values.hasMember(args.ctx, attrib, "get", false);
-        var hasSet = Values.hasMember(args.ctx, attrib, "set", false);
+        var hasVal = Values.hasMember(args.env, attrib, "value", false);
+        var hasGet = Values.hasMember(args.env, attrib, "get", false);
+        var hasSet = Values.hasMember(args.env, attrib, "set", false);
 
         if (hasVal) {
             if (hasGet || hasSet) throw EngineException.ofType("Cannot specify a value and accessors for a property.");
             if (!obj.defineProperty(
-                args.ctx, key,
-                Values.getMember(args.ctx, attrib, "value"),
-                Values.toBoolean(Values.getMember(args.ctx, attrib, "writable")),
-                Values.toBoolean(Values.getMember(args.ctx, attrib, "configurable")),
-                Values.toBoolean(Values.getMember(args.ctx, attrib, "enumerable"))
+                args.env, key,
+                Values.getMember(args.env, attrib, "value"),
+                Values.toBoolean(Values.getMember(args.env, attrib, "writable")),
+                Values.toBoolean(Values.getMember(args.env, attrib, "configurable")),
+                Values.toBoolean(Values.getMember(args.env, attrib, "enumerable"))
             )) throw EngineException.ofType("Can't define property '" + key + "'.");
         }
         else {
-            var get = Values.getMember(args.ctx, attrib, "get");
-            var set = Values.getMember(args.ctx, attrib, "set");
+            var get = Values.getMember(args.env, attrib, "get");
+            var set = Values.getMember(args.env, attrib, "set");
             if (get != null && !(get instanceof FunctionValue)) throw EngineException.ofType("Get accessor must be a function.");
             if (set != null && !(set instanceof FunctionValue)) throw EngineException.ofType("Set accessor must be a function.");
 
             if (!obj.defineProperty(
-                args.ctx, key,
+                args.env, key,
                 (FunctionValue)get, (FunctionValue)set,
-                Values.toBoolean(Values.getMember(args.ctx, attrib, "configurable")),
-                Values.toBoolean(Values.getMember(args.ctx, attrib, "enumerable"))
+                Values.toBoolean(Values.getMember(args.env, attrib, "configurable")),
+                Values.toBoolean(Values.getMember(args.env, attrib, "enumerable"))
             )) throw EngineException.ofType("Can't define property '" + key + "'.");
         }
 
@@ -81,7 +81,7 @@ public class ObjectLib {
         var attrib = args.get(1);
 
         for (var key : Values.getMembers(null, attrib, false, false)) {
-            __defineProperty(new Arguments(args.ctx, null, obj, key, Values.getMember(args.ctx, attrib, key)));
+            __defineProperty(new Arguments(args.env, null, obj, key, Values.getMember(args.env, attrib, key)));
         }
 
         return obj;
@@ -93,8 +93,8 @@ public class ObjectLib {
         var all = args.getBoolean(1);
         var res = new ArrayValue();
 
-        for (var key : Values.getMembers(args.ctx, obj, true, false)) {
-            if (all || !(key instanceof Symbol)) res.set(args.ctx, res.size(), key);
+        for (var key : Values.getMembers(args.env, obj, true, false)) {
+            if (all || !(key instanceof Symbol)) res.set(args.env, res.size(), key);
         }
 
         return res;
@@ -105,8 +105,8 @@ public class ObjectLib {
         var obj = args.get(0);
         var all = args.getBoolean(1);
 
-        for (var key : Values.getMembers(args.ctx, obj, true, false)) {
-            if (all || !(key instanceof Symbol)) res.set(args.ctx, res.size(), new ArrayValue(args.ctx, key, Values.getMember(args.ctx, obj, key)));
+        for (var key : Values.getMembers(args.env, obj, true, false)) {
+            if (all || !(key instanceof Symbol)) res.set(args.env, res.size(), new ArrayValue(args.env, key, Values.getMember(args.env, obj, key)));
         }
 
         return res;
@@ -117,8 +117,8 @@ public class ObjectLib {
         var obj = args.get(0);
         var all = args.getBoolean(1);
 
-        for (var key : Values.getMembers(args.ctx, obj, true, false)) {
-            if (all || !(key instanceof Symbol)) res.set(args.ctx, res.size(), Values.getMember(args.ctx, obj, key));
+        for (var key : Values.getMembers(args.env, obj, true, false)) {
+            if (all || !(key instanceof Symbol)) res.set(args.env, res.size(), Values.getMember(args.env, obj, key));
         }
 
         return res;
@@ -126,14 +126,14 @@ public class ObjectLib {
  
     @Expose(target = ExposeTarget.STATIC)
     public static ObjectValue __getOwnPropertyDescriptor(Arguments args) {
-        return Values.getMemberDescriptor(args.ctx, args.get(0), args.get(1));
+        return Values.getMemberDescriptor(args.env, args.get(0), args.get(1));
     }
     @Expose(target = ExposeTarget.STATIC)
     public static ObjectValue __getOwnPropertyDescriptors(Arguments args) {
         var res = new ObjectValue();
         var obj = args.get(0);
-        for (var key : Values.getMembers(args.ctx, obj, true, true)) {
-            res.defineProperty(args.ctx, key, Values.getMemberDescriptor(args.ctx, obj, key));
+        for (var key : Values.getMembers(args.env, obj, true, true)) {
+            res.defineProperty(args.env, key, Values.getMemberDescriptor(args.env, obj, key));
         }
         return res;
     }
@@ -144,8 +144,8 @@ public class ObjectLib {
         var obj = args.get(0);
         var all = args.getBoolean(1);
 
-        for (var key : Values.getMembers(args.ctx, obj, true, true)) {
-            if (all || !(key instanceof Symbol)) res.set(args.ctx, res.size(), key);
+        for (var key : Values.getMembers(args.env, obj, true, true)) {
+            if (all || !(key instanceof Symbol)) res.set(args.env, res.size(), key);
         }
 
         return res;
@@ -155,24 +155,24 @@ public class ObjectLib {
         var obj = args.get(0);
         var res = new ArrayValue();
 
-        for (var key : Values.getMembers(args.ctx, obj, true, true)) {
-            if (key instanceof Symbol) res.set(args.ctx, res.size(), key);
+        for (var key : Values.getMembers(args.env, obj, true, true)) {
+            if (key instanceof Symbol) res.set(args.env, res.size(), key);
         }
 
         return res;
     }
     @Expose(target = ExposeTarget.STATIC)
     public static boolean __hasOwn(Arguments args) {
-        return Values.hasMember(args.ctx, args.get(0), args.get(1), true);
+        return Values.hasMember(args.env, args.get(0), args.get(1), true);
     }
 
     @Expose(target = ExposeTarget.STATIC)
     public static ObjectValue __getPrototypeOf(Arguments args) {
-        return Values.getPrototype(args.ctx, args.get(0));
+        return Values.getPrototype(args.env, args.get(0));
     }
     @Expose(target = ExposeTarget.STATIC)
     public static Object __setPrototypeOf(Arguments args) {
-        Values.setPrototype(args.ctx, args.get(0), args.get(1));
+        Values.setPrototype(args.env, args.get(0), args.get(1));
         return args.get(0);
     }
 
@@ -180,9 +180,9 @@ public class ObjectLib {
     public static ObjectValue __fromEntries(Arguments args) {
         var res = new ObjectValue();
 
-        for (var el : Values.fromJSIterator(args.ctx, args.get(0))) {
+        for (var el : Values.fromJSIterator(args.env, args.get(0))) {
             if (el instanceof ArrayValue) {
-                res.defineProperty(args.ctx, ((ArrayValue)el).get(0), ((ArrayValue)el).get(1));
+                res.defineProperty(args.env, ((ArrayValue)el).get(0), ((ArrayValue)el).get(1));
             }
         }
 
@@ -249,15 +249,15 @@ public class ObjectLib {
     }
     @Expose
     public static String __toString(Arguments args) {
-        var name = Values.getMember(args.ctx, args.self, Symbol.get("Symbol.typeName"));
+        var name = Values.getMember(args.env, args.self, Symbol.get("Symbol.typeName"));
         if (name == null) name = "Unknown";
-        else name = Values.toString(args.ctx, name);
+        else name = Values.toString(args.env, name);
 
         return "[object " + name + "]";
     }
     @Expose
     public static boolean __hasOwnProperty(Arguments args) {
-        return Values.hasMember(args.ctx, args.self, args.get(0), true);
+        return Values.hasMember(args.env, args.self, args.get(0), true);
     }
 
     @ExposeConstructor

@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.Stack;
 
-import me.topchetoeu.jscript.runtime.Context;
+import me.topchetoeu.jscript.runtime.environment.Environment;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
 import me.topchetoeu.jscript.runtime.values.ObjectValue;
 import me.topchetoeu.jscript.runtime.values.Values;
@@ -31,21 +31,21 @@ public class FilesystemLib {
     @ExposeField(target = ExposeTarget.STATIC)
     public static final int __SEEK_END = 2;
 
-    private static Filesystem fs(Context ctx) {
-        var fs = Filesystem.get(ctx);
+    private static Filesystem fs(Environment env) {
+        var fs = Filesystem.get(env);
         if (fs != null) return fs;
         throw EngineException.ofError("Current environment doesn't have a file system.");
     }
 
     @Expose(target = ExposeTarget.STATIC)
     public static String __normalize(Arguments args) {
-        return fs(args.ctx).normalize(args.convert(String.class));
+        return fs(args.env).normalize(args.convert(String.class));
     }
 
     @Expose(target = ExposeTarget.STATIC)
     public static PromiseLib __open(Arguments args) {
-        return PromiseLib.await(args.ctx, () -> {
-            var fs = fs(args.ctx);
+        return PromiseLib.await(args.env, () -> {
+            var fs = fs(args.env);
             var path = fs.normalize(args.getString(0));
             var _mode = Mode.parse(args.getString(1));
 
@@ -62,7 +62,7 @@ public class FilesystemLib {
     @Expose(target = ExposeTarget.STATIC)
     public static ObjectValue __ls(Arguments args) {
 
-        return Values.toJSAsyncIterator(args.ctx, new Iterator<>() {
+        return Values.toJSAsyncIterator(args.env, new Iterator<>() {
             private boolean failed, done;
             private File file;
             private String nextLine;
@@ -71,7 +71,7 @@ public class FilesystemLib {
                 if (done) return;
                 if (!failed) {
                     if (file == null) {
-                        var fs = fs(args.ctx);
+                        var fs = fs(args.env);
                         var path = fs.normalize(args.getString(0));
 
                         if (fs.stat(path).type != EntryType.FOLDER) {
@@ -117,9 +117,9 @@ public class FilesystemLib {
     }
     @Expose(target = ExposeTarget.STATIC)
     public static PromiseLib __mkdir(Arguments args) throws IOException {
-        return PromiseLib.await(args.ctx, () -> {
+        return PromiseLib.await(args.env, () -> {
             try {
-                fs(args.ctx).create(args.getString(0), EntryType.FOLDER);
+                fs(args.env).create(args.getString(0), EntryType.FOLDER);
                 return null;
             }
             catch (FilesystemException e) { throw e.toEngineException(); }
@@ -128,9 +128,9 @@ public class FilesystemLib {
     }
     @Expose(target = ExposeTarget.STATIC)
     public static PromiseLib __mkfile(Arguments args) throws IOException {
-        return PromiseLib.await(args.ctx, () -> {
+        return PromiseLib.await(args.env, () -> {
             try {
-                fs(args.ctx).create(args.getString(0), EntryType.FILE);
+                fs(args.env).create(args.getString(0), EntryType.FILE);
                 return null;
             }
             catch (FilesystemException e) { throw e.toEngineException(); }
@@ -138,9 +138,9 @@ public class FilesystemLib {
     }
     @Expose(target = ExposeTarget.STATIC)
     public static PromiseLib __rm(Arguments args) throws IOException {
-        return PromiseLib.await(args.ctx, () -> {
+        return PromiseLib.await(args.env, () -> {
             try {
-                var fs = fs(args.ctx);
+                var fs = fs(args.env);
                 var path = fs.normalize(args.getString(0));
                 var recursive = args.getBoolean(1);
 
@@ -169,15 +169,15 @@ public class FilesystemLib {
     }
     @Expose(target = ExposeTarget.STATIC)
     public static PromiseLib __stat(Arguments args) throws IOException {
-        return PromiseLib.await(args.ctx, () -> {
+        return PromiseLib.await(args.env, () -> {
             try {
-                var fs = fs(args.ctx);
+                var fs = fs(args.env);
                 var path = fs.normalize(args.getString(0));
                 var stat = fs.stat(path);
                 var res = new ObjectValue();
 
-                res.defineProperty(args.ctx, "type", stat.type.name);
-                res.defineProperty(args.ctx, "mode", stat.mode.name);
+                res.defineProperty(args.env, "type", stat.type.name);
+                res.defineProperty(args.env, "mode", stat.mode.name);
                 return res;
             }
             catch (FilesystemException e) { throw e.toEngineException(); }
@@ -185,8 +185,8 @@ public class FilesystemLib {
     }
     @Expose(target = ExposeTarget.STATIC)
     public static PromiseLib __exists(Arguments args) throws IOException {
-        return PromiseLib.await(args.ctx, () -> {
-            try { fs(args.ctx).stat(args.getString(0)); return true; }
+        return PromiseLib.await(args.env, () -> {
+            try { fs(args.env).stat(args.getString(0)); return true; }
             catch (FilesystemException e) { return false; }
         });
     }

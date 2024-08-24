@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.stream.Collectors;
 
-import me.topchetoeu.jscript.runtime.Context;
+import me.topchetoeu.jscript.runtime.environment.Environment;
 import me.topchetoeu.jscript.runtime.values.ArrayValue;
 import me.topchetoeu.jscript.runtime.values.ObjectValue;
 import me.topchetoeu.jscript.runtime.values.Values;
@@ -36,18 +36,18 @@ public class MapLib {
     }
 
     @Expose public ObjectValue __entries(Arguments args) {
-        return Values.toJSIterator(args.ctx, map
+        return Values.toJSIterator(args.env, map
             .entrySet()
             .stream()
-            .map(v -> new ArrayValue(args.ctx, v.getKey(), v.getValue()))
+            .map(v -> new ArrayValue(args.env, v.getKey(), v.getValue()))
             .collect(Collectors.toList())
         );
     }
     @Expose public ObjectValue __keys(Arguments args) {
-        return Values.toJSIterator(args.ctx, map.keySet());
+        return Values.toJSIterator(args.env, map.keySet());
     }
     @Expose public ObjectValue __values(Arguments args) {
-        return Values.toJSIterator(args.ctx, map.values());
+        return Values.toJSIterator(args.env, map.values());
     }
 
     @Expose public Object __get(Arguments args) {
@@ -69,19 +69,19 @@ public class MapLib {
     @Expose public void __forEach(Arguments args) {
         var keys = new ArrayList<>(map.keySet());
 
-        for (var el : keys) Values.call(args.ctx, args.get(0), args.get(1), map.get(el), el, args.self);
+        for (var el : keys) Values.call(args.env, args.get(0), args.get(1), map.get(el), el, args.self);
     }
 
-    public MapLib(Context ctx, Object iterable) {
-        for (var el : Values.fromJSIterator(ctx, iterable)) {
+    public MapLib(Environment env, Object iterable) {
+        for (var el : Values.fromJSIterator(env, iterable)) {
             try {
-                map.put(Values.getMember(ctx, el, 0), Values.getMember(ctx, el, 1));
+                map.put(Values.getMember(env, el, 0), Values.getMember(env, el, 1));
             }
             catch (IllegalArgumentException e) { }
         }
     }
 
     @ExposeConstructor public static MapLib __constructor(Arguments args) {
-        return new MapLib(args.ctx, args.get(0));
+        return new MapLib(args.env, args.get(0));
     }
 }

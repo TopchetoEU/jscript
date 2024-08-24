@@ -12,10 +12,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import me.topchetoeu.jscript.common.Location;
-import me.topchetoeu.jscript.runtime.Context;
-import me.topchetoeu.jscript.runtime.Copyable;
-import me.topchetoeu.jscript.runtime.Extensions;
-import me.topchetoeu.jscript.runtime.Key;
+import me.topchetoeu.jscript.runtime.environment.Environment;
+import me.topchetoeu.jscript.runtime.environment.Key;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
 import me.topchetoeu.jscript.runtime.exceptions.InterruptException;
 import me.topchetoeu.jscript.runtime.values.FunctionValue;
@@ -24,7 +22,7 @@ import me.topchetoeu.jscript.runtime.values.ObjectValue;
 import me.topchetoeu.jscript.runtime.values.Symbol;
 import me.topchetoeu.jscript.runtime.values.Values;
 
-public class NativeWrapperProvider implements Copyable {
+public class NativeWrapperProvider {
     public static final Key<NativeWrapperProvider> KEY = new Key<>();
 
     private final HashMap<Class<?>, FunctionValue> constructors = new HashMap<>();
@@ -35,7 +33,7 @@ public class NativeWrapperProvider implements Copyable {
     private final HashMap<Class<?>, Class<?>> interfaceToProxy = new HashMap<>();
     private final HashSet<Class<?>> ignore = new HashSet<>();
 
-    private static Object call(Context ctx, String name, Method method, Object thisArg, Object... args) {
+    private static Object call(Environment ctx, String name, Method method, Object thisArg, Object... args) {
         try {
             var realArgs = new Object[method.getParameterCount()];
             System.arraycopy(args, 0, realArgs, 0, realArgs.length);
@@ -60,7 +58,7 @@ public class NativeWrapperProvider implements Copyable {
         }
     }
     private static FunctionValue create(String name, Method method) {
-        return new NativeFunction(name, args -> call(args.ctx, name, method, args.self, args));
+        return new NativeFunction(name, args -> call(args.env, name, method, args.self, args));
     }
     private static void checkSignature(Method method, boolean forceStatic, Class<?> ...params) {
         if (forceStatic && !Modifier.isStatic(method.getModifiers())) throw new IllegalArgumentException(String.format(
@@ -335,8 +333,8 @@ public class NativeWrapperProvider implements Copyable {
             var parentConstr = getConstr(parent);
 
             if (parentProto != null && parentConstr != null) {
-                Values.setPrototype(Extensions.EMPTY, proto, parentProto);
-                Values.setPrototype(Extensions.EMPTY, constr, parentConstr);
+                Values.setPrototype(Environment.empty(), proto, parentProto);
+                Values.setPrototype(Environment.empty(), constr, parentConstr);
 
                 return;
             }
@@ -450,7 +448,7 @@ public class NativeWrapperProvider implements Copyable {
 
     public NativeWrapperProvider() { }
 
-    public static NativeWrapperProvider get(Extensions ext) {
+    public static NativeWrapperProvider get(Environment ext) {
         return ext.get(KEY);
     }
 }

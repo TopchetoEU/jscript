@@ -1,9 +1,8 @@
 package me.topchetoeu.jscript.lib;
 
 import me.topchetoeu.jscript.lib.PromiseLib.Handle;
-import me.topchetoeu.jscript.runtime.Context;
-import me.topchetoeu.jscript.runtime.Extensions;
 import me.topchetoeu.jscript.runtime.Frame;
+import me.topchetoeu.jscript.runtime.environment.Environment;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
 import me.topchetoeu.jscript.runtime.values.CodeFunction;
 import me.topchetoeu.jscript.runtime.values.FunctionValue;
@@ -22,40 +21,43 @@ public class AsyncFunctionLib extends FunctionValue {
 
         private boolean awaiting = false;
 
-        private void next(Context ctx, Object inducedValue, EngineException inducedError) {
+        private void next(Environment env, Object inducedValue, EngineException inducedError) {
             Object res = null;
 
             frame.onPush();
             awaiting = false;
             while (!awaiting) {
                 try {
-                    res = frame.next(inducedValue, Values.NO_RETURN, inducedError);
+                    if (inducedValue != Values.NO_RETURN) res = frame.next(inducedValue);
+                    else if (inducedError != null) res = frame.induceError(inducedError);
+                    else res = frame.next();
+
                     inducedValue = Values.NO_RETURN;
                     inducedError = null;
 
                     if (res != Values.NO_RETURN) {
-                        promise.fulfill(ctx, res);
+                        promise.fulfill(env, res);
                         break;
                     }
                 }
                 catch (EngineException e) {
-                    promise.reject(ctx, e);
+                    promise.reject(env, e);
                     break;
                 }
             }
             frame.onPop();
 
             if (awaiting) {
-                PromiseLib.handle(ctx, frame.pop(), new Handle() {
+                PromiseLib.handle(env, frame.pop(), new Handle() {
                     @Override
                     public void onFulfil(Object val) {
-                        next(ctx, val, null);
+                        next(env, val, null);
                     }
                     @Override
                     public void onReject(EngineException err) {
-                        next(ctx, Values.NO_RETURN, err);
+                        next(env, Values.NO_RETURN, err);
                     }
-                }.defer(ctx));
+                }.defer(env));
             }
         }
 
@@ -66,16 +68,15 @@ public class AsyncFunctionLib extends FunctionValue {
     }
 
     @Override
-    public Object call(Extensions ext, Object thisArg, Object ...args) {
+    public Object call(Environment env, Object thisArg, Object ...args) {
         var handler = new AsyncHelper();
-        var ctx = Context.of(ext);
 
         var newArgs = new Object[args.length + 1];
         newArgs[0] = new NativeFunction("await", handler::await);
         System.arraycopy(args, 0, newArgs, 1, args.length);
 
-        handler.frame = new Frame(ctx, thisArg, newArgs, (CodeFunction)func);
-        handler.next(ctx, Values.NO_RETURN, null);
+        handler.frame = new Frame(env, thisArg, newArgs, (CodeFunction)func);
+        handler.next(env, Values.NO_RETURN, null);
         return handler.promise;
     }
 

@@ -1,7 +1,7 @@
 package me.topchetoeu.jscript.utils.filesystem;
 
-import me.topchetoeu.jscript.runtime.Extensions;
-import me.topchetoeu.jscript.runtime.Key;
+import me.topchetoeu.jscript.runtime.environment.Environment;
+import me.topchetoeu.jscript.runtime.environment.Key;
 
 public interface Filesystem {
     public static final Key<Filesystem> KEY = new Key<>();
@@ -12,7 +12,7 @@ public interface Filesystem {
     FileStat stat(String path);
     void close();
 
-    public static Filesystem get(Extensions exts) {
+    public static Filesystem get(Environment exts) {
         return exts.get(KEY);
     }
 }

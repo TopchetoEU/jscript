@@ -6,7 +6,7 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 
-import me.topchetoeu.jscript.runtime.Extensions;
+import me.topchetoeu.jscript.runtime.environment.Environment;
 
 // TODO: Make methods generic
 public class ArrayValue extends ObjectValue implements Iterable<Object> {
@@ -41,7 +41,7 @@ public class ArrayValue extends ObjectValue implements Iterable<Object> {
         if (res == UNDEFINED) return null;
         else return res;
     }
-    public void set(Extensions ext, int i, Object val) {
+    public void set(Environment ext, int i, Object val) {
         if (i < 0) return;
 
         values = alloc(i);
@@ -99,7 +99,7 @@ public class ArrayValue extends ObjectValue implements Iterable<Object> {
         }
     }
 
-    public void copyFrom(Extensions ext, Object[] arr, int sourceStart, int destStart, int count) {
+    public void copyFrom(Environment ext, Object[] arr, int sourceStart, int destStart, int count) {
         for (var i = 0; i < count; i++) {
             set(ext, i + destStart, arr[i + sourceStart]);
         }
@@ -131,7 +131,7 @@ public class ArrayValue extends ObjectValue implements Iterable<Object> {
     }
 
     @Override
-    protected Object getField(Extensions ext, Object key) {
+    protected Object getField(Environment ext, Object key) {
         if (key instanceof Number) {
             var i = ((Number)key).doubleValue();
             if (i >= 0 && i - Math.floor(i) == 0) {
@@ -142,7 +142,7 @@ public class ArrayValue extends ObjectValue implements Iterable<Object> {
         return super.getField(ext, key);
     }
     @Override
-    protected boolean setField(Extensions ext, Object key, Object val) {
+    protected boolean setField(Environment ext, Object key, Object val) {
         if (key instanceof Number) {
             var i = Values.number(key);
             if (i >= 0 && i - Math.floor(i) == 0) {
@@ -154,7 +154,7 @@ public class ArrayValue extends ObjectValue implements Iterable<Object> {
         return super.setField(ext, key, val);
     }
     @Override
-    protected boolean hasField(Extensions ext, Object key) {
+    protected boolean hasField(Environment ext, Object key) {
         if (key instanceof Number) {
             var i = Values.number(key);
             if (i >= 0 && i - Math.floor(i) == 0) {
@@ -165,7 +165,7 @@ public class ArrayValue extends ObjectValue implements Iterable<Object> {
         return super.hasField(ext, key);
     }
     @Override
-    protected void deleteField(Extensions ext, Object key) {
+    protected void deleteField(Environment ext, Object key) {
         if (key instanceof Number) {
             var i = Values.number(key);
             if (i >= 0 && i - Math.floor(i) == 0) {
@@ -213,7 +213,7 @@ public class ArrayValue extends ObjectValue implements Iterable<Object> {
         values = new Object[cap];
         size = 0;
     }
-    public ArrayValue(Extensions ext, Object ...values) {
+    public ArrayValue(Environment ext, Object ...values) {
         this();
         this.values = new Object[values.length];
         size = values.length;
@@ -221,7 +221,7 @@ public class ArrayValue extends ObjectValue implements Iterable<Object> {
         for (var i = 0; i < size; i++) this.values[i] = Values.normalize(ext, values[i]);
     }
 
-    public static ArrayValue of(Extensions ext, Collection<?> values) {
+    public static ArrayValue of(Environment ext, Collection<?> values) {
         return new ArrayValue(ext, values.toArray(Object[]::new));
     }
 }

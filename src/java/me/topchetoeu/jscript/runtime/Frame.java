@@ -5,6 +5,8 @@ import java.util.Stack;
 
 import me.topchetoeu.jscript.common.Instruction;
 import me.topchetoeu.jscript.runtime.debug.DebugContext;
+import me.topchetoeu.jscript.runtime.environment.Environment;
+import me.topchetoeu.jscript.runtime.environment.Key;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
 import me.topchetoeu.jscript.runtime.exceptions.InterruptException;
 import me.topchetoeu.jscript.runtime.scope.LocalScope;
@@ -16,6 +18,8 @@ import me.topchetoeu.jscript.runtime.values.ScopeValue;
 import me.topchetoeu.jscript.runtime.values.Values;
 
 public class Frame {
+    public static final Key<Frame> KEY = new Key<>();
+
     public static enum TryState {
         TRY,
         CATCH,
@@ -94,11 +98,13 @@ public class Frame {
     public final Object[] args;
     public final Stack<TryCtx> tryStack = new Stack<>();
     public final CodeFunction function;
-    public final Context ctx;
+    public final Environment env;
+
     public Object[] stack = new Object[32];
     public int stackPtr = 0;
     public int codePtr = 0;
-    public boolean jumpFlag = false, popTryFlag = false;
+    public boolean jumpFlag = false;
+    public boolean popTryFlag = false;
 
     public void addTry(int start, int end, int catchStart, int finallyStart) {
         var err = tryStack.empty() ? null : tryStack.peek().error;
@@ -137,10 +143,10 @@ public class Frame {
             System.arraycopy(stack, 0, newStack, 0, stack.length);
             stack = newStack;
         }
-        stack[stackPtr++] = Values.normalize(ctx, val);
+        stack[stackPtr++] = Values.normalize(env, val);
     }
 
-    public Object next(Object value, Object returnValue, EngineException error) {
+    private Object next(Object value, Object returnValue, EngineException error) {
         if (value != Values.NO_RETURN) push(value);
 
         Instruction instr = null;
@@ -148,18 +154,18 @@ public class Frame {
 
         if (returnValue == Values.NO_RETURN && error == null) {
             try {
-                if (Thread.currentThread().isInterrupted()) throw new InterruptException();
+                if (Thread.interrupted()) throw new InterruptException();
 
                 if (instr == null) returnValue = null;
                 else {
-                    DebugContext.get(ctx).onInstruction(ctx, this, instr, Values.NO_RETURN, null, false);
+                    DebugContext.get(env).onInstruction(env, this, instr, Values.NO_RETURN, null, false);
 
                     try {
                         this.jumpFlag = this.popTryFlag = false;
-                        returnValue = InstructionRunner.exec(ctx, instr, this);
+                        returnValue = InstructionRunner.exec(env, instr, this);
                     }
                     catch (EngineException e) {
-                        error = e.add(ctx, function.name, DebugContext.get(ctx).getMapOrEmpty(function).toLocation(codePtr, true));
+                        error = e.add(env, function.name, DebugContext.get(env).getMapOrEmpty(function).toLocation(codePtr, true));
                     }
                 }
             }
@@ -201,6 +207,7 @@ public class Frame {
                     tryStack.pop();
                     tryStack.push(newCtx);
                 }
+
                 error = null;
                 returnValue = Values.NO_RETURN;
                 break;
@@ -239,33 +246,75 @@ public class Frame {
         if (error != null) {
             var caught = false;
 
-            for (var frame : ctx.frames()) {
+            for (var frame : DebugContext.get(env).getStackFrames()) {
                 for (var tryCtx : frame.tryStack) {
                     if (tryCtx.state == TryState.TRY) caught = true;
                 }
             }
 
-            DebugContext.get(ctx).onInstruction(ctx, this, instr, null, error, caught);
+            DebugContext.get(env).onInstruction(env, this, instr, null, error, caught);
             throw error;
         }
         if (returnValue != Values.NO_RETURN) {
-            DebugContext.get(ctx).onInstruction(ctx, this, instr, returnValue, null, false);
+            DebugContext.get(env).onInstruction(env, this, instr, returnValue, null, false);
             return returnValue;
         }
 
         return Values.NO_RETURN;
     }
 
-    public void onPush() {
-        DebugContext.get(ctx).onFramePush(ctx, this);
+    /**
+     * Executes the next instruction in the frame
+     */
+    public Object next() {
+        return next(Values.NO_RETURN, Values.NO_RETURN, null);
     }
-    public void onPop() {
-        DebugContext.get(ctx.parent).onFramePop(ctx.parent, this);
+    /**
+     * Induces a value on the stack (as if it were returned by the last function call)
+     * and executes the next instruction in the frame.
+     * 
+     * @param value The value to induce
+     */
+    public Object next(Object value) {
+        return next(value, Values.NO_RETURN, null);
+    }
+    /**
+     * Induces a thrown error and executes the next instruction.
+     * Note that this is different than just throwing the error outside the
+     * function, as the function executed could have a try-catch which
+     * would otherwise handle the error
+     * 
+     * @param error The error to induce
+     */
+    public Object induceError(EngineException error) {
+        return next(Values.NO_RETURN, Values.NO_RETURN, error);
+    }
+    /**
+     * Induces a return, as if there was a return statement before
+     * the currently executed instruction and executes the next instruction.
+     * Note that this is different than just returning the value outside the
+     * function, as the function executed could have a try-catch which
+     * would otherwise handle the error
+     * 
+     * @param value The retunr value to induce
+     */
+    public Object induceReturn(Object value) {
+        return next(Values.NO_RETURN, value, null);
     }
 
+    public void onPush() {
+        DebugContext.get(env).onFramePush(env, this);
+    }
+    public void onPop() {
+        DebugContext.get(env).onFramePop(env, this);
+    }
+
+    /**
+     * Gets an object proxy of the local scope
+     */
     public ObjectValue getLocalScope() {
         var names = new String[scope.locals.length];
-        var map = DebugContext.get(ctx).getMapOrEmpty(function);
+        var map = DebugContext.get(env).getMapOrEmpty(function);
 
         for (int i = 0; i < scope.locals.length; i++) {
             var name = "local_" + (i - 2);
@@ -279,9 +328,12 @@ public class Frame {
 
         return new ScopeValue(scope.locals, names);
     }
+    /**
+     * Gets an object proxy of the capture scope
+     */
     public ObjectValue getCaptureScope() {
         var names = new String[scope.captures.length];
-        var map = DebugContext.get(ctx).getMapOrEmpty(function);
+        var map = DebugContext.get(env).getMapOrEmpty(function);
 
         for (int i = 0; i < scope.captures.length; i++) {
             var name = "capture_" + (i - 2);
@@ -291,16 +343,19 @@ public class Frame {
 
         return new ScopeValue(scope.captures, names);
     }
+    /**
+     * Gets an array proxy of the local scope
+     */
     public ObjectValue getValStackScope() {
         return new ObjectValue() {
             @Override
-            protected Object getField(Extensions ext, Object key) {
+            protected Object getField(Environment ext, Object key) {
                 var i = (int)Values.toNumber(ext, key);
                 if (i < 0 || i >= stackPtr) return null;
                 else return stack[i];
             }
             @Override
-            protected boolean hasField(Extensions ext, Object key) {
+            protected boolean hasField(Environment ext, Object key) {
                 return true;
             }
             @Override
@@ -312,18 +367,18 @@ public class Frame {
         };
     }
 
-    public Frame(Context ctx, Object thisArg, Object[] args, CodeFunction func) {
+    public Frame(Environment env, Object thisArg, Object[] args, CodeFunction func) {
+        this.env = env;
         this.args = args.clone();
         this.scope = new LocalScope(func.body.localsN, func.captures);
         this.scope.get(0).set(null, thisArg);
         var argsObj = new ArrayValue();
         for (var i = 0; i < args.length; i++) {
-            argsObj.set(ctx, i, args[i]);
+            argsObj.set(env, i, args[i]);
         }
         this.scope.get(1).value = argsObj;
 
         this.thisArg = thisArg;
         this.function = func;
-        this.ctx = ctx.pushFrame(this);
     }
 }

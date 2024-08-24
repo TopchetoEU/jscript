@@ -6,8 +6,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 
-import me.topchetoeu.jscript.runtime.Environment;
-import me.topchetoeu.jscript.runtime.Extensions;
+import me.topchetoeu.jscript.runtime.environment.Environment;
 
 public class ObjectValue {
     public static enum PlaceholderProto {
@@ -54,10 +53,10 @@ public class ObjectValue {
     public LinkedHashSet<Object> nonConfigurableSet = new LinkedHashSet<>();
     public LinkedHashSet<Object> nonEnumerableSet = new LinkedHashSet<>();
 
-    private Property getProperty(Extensions ext, Object key) {
+    private Property getProperty(Environment env, Object key) {
         if (properties.containsKey(key)) return properties.get(key);
-        var proto = getPrototype(ext);
-        if (proto != null) return proto.getProperty(ext, key);
+        var proto = getPrototype(env);
+        if (proto != null) return proto.getProperty(env, key);
         else return null;
     }
 
@@ -86,8 +85,8 @@ public class ObjectValue {
         state = State.FROZEN;
     }
 
-    public final boolean defineProperty(Extensions ext, Object key, Object val, boolean writable, boolean configurable, boolean enumerable) {
-        key = Values.normalize(ext, key); val = Values.normalize(ext, val);
+    public final boolean defineProperty(Environment env, Object key, Object val, boolean writable, boolean configurable, boolean enumerable) {
+        key = Values.normalize(env, key); val = Values.normalize(env, val);
         boolean reconfigured = 
             writable != memberWritable(key) ||
             configurable != memberConfigurable(key) ||
@@ -125,11 +124,11 @@ public class ObjectValue {
         values.put(key, val);
         return true;
     }
-    public final boolean defineProperty(Extensions ext, Object key, Object val) {
-        return defineProperty(ext, key, val, true, true, true);
+    public final boolean defineProperty(Environment env, Object key, Object val) {
+        return defineProperty(env, key, val, true, true, true);
     }
-    public final boolean defineProperty(Extensions ext, Object key, FunctionValue getter, FunctionValue setter, boolean configurable, boolean enumerable) {
-        key = Values.normalize(ext, key);
+    public final boolean defineProperty(Environment env, Object key, FunctionValue getter, FunctionValue setter, boolean configurable, boolean enumerable) {
+        key = Values.normalize(env, key);
         if (
             properties.containsKey(key) &&
             properties.get(key).getter == getter &&
@@ -152,17 +151,17 @@ public class ObjectValue {
         return true;
     }
 
-    public ObjectValue getPrototype(Extensions ext) {
+    public ObjectValue getPrototype(Environment env) {
         if (prototype instanceof ObjectValue || prototype == null) return (ObjectValue)prototype;
 
         try {
-            if (prototype == ARR_PROTO) return ext.get(Environment.ARRAY_PROTO);
-            if (prototype == FUNC_PROTO) return ext.get(Environment.FUNCTION_PROTO);
-            if (prototype == ERR_PROTO) return ext.get(Environment.ERROR_PROTO);
-            if (prototype == RANGE_ERR_PROTO) return ext.get(Environment.RANGE_ERR_PROTO);
-            if (prototype == SYNTAX_ERR_PROTO) return ext.get(Environment.SYNTAX_ERR_PROTO);
-            if (prototype == TYPE_ERR_PROTO) return ext.get(Environment.TYPE_ERR_PROTO);
-            return ext.get(Environment.OBJECT_PROTO);
+            if (prototype == ARR_PROTO) return env.get(Environment.ARRAY_PROTO);
+            if (prototype == FUNC_PROTO) return env.get(Environment.FUNCTION_PROTO);
+            if (prototype == ERR_PROTO) return env.get(Environment.ERROR_PROTO);
+            if (prototype == RANGE_ERR_PROTO) return env.get(Environment.RANGE_ERR_PROTO);
+            if (prototype == SYNTAX_ERR_PROTO) return env.get(Environment.SYNTAX_ERR_PROTO);
+            if (prototype == TYPE_ERR_PROTO) return env.get(Environment.TYPE_ERR_PROTO);
+            return env.get(Environment.OBJECT_PROTO);
         }
         catch (NullPointerException e) { return null; }
     }
@@ -185,10 +184,10 @@ public class ObjectValue {
      * A method, used to get the value of a field. If a property is bound to
      * this key, but not a field, this method should return null.
      */
-    protected Object getField(Extensions ext, Object key) {
+    protected Object getField(Environment env, Object key) {
         if (values.containsKey(key)) return values.get(key);
-        var proto = getPrototype(ext);
-        if (proto != null) return proto.getField(ext, key);
+        var proto = getPrototype(env);
+        if (proto != null) return proto.getField(env, key);
         else return null;
     }
     /**
@@ -196,9 +195,9 @@ public class ObjectValue {
      * bound to this key, a new field should be created with the given value
      * @return Whether or not the operation was successful
      */
-    protected boolean setField(Extensions ext, Object key, Object val) {
+    protected boolean setField(Environment env, Object key, Object val) {
         if (val instanceof FunctionValue && ((FunctionValue)val).name.equals("")) {
-            ((FunctionValue)val).name = Values.toString(ext, key);
+            ((FunctionValue)val).name = Values.toString(env, key);
         }
 
         values.put(key, val);
@@ -207,40 +206,40 @@ public class ObjectValue {
     /**
      * Deletes the field bound to the given key.
      */
-    protected void deleteField(Extensions ext, Object key) {
+    protected void deleteField(Environment env, Object key) {
         values.remove(key);
     }
     /**
      * Returns whether or not there is a field bound to the given key.
      * This must ignore properties
      */
-    protected boolean hasField(Extensions ext, Object key) {
+    protected boolean hasField(Environment env, Object key) {
         return values.containsKey(key);
     }
 
-    public final Object getMember(Extensions ext, Object key, Object thisArg) {
-        key = Values.normalize(ext, key);
+    public final Object getMember(Environment env, Object key, Object thisArg) {
+        key = Values.normalize(env, key);
 
         if ("__proto__".equals(key)) {
-            var res = getPrototype(ext);
+            var res = getPrototype(env);
             return res == null ? Values.NULL : res;
         }
 
-        var prop = getProperty(ext, key);
+        var prop = getProperty(env, key);
 
         if (prop != null) {
             if (prop.getter == null) return null;
-            else return prop.getter.call(ext, Values.normalize(ext, thisArg));
+            else return prop.getter.call(env, Values.normalize(env, thisArg));
         }
-        else return getField(ext, key);
+        else return getField(env, key);
     }
-    public final boolean setMember(Extensions ext, Object key, Object val, Object thisArg, boolean onlyProps) {
-        key = Values.normalize(ext, key); val = Values.normalize(ext, val);
+    public final boolean setMember(Environment env, Object key, Object val, Object thisArg, boolean onlyProps) {
+        key = Values.normalize(env, key); val = Values.normalize(env, val);
 
-        var prop = getProperty(ext, key);
+        var prop = getProperty(env, key);
         if (prop != null) {
             if (prop.setter == null) return false;
-            prop.setter.call(ext, Values.normalize(ext, thisArg), val);
+            prop.setter.call(env, Values.normalize(env, thisArg), val);
             return true;
         }
         else if (onlyProps) return false;
@@ -249,32 +248,32 @@ public class ObjectValue {
             values.put(key, val);
             return true;
         }
-        else if ("__proto__".equals(key)) return setPrototype(ext, val);
+        else if ("__proto__".equals(key)) return setPrototype(env, val);
         else if (nonWritableSet.contains(key)) return false;
-        else return setField(ext, key, val);
+        else return setField(env, key, val);
     }
-    public final boolean hasMember(Extensions ext, Object key, boolean own) {
-        key = Values.normalize(ext, key);
+    public final boolean hasMember(Environment env, Object key, boolean own) {
+        key = Values.normalize(env, key);
 
         if (key != null && "__proto__".equals(key)) return true;
-        if (hasField(ext, key)) return true;
+        if (hasField(env, key)) return true;
         if (properties.containsKey(key)) return true;
         if (own) return false;
-        var proto = getPrototype(ext);
-        return proto != null && proto.hasMember(ext, key, own);
+        var proto = getPrototype(env);
+        return proto != null && proto.hasMember(env, key, own);
     }
-    public final boolean deleteMember(Extensions ext, Object key) {
-        key = Values.normalize(ext, key);
+    public final boolean deleteMember(Environment env, Object key) {
+        key = Values.normalize(env, key);
 
         if (!memberConfigurable(key)) return false;
         properties.remove(key);
         nonWritableSet.remove(key);
         nonEnumerableSet.remove(key);
-        deleteField(ext, key);
+        deleteField(env, key);
         return true;
     }
-    public final boolean setPrototype(Extensions ext, Object val) {
-        val = Values.normalize(ext, val);
+    public final boolean setPrototype(Environment env, Object val) {
+        val = Values.normalize(env, val);
 
         if (!extensible()) return false;
         if (val == null || val == Values.NULL) {
@@ -284,14 +283,14 @@ public class ObjectValue {
         else if (val instanceof ObjectValue) {
             var obj = (ObjectValue)val;
 
-            if (ext != null) {
-                if (obj == ext.get(Environment.OBJECT_PROTO)) prototype = OBJ_PROTO;
-                else if (obj == ext.get(Environment.ARRAY_PROTO)) prototype = ARR_PROTO;
-                else if (obj == ext.get(Environment.FUNCTION_PROTO)) prototype = FUNC_PROTO;
-                else if (obj == ext.get(Environment.ERROR_PROTO)) prototype = ERR_PROTO;
-                else if (obj == ext.get(Environment.SYNTAX_ERR_PROTO)) prototype = SYNTAX_ERR_PROTO;
-                else if (obj == ext.get(Environment.TYPE_ERR_PROTO)) prototype = TYPE_ERR_PROTO;
-                else if (obj == ext.get(Environment.RANGE_ERR_PROTO)) prototype = RANGE_ERR_PROTO;
+            if (env != null) {
+                if (obj == env.get(Environment.OBJECT_PROTO)) prototype = OBJ_PROTO;
+                else if (obj == env.get(Environment.ARRAY_PROTO)) prototype = ARR_PROTO;
+                else if (obj == env.get(Environment.FUNCTION_PROTO)) prototype = FUNC_PROTO;
+                else if (obj == env.get(Environment.ERROR_PROTO)) prototype = ERR_PROTO;
+                else if (obj == env.get(Environment.SYNTAX_ERR_PROTO)) prototype = SYNTAX_ERR_PROTO;
+                else if (obj == env.get(Environment.TYPE_ERR_PROTO)) prototype = TYPE_ERR_PROTO;
+                else if (obj == env.get(Environment.RANGE_ERR_PROTO)) prototype = RANGE_ERR_PROTO;
                 else prototype = obj;
             }
             else prototype = obj;
@@ -301,22 +300,22 @@ public class ObjectValue {
         return false;
     }
 
-    public final ObjectValue getMemberDescriptor(Extensions ext, Object key) {
-        key = Values.normalize(ext, key);
+    public final ObjectValue getMemberDescriptor(Environment env, Object key) {
+        key = Values.normalize(env, key);
 
         var prop = properties.get(key);
         var res = new ObjectValue();
 
-        res.defineProperty(ext, "configurable", memberConfigurable(key));
-        res.defineProperty(ext, "enumerable", memberEnumerable(key));
+        res.defineProperty(env, "configurable", memberConfigurable(key));
+        res.defineProperty(env, "enumerable", memberEnumerable(key));
 
         if (prop != null) {
-            res.defineProperty(ext, "get", prop.getter);
-            res.defineProperty(ext, "set", prop.setter);
+            res.defineProperty(env, "get", prop.getter);
+            res.defineProperty(env, "set", prop.setter);
         }
-        else if (hasField(ext, key)) {
-            res.defineProperty(ext, "value", values.get(key));
-            res.defineProperty(ext, "writable", memberWritable(key));
+        else if (hasField(env, key)) {
+            res.defineProperty(env, "value", values.get(key));
+            res.defineProperty(env, "writable", memberWritable(key));
         }
         else return null;
         return res;
@@ -337,10 +336,10 @@ public class ObjectValue {
         return res;
     }
 
-    public ObjectValue(Extensions ext, Map<?, ?> values) {
+    public ObjectValue(Environment env, Map<?, ?> values) {
         this(PlaceholderProto.OBJECT);
         for (var el : values.entrySet()) {
-            defineProperty(ext, el.getKey(), el.getValue());
+            defineProperty(env, el.getKey(), el.getValue());
         }
     }
     public ObjectValue(PlaceholderProto proto) {

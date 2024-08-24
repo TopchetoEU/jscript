@@ -76,6 +76,6 @@ public class SymbolLib {
     }
     @Expose(target = ExposeTarget.STATIC)
     public static String __keyFor(Arguments args) {
-        return passThis(new Arguments(args.ctx, args.get(0)), "keyFor").value;
+        return passThis(new Arguments(args.env, args.get(0)), "keyFor").value;
     }
 }

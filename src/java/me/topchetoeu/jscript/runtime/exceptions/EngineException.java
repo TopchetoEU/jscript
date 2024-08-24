@@ -4,9 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import me.topchetoeu.jscript.common.Location;
-import me.topchetoeu.jscript.runtime.Context;
-import me.topchetoeu.jscript.runtime.Environment;
-import me.topchetoeu.jscript.runtime.Extensions;
+import me.topchetoeu.jscript.runtime.environment.Environment;
 import me.topchetoeu.jscript.runtime.values.ObjectValue;
 import me.topchetoeu.jscript.runtime.values.Values;
 import me.topchetoeu.jscript.runtime.values.ObjectValue.PlaceholderProto;
@@ -15,7 +13,7 @@ public class EngineException extends RuntimeException {
     public static class StackElement {
         public final Location location;
         public final String name;
-        public final Extensions ext;
+        public final Environment ext;
 
         public boolean visible() {
             return ext == null || !ext.get(Environment.HIDE_STACK, false);
@@ -30,12 +28,12 @@ public class EngineException extends RuntimeException {
             return res.trim();
         }
 
-        public StackElement(Extensions ext, Location location, String name) {
+        public StackElement(Environment ext, Location location, String name) {
             if (name != null) name = name.trim();
             if (name.equals("")) name = null;
 
             if (ext == null) this.ext = null;
-            else this.ext = Context.clean(ext);
+            else this.ext = ext;
 
             this.location = location;
             this.name = name;
@@ -44,13 +42,13 @@ public class EngineException extends RuntimeException {
 
     public final Object value;
     public EngineException cause;
-    public Extensions ext = null;
+    public Environment env = null;
     public final List<StackElement> stackTrace = new ArrayList<>();
 
-    public EngineException add(Extensions ext, String name, Location location) {
-        var el = new StackElement(ext, location, name);
+    public EngineException add(Environment env, String name, Location location) {
+        var el = new StackElement(env, location, name);
         if (el.name == null && el.location == null) return this;
-        setExtensions(ext);
+        setEnvironment(env);
         stackTrace.add(el);
         return this;
     }
@@ -58,12 +56,12 @@ public class EngineException extends RuntimeException {
         this.cause = cause;
         return this;
     }
-    public EngineException setExtensions(Extensions ext) {
-        if (this.ext == null) this.ext = Context.clean(ext);
+    public EngineException setEnvironment(Environment env) {
+        if (this.env == null) this.env = env;
         return this;
     }
 
-    public String toString(Extensions ext) {
+    public String toString(Environment ext) {
         var ss = new StringBuilder();
         try {
             ss.append(Values.toString(ext, value)).append('\n');

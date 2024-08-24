@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.regex.Pattern;
 
-import me.topchetoeu.jscript.runtime.Context;
+import me.topchetoeu.jscript.runtime.environment.Environment;
 import me.topchetoeu.jscript.runtime.values.ArrayValue;
 import me.topchetoeu.jscript.runtime.values.FunctionValue;
 import me.topchetoeu.jscript.runtime.values.NativeWrapper;
@@ -119,7 +119,7 @@ public class RegExpLib {
             var res = new ArrayValue();
             Object val;
             while ((val = this.__exec(args)) != Values.NULL) {
-                res.set(args.ctx, res.size(), Values.getMember(args.ctx, val, 0));
+                res.set(args.env, res.size(), Values.getMember(args.env, val, 0));
             }
             lastI = 0;
             return res;
@@ -134,7 +134,7 @@ public class RegExpLib {
     @Expose("@@Symbol.matchAll") public Object __matchAll(Arguments args) {
         var pattern = this.toGlobal();
 
-        return Values.toJSIterator(args.ctx, new Iterator<Object>() {
+        return Values.toJSIterator(args.env, new Iterator<Object>() {
             private Object val = null;
             private boolean updated = false;
 
@@ -167,7 +167,7 @@ public class RegExpLib {
         while ((match = pattern.__exec(args)) != Values.NULL) {
             var added = new ArrayList<String>();
             var arrMatch = (ArrayValue)match;
-            int index = (int)Values.toNumber(args.ctx, Values.getMember(args.ctx, match, "index"));
+            int index = (int)Values.toNumber(args.env, Values.getMember(args.env, match, "index"));
             var matchVal = (String)arrMatch.get(0);
 
             if (index >= target.length()) break;
@@ -184,18 +184,18 @@ public class RegExpLib {
 
             if (sensible) {
                 if (hasLimit && res.size() + added.size() >= lim) break;
-                else for (var i = 0; i < added.size(); i++) res.set(args.ctx, res.size(), added.get(i));
+                else for (var i = 0; i < added.size(); i++) res.set(args.env, res.size(), added.get(i));
             }
             else {
                 for (var i = 0; i < added.size(); i++) {
                     if (hasLimit && res.size() >= lim) return res;
-                    else res.set(args.ctx, res.size(), added.get(i));
+                    else res.set(args.env, res.size(), added.get(i));
                 }
             }
             lastEnd = pattern.lastI;
         }
         if (lastEnd < target.length()) {
-            res.set(args.ctx, res.size(), target.substring(lastEnd));
+            res.set(args.env, res.size(), target.substring(lastEnd));
         }
         return res;
     }
@@ -209,7 +209,7 @@ public class RegExpLib {
         var res = new StringBuilder();
     
         while ((match = pattern.__exec(args)) != Values.NULL) {
-            var indices = (ArrayValue)((ArrayValue)Values.getMember(args.ctx, match, "indices")).get(0);
+            var indices = (ArrayValue)((ArrayValue)Values.getMember(args.env, match, "indices")).get(0);
             var arrMatch = (ArrayValue)match;
 
             var start = ((Number)indices.get(0)).intValue();
@@ -222,10 +222,10 @@ public class RegExpLib {
                 arrMatch.copyTo(callArgs, 1, 1, arrMatch.size() - 1);
                 callArgs[callArgs.length - 2] = start;
                 callArgs[callArgs.length - 1] = target;
-                res.append(Values.toString(args.ctx, ((FunctionValue)replacement).call(args.ctx, null, callArgs)));
+                res.append(Values.toString(args.env, ((FunctionValue)replacement).call(args.env, null, callArgs)));
             }
             else {
-                res.append(Values.toString(args.ctx, replacement));
+                res.append(Values.toString(args.env, replacement));
             }
             lastEnd = end;
             if (!pattern.global) break;
@@ -313,26 +313,26 @@ public class RegExpLib {
 
     @ExposeConstructor
     public static RegExpLib __constructor(Arguments args) {
-        return new RegExpLib(cleanupPattern(args.ctx, args.get(0)), cleanupFlags(args.ctx, args.get(1)));
+        return new RegExpLib(cleanupPattern(args.env, args.get(0)), cleanupFlags(args.env, args.get(1)));
     }
     @Expose(target = ExposeTarget.STATIC)
     public static RegExpLib __escape(Arguments args) {
-        return escape(Values.toString(args.ctx, args.get(0)), cleanupFlags(args.ctx, args.get(1)));
+        return escape(Values.toString(args.env, args.get(0)), cleanupFlags(args.env, args.get(1)));
     }
 
-    private static String cleanupPattern(Context ctx, Object val) {
+    private static String cleanupPattern(Environment env, Object val) {
         if (val == null) return "(?:)";
         if (val instanceof RegExpLib) return ((RegExpLib)val).source;
         if (val instanceof NativeWrapper && ((NativeWrapper)val).wrapped instanceof RegExpLib) {
             return ((RegExpLib)((NativeWrapper)val).wrapped).source;
         }
-        var res = Values.toString(ctx, val);
+        var res = Values.toString(env, val);
         if (res.equals("")) return "(?:)";
         return res;
     }
-    private static String cleanupFlags(Context ctx, Object val) {
+    private static String cleanupFlags(Environment env, Object val) {
         if (val == null) return "";
-        return Values.toString(ctx, val);
+        return Values.toString(env, val);
     }
 
     private static boolean checkEscaped(String s, int pos) {

@@ -1,8 +1,7 @@
 package me.topchetoeu.jscript.lib;
 
-import me.topchetoeu.jscript.runtime.Context;
-import me.topchetoeu.jscript.runtime.Extensions;
 import me.topchetoeu.jscript.runtime.Frame;
+import me.topchetoeu.jscript.runtime.environment.Environment;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
 import me.topchetoeu.jscript.runtime.values.CodeFunction;
 import me.topchetoeu.jscript.runtime.values.FunctionValue;
@@ -13,14 +12,14 @@ import me.topchetoeu.jscript.utils.interop.WrapperName;
 public class GeneratorFunctionLib extends FunctionValue {
     public final CodeFunction func;
 
-    @Override public Object call(Extensions ext, Object thisArg, Object ...args) {
+    @Override public Object call(Environment env, Object thisArg, Object ...args) {
         var handler = new GeneratorLib();
 
         var newArgs = new Object[args.length + 1];
         newArgs[0] = new NativeFunction("yield", handler::yield);
         System.arraycopy(args, 0, newArgs, 1, args.length);
 
-        handler.frame = new Frame(Context.of(ext), thisArg, newArgs, func);
+        handler.frame = new Frame(env, thisArg, newArgs, func);
         return handler;
     }
 

@@ -10,11 +10,10 @@ import me.topchetoeu.jscript.common.Metadata;
 import me.topchetoeu.jscript.common.Reading;
 import me.topchetoeu.jscript.lib.Internals;
 import me.topchetoeu.jscript.runtime.Compiler;
-import me.topchetoeu.jscript.runtime.Context;
 import me.topchetoeu.jscript.runtime.Engine;
-import me.topchetoeu.jscript.runtime.Environment;
 import me.topchetoeu.jscript.runtime.EventLoop;
 import me.topchetoeu.jscript.runtime.debug.DebugContext;
+import me.topchetoeu.jscript.runtime.environment.Environment;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
 import me.topchetoeu.jscript.runtime.exceptions.InterruptException;
 import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
@@ -29,7 +28,6 @@ import me.topchetoeu.jscript.utils.filesystem.Mode;
 import me.topchetoeu.jscript.utils.filesystem.PhysicalFilesystem;
 import me.topchetoeu.jscript.utils.filesystem.RootFilesystem;
 import me.topchetoeu.jscript.utils.filesystem.STDFilesystem;
-import me.topchetoeu.jscript.utils.interop.NativeWrapperProvider;
 import me.topchetoeu.jscript.utils.modules.ModuleRepo;
 import me.topchetoeu.jscript.utils.permissions.PermissionsManager;
 import me.topchetoeu.jscript.utils.permissions.PermissionsProvider;
@@ -38,7 +36,7 @@ public class JScriptRepl {
     static Thread engineTask, debugTask;
     static Engine engine = new Engine();
     static DebugServer debugServer = new DebugServer();
-    static Environment environment = new Environment();
+    static Environment environment = Environment.empty();
 
     static int j = 0;
     static String[] args;
@@ -97,8 +95,8 @@ public class JScriptRepl {
         glob.define(null, false, new NativeFunction("go", args -> {
             try {
                 var f = Path.of("do.js");
-                var func = args.ctx.compile(new Filename("do", "do/" + j++ + ".js"), new String(Files.readAllBytes(f)));
-                return func.call(args.ctx);
+                var func = Compiler.compile(args.env, new Filename("do", "do/" + j++ + ".js"), new String(Files.readAllBytes(f)));
+                return func.call(args.env);
             }
             catch (IOException e) {
                 throw new EngineException("Couldn't open do.js");
@@ -106,7 +104,7 @@ public class JScriptRepl {
         }));
         glob.define(null, false, new NativeFunction("log", args -> {
             for (var el : args.args) {
-                Values.printValue(args.ctx, el);
+                Values.printValue(args.env, el);
             }
 
             return null;
@@ -120,7 +118,7 @@ public class JScriptRepl {
         environment.add(PermissionsProvider.KEY, PermissionsManager.ALL_PERMS);
         environment.add(Filesystem.KEY, fs);
         environment.add(ModuleRepo.KEY, ModuleRepo.ofFilesystem(fs));
-        environment.add(Compiler.KEY, new JSCompiler(new Context(environment)));
+        environment.add(Compiler.KEY, new JSCompiler(environment));
         environment.add(EventLoop.KEY, engine);
     }
     private static void initEngine() {

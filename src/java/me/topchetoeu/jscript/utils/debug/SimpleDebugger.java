@@ -23,20 +23,17 @@ import me.topchetoeu.jscript.common.json.JSONList;
 import me.topchetoeu.jscript.common.json.JSONMap;
 import me.topchetoeu.jscript.common.mapping.FunctionMap;
 import me.topchetoeu.jscript.compilation.parsing.Parsing;
-import me.topchetoeu.jscript.runtime.Context;
 import me.topchetoeu.jscript.runtime.Engine;
-import me.topchetoeu.jscript.runtime.Environment;
 import me.topchetoeu.jscript.runtime.EventLoop;
-import me.topchetoeu.jscript.runtime.Extensions;
 import me.topchetoeu.jscript.runtime.Frame;
 import me.topchetoeu.jscript.runtime.debug.DebugContext;
+import me.topchetoeu.jscript.runtime.environment.Environment;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
 import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 import me.topchetoeu.jscript.runtime.scope.GlobalScope;
 import me.topchetoeu.jscript.runtime.values.ArrayValue;
 import me.topchetoeu.jscript.runtime.values.FunctionValue;
 import me.topchetoeu.jscript.runtime.values.ObjectValue;
-import me.topchetoeu.jscript.runtime.values.Symbol;
 import me.topchetoeu.jscript.runtime.values.Values;
 
 // very simple indeed
@@ -150,10 +147,10 @@ public class SimpleDebugger implements Debugger {
             this.frame = frame;
             this.id = id;
 
-            this.global = GlobalScope.get(frame.ctx).obj;
+            this.global = GlobalScope.get(frame.env).obj;
             this.local = frame.getLocalScope();
             this.capture = frame.getCaptureScope();
-            Values.makePrototypeChain(frame.ctx, global, capture, local);
+            Values.makePrototypeChain(frame.env, global, capture, local);
             this.valstack = frame.getValStackScope();
 
             this.serialized = new JSONMap()
@@ -163,48 +160,32 @@ public class SimpleDebugger implements Debugger {
                     .add(new JSONMap()
                         .set("type", "local")
                         .set("name", "Local Scope")
-                        .set("object", serializeObj(frame.ctx, local))
+                        .set("object", objects.serialize(frame.env, local))
                     )
                     .add(new JSONMap()
                         .set("type", "closure")
                         .set("name", "Closure")
-                        .set("object", serializeObj(frame.ctx, capture))
+                        .set("object", objects.serialize(frame.env, capture))
                     )
                     .add(new JSONMap()
                         .set("type", "global")
                         .set("name", "Global Scope")
-                        .set("object", serializeObj(frame.ctx.extensions, global))
+                        .set("object", objects.serialize(frame.env, global))
                     )
                     .add(new JSONMap()
                         .set("type", "other")
                         .set("name", "Value Stack")
-                        .set("object", serializeObj(frame.ctx.extensions, valstack))
+                        .set("object", objects.serialize(frame.env, valstack))
                     )
                 );
         }
     }
-    private class ObjRef {
-        public final ObjectValue obj;
-        public final Extensions ext;
-        public final HashSet<String> heldGroups = new HashSet<>();
-        public boolean held = true;
-
-        public boolean shouldRelease() {
-            return !held && heldGroups.size() == 0;
-        }
-
-        public ObjRef(Extensions ext, ObjectValue obj) {
-            this.ext = ext;
-            this.obj = obj;
-        }
-    }
-
     private static class RunResult {
-        public final Extensions ext;
+        public final Environment ext;
         public final Object result;
         public final EngineException error;
 
-        public RunResult(Extensions ext, Object result, EngineException error) {
+        public RunResult(Environment ext, Object result, EngineException error) {
             this.ext = ext;
             this.result = result;
             this.error = error;
@@ -232,15 +213,17 @@ public class SimpleDebugger implements Debugger {
     private HashMap<Integer, DebugFrame> idToFrame = new HashMap<>();
     private HashMap<Frame, DebugFrame> codeFrameToFrame = new HashMap<>();
 
-    private HashMap<Integer, ObjRef> idToObject = new HashMap<>();
-    private HashMap<ObjectValue, Integer> objectToId = new HashMap<>();
-    private HashMap<String, ArrayList<ObjRef>> objectGroups = new HashMap<>();
+    private ObjectManager objects = new ObjectManager(this::nextId);
+    // private HashMap<Integer, ObjRef> idToObject = new HashMap<>();
+    // private HashMap<ObjectValue, Integer> objectToId = new HashMap<>();
+    // private HashMap<String, ArrayList<ObjRef>> objectGroups = new HashMap<>();
 
     private Notifier updateNotifier = new Notifier();
     private boolean pendingPause = false;
 
     private int nextId = 0;
-    private DebugFrame stepOutFrame = null, currFrame = null;
+    private DebugFrame stepOutFrame = null;
+    private List<DebugFrame> frames = new ArrayList<>();
     private int stepOutPtr = 0;
 
     private boolean compare(String src, String target) {
@@ -288,18 +271,14 @@ public class SimpleDebugger implements Debugger {
         }
         else return codeFrameToFrame.get(frame);
     }
-    private synchronized void updateFrames(Context ctx) {
-        var frame = ctx.frame;
-        if (frame == null) return;
 
-        currFrame = getFrame(frame);
-    }
-    private JSONList serializeFrames(Context ctx) {
+    private JSONList serializeFrames(Environment env) {
         var res = new JSONList();
 
-        for (var el : ctx.frames()) {
+        for (var el : DebugContext.get(env).getStackFrames()) {
             var frame = getFrame(el);
             if (frame.location == null) continue;
+
             frame.serialized.set("location", serializeLocation(frame.location));
             if (frame.location != null) res.add(frame.serialized);
         }
@@ -339,151 +318,6 @@ public class SimpleDebugger implements Debugger {
             .set("columnNumber", loc.start() - 1);
     }
 
-    private JSONMap serializeObj(Extensions env, Object val, boolean byValue) {
-        val = Values.normalize(null, val);
-        env = sanitizeEnvironment(env);
-        var ctx = Context.of(env);
-
-        if (val == Values.NULL) {
-            return new JSONMap()
-                .set("type", "object")
-                .set("subtype", "null")
-                .setNull("value")
-                .set("description", "null");
-        }
-
-        if (val instanceof ObjectValue) {
-            var obj = (ObjectValue)val;
-            int id;
-
-            if (objectToId.containsKey(obj)) id = objectToId.get(obj);
-            else {
-                id = nextId();
-                var ref = new ObjRef(env, obj);
-                objectToId.put(obj, id);
-                idToObject.put(id, ref);
-            }
-
-            var type = "object";
-            String subtype = null;
-            String className = null;
-
-            if (obj instanceof FunctionValue) type = "function";
-            if (obj instanceof ArrayValue) subtype = "array";
-
-            try { className = Values.toString(ctx, Values.getMemberPath(ctx, obj, "constructor", "name")); }
-            catch (Exception e) { }
-
-            var res = new JSONMap()
-                .set("type", type)
-                .set("objectId", id + "");
-
-            if (subtype != null) res.set("subtype", subtype);
-            if (className != null) {
-                res.set("className", className);
-                res.set("description", className);
-            }
-
-            if (obj instanceof ArrayValue) res.set("description", "Array(" + ((ArrayValue)obj).size() + ")");
-            else if (obj instanceof FunctionValue) res.set("description", obj.toString());
-            else {
-                var defaultToString = false;
-
-                try {
-                    defaultToString =
-                        Values.getMember(ctx, obj, "toString") ==
-                        Values.getMember(ctx, env.get(Environment.OBJECT_PROTO), "toString");
-                }
-                catch (Exception e) { }
-
-                try { res.set("description", className + (defaultToString ? "" : " { " + Values.toString(ctx, obj) + " }")); }
-                catch (Exception e) { }
-            }
-
-
-            if (byValue) try { res.put("value", JSON.fromJs(env, obj)); }
-            catch (Exception e) { }
-
-            return res;
-        }
-
-        if (val == null) return new JSONMap().set("type", "undefined");
-        if (val instanceof String) return new JSONMap().set("type", "string").set("value", (String)val);
-        if (val instanceof Boolean) return new JSONMap().set("type", "boolean").set("value", (Boolean)val);
-        if (val instanceof Symbol) return new JSONMap().set("type", "symbol").set("description", val.toString());
-        if (val instanceof Number) {
-            var num = (double)(Number)val;
-            var res = new JSONMap().set("type", "number");
-
-            if (Double.POSITIVE_INFINITY == num) res.set("unserializableValue", "Infinity");
-            else if (Double.NEGATIVE_INFINITY == num) res.set("unserializableValue", "-Infinity");
-            else if (Double.doubleToRawLongBits(num) == Double.doubleToRawLongBits(-0d)) res.set("unserializableValue", "-0");
-            else if (Double.doubleToRawLongBits(num) == Double.doubleToRawLongBits(0d)) res.set("unserializableValue", "0");
-            else if (Double.isNaN(num)) res.set("unserializableValue", "NaN");
-            else res.set("value", num);
-
-            return res;
-        }
-
-        throw new IllegalArgumentException("Unexpected JS object.");
-    }
-    private JSONMap serializeObj(Extensions ext, Object val) {
-        return serializeObj(ext, val, false);
-    }
-    private void addObjectGroup(String name, Object val) {
-        if (val instanceof ObjectValue) {
-            var obj = (ObjectValue)val;
-            var id = objectToId.getOrDefault(obj, -1);
-            if (id < 0) return;
-
-            var ref = idToObject.get(id);
-
-            if (objectGroups.containsKey(name)) objectGroups.get(name).add(ref);
-            else objectGroups.put(name, new ArrayList<>(List.of(ref)));
-
-            ref.heldGroups.add(name);
-        }
-    }
-    private void releaseGroup(String name) {
-        var objs = objectGroups.remove(name);
-
-        if (objs != null) for (var obj : objs) {
-            if (obj.heldGroups.remove(name) && obj.shouldRelease()) {
-                var id = objectToId.remove(obj.obj);
-                if (id != null) idToObject.remove(id);
-            }
-        }
-    }
-    private Object deserializeArgument(JSONMap val) {
-        if (val.isString("objectId")) return idToObject.get(Integer.parseInt(val.string("objectId"))).obj;
-        else if (val.isString("unserializableValue")) switch (val.string("unserializableValue")) {
-            case "NaN": return Double.NaN;
-            case "-Infinity": return Double.NEGATIVE_INFINITY;
-            case "Infinity": return Double.POSITIVE_INFINITY;
-            case "-0": return -0.;
-        }
-        var res = val.get("value");
-        if (res == null) return null;
-        else return JSON.toJs(res);
-    }
-
-    private JSONMap serializeException(Extensions ext, EngineException err) {
-        String text = null;
-
-        try {
-            text = Values.toString(Context.of(ext), err.value);
-        }
-        catch (EngineException e) {
-            text = "[error while stringifying]";
-        }
-
-        var res = new JSONMap()
-            .set("exceptionId", nextId())
-            .set("exception", serializeObj(ext, err.value))
-            .set("text", text);
-
-        return res;
-    }
 
     private void resume(State state) {
         try {
@@ -496,11 +330,11 @@ public class SimpleDebugger implements Debugger {
             close();
         }
     }
-    private void pauseDebug(Context ctx, Breakpoint bp) {
+    private void pauseDebug(Environment env, Breakpoint bp) {
         try {
             state = State.PAUSED_NORMAL;
             var map = new JSONMap()
-                .set("callFrames", serializeFrames(ctx))
+                .set("callFrames", serializeFrames(env))
                 .set("reason", "debugCommand");
 
             if (bp != null) map.set("hitBreakpoints", new JSONList().add(bp.id + ""));
@@ -511,11 +345,11 @@ public class SimpleDebugger implements Debugger {
             close();
         }
     }
-    private void pauseException(Context ctx) {
+    private void pauseException(Environment env) {
         try {
             state = State.PAUSED_EXCEPTION;
             var map = new JSONMap()
-                .set("callFrames", serializeFrames(ctx))
+                .set("callFrames", serializeFrames(env))
                 .set("reason", "exception");
 
             ws.send(new V8Event("Debugger.paused", map));
@@ -540,26 +374,19 @@ public class SimpleDebugger implements Debugger {
         }
     }
 
-    private Extensions sanitizeEnvironment(Extensions ext) {
-        var res = ext.child();
-
-        res.remove(EventLoop.KEY);
-        res.remove(DebugContext.KEY);
-        res.add(DebugContext.IGNORE);
-
-        return res;
+    static Environment sanitizeEnvironment(Environment env) {
+        return env.child().remove(EventLoop.KEY).remove(DebugContext.KEY).add(DebugContext.IGNORE);
     }
 
     private RunResult run(DebugFrame codeFrame, String code) {
         if (codeFrame == null) return new RunResult(null, code, new EngineException("Invalid code frame!"));
         var engine = new Engine();
-        var env = codeFrame.frame.ctx.extensions.copy();
 
-        env.remove(DebugContext.KEY);
-        env.remove(EventLoop.KEY);
-        env.remove(GlobalScope.KEY);
-        env.add(EventLoop.KEY, engine);
-        env.add(GlobalScope.KEY, new GlobalScope(codeFrame.local));
+        var env = codeFrame.frame.env.child()
+            .remove(DebugContext.KEY)
+            .add(DebugContext.IGNORE)
+            .add(EventLoop.KEY, engine)
+            .add(GlobalScope.KEY, new GlobalScope(codeFrame.local));
 
         var awaiter = engine.pushMsg(false, env, new Filename("jscript", "eval"), code, codeFrame.frame.thisArg, codeFrame.frame.args);
 
@@ -571,20 +398,19 @@ public class SimpleDebugger implements Debugger {
         catch (SyntaxException e) { return new RunResult(env, null, EngineException.ofSyntax(e.toString())); }
     }
 
-    private ObjectValue vscodeAutoSuggest(Extensions ext, Object target, String query, boolean variable) {
+    private ObjectValue vscodeAutoSuggest(Environment env, Object target, String query, boolean variable) {
         var res = new ArrayValue();
         var passed = new HashSet<String>();
         var tildas = "~";
-        var ctx = Context.of(ext);
-        if (target == null) target = GlobalScope.get(ext);
+        if (target == null) target = GlobalScope.get(env);
 
-        for (var proto = target; proto != null && proto != Values.NULL; proto = Values.getPrototype(ctx, proto)) {
-            for (var el : Values.getMembers(ctx, proto, true, true)) {
-                var strKey = Values.toString(ctx, el);
+        for (var proto = target; proto != null && proto != Values.NULL; proto = Values.getPrototype(env, proto)) {
+            for (var el : Values.getMembers(env, proto, true, true)) {
+                var strKey = Values.toString(env, el);
                 if (passed.contains(strKey)) continue;
                 passed.add(strKey);
 
-                var val = Values.getMember(ctx, Values.getMemberDescriptor(ctx, proto, el), "value");
+                var val = Values.getMember(env, Values.getMemberDescriptor(env, proto, el), "value");
                 var desc = new ObjectValue();
                 var sortText = "";
                 if (strKey.startsWith(query)) sortText += "0@";
@@ -594,27 +420,27 @@ public class SimpleDebugger implements Debugger {
                 else sortText += "4@";
                 sortText += tildas + strKey;
 
-                desc.defineProperty(ctx, "label", strKey);
-                desc.defineProperty(ctx, "sortText", sortText);
+                desc.defineProperty(env, "label", strKey);
+                desc.defineProperty(env, "sortText", sortText);
 
                 if (val instanceof FunctionValue) {
-                    if (strKey.equals("constructor")) desc.defineProperty(ctx, "type", "name");
-                    else desc.defineProperty(ctx, "type", variable ? "function" : "method");
+                    if (strKey.equals("constructor")) desc.defineProperty(env, "type", "name");
+                    else desc.defineProperty(env, "type", variable ? "function" : "method");
                 }
-                else desc.defineProperty(ctx, "type", variable ? "variable" : "property");
+                else desc.defineProperty(env, "type", variable ? "variable" : "property");
 
                 switch (Values.type(val)) {
                     case "number":
                     case "boolean":
-                        desc.defineProperty(ctx, "detail", Values.toString(ctx, val));
+                        desc.defineProperty(env, "detail", Values.toString(env, val));
                         break;
                     case "object":
-                        if (val == Values.NULL) desc.defineProperty(ctx, "detail", "null");
+                        if (val == Values.NULL) desc.defineProperty(env, "detail", "null");
                         else try {
-                            desc.defineProperty(ctx, "detail", Values.getMemberPath(ctx, target, "constructor", "name"));
+                            desc.defineProperty(env, "detail", Values.getMemberPath(env, target, "constructor", "name"));
                         }
                         catch (IllegalArgumentException e) {
-                            desc.defineProperty(ctx, "detail", "object");
+                            desc.defineProperty(env, "detail", "object");
                         }
                         break;
                     case "function": {
@@ -624,15 +450,15 @@ public class SimpleDebugger implements Debugger {
                             type += "?";
                         }
                         type += ")";
-                        desc.defineProperty(ctx, "detail", type);
+                        desc.defineProperty(env, "detail", type);
                         break;
                     }
                     default:
-                        desc.defineProperty(ctx, "type", Values.type(val));
+                        desc.defineProperty(env, "type", Values.type(val));
                         break;
                 }
 
-                res.set(ctx, res.size(), desc);
+                res.set(env, res.size(), desc);
             }
 
             tildas += "~";
@@ -640,8 +466,8 @@ public class SimpleDebugger implements Debugger {
         }
 
         var resObj = new ObjectValue();
-        resObj.defineProperty(ctx, "result", res);
-        resObj.defineProperty(ctx, "isArray", target instanceof ArrayValue);
+        resObj.defineProperty(env, "result", res);
+        resObj.defineProperty(env, "isArray", target instanceof ArrayValue);
         return resObj;
     }
 
@@ -679,13 +505,12 @@ public class SimpleDebugger implements Debugger {
         idToFrame.clear();
         codeFrameToFrame.clear();
 
-        idToObject.clear();
-        objectToId.clear();
-        objectGroups.clear();
+        objects.clear();
 
         pendingPause = false;
 
-        stepOutFrame = currFrame = null;
+        frames.clear();
+        stepOutFrame = null;
         stepOutPtr = 0;
 
         for (var ctx : contexts.keySet()) ctx.detachDebugger(this);
@@ -744,7 +569,6 @@ public class SimpleDebugger implements Debugger {
         var bpt = new Breakpoint(nextId(), regex, line, col, cond);
         idToBreakpoint.put(bpt.id, bpt);
 
-
         for (var el : mappings.entrySet()) {
             bpt.addFunc(el.getKey(), el.getValue());
         }
@@ -794,8 +618,8 @@ public class SimpleDebugger implements Debugger {
     @Override public synchronized void stepInto(V8Message msg) throws IOException {
         if (state == State.RESUMED) ws.send(new V8Error("Debugger is resumed."));
         else {
-            stepOutFrame = currFrame;
-            stepOutPtr = currFrame.frame.codePtr;
+            stepOutFrame = frames.get(frames.size() - 1);
+            stepOutPtr = stepOutFrame.frame.codePtr;
             resume(State.STEPPING_IN);
             ws.send(msg.respond());
         }
@@ -803,8 +627,8 @@ public class SimpleDebugger implements Debugger {
     @Override public synchronized void stepOut(V8Message msg) throws IOException {
         if (state == State.RESUMED) ws.send(new V8Error("Debugger is resumed."));
         else {
-            stepOutFrame = currFrame;
-            stepOutPtr = currFrame.frame.codePtr;
+            stepOutFrame = frames.get(frames.size() - 1);
+            stepOutPtr = stepOutFrame.frame.codePtr;
             resume(State.STEPPING_OUT);
             ws.send(msg.respond());
         }
@@ -812,8 +636,8 @@ public class SimpleDebugger implements Debugger {
     @Override public synchronized void stepOver(V8Message msg) throws IOException {
         if (state == State.RESUMED) ws.send(new V8Error("Debugger is resumed."));
         else {
-            stepOutFrame = currFrame;
-            stepOutPtr = currFrame.frame.codePtr;
+            stepOutFrame = frames.get(frames.size() - 1);
+            stepOutPtr = stepOutFrame.frame.codePtr;
             resume(State.STEPPING_OVER);
             ws.send(msg.respond());
         }
@@ -827,34 +651,26 @@ public class SimpleDebugger implements Debugger {
         var cf = idToFrame.get(cfId);
         var res = run(cf, expr);
 
-        if (group != null) addObjectGroup(group, res.result);
+        if (group != null) objects.addToGroup(group, res.result);
 
-        if (res.error != null) ws.send(msg.respond(new JSONMap().set("exceptionDetails", serializeException(res.ext, res.error))));
-        else ws.send(msg.respond(new JSONMap().set("result", serializeObj(res.ext, res.result))));
+        if (res.error != null) ws.send(msg.respond(new JSONMap().set("exceptionDetails", objects.serializeException(res.ext, res.error))));
+        else ws.send(msg.respond(new JSONMap().set("result", objects.serialize(res.ext, res.result))));
     }
 
     @Override public synchronized void releaseObjectGroup(V8Message msg) throws IOException {
         var group = msg.params.string("objectGroup");
-        releaseGroup(group);
+        objects.removeGroup(group);
         ws.send(msg.respond());
     }
     @Override public synchronized void releaseObject(V8Message msg) throws IOException {
         var id = Integer.parseInt(msg.params.string("objectId"));
-        var ref = idToObject.get(id);
-        ref.held = false;
-
-        if (ref.shouldRelease()) {
-            objectToId.remove(ref.obj);
-            idToObject.remove(id);
-        }
-
+        objects.release(id);
         ws.send(msg.respond());
     }
     @Override public synchronized void getProperties(V8Message msg) throws IOException {
-        var ref = idToObject.get(Integer.parseInt(msg.params.string("objectId")));
+        var ref = objects.get(Integer.parseInt(msg.params.string("objectId")));
         var obj = ref.obj;
-        var ext = ref.ext;
-        var ctx = Context.of(ext);
+        var env = ref.ext;
         var res = new JSONList();
         var own = true;
 
@@ -866,17 +682,17 @@ public class SimpleDebugger implements Debugger {
                     if (obj.properties.containsKey(key)) {
                         var prop = obj.properties.get(key);
 
-                        propDesc.set("name", Values.toString(ctx, key));
-                        if (prop.getter != null) propDesc.set("get", serializeObj(ext, prop.getter));
-                        if (prop.setter != null) propDesc.set("set", serializeObj(ext, prop.setter));
+                        propDesc.set("name", Values.toString(env, key));
+                        if (prop.getter != null) propDesc.set("get", objects.serialize(env, prop.getter));
+                        if (prop.setter != null) propDesc.set("set", objects.serialize(env, prop.setter));
                         propDesc.set("enumerable", obj.memberEnumerable(key));
                         propDesc.set("configurable", obj.memberConfigurable(key));
                         propDesc.set("isOwn", true);
                         res.add(propDesc);
                     }
                     else {
-                        propDesc.set("name", Values.toString(ctx, key));
-                        propDesc.set("value", serializeObj(ext, Values.getMember(ctx, obj, key)));
+                        propDesc.set("name", Values.toString(env, key));
+                        propDesc.set("value", objects.serialize(env, Values.getMember(env, obj, key)));
                         propDesc.set("writable", obj.memberWritable(key));
                         propDesc.set("enumerable", obj.memberEnumerable(key));
                         propDesc.set("configurable", obj.memberConfigurable(key));
@@ -885,12 +701,12 @@ public class SimpleDebugger implements Debugger {
                     }
                 }
 
-                var proto = Values.getPrototype(ctx, obj);
+                var proto = Values.getPrototype(env, obj);
 
                 if (own) {
                     var protoDesc = new JSONMap();
                     protoDesc.set("name", "__proto__");
-                    protoDesc.set("value", serializeObj(ext, proto == null ? Values.NULL : proto));
+                    protoDesc.set("value", objects.serialize(env, proto == null ? Values.NULL : proto));
                     protoDesc.set("writable", true);
                     protoDesc.set("enumerable", false);
                     protoDesc.set("configurable", false);
@@ -911,14 +727,13 @@ public class SimpleDebugger implements Debugger {
             .list("arguments", new JSONList())
             .stream()
             .map(v -> v.map())
-            .map(this::deserializeArgument)
+            .map(objects::deserializeArgument)
             .collect(Collectors.toList());
         var byValue = msg.params.bool("returnByValue", false);
 
-        var thisArgRef = idToObject.get(Integer.parseInt(msg.params.string("objectId")));
+        var thisArgRef = objects.get(Integer.parseInt(msg.params.string("objectId")));
         var thisArg = thisArgRef.obj;
-        var ext = thisArgRef.ext;
-        var ctx = Context.of(ext);
+        var env = thisArgRef.ext;
 
         while (true) {
             var start = src.lastIndexOf("//# sourceURL=");
@@ -934,27 +749,27 @@ public class SimpleDebugger implements Debugger {
             else if (compare(src, VSCODE_SELF)) res = thisArg;
             else if (compare(src, CHROME_GET_PROP_FUNC)) {
                 res = thisArg;
-                for (var el : JSON.parse(null, (String)args.get(0)).list()) res = Values.getMember(ctx, res, JSON.toJs(el));
+                for (var el : JSON.parse(null, (String)args.get(0)).list()) res = Values.getMember(env, res, JSON.toJs(el));
             }
             else if (compare(src, CHROME_GET_PROP_FUNC_2)) {
-                res = Values.call(ctx, args.get(0), thisArg);
+                res = Values.call(env, args.get(0), thisArg);
             }
             else if (compare(src, VSCODE_CALL)) {
                 var func = (FunctionValue)(args.size() < 1 ? null : args.get(0));
-                ws.send(msg.respond(new JSONMap().set("result", serializeObj(ext, func.call(ctx, thisArg)))));
+                ws.send(msg.respond(new JSONMap().set("result", objects.serialize(env, func.call(env, thisArg)))));
             }
             else if (compare(src, VSCODE_AUTOCOMPLETE)) {
                 var target = args.get(0);
                 if (target == null) target = thisArg;
-                res = vscodeAutoSuggest(ext, target, Values.toString(ctx, args.get(1)), Values.toBoolean(args.get(2)));
+                res = vscodeAutoSuggest(env, target, Values.toString(env, args.get(1)), Values.toBoolean(args.get(2)));
             }
             else {
                 ws.send(new V8Error("Please use well-known functions with callFunctionOn"));
                 return;
             }
-            ws.send(msg.respond(new JSONMap().set("result", serializeObj(ext, res, byValue))));
+            ws.send(msg.respond(new JSONMap().set("result", objects.serialize(env, res, byValue))));
         }
-        catch (EngineException e) { ws.send(msg.respond(new JSONMap().set("exceptionDetails", serializeException(ext, e)))); }
+        catch (EngineException e) { ws.send(msg.respond(new JSONMap().set("exceptionDetails", objects.serializeException(env, e)))); }
     }
 
     @Override public synchronized void runtimeEnable(V8Message msg) throws IOException {
@@ -977,7 +792,7 @@ public class SimpleDebugger implements Debugger {
         }
         mappings.put(body, map);
     }
-    @Override public boolean onInstruction(Context ctx, Frame cf, Instruction instruction, Object returnVal, EngineException error, boolean caught) {
+    @Override public boolean onInstruction(Environment env, Frame cf, Instruction instruction, Object returnVal, EngineException error, boolean caught) {
         if (!enabled) return false;
 
         boolean isBreakpointable;
@@ -988,7 +803,7 @@ public class SimpleDebugger implements Debugger {
         synchronized (this) {
             frame = getFrame(cf);
 
-            var map = DebugContext.get(ctx).getMap(frame.frame.function);
+            var map = DebugContext.get(env).getMap(frame.frame.function);
 
             frame.updateLoc(map.toLocation(frame.frame.codePtr));
             loc = frame.location;
@@ -996,27 +811,27 @@ public class SimpleDebugger implements Debugger {
             isBreakpointable = loc != null && (bptType.shouldStepIn());
 
             if (error != null && (execptionType == CatchType.ALL || execptionType == CatchType.UNCAUGHT && !caught)) {
-                pauseException(ctx);
+                pauseException(env);
             }
             else if (
                 loc != null &&
                 (state == State.STEPPING_IN || state == State.STEPPING_OVER) &&
                 returnVal != Values.NO_RETURN && stepOutFrame == frame
             ) {
-                pauseDebug(ctx, null);
+                pauseDebug(env, null);
             }
             else if (isBreakpointable && bpLocs.containsKey(loc)) {
                 for (var bp : bpLocs.get(loc)) {
-                    var ok = bp.condition == null ? true : Values.toBoolean(run(currFrame, bp.condition).result);
-                    if (ok) pauseDebug(ctx, bp);
+                    var ok = bp.condition == null ? true : Values.toBoolean(run(frames.get(frames.size() - 1), bp.condition).result);
+                    if (ok) pauseDebug(env, bp);
                 }
             }
             // else if (isBreakpointable && tmpBreakpts.remove(loc)) pauseDebug(ctx, null);
             else if (isBreakpointable && pendingPause) {
-                pauseDebug(ctx, null);
+                pauseDebug(env, null);
                 pendingPause = false;
             }
-            else if (instruction.type == Type.NOP && instruction.match("debug")) pauseDebug(ctx, null);
+            else if (instruction.type == Type.NOP && instruction.match("debug")) pauseDebug(env, null);
         }
 
 
@@ -1039,11 +854,11 @@ public class SimpleDebugger implements Debugger {
                             else if (stepOutPtr != frame.frame.codePtr) {
 
                                 if (state == State.STEPPING_IN && bptType.shouldStepIn()) {
-                                    pauseDebug(ctx, null);
+                                    pauseDebug(env, null);
                                     break;
                                 }
                                 else if (state == State.STEPPING_OVER && bptType.shouldStepOver()) {
-                                    pauseDebug(ctx, null);
+                                    pauseDebug(env, null);
                                     break;
                                 }
                             }
@@ -1056,27 +871,31 @@ public class SimpleDebugger implements Debugger {
 
         return false;
     }
-    @Override public void onFramePush(Context ctx, Frame frame) {
-        var prevFrame = currFrame;
-        updateFrames(ctx);
+    @Override public void onFramePush(Environment env, Frame frame) {
+        var prevFrame = frames.get(frames.size() - 1);
+        var newFrame = getFrame(frame);
+        frames.add(newFrame);
 
         if (stepOutFrame != null && stepOutFrame.frame == prevFrame.frame && state == State.STEPPING_IN) {
-            stepOutFrame = currFrame;
+            stepOutFrame = newFrame;
         }
     }
-    @Override public void onFramePop(Context ctx, Frame frame) {
-        updateFrames(ctx);
+    @Override public void onFramePop(Environment env, Frame frame) {
+        frames.remove(frames.size() - 1);
 
         try { idToFrame.remove(codeFrameToFrame.remove(frame).id); }
         catch (NullPointerException e) { }
 
-        if (ctx.stackSize == 0) {
+        if (frames.size() == 0) {
             if (state == State.PAUSED_EXCEPTION || state == State.PAUSED_NORMAL) resume(State.RESUMED);
         }
         else if (stepOutFrame != null && stepOutFrame.frame == frame && state == State.STEPPING_OUT) {
             state = State.STEPPING_IN;
-            stepOutFrame = currFrame;
+            stepOutFrame = frames.get(frames.size() - 1);
         }
+    }
+    @Override public List<Frame> getStackFrame() {
+        return frames.stream().map(v -> v.frame).collect(Collectors.toList());
     }
 
     public SimpleDebugger attach(DebugContext ctx) {
