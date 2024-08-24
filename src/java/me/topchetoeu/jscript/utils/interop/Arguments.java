@@ -2,32 +2,14 @@ package me.topchetoeu.jscript.utils.interop;
 
 import java.lang.reflect.Array;
 
-import me.topchetoeu.jscript.runtime.Context;
-import me.topchetoeu.jscript.runtime.Extensions;
-import me.topchetoeu.jscript.runtime.Key;
+import me.topchetoeu.jscript.runtime.environment.Environment;
 import me.topchetoeu.jscript.runtime.values.NativeWrapper;
 import me.topchetoeu.jscript.runtime.values.Values;
 
-public class Arguments implements Extensions {
+public class Arguments {
     public final Object self;
     public final Object[] args;
-    public final Context ctx;
-
-    @Override public <T> void add(Key<T> key, T obj) {
-        ctx.add(key, obj);
-    }
-    @Override public <T> T get(Key<T> key) {
-        return ctx.get(key);
-    }
-    @Override public boolean has(Key<?> key) {
-        return ctx.has(key);
-    }
-    @Override public boolean remove(Key<?> key) {
-        return ctx.remove(key);
-    }
-    @Override public Iterable<Key<?>> keys() {
-        return ctx.keys();
-    }
+    public final Environment env;
 
     public int n() {
         return args.length;
@@ -41,7 +23,7 @@ public class Arguments implements Extensions {
         return convert(-1, type);
     }
     public <T> T convert(int i, Class<T> type) {
-        return Values.convert(ctx, get(i), type);
+        return Values.convert(env, get(i), type);
     }
     public Object get(int i, boolean unwrap) {
         Object res = null;
@@ -63,7 +45,7 @@ public class Arguments implements Extensions {
     public Arguments slice(int start) {
         var res = new Object[Math.max(0, args.length - start)];
         for (int j = start; j < args.length; j++) res[j - start] = get(j);
-        return new Arguments(ctx, args, res);
+        return new Arguments(env, args, res);
     }
 
     @SuppressWarnings("unchecked")
@@ -113,26 +95,26 @@ public class Arguments implements Extensions {
         return res;
     }
 
-    public String getString(int i) { return Values.toString(ctx, get(i)); }
+    public String getString(int i) { return Values.toString(env, get(i)); }
     public boolean getBoolean(int i) { return Values.toBoolean(get(i)); }
-    public int getInt(int i) { return (int)Values.toNumber(ctx, get(i)); }
-    public long getLong(int i) { return (long)Values.toNumber(ctx, get(i)); }
-    public double getDouble(int i) { return Values.toNumber(ctx, get(i)); }
-    public float getFloat(int i) { return (float)Values.toNumber(ctx, get(i)); }
+    public int getInt(int i) { return (int)Values.toNumber(env, get(i)); }
+    public long getLong(int i) { return (long)Values.toNumber(env, get(i)); }
+    public double getDouble(int i) { return Values.toNumber(env, get(i)); }
+    public float getFloat(int i) { return (float)Values.toNumber(env, get(i)); }
 
     public int getInt(int i, int def) {
         var res = get(i);
         if (res == null) return def;
-        else return (int)Values.toNumber(ctx, res);
+        else return (int)Values.toNumber(env, res);
     }
     public String getString(int i, String def) {
         var res = get(i);
         if (res == null) return def;
-        else return Values.toString(ctx, res);
+        else return Values.toString(env, res);
     }
 
-    public Arguments(Context ctx, Object thisArg, Object... args) {
-        this.ctx = ctx;
+    public Arguments(Environment env, Object thisArg, Object... args) {
+        this.env = env;
         this.args = args;
         this.self = thisArg;
     }

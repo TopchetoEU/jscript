@@ -2,10 +2,9 @@ package me.topchetoeu.jscript.lib;
 
 import java.util.HashMap;
 
-import me.topchetoeu.jscript.runtime.Context;
-import me.topchetoeu.jscript.runtime.Environment;
 import me.topchetoeu.jscript.runtime.EventLoop;
-import me.topchetoeu.jscript.runtime.Key;
+import me.topchetoeu.jscript.runtime.environment.Environment;
+import me.topchetoeu.jscript.runtime.environment.Key;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
 import me.topchetoeu.jscript.runtime.scope.GlobalScope;
 import me.topchetoeu.jscript.runtime.values.FunctionValue;
@@ -26,11 +25,11 @@ public class Internals {
 
     @Expose(target = ExposeTarget.STATIC)
     public static Object __require(Arguments args) {
-        var repo = ModuleRepo.get(args.ctx);
+        var repo = ModuleRepo.get(args.env);
 
         if (repo != null) {
-            var res = repo.getModule(args.ctx, ModuleRepo.cwd(args.ctx), args.getString(0));
-            res.load(args.ctx);
+            var res = repo.getModule(args.env, ModuleRepo.cwd(args.env), args.getString(0));
+            res.load(args.env);
             return res.value();
         }
 
@@ -43,7 +42,7 @@ public class Internals {
         var delay = args.getDouble(1);
         var arguments = args.slice(2).args;
 
-        if (!args.ctx.hasNotNull(EventLoop.KEY)) throw EngineException.ofError("No event loop");
+        if (!args.env.hasNotNull(EventLoop.KEY)) throw EngineException.ofError("No event loop");
 
         var thread = new Thread(() -> {
             var ms = (long)delay;
@@ -52,13 +51,17 @@ public class Internals {
             try { Thread.sleep(ms, ns); }
             catch (InterruptedException e) { return; }
 
-            args.ctx.get(EventLoop.KEY).pushMsg(() -> func.call(new Context(args.ctx.extensions), null, arguments), false);
+            args.env.get(EventLoop.KEY).pushMsg(() -> func.call(args.env, null, arguments), false);
         });
 
         thread.start();
-        var i = args.ctx.init(I, 1);
-        args.ctx.add(I, i + 1);
-        args.ctx.init(THREADS, new HashMap<Integer, Thread>()).put(i, thread);
+
+        args.env.init(I, 1);
+        args.env.init(THREADS, new HashMap<>());
+        var i = args.env.get(I);
+
+        args.env.add(I, i + 1);
+        args.env.get(THREADS).put(i, thread);
 
         return thread;
     }
@@ -68,7 +71,7 @@ public class Internals {
         var delay = args.getDouble(1);
         var arguments = args.slice(2).args;
 
-        if (!args.ctx.hasNotNull(EventLoop.KEY)) throw EngineException.ofError("No event loop");
+        if (!args.env.hasNotNull(EventLoop.KEY)) throw EngineException.ofError("No event loop");
 
         var thread = new Thread(() -> {
             var ms = (long)delay;
@@ -80,13 +83,18 @@ public class Internals {
                 }
                 catch (InterruptedException e) { return; }
 
-                args.ctx.get(EventLoop.KEY).pushMsg(() -> func.call(new Context(args.ctx.extensions), null, arguments), false);
+                args.env.get(EventLoop.KEY).pushMsg(() -> func.call(args.env, null, arguments), false);
             }
         });
+
         thread.start();
-        var i = args.ctx.init(I, 1);
-        args.ctx.add(I, i + 1);
-        args.ctx.init(THREADS, new HashMap<Integer, Thread>()).put(i, thread);
+
+        args.env.init(I, 1);
+        args.env.init(THREADS, new HashMap<>());
+        var i = args.env.get(I);
+
+        args.env.add(I, i + 1);
+        args.env.get(THREADS).put(i, thread);
 
         return thread;
     }
@@ -94,7 +102,7 @@ public class Internals {
     @Expose(target = ExposeTarget.STATIC)
     public static void __clearTimeout(Arguments args) {
         var i = args.getInt(0);
-        HashMap<Integer, Thread> map = args.ctx.get(THREADS);
+        HashMap<Integer, Thread> map = args.env.get(THREADS);
         if (map == null) return;
 
         var thread = map.get(i);
@@ -132,15 +140,15 @@ public class Internals {
 
     @Expose(target = ExposeTarget.STATIC, type = ExposeType.GETTER)
     public static FileLib __stdin(Arguments args) {
-        return new FileLib(Filesystem.get(args.ctx).open("std://in", Mode.READ));
+        return new FileLib(Filesystem.get(args.env).open("std://in", Mode.READ));
     }
     @Expose(target = ExposeTarget.STATIC, type = ExposeType.GETTER)
     public static FileLib __stdout(Arguments args) {
-        return new FileLib(Filesystem.get(args.ctx).open("std://out", Mode.READ));
+        return new FileLib(Filesystem.get(args.env).open("std://out", Mode.READ));
     }
     @Expose(target = ExposeTarget.STATIC, type = ExposeType.GETTER)
     public static FileLib __stderr(Arguments args) {
-        return new FileLib(Filesystem.get(args.ctx).open("std://err", Mode.READ));
+        return new FileLib(Filesystem.get(args.env).open("std://err", Mode.READ));
     }
 
     @ExposeField(target = ExposeTarget.STATIC)
@@ -211,11 +219,10 @@ public class Internals {
         env.add(Environment.RANGE_ERR_PROTO, wp.getProto(RangeErrorLib.class));
 
         env.add(Environment.REGEX_CONSTR, wp.getConstr(RegExpLib.class));
-        Values.setPrototype(new Context(), wp.getProto(ObjectLib.class), null);
+        Values.setPrototype(Environment.empty(), wp.getProto(ObjectLib.class), null);
 
         env.add(NativeWrapperProvider.KEY, wp);
         env.add(GlobalScope.KEY, glob);
-
 
         return env;
     }

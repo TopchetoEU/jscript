@@ -3,9 +3,8 @@ package me.topchetoeu.jscript.utils.modules;
 import java.util.HashMap;
 
 import me.topchetoeu.jscript.common.Filename;
-import me.topchetoeu.jscript.runtime.Context;
-import me.topchetoeu.jscript.runtime.Extensions;
-import me.topchetoeu.jscript.runtime.Key;
+import me.topchetoeu.jscript.runtime.environment.Environment;
+import me.topchetoeu.jscript.runtime.environment.Key;
 import me.topchetoeu.jscript.runtime.scope.GlobalScope;
 import me.topchetoeu.jscript.utils.filesystem.Filesystem;
 import me.topchetoeu.jscript.utils.filesystem.Mode;
@@ -14,34 +13,34 @@ public interface ModuleRepo {
     public static final Key<ModuleRepo> KEY = new Key<>();
     public static final Key<String> CWD = new Key<>();
 
-    public Module getModule(Context ctx, String cwd, String name);
+    public Module getModule(Environment ctx, String cwd, String name);
 
     public static ModuleRepo ofFilesystem(Filesystem fs) {
         var modules = new HashMap<String, Module>();
 
-        return (ctx, cwd, name) -> {
+        return (env, cwd, name) -> {
             name = fs.normalize(cwd, name);
             var filename = Filename.parse(name);
             var src = fs.open(name, Mode.READ).readToString();
 
             if (modules.containsKey(name)) return modules.get(name);
 
-            var env = Context.clean(ctx.extensions).child();
-            env.add(CWD, fs.normalize(name, ".."));
-            var glob = env.get(GlobalScope.KEY);
-            env.add(GlobalScope.KEY, glob.child());
+            var moduleEnv = env.child()
+                .add(CWD, fs.normalize(name, ".."))
+                .add(GlobalScope.KEY, env.hasNotNull(GlobalScope.KEY) ? env.get(GlobalScope.KEY).child() : new GlobalScope());
 
-            var mod = new SourceModule(filename, src, env);
+            var mod = new SourceModule(filename, src, moduleEnv);
             modules.put(name, mod);
 
             return mod;
         };
     }
 
-    public static String cwd(Extensions exts) {
-        return exts.init(CWD, "/");
+    public static String cwd(Environment exts) {
+        exts.init(CWD, "/");
+        return "/";
     }
-    public static ModuleRepo get(Extensions exts) {
+    public static ModuleRepo get(Environment exts) {
         return exts.get(KEY);
     }
 }

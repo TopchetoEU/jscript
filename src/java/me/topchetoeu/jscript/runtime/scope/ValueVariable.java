@@ -1,6 +1,6 @@
 package me.topchetoeu.jscript.runtime.scope;
 
-import me.topchetoeu.jscript.runtime.Extensions;
+import me.topchetoeu.jscript.runtime.environment.Environment;
 import me.topchetoeu.jscript.runtime.values.Values;
 
 public class ValueVariable implements Variable {
@@ -11,12 +11,12 @@ public class ValueVariable implements Variable {
     public boolean readonly() { return readonly; }
 
     @Override
-    public Object get(Extensions ext) {
+    public Object get(Environment ext) {
         return value;
     }
 
     @Override
-    public void set(Extensions ext, Object val) {
+    public void set(Environment ext, Object val) {
         if (readonly) return;
         this.value = Values.normalize(ext, val);
     }

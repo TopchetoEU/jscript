@@ -66,7 +66,7 @@ public class EncodingLib {
     public static String __decode(Arguments args) {
         var raw = args.convert(0, ArrayList.class);
         var res = new byte[raw.size()];
-        for (var i = 0; i < raw.size(); i++) res[i] = (byte)Values.toNumber(args.ctx, raw.get(i));
+        for (var i = 0; i < raw.size(); i++) res[i] = (byte)Values.toNumber(args.env, raw.get(i));
         return new String(res);
     }
 

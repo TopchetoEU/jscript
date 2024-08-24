@@ -9,7 +9,7 @@ import me.topchetoeu.jscript.compilation.parsing.Operator;
 import me.topchetoeu.jscript.compilation.parsing.ParseRes;
 import me.topchetoeu.jscript.compilation.parsing.Parsing;
 import me.topchetoeu.jscript.compilation.parsing.Token;
-import me.topchetoeu.jscript.runtime.Extensions;
+import me.topchetoeu.jscript.runtime.environment.Environment;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
 import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 import me.topchetoeu.jscript.runtime.values.ArrayValue;
@@ -32,7 +32,7 @@ public class JSON {
         if (val.isNull()) return Values.NULL;
         return null;
     }
-    private static JSONElement fromJs(Extensions ext, Object val, HashSet<Object> prev) {
+    private static JSONElement fromJs(Environment ext, Object val, HashSet<Object> prev) {
         if (val instanceof Boolean) return JSONElement.bool((boolean)val);
         if (val instanceof Number) return JSONElement.number(((Number)val).doubleValue());
         if (val instanceof String) return JSONElement.string((String)val);
@@ -70,7 +70,7 @@ public class JSON {
         if (val == null) return null;
         return null;
     }
-    public static JSONElement fromJs(Extensions ext, Object val) {
+    public static JSONElement fromJs(Environment ext, Object val) {
         return fromJs(ext, val, new HashSet<>());
     }
 

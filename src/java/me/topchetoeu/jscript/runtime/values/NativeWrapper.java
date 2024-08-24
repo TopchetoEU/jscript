@@ -2,8 +2,8 @@ package me.topchetoeu.jscript.runtime.values;
 
 import java.util.WeakHashMap;
 
-import me.topchetoeu.jscript.runtime.Extensions;
-import me.topchetoeu.jscript.runtime.Key;
+import me.topchetoeu.jscript.runtime.environment.Environment;
+import me.topchetoeu.jscript.runtime.environment.Key;
 import me.topchetoeu.jscript.utils.interop.NativeWrapperProvider;
 
 public class NativeWrapper extends ObjectValue {
@@ -28,12 +28,12 @@ public class NativeWrapper extends ObjectValue {
         }
     }
 
-    private static final Key<WeakHashMap<MapKey, NativeWrapper>> WRAPPERS = new Key<>();
+    private static final Key<WeakHashMap<MapKey, NativeWrapper>> WRAPPER_MAP = new Key<>();
     private static final Object NATIVE_PROTO = new Object();
     public final Object wrapped;
 
     @Override
-    public ObjectValue getPrototype(Extensions ext) {
+    public ObjectValue getPrototype(Environment ext) {
         if (ext != null && prototype == NATIVE_PROTO) {
             var clazz = wrapped.getClass();
             var res = NativeWrapperProvider.get(ext).getProto(clazz);
@@ -60,17 +60,13 @@ public class NativeWrapper extends ObjectValue {
         prototype = NATIVE_PROTO;
     }
 
-    public static NativeWrapper of(Extensions exts, Object wrapped) {
-        if (exts == null) return new NativeWrapper(wrapped);
-        var wrappers = exts.get(WRAPPERS);
+    public static NativeWrapper of(Environment env, Object wrapped) {
+        if (env == null) return new NativeWrapper(wrapped);
 
-        if (wrappers == null) {
-            wrappers = new WeakHashMap<>();
-            exts.add(WRAPPERS, wrappers);
-        }
+        var wrappers = env.get(WRAPPER_MAP);
+        if (wrappers == null) return new NativeWrapper(wrapped);
 
         var key = new MapKey(wrapped);
-
         if (wrappers.containsKey(key)) return wrappers.get(key);
 
         var res = new NativeWrapper(wrapped);

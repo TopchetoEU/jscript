@@ -699,7 +699,7 @@ public class Parsing {
 
         var values = new ArrayList<Statement>();
 
-        // Java allows labels, so me uses labels
+        // Java allows labels, so labels were used
         loop: while (true) {
             if (isOperator(tokens, i + n, Operator.BRACKET_CLOSE)) {
                 n++;

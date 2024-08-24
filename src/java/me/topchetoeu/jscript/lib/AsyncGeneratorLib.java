@@ -3,8 +3,8 @@ package me.topchetoeu.jscript.lib;
 import java.util.Map;
 
 import me.topchetoeu.jscript.lib.PromiseLib.Handle;
-import me.topchetoeu.jscript.runtime.Context;
 import me.topchetoeu.jscript.runtime.Frame;
+import me.topchetoeu.jscript.runtime.environment.Environment;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
 import me.topchetoeu.jscript.runtime.values.ObjectValue;
 import me.topchetoeu.jscript.runtime.values.Values;
@@ -19,10 +19,10 @@ public class AsyncGeneratorLib {
     private PromiseLib currPromise;
     public Frame frame;
 
-    private void next(Context ctx, Object inducedValue, Object inducedReturn, EngineException inducedError) {
+    private void next(Environment env, Object inducedValue, Object inducedReturn, EngineException inducedError) {
         if (done) {
             if (inducedError != null) throw inducedError;
-            currPromise.fulfill(ctx, new ObjectValue(ctx, Map.of(
+            currPromise.fulfill(env, new ObjectValue(env, Map.of(
                 "done", true,
                 "value", inducedReturn == Values.NO_RETURN ? null : inducedReturn
             )));
@@ -35,40 +35,44 @@ public class AsyncGeneratorLib {
         frame.onPush();
         while (state == 0) {
             try {
-                res = frame.next(inducedValue, inducedReturn, inducedError);
+                if (inducedValue != Values.NO_RETURN) res = frame.next(inducedValue);
+                else if (inducedReturn != Values.NO_RETURN) res = frame.induceReturn(inducedValue);
+                else if (inducedError != null) res = frame.induceError(inducedError);
+                else res = frame.next();
+
                 inducedValue = inducedReturn = Values.NO_RETURN;
                 inducedError = null;
 
                 if (res != Values.NO_RETURN) {
                     var obj = new ObjectValue();
-                    obj.defineProperty(ctx, "done", true);
-                    obj.defineProperty(ctx, "value", res);
-                    currPromise.fulfill(ctx, obj);
+                    obj.defineProperty(env, "done", true);
+                    obj.defineProperty(env, "value", res);
+                    currPromise.fulfill(env, obj);
                     break;
                 }
             }
             catch (EngineException e) {
-                currPromise.reject(ctx, e);
+                currPromise.reject(env, e);
                 break;
             }
         }
         frame.onPop();
 
         if (state == 1) {
-            PromiseLib.handle(ctx, frame.pop(), new Handle() {
+            PromiseLib.handle(env, frame.pop(), new Handle() {
                 @Override public void onFulfil(Object val) {
-                    next(ctx, val, Values.NO_RETURN, null);
+                    next(env, val, Values.NO_RETURN, null);
                 }
                 @Override public void onReject(EngineException err) {
-                    next(ctx, Values.NO_RETURN, Values.NO_RETURN, err);
+                    next(env, Values.NO_RETURN, Values.NO_RETURN, err);
                 }
-            }.defer(ctx));
+            }.defer(env));
         }
         else if (state == 2) {
             var obj = new ObjectValue();
-            obj.defineProperty(ctx, "done", false);
-            obj.defineProperty(ctx, "value", frame.pop());
-            currPromise.fulfill(ctx, obj);
+            obj.defineProperty(env, "done", false);
+            obj.defineProperty(env, "value", frame.pop());
+            currPromise.fulfill(env, obj);
         }
     }
 
@@ -90,18 +94,18 @@ public class AsyncGeneratorLib {
 
     @Expose public PromiseLib __next(Arguments args) {
         this.currPromise = new PromiseLib();
-        if (args.has(0)) next(args.ctx, args.get(0), Values.NO_RETURN, null);
-        else next(args.ctx, Values.NO_RETURN, Values.NO_RETURN, null);
+        if (args.has(0)) next(args.env, args.get(0), Values.NO_RETURN, null);
+        else next(args.env, Values.NO_RETURN, Values.NO_RETURN, null);
         return this.currPromise;
     }
     @Expose public PromiseLib __return(Arguments args) {
         this.currPromise = new PromiseLib();
-        next(args.ctx, Values.NO_RETURN, args.get(0), null);
+        next(args.env, Values.NO_RETURN, args.get(0), null);
         return this.currPromise;
     }
     @Expose public PromiseLib __throw(Arguments args) {
         this.currPromise = new PromiseLib();
-        next(args.ctx, Values.NO_RETURN, Values.NO_RETURN, new EngineException(args.get(0)).setExtensions(args.ctx));
+        next(args.env, Values.NO_RETURN, Values.NO_RETURN, new EngineException(args.get(0)).setEnvironment(args.env));
         return this.currPromise;
     }
 }

@@ -1,6 +1,6 @@
 package me.topchetoeu.jscript.lib;
 
-import me.topchetoeu.jscript.runtime.Context;
+import me.topchetoeu.jscript.runtime.environment.Environment;
 import me.topchetoeu.jscript.runtime.exceptions.ConvertException;
 import me.topchetoeu.jscript.runtime.values.ObjectValue;
 import me.topchetoeu.jscript.runtime.values.Values;
@@ -13,7 +13,7 @@ import me.topchetoeu.jscript.utils.interop.WrapperName;
 
 @WrapperName("Error")
 public class ErrorLib {
-    private static String toString(Context ctx, Object name, Object message) {
+    private static String toString(Environment ctx, Object name, Object message) {
         if (name == null) name = "";
         else name = Values.toString(ctx, name).trim();
         if (message == null) message = "";
@@ -30,9 +30,9 @@ public class ErrorLib {
     @ExposeField public static final String __name = "Error";
 
     @Expose public static String __toString(Arguments args) {
-        if (args.self instanceof ObjectValue) return toString(args.ctx,
-            Values.getMember(args.ctx, args.self, "name"),
-            Values.getMember(args.ctx, args.self, "message")
+        if (args.self instanceof ObjectValue) return toString(args.env,
+            Values.getMember(args.env, args.self, "name"),
+            Values.getMember(args.env, args.self, "message")
         );
         else return "[Invalid error]";
     }
@@ -47,7 +47,7 @@ public class ErrorLib {
         catch (ConvertException e) {}
 
         target.setPrototype(PlaceholderProto.ERROR);
-        target.defineProperty(args.ctx, "message", Values.toString(args.ctx, message));
+        target.defineProperty(args.env, "message", Values.toString(args.env, message));
 
         return target;
     }

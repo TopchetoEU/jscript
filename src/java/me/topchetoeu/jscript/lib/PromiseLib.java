@@ -4,9 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import me.topchetoeu.jscript.common.ResultRunnable;
-import me.topchetoeu.jscript.runtime.Context;
 import me.topchetoeu.jscript.runtime.EventLoop;
-import me.topchetoeu.jscript.runtime.Extensions;
+import me.topchetoeu.jscript.runtime.environment.Environment;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
 import me.topchetoeu.jscript.runtime.exceptions.InterruptException;
 import me.topchetoeu.jscript.runtime.values.ArrayValue;
@@ -26,7 +25,7 @@ public class PromiseLib {
         void onFulfil(Object val);
         void onReject(EngineException err);
 
-        default Handle defer(Extensions loop) {
+        default Handle defer(Environment loop) {
             var self = this;
 
             return new Handle() {
@@ -52,7 +51,7 @@ public class PromiseLib {
     private boolean handled = false;
     private Object val;
 
-    private void resolveSynchronized(Context ctx, Object val, int newState) {
+    private void resolveSynchronized(Environment env, Object val, int newState) {
         this.val = val;
         this.state = newState;
     
@@ -65,7 +64,7 @@ public class PromiseLib {
         }
 
         if (state == STATE_REJECTED && !handled) {
-            Values.printError(((EngineException)val).setExtensions(ctx), "(in promise)");
+            Values.printError(((EngineException)val).setEnvironment(env), "(in promise)");
         }
 
         handles = null;
@@ -78,24 +77,24 @@ public class PromiseLib {
         // }, true);
         
     }
-    private synchronized void resolve(Context ctx, Object val, int newState) {
+    private synchronized void resolve(Environment env, Object val, int newState) {
         if (this.state != STATE_PENDING || newState == STATE_PENDING) return;
 
-        handle(ctx, val, new Handle() {
+        handle(env, val, new Handle() {
             @Override public void onFulfil(Object val) {
-                resolveSynchronized(ctx, val, newState);
+                resolveSynchronized(env, val, newState);
             }
             @Override public void onReject(EngineException err) {
-                resolveSynchronized(ctx, val, STATE_REJECTED);
+                resolveSynchronized(env, val, STATE_REJECTED);
             }
         });
     }
 
-    public synchronized void fulfill(Context ctx, Object val) {
-        resolve(ctx, val, STATE_FULFILLED);
+    public synchronized void fulfill(Environment env, Object val) {
+        resolve(env, val, STATE_FULFILLED);
     }
-    public synchronized void reject(Context ctx, EngineException val) {
-        resolve(ctx, val, STATE_REJECTED);
+    public synchronized void reject(Environment env, EngineException val) {
+        resolve(env, val, STATE_REJECTED);
     }
 
     private void handle(Handle handle) {
@@ -118,37 +117,37 @@ public class PromiseLib {
         this.val = null;
     }
 
-    public static PromiseLib await(Context ctx, ResultRunnable<Object> runner) {
+    public static PromiseLib await(Environment env, ResultRunnable<Object> runner) {
         var res = new PromiseLib();
 
         new Thread(() -> {
             try {
-                res.fulfill(ctx, runner.run());
+                res.fulfill(env, runner.run());
             }
             catch (EngineException e) {
-                res.reject(ctx, e);
+                res.reject(env, e);
             }
             catch (Exception e) {
                 if (e instanceof InterruptException) throw e;
                 else {
-                    res.reject(ctx, EngineException.ofError("Native code failed with " + e.getMessage()));
+                    res.reject(env, EngineException.ofError("Native code failed with " + e.getMessage()));
                 }
             }
         }, "Promisifier").start();
 
         return res;
     }
-    public static PromiseLib await(Context ctx, Runnable runner) {
-        return await(ctx, () -> {
+    public static PromiseLib await(Environment env, Runnable runner) {
+        return await(env, () -> {
             runner.run();
             return null;
         });
     }
 
-    public static void handle(Context ctx, Object obj, Handle handle) {
+    public static void handle(Environment env, Object obj, Handle handle) {
         if (Values.isWrapper(obj, PromiseLib.class)) {
             var promise = Values.wrapper(obj, PromiseLib.class);
-            handle(ctx, promise, handle);
+            handle(env, promise, handle);
             return;
         }
         if (obj instanceof PromiseLib) {
@@ -159,9 +158,9 @@ public class PromiseLib {
         var rethrow = new boolean[1];
 
         try {
-            var then = Values.getMember(ctx, obj, "then");
+            var then = Values.getMember(env, obj, "then");
 
-            if (then instanceof FunctionValue) Values.call(ctx, then, obj,
+            if (then instanceof FunctionValue) Values.call(env, then, obj,
                 new NativeFunction(args -> {
                     try { handle.onFulfil(args.get(0)); }
                     catch (Exception e) {
@@ -190,12 +189,12 @@ public class PromiseLib {
         handle.onFulfil(obj);
     }
 
-    public static PromiseLib ofResolved(Context ctx, Object value) {
+    public static PromiseLib ofResolved(Environment ctx, Object value) {
         var res = new PromiseLib();
         res.fulfill(ctx, value);
         return res;
     }
-    public static PromiseLib ofRejected(Context ctx, EngineException value) {
+    public static PromiseLib ofRejected(Environment ctx, EngineException value) {
         var res = new PromiseLib();
         res.reject(ctx, value);
         return res;
@@ -203,11 +202,11 @@ public class PromiseLib {
 
     @Expose(value = "resolve", target = ExposeTarget.STATIC)
     public static PromiseLib __ofResolved(Arguments args) {
-        return ofResolved(args.ctx, args.get(0));
+        return ofResolved(args.env, args.get(0));
     }
     @Expose(value = "reject", target = ExposeTarget.STATIC)
     public static PromiseLib __ofRejected(Arguments args) {
-        return ofRejected(args.ctx, new EngineException(args.get(0)).setExtensions(args.ctx));
+        return ofRejected(args.env, new EngineException(args.get(0)).setEnvironment(args.env));
     }
 
     @Expose(target = ExposeTarget.STATIC)
@@ -215,7 +214,7 @@ public class PromiseLib {
         if (!(args.get(0) instanceof ArrayValue)) throw EngineException.ofType("Expected argument for any to be an array.");
         var promises = args.convert(0, ArrayValue.class); 
 
-        if (promises.size() == 0) return ofRejected(args.ctx, EngineException.ofError("No promises passed to 'Promise.any'.").setExtensions(args.ctx));
+        if (promises.size() == 0) return ofRejected(args.env, EngineException.ofError("No promises passed to 'Promise.any'.").setEnvironment(args.env));
         var n = new int[] { promises.size() };
         var res = new PromiseLib();
         var errors = new ArrayValue();
@@ -225,12 +224,12 @@ public class PromiseLib {
             var val = promises.get(i);
             if (res.state != STATE_PENDING) break;
 
-            handle(args.ctx, val, new Handle() {
-                public void onFulfil(Object val) { res.fulfill(args.ctx, val); }
+            handle(args.env, val, new Handle() {
+                public void onFulfil(Object val) { res.fulfill(args.env, val); }
                 public void onReject(EngineException err) {
-                    errors.set(args.ctx, index, err.value);
+                    errors.set(args.env, index, err.value);
                     n[0]--;
-                    if (n[0] <= 0) res.reject(args.ctx, new EngineException(errors).setExtensions(args.ctx));
+                    if (n[0] <= 0) res.reject(args.env, new EngineException(errors).setEnvironment(args.env));
                 }
             });
         }
@@ -247,9 +246,9 @@ public class PromiseLib {
             var val = promises.get(i);
             if (res.state != STATE_PENDING) break;
 
-            handle(args.ctx, val, new Handle() {
-                @Override public void onFulfil(Object val) { res.fulfill(args.ctx, val); }
-                @Override public void onReject(EngineException err) { res.reject(args.ctx, err); }
+            handle(args.env, val, new Handle() {
+                @Override public void onFulfil(Object val) { res.fulfill(args.env, val); }
+                @Override public void onReject(EngineException err) { res.reject(args.env, err); }
             });
         }
 
@@ -269,19 +268,19 @@ public class PromiseLib {
             var index = i;
             var val = promises.get(i);
 
-            handle(args.ctx, val, new Handle() {
+            handle(args.env, val, new Handle() {
                 @Override public void onFulfil(Object val) {
-                    result.set(args.ctx, index, val);
+                    result.set(args.env, index, val);
                     n[0]--;
-                    if (n[0] <= 0) res.fulfill(args.ctx, result);
+                    if (n[0] <= 0) res.fulfill(args.env, result);
                 }
                 @Override public void onReject(EngineException err) {
-                    res.reject(args.ctx, err);
+                    res.reject(args.env, err);
                 }
             });
         }
 
-        if (n[0] <= 0) res.fulfill(args.ctx, result);
+        if (n[0] <= 0) res.fulfill(args.env, result);
 
         return res;
     }
@@ -298,31 +297,31 @@ public class PromiseLib {
 
             var index = i;
 
-            handle(args.ctx, promises.get(i), new Handle() {
+            handle(args.env, promises.get(i), new Handle() {
                 @Override public void onFulfil(Object val) {
                     var desc = new ObjectValue();
-                    desc.defineProperty(args.ctx, "status", "fulfilled");
-                    desc.defineProperty(args.ctx, "value", val);
+                    desc.defineProperty(args.env, "status", "fulfilled");
+                    desc.defineProperty(args.env, "value", val);
 
-                    result.set(args.ctx, index, desc);
+                    result.set(args.env, index, desc);
 
                     n[0]--;
-                    if (n[0] <= 0) res.fulfill(args.ctx, res);
+                    if (n[0] <= 0) res.fulfill(args.env, res);
                 }
                 @Override public void onReject(EngineException err) {
                     var desc = new ObjectValue();
-                    desc.defineProperty(args.ctx, "status", "reject");
-                    desc.defineProperty(args.ctx, "value", err.value);
+                    desc.defineProperty(args.env, "status", "reject");
+                    desc.defineProperty(args.env, "value", err.value);
 
-                    result.set(args.ctx, index, desc);
+                    result.set(args.env, index, desc);
 
                     n[0]--;
-                    if (n[0] <= 0) res.fulfill(args.ctx, res);
+                    if (n[0] <= 0) res.fulfill(args.env, res);
                 }
             });
         }
 
-        if (n[0] <= 0) res.fulfill(args.ctx, result);
+        if (n[0] <= 0) res.fulfill(args.env, result);
 
         return res;
     }
@@ -334,22 +333,22 @@ public class PromiseLib {
 
         var res = new PromiseLib();
 
-        handle(args.ctx, args.self, new Handle() {
+        handle(args.env, args.self, new Handle() {
             @Override public void onFulfil(Object val) {
-                try { res.fulfill(args.ctx, onFulfill.call(args.ctx, null, val)); }
-                catch (EngineException e) { res.reject(args.ctx, e); }
+                try { res.fulfill(args.env, onFulfill.call(args.env, null, val)); }
+                catch (EngineException e) { res.reject(args.env, e); }
             }
             @Override public void onReject(EngineException err) {
-                try { res.fulfill(args.ctx, onReject.call(args.ctx, null, err.value)); }
-                catch (EngineException e) { res.reject(args.ctx, e); }
+                try { res.fulfill(args.env, onReject.call(args.env, null, err.value)); }
+                catch (EngineException e) { res.reject(args.env, e); }
             }
-        }.defer(args.ctx));
+        }.defer(args.env));
 
         return res;
     }
     @Expose
     public static Object __catch(Arguments args) {
-        return __then(new Arguments(args.ctx, args.self, null, args.get(0)));
+        return __then(new Arguments(args.env, args.self, null, args.get(0)));
     }
     @Expose
     public static Object __finally(Arguments args) {
@@ -357,22 +356,22 @@ public class PromiseLib {
 
         var res = new PromiseLib();
 
-        handle(args.ctx, args.self, new Handle() {
+        handle(args.env, args.self, new Handle() {
             @Override public void onFulfil(Object val) {
                 try {
-                    func.call(args.ctx);
-                    res.fulfill(args.ctx, val);
+                    func.call(args.env);
+                    res.fulfill(args.env, val);
                 }
-                catch (EngineException e) { res.reject(args.ctx, e); }
+                catch (EngineException e) { res.reject(args.env, e); }
             }
             @Override public void onReject(EngineException err) {
                 try {
-                    func.call(args.ctx);
-                    res.reject(args.ctx, err);
+                    func.call(args.env);
+                    res.reject(args.env, err);
                 }
-                catch (EngineException e) { res.reject(args.ctx, e); }
+                catch (EngineException e) { res.reject(args.env, e); }
             }
-        }.defer(args.ctx));
+        }.defer(args.env));
 
         return res;
     }
@@ -384,19 +383,19 @@ public class PromiseLib {
 
         try {
             func.call(
-                args.ctx, null,
+                args.env, null,
                 new NativeFunction(null, _args -> {
-                    res.fulfill(_args.ctx, _args.get(0));
+                    res.fulfill(_args.env, _args.get(0));
                     return null;
                 }),
                 new NativeFunction(null, _args -> {
-                    res.reject(_args.ctx, new EngineException(_args.get(0)).setExtensions(_args.ctx));
+                    res.reject(_args.env, new EngineException(_args.get(0)).setEnvironment(_args.env));
                     return null;
                 })
             );
         }
         catch (EngineException e) {
-            res.reject(args.ctx, e);
+            res.reject(args.env, e);
         }
 
         return res;

@@ -2,7 +2,6 @@ package me.topchetoeu.jscript.lib;
 
 import me.topchetoeu.jscript.common.Filename;
 import me.topchetoeu.jscript.runtime.Compiler;
-import me.topchetoeu.jscript.runtime.Context;
 import me.topchetoeu.jscript.runtime.scope.ValueVariable;
 import me.topchetoeu.jscript.runtime.values.ArrayValue;
 import me.topchetoeu.jscript.runtime.values.CodeFunction;
@@ -20,10 +19,10 @@ public class FunctionLib {
     private static int i;
 
     @Expose public static Object __apply(Arguments args) {
-        return args.self(FunctionValue.class).call(args.ctx, args.get(0), args.convert(1, ArrayValue.class).toArray());
+        return args.self(FunctionValue.class).call(args.env, args.get(0), args.convert(1, ArrayValue.class).toArray());
     }
     @Expose public static Object __call(Arguments args) {
-        return args.self(FunctionValue.class).call(args.ctx, args.get(0), args.slice(1).args);
+        return args.self(FunctionValue.class).call(args.env, args.get(0), args.slice(1).args);
     }
     @Expose public static FunctionValue __bind(Arguments args) {
         var self = args.self(FunctionValue.class);
@@ -40,7 +39,7 @@ public class FunctionLib {
                 System.arraycopy(callArgs.args, 0, resArgs, bindArgs.length, callArgs.n());
             }
 
-            return self.call(callArgs.ctx, thisArg, resArgs);
+            return self.call(callArgs.env, thisArg, resArgs);
         });
     }
     @Expose public static String __toString(Arguments args) {
@@ -62,8 +61,6 @@ public class FunctionLib {
 
     @ExposeConstructor
     public static Object __constructor(Arguments args) {
-        var compiler = Compiler.get(args);
-
         var parts = args.convert(String.class);
         if (parts.length == 0) parts = new String[] { "" };
 
@@ -76,8 +73,8 @@ public class FunctionLib {
 
         src += "){" + parts[parts.length - 1] + "}";
 
-        var body = compiler.compile(new Filename("jscript", "func/" + i++), src);
-        var func = new CodeFunction(Context.clean(args.ctx), "", body, new ValueVariable[0]);
-        return Values.call(args, func, null);
+        var body = Compiler.get(args.env).compile(new Filename("jscript", "func/" + i++), src);
+        var func = new CodeFunction(args.env, "", body, new ValueVariable[0]);
+        return Values.call(args.env, func, null);
     }
 }

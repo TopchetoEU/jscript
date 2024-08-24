@@ -13,7 +13,7 @@ public class FileLib {
     public final File fd;
 
     @Expose public PromiseLib __pointer(Arguments args) {
-        return PromiseLib.await(args.ctx, () -> {
+        return PromiseLib.await(args.env, () -> {
             try {
                 return fd.seek(0, 1);
             }
@@ -21,7 +21,7 @@ public class FileLib {
         });
     }
     @Expose public PromiseLib __length(Arguments args) {
-        return PromiseLib.await(args.ctx, () -> {
+        return PromiseLib.await(args.env, () -> {
             try {
                 long curr = fd.seek(0, 1);
                 long res = fd.seek(0, 2);
@@ -33,26 +33,26 @@ public class FileLib {
     }
 
     @Expose public PromiseLib __read(Arguments args) {
-        return PromiseLib.await(args.ctx, () -> {
+        return PromiseLib.await(args.env, () -> {
             var n = args.getInt(0);
             try {
                 var buff = new byte[n];
                 var res = new ArrayValue();
                 int resI = fd.read(buff);
 
-                for (var i = resI - 1; i >= 0; i--) res.set(args.ctx, i, (int)buff[i]);
+                for (var i = resI - 1; i >= 0; i--) res.set(args.env, i, (int)buff[i]);
                 return res;
             }
             catch (FilesystemException e) { throw e.toEngineException(); }
         });
     }
     @Expose public PromiseLib __write(Arguments args) {
-        return PromiseLib.await(args.ctx, () -> {
+        return PromiseLib.await(args.env, () -> {
             var val = args.convert(0, ArrayValue.class);
             try {
                 var res = new byte[val.size()];
 
-                for (var i = 0; i < val.size(); i++) res[i] = (byte)Values.toNumber(args.ctx, val.get(i));
+                for (var i = 0; i < val.size(); i++) res[i] = (byte)Values.toNumber(args.env, val.get(i));
                 fd.write(res);
 
                 return null;
@@ -61,13 +61,13 @@ public class FileLib {
         });
     }
     @Expose public PromiseLib __close(Arguments args) {
-        return PromiseLib.await(args.ctx, () -> {
+        return PromiseLib.await(args.env, () -> {
             fd.close();
             return null;
         });
     }
     @Expose public PromiseLib __seek(Arguments args) {
-        return PromiseLib.await(args.ctx, () -> {
+        return PromiseLib.await(args.env, () -> {
             var ptr = args.getLong(0);
             var whence = args.getInt(1);
 

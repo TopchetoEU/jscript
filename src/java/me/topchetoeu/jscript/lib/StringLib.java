@@ -2,7 +2,7 @@ package me.topchetoeu.jscript.lib;
 
 import java.util.regex.Pattern;
 
-import me.topchetoeu.jscript.runtime.Environment;
+import me.topchetoeu.jscript.runtime.environment.Environment;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
 import me.topchetoeu.jscript.runtime.values.ArrayValue;
 import me.topchetoeu.jscript.runtime.values.FunctionValue;
@@ -101,23 +101,23 @@ public class StringLib {
         var val = passThis(args, "indexOf");
         var term = args.get(0);
         var start = args.getInt(1);
-        var search = Values.getMember(args.ctx, term, Symbol.get("Symbol.search"));
+        var search = Values.getMember(args.env, term, Symbol.get("Symbol.search"));
 
         if (search instanceof FunctionValue) {
-            return (int)Values.toNumber(args.ctx, Values.call(args.ctx, search, term, val, false, start));
+            return (int)Values.toNumber(args.env, Values.call(args.env, search, term, val, false, start));
         }
-        else return val.indexOf(Values.toString(args.ctx, term), start);
+        else return val.indexOf(Values.toString(args.env, term), start);
     }
     @Expose public static int __lastIndexOf(Arguments args) {
         var val = passThis(args, "lastIndexOf");
         var term = args.get(0);
         var start = args.getInt(1);
-        var search = Values.getMember(args.ctx, term, Symbol.get("Symbol.search"));
+        var search = Values.getMember(args.env, term, Symbol.get("Symbol.search"));
 
         if (search instanceof FunctionValue) {
-            return (int)Values.toNumber(args.ctx, Values.call(args.ctx, search, term, val, true, start));
+            return (int)Values.toNumber(args.env, Values.call(args.env, search, term, val, true, start));
         }
-        else return val.lastIndexOf(Values.toString(args.ctx, term), start);
+        else return val.lastIndexOf(Values.toString(args.env, term), start);
     }
 
     @Expose public static boolean __includes(Arguments args) {
@@ -128,23 +128,23 @@ public class StringLib {
         var val = passThis(args, "replace");
         var term = args.get(0);
         var replacement = args.get(1);
-        var replace = Values.getMember(args.ctx, term, Symbol.get("Symbol.replace"));
+        var replace = Values.getMember(args.env, term, Symbol.get("Symbol.replace"));
 
         if (replace instanceof FunctionValue) {
-            return Values.toString(args.ctx, Values.call(args.ctx, replace, term, val, replacement));
+            return Values.toString(args.env, Values.call(args.env, replace, term, val, replacement));
         }
-        else return val.replaceFirst(Pattern.quote(Values.toString(args.ctx, term)), Values.toString(args.ctx, replacement));
+        else return val.replaceFirst(Pattern.quote(Values.toString(args.env, term)), Values.toString(args.env, replacement));
     }
     @Expose public static String __replaceAll(Arguments args) {
         var val = passThis(args, "replaceAll");
         var term = args.get(0);
         var replacement = args.get(1);
-        var replace = Values.getMember(args.ctx, term, Symbol.get("Symbol.replace"));
+        var replace = Values.getMember(args.env, term, Symbol.get("Symbol.replace"));
 
         if (replace instanceof FunctionValue) {
-            return Values.toString(args.ctx, Values.call(args.ctx, replace, term, val, replacement));
+            return Values.toString(args.env, Values.call(args.env, replace, term, val, replacement));
         }
-        else return val.replace(Values.toString(args.ctx, term), Values.toString(args.ctx, replacement));
+        else return val.replace(Values.toString(args.env, term), Values.toString(args.env, replacement));
     }
 
     @Expose public static ArrayValue __match(Arguments args) {
@@ -154,21 +154,21 @@ public class StringLib {
         FunctionValue match;
 
         try {
-            var _match = Values.getMember(args.ctx, term, Symbol.get("Symbol.match"));
+            var _match = Values.getMember(args.env, term, Symbol.get("Symbol.match"));
             if (_match instanceof FunctionValue) match = (FunctionValue)_match;
-            else if (args.ctx.hasNotNull(Environment.REGEX_CONSTR)) {
-                var regex = Values.callNew(args.ctx, args.ctx.get(Environment.REGEX_CONSTR), Values.toString(args.ctx, term), "");
-                _match = Values.getMember(args.ctx, regex, Symbol.get("Symbol.match"));
+            else if (args.env.hasNotNull(Environment.REGEX_CONSTR)) {
+                var regex = Values.callNew(args.env, args.env.get(Environment.REGEX_CONSTR), Values.toString(args.env, term), "");
+                _match = Values.getMember(args.env, regex, Symbol.get("Symbol.match"));
                 if (_match instanceof FunctionValue) match = (FunctionValue)_match;
                 else throw EngineException.ofError("Regular expressions don't support matching.");
             }
             else throw EngineException.ofError("Regular expressions not supported.");
         }
-        catch (IllegalArgumentException e) { return new ArrayValue(args.ctx, ""); }
+        catch (IllegalArgumentException e) { return new ArrayValue(args.env, ""); }
 
-        var res = match.call(args.ctx, term, val);
+        var res = match.call(args.env, term, val);
         if (res instanceof ArrayValue) return (ArrayValue)res;
-        else return new ArrayValue(args.ctx, "");
+        else return new ArrayValue(args.env, "");
     }
     @Expose public static Object __matchAll(Arguments args) {
         var val = passThis(args, "matchAll");
@@ -177,20 +177,20 @@ public class StringLib {
         FunctionValue match = null;
         
         try {
-            var _match = Values.getMember(args.ctx, term, Symbol.get("Symbol.matchAll"));
+            var _match = Values.getMember(args.env, term, Symbol.get("Symbol.matchAll"));
             if (_match instanceof FunctionValue) match = (FunctionValue)_match;
         }
         catch (IllegalArgumentException e) { }
 
-        if (match == null && args.ctx.hasNotNull(Environment.REGEX_CONSTR)) {
-            var regex = Values.callNew(args.ctx, args.ctx.get(Environment.REGEX_CONSTR), Values.toString(args.ctx, term), "g");
-            var _match = Values.getMember(args.ctx, regex, Symbol.get("Symbol.matchAll"));
+        if (match == null && args.env.hasNotNull(Environment.REGEX_CONSTR)) {
+            var regex = Values.callNew(args.env, args.env.get(Environment.REGEX_CONSTR), Values.toString(args.env, term), "g");
+            var _match = Values.getMember(args.env, regex, Symbol.get("Symbol.matchAll"));
             if (_match instanceof FunctionValue) match = (FunctionValue)_match;
             else throw EngineException.ofError("Regular expressions don't support matching.");
         }
         else throw EngineException.ofError("Regular expressions not supported.");
 
-        return match.call(args.ctx, term, val);
+        return match.call(args.env, term, val);
     }
 
     @Expose public static ArrayValue __split(Arguments args) {
@@ -199,23 +199,23 @@ public class StringLib {
         var lim = args.get(1);
         var sensible = args.getBoolean(2);
 
-        if (lim != null) lim = Values.toNumber(args.ctx, lim);
+        if (lim != null) lim = Values.toNumber(args.env, lim);
 
         if (term != null && term != Values.NULL && !(term instanceof String)) {
-            var replace = Values.getMember(args.ctx, term, Symbol.get("Symbol.replace"));
+            var replace = Values.getMember(args.env, term, Symbol.get("Symbol.replace"));
             if (replace instanceof FunctionValue) {
-                var tmp = ((FunctionValue)replace).call(args.ctx, term, val, lim, sensible);
+                var tmp = ((FunctionValue)replace).call(args.env, term, val, lim, sensible);
 
                 if (tmp instanceof ArrayValue) {
                     var parts = new ArrayValue(((ArrayValue)tmp).size());
-                    for (int i = 0; i < parts.size(); i++) parts.set(args.ctx, i, Values.toString(args.ctx, ((ArrayValue)tmp).get(i)));
+                    for (int i = 0; i < parts.size(); i++) parts.set(args.env, i, Values.toString(args.env, ((ArrayValue)tmp).get(i)));
                     return parts;
                 }
             }
         }
 
         String[] parts;
-        var pattern = Pattern.quote(Values.toString(args.ctx, term));
+        var pattern = Pattern.quote(Values.toString(args.env, term));
 
         if (lim == null) parts = val.split(pattern);
         else if ((double)lim < 1) return new ArrayValue();
@@ -228,7 +228,7 @@ public class StringLib {
             if (parts.length > limit) res = new ArrayValue(limit);
             else res = new ArrayValue(parts.length);
 
-            for (var i = 0; i < parts.length && i < limit; i++) res.set(args.ctx, i, parts[i]);
+            for (var i = 0; i < parts.length && i < limit; i++) res.set(args.env, i, parts[i]);
 
             return res;
         }
@@ -238,7 +238,7 @@ public class StringLib {
 
         for (; i < parts.length; i++) {
             if (lim != null && (double)lim <= i) break;
-            res.set(args.ctx, i, parts[i]);
+            res.set(args.env, i, parts[i]);
         }
 
         return res;
@@ -249,7 +249,7 @@ public class StringLib {
         var start = normalizeI(args.getInt(0), self.length(), false);
         var end = normalizeI(args.getInt(1, self.length()), self.length(), false);
 
-        return __substring(new Arguments(args.ctx, self, start, end));
+        return __substring(new Arguments(args.env, self, start, end));
     }
 
     @Expose public static String __concat(Arguments args) {

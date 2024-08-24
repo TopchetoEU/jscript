@@ -5,11 +5,11 @@ import me.topchetoeu.jscript.common.FunctionBody;
 import me.topchetoeu.jscript.compilation.CompileResult;
 import me.topchetoeu.jscript.compilation.parsing.Parsing;
 import me.topchetoeu.jscript.runtime.Compiler;
-import me.topchetoeu.jscript.runtime.Extensions;
 import me.topchetoeu.jscript.runtime.debug.DebugContext;
+import me.topchetoeu.jscript.runtime.environment.Environment;
 
 public class JSCompiler implements Compiler {
-    public final Extensions ext;
+    public final Environment ext;
 
     private void registerFunc(FunctionBody body, CompileResult res) {
         var map = res.map();
@@ -30,7 +30,7 @@ public class JSCompiler implements Compiler {
         return func;
     }
 
-    public JSCompiler(Extensions ext) {
+    public JSCompiler(Environment ext) {
         this.ext = ext;
     }
 }

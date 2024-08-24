@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.stream.Collectors;
 
-import me.topchetoeu.jscript.runtime.Context;
+import me.topchetoeu.jscript.runtime.environment.Environment;
 import me.topchetoeu.jscript.runtime.values.ArrayValue;
 import me.topchetoeu.jscript.runtime.values.ObjectValue;
 import me.topchetoeu.jscript.runtime.values.Values;
@@ -24,13 +24,13 @@ public class SetLib {
     }
 
     @Expose public ObjectValue __entries(Arguments args) {
-        return Values.toJSIterator(args.ctx, set.stream().map(v -> new ArrayValue(args.ctx, v, v)).collect(Collectors.toList()));
+        return Values.toJSIterator(args.env, set.stream().map(v -> new ArrayValue(args.env, v, v)).collect(Collectors.toList()));
     }
     @Expose public ObjectValue __keys(Arguments args) {
-        return Values.toJSIterator(args.ctx, set);
+        return Values.toJSIterator(args.env, set);
     }
     @Expose public ObjectValue __values(Arguments args) {
-        return Values.toJSIterator(args.ctx, set);
+        return Values.toJSIterator(args.env, set);
     }
 
     @Expose public Object __add(Arguments args) {
@@ -55,15 +55,15 @@ public class SetLib {
     @Expose public void __forEach(Arguments args) {
         var keys = new ArrayList<>(set);
 
-        for (var el : keys) Values.call(args.ctx, args.get(0), args.get(1), el, el, args.self);
+        for (var el : keys) Values.call(args.env, args.get(0), args.get(1), el, el, args.self);
     }
 
-    public SetLib(Context ctx, Object iterable) {
-        for (var el : Values.fromJSIterator(ctx, iterable)) set.add(el);
+    public SetLib(Environment env, Object iterable) {
+        for (var el : Values.fromJSIterator(env, iterable)) set.add(el);
     }
 
     @ExposeConstructor
     public static SetLib __constructor(Arguments args) {
-        return new SetLib(args.ctx, args.get(0));
+        return new SetLib(args.env, args.get(0));
     }
 }

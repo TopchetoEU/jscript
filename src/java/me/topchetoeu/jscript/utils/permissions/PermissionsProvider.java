@@ -1,7 +1,7 @@
 package me.topchetoeu.jscript.utils.permissions;
 
-import me.topchetoeu.jscript.runtime.Extensions;
-import me.topchetoeu.jscript.runtime.Key;
+import me.topchetoeu.jscript.runtime.environment.Environment;
+import me.topchetoeu.jscript.runtime.environment.Key;
 
 public interface PermissionsProvider {
     public static final Key<PermissionsProvider> KEY = new Key<>();
@@ -20,7 +20,7 @@ public interface PermissionsProvider {
         return hasPermission(new Permission(perm, matcher));
     }
 
-    public static PermissionsProvider get(Extensions exts) {
+    public static PermissionsProvider get(Environment exts) {
         return (perm, value) -> {
             if (exts.hasNotNull(KEY)) return exts.get(KEY).hasPermission(perm);
             else return true;

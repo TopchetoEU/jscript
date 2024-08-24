@@ -21,7 +21,7 @@ import me.topchetoeu.jscript.runtime.exceptions.EngineException;
 import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 import me.topchetoeu.jscript.utils.interop.NativeWrapperProvider;
 
-public class Values {
+public interface Value {
     public static enum CompareResult {
         NOT_EQUAL,
         EQUAL,
@@ -42,14 +42,6 @@ public class Values {
 
     public static final Object NULL = new Object();
     public static final Object NO_RETURN = new Object();
-
-    public static boolean isWrapper(Object val) { return val instanceof NativeWrapper; }
-    public static boolean isWrapper(Object val, Class<?> clazz) {
-        if (!isWrapper(val)) return false;
-        var res = (NativeWrapper)val;
-        return res != null && clazz.isInstance(res.wrapped);
-    }
-    public static boolean isNan(Object val) { return val instanceof Number && Double.isNaN(number(val)); }
 
     public static double number(Object val) {
         if (val instanceof Number) return ((Number)val).doubleValue();
@@ -73,52 +65,53 @@ public class Values {
         return "object";
     }
 
-    private static Object tryCallConvertFunc(Environment ext, Object obj, String name) {
-        var func = getMember(ext, obj, name);
+    public boolean isPrimitive();
+    public BooleanValue toBoolean();
 
-        if (func instanceof FunctionValue) {
-            var res = Values.call(ext, func, obj);
-            if (isPrimitive(res)) return res;
+    public default Value call(Environment env, Value self, Value ...args) {
+        throw EngineException.ofType("Tried to call a non-function value.");
+    }
+    public default Value callNew(Environment env, Value ...args) {
+        var res = new ObjectValue();
+
+        try {
+            var proto = Values.getMember(env, this, "prototype");
+            setPrototype(env, res, proto);
+
+            var ret = this.call(env, res, args);
+
+            if (!ret.isPrimitive()) return ret;
+            return res;
+        }
+        catch (IllegalArgumentException e) {
+            throw EngineException.ofType("Tried to call new on an invalid constructor.");
+        }
+    }
+
+    public default Value toPrimitive(Environment env, Value val) {
+        if (val.isPrimitive()) return val;
+
+        if (env != null) {
+            var valueOf = getMember(env, val, "valueOf");
+
+            if (valueOf instanceof FunctionValue) {
+                var res = valueOf.call(env, val);
+                if (res.isPrimitive()) return res;
+            }
+
+            var toString = getMember(env, val, "toString");
+            if (toString instanceof FunctionValue) {
+                var res = toString.call(env, val);
+                if (res.isPrimitive()) return res;
+            }
         }
 
         throw EngineException.ofType("Value couldn't be converted to a primitive.");
     }
+    public default NumberValue toNumber(Environment ext, Object obj) {
+        var val = this.toPrimitive(ext, obj, ConvertHint.VALUEOF);
 
-    public static boolean isPrimitive(Object obj) {
-        return
-            obj instanceof Number ||
-            obj instanceof String ||
-            obj instanceof Boolean ||
-            obj instanceof Symbol ||
-            obj == null ||
-            obj == NULL;
-    }
-
-    public static Object toPrimitive(Environment ext, Object obj, ConvertHint hint) {
-        obj = normalize(ext, obj);
-        if (isPrimitive(obj)) return obj;
-
-        var first = hint == ConvertHint.VALUEOF ? "valueOf" : "toString";
-        var second = hint == ConvertHint.VALUEOF ? "toString" : "valueOf";
-
-        if (ext != null) {
-            try { return tryCallConvertFunc(ext, obj, first); }
-            catch (EngineException unused) { return tryCallConvertFunc(ext, obj, second); }
-        }
-
-        throw EngineException.ofType("Value couldn't be converted to a primitive.");
-    }
-    public static boolean toBoolean(Object obj) {
-        if (obj == NULL || obj == null) return false;
-        if (obj instanceof Number && (number(obj) == 0 || Double.isNaN(number(obj)))) return false;
-        if (obj instanceof String && ((String)obj).equals("")) return false;
-        if (obj instanceof Boolean) return (Boolean)obj;
-        return true;
-    }
-    public static double toNumber(Environment ext, Object obj) {
-        var val = toPrimitive(ext, obj, ConvertHint.VALUEOF);
-
-        if (val instanceof Number) return number(val);
+        if (val instanceof NumberValue) return number(val);
         if (val instanceof Boolean) return ((Boolean)val) ? 1 : 0;
         if (val instanceof String) {
             try { return Double.parseDouble((String)val); }
@@ -126,7 +119,7 @@ public class Values {
         }
         return Double.NaN;
     }
-    public static String toString(Environment ext, Object obj) {
+    public default StringValue toString(Environment ext, Object obj) {
         var val = toPrimitive(ext, obj, ConvertHint.VALUEOF);
 
         if (val == null) return "undefined";
@@ -384,26 +377,6 @@ public class Values {
             ));
         }
         else return null;
-    }
-
-    public static Object call(Environment ext, Object func, Object thisArg, Object ...args) {
-        if (!(func instanceof FunctionValue)) throw EngineException.ofType("Tried to call a non-function value.");
-        return ((FunctionValue)func).call(ext, thisArg, args);
-    }
-    public static Object callNew(Environment ext, Object func, Object ...args) {
-        var res = new ObjectValue();
-        try {
-            var proto = Values.getMember(ext, func, "prototype");
-            setPrototype(ext, res, proto);
-
-            var ret = call(ext, func, res, args);
-
-            if (!isPrimitive(ret)) return ret;
-            return res;
-        }
-        catch (IllegalArgumentException e) {
-            throw EngineException.ofType("Tried to call new on an invalid constructor.");
-        }
     }
 
     public static boolean strictEquals(Environment ext, Object a, Object b) {

@@ -39,7 +39,7 @@ public class ArrayLib {
         return __iterator(args);
     }
     @Expose public static ObjectValue __keys(Arguments args) {
-        return Values.toJSIterator(args.ctx, () -> new Iterator<Object>() {
+        return Values.toJSIterator(args.env, () -> new Iterator<Object>() {
             private int i = 0;
 
             @Override
@@ -54,7 +54,7 @@ public class ArrayLib {
         });
     }
     @Expose public static ObjectValue __entries(Arguments args) {
-        return Values.toJSIterator(args.ctx, () -> new Iterator<Object>() {
+        return Values.toJSIterator(args.env, () -> new Iterator<Object>() {
             private int i = 0;
 
             @Override
@@ -64,18 +64,18 @@ public class ArrayLib {
             @Override
             public Object next() {
                 if (!hasNext()) return null;
-                return new ArrayValue(args.ctx, i, args.self(ArrayValue.class).get(i++));
+                return new ArrayValue(args.env, i, args.self(ArrayValue.class).get(i++));
             }
         });
     }
 
     @Expose(value = "@@Symbol.iterator")
     public static ObjectValue __iterator(Arguments args) {
-        return Values.toJSIterator(args.ctx, args.self(ArrayValue.class));
+        return Values.toJSIterator(args.env, args.self(ArrayValue.class));
     }
     @Expose(value = "@@Symbol.asyncIterator")
     public static ObjectValue __asyncIterator(Arguments args) {
-        return Values.toJSAsyncIterator(args.ctx, args.self(ArrayValue.class).iterator());
+        return Values.toJSAsyncIterator(args.env, args.self(ArrayValue.class).iterator());
     }
 
     @Expose public static ArrayValue __concat(Arguments args) {
@@ -98,7 +98,7 @@ public class ArrayLib {
                 j += n;
             }
             else {
-                res.set(args.ctx, j++, arrs.get(i));
+                res.set(args.env, j++, arrs.get(i));
             }
         }
 
@@ -113,7 +113,7 @@ public class ArrayLib {
         });
 
         arr.sort((a, b) -> {
-            var res = Values.toNumber(args.ctx, (cmp == null ? defaultCmp : cmp).call(args.ctx, null, a, b));
+            var res = Values.toNumber(args.env, (cmp == null ? defaultCmp : cmp).call(args.env, null, a, b));
             if (res < 0) return -1;
             if (res > 0) return 1;
             return 0;
@@ -127,7 +127,7 @@ public class ArrayLib {
         var start = normalizeI(arr.size(), args.getInt(1, 0), true);
         var end = normalizeI(arr.size(), args.getInt(2, arr.size()), true);
 
-        for (; start < end; start++) arr.set(args.ctx, start, val);
+        for (; start < end; start++) arr.set(args.env, start, val);
 
         return arr;
     }
@@ -136,7 +136,7 @@ public class ArrayLib {
 
         for (var i = 0; i < arr.size(); i++) {
             if (arr.has(i) && !Values.toBoolean(Values.call(
-                args.ctx, args.get(0), args.get(1),
+                args.env, args.get(0), args.get(1),
                 arr.get(i), i, arr
             ))) return false;
         }
@@ -148,7 +148,7 @@ public class ArrayLib {
 
         for (var i = 0; i < arr.size(); i++) {
             if (arr.has(i) && Values.toBoolean(Values.call(
-                args.ctx, args.get(0), args.get(1),
+                args.env, args.get(0), args.get(1),
                 arr.get(i), i, arr
             ))) return true;
         }
@@ -161,9 +161,9 @@ public class ArrayLib {
 
         for (int i = 0, j = 0; i < arr.size(); i++) {
             if (arr.has(i) && Values.toBoolean(Values.call(
-                args.ctx, args.get(0), args.get(1),
+                args.env, args.get(0), args.get(1),
                 arr.get(i), i, arr
-            ))) res.set(args.ctx, j++, arr.get(i));
+            ))) res.set(args.env, j++, arr.get(i));
         }
 
         return res;
@@ -174,7 +174,7 @@ public class ArrayLib {
         res.setSize(arr.size());
 
         for (int i = 0; i < arr.size(); i++) {
-            if (arr.has(i)) res.set(args.ctx, i, Values.call(args.ctx, args.get(0), args.get(1), arr.get(i), i, arr));
+            if (arr.has(i)) res.set(args.env, i, Values.call(args.env, args.get(0), args.get(1), arr.get(i), i, arr));
         }
         return res;
     }
@@ -184,7 +184,7 @@ public class ArrayLib {
         var thisArg = args.get(1);
 
         for (int i = 0; i < arr.size(); i++) {
-            if (arr.has(i)) func.call(args.ctx, thisArg, arr.get(i), i, arr);
+            if (arr.has(i)) func.call(args.env, thisArg, arr.get(i), i, arr);
         }
     }
 
@@ -205,7 +205,7 @@ public class ArrayLib {
 
         for (; i < arr.size(); i++) {
             if (arr.has(i)) {
-                res = func.call(args.ctx, null, res, arr.get(i), i, arr);
+                res = func.call(args.env, null, res, arr.get(i), i, arr);
             }
         }
 
@@ -226,7 +226,7 @@ public class ArrayLib {
 
         for (; i >= 0; i--) {
             if (arr.has(i)) {
-                res = func.call(args.ctx, null, res, arr.get(i), i, arr);
+                res = func.call(args.env, null, res, arr.get(i), i, arr);
             }
         }
 
@@ -255,13 +255,13 @@ public class ArrayLib {
                     depths.push(d + 1);
                 }
             }
-            else res.set(args.ctx, res.size(), el);
+            else res.set(args.env, res.size(), el);
         }
 
         return res;
     }
     @Expose public static ArrayValue __flatMap(Arguments args) {
-        return __flat(new Arguments(args.ctx, __map(args), 1));
+        return __flat(new Arguments(args.env, __map(args), 1));
     }
 
     @Expose public static Object __find(Arguments args) {
@@ -269,7 +269,7 @@ public class ArrayLib {
 
         for (int i = 0; i < arr.size(); i++) {
             if (arr.has(i) && Values.toBoolean(Values.call(
-                args.ctx, args.get(0), args.get(1),
+                args.env, args.get(0), args.get(1),
                 arr.get(i), i, args.self
             ))) return arr.get(i);
         }
@@ -281,7 +281,7 @@ public class ArrayLib {
 
         for (var i = arr.size() - 1; i >= 0; i--) {
             if (arr.has(i) && Values.toBoolean(Values.call(
-                args.ctx, args.get(0), args.get(1),
+                args.env, args.get(0), args.get(1),
                 arr.get(i), i, args.self
             ))) return arr.get(i);
         }
@@ -294,7 +294,7 @@ public class ArrayLib {
 
         for (int i = 0; i < arr.size(); i++) {
             if (arr.has(i) && Values.toBoolean(Values.call(
-                args.ctx, args.get(0), args.get(1),
+                args.env, args.get(0), args.get(1),
                 arr.get(i), i, args.self
             ))) return i;
         }
@@ -306,7 +306,7 @@ public class ArrayLib {
 
         for (var i = arr.size() - 1; i >= 0; i--) {
             if (arr.has(i) && Values.toBoolean(Values.call(
-                args.ctx, args.get(0), args.get(1),
+                args.env, args.get(0), args.get(1),
                 arr.get(i), i, args.self
             ))) return i;
         }
@@ -320,7 +320,7 @@ public class ArrayLib {
         var start = normalizeI(arr.size(), args.getInt(1), true);
 
         for (int i = start; i < arr.size(); i++) {
-            if (Values.strictEquals(args.ctx, arr.get(i), val)) return i;
+            if (Values.strictEquals(args.env, arr.get(i), val)) return i;
         }
 
         return -1;
@@ -331,7 +331,7 @@ public class ArrayLib {
         var start = normalizeI(arr.size(), args.getInt(1), true);
 
         for (int i = arr.size(); i >= start; i--) {
-            if (Values.strictEquals(args.ctx, arr.get(i), val)) return i;
+            if (Values.strictEquals(args.env, arr.get(i), val)) return i;
         }
 
         return -1;
@@ -353,7 +353,7 @@ public class ArrayLib {
         var arr = args.self(ArrayValue.class);
         var values = args.args;
 
-        arr.copyFrom(args.ctx, values, 0, arr.size(), values.length);
+        arr.copyFrom(args.env, values, 0, arr.size(), values.length);
         return arr.size();
     }
 
@@ -372,7 +372,7 @@ public class ArrayLib {
         var values = args.slice(0).args;
 
         arr.move(0, values.length, arr.size());
-        arr.copyFrom(args.ctx, values, 0, 0, values.length);
+        arr.copyFrom(args.env, values, 0, 0, values.length);
         return arr.size();
     }
 
@@ -398,13 +398,13 @@ public class ArrayLib {
         var res = new ArrayValue(deleteCount);
         arr.copyTo(res, start, 0, deleteCount);
         arr.move(start + deleteCount, start + items.length, arr.size() - start - deleteCount);
-        arr.copyFrom(args.ctx, items, 0, start, items.length);
+        arr.copyFrom(args.env, items, 0, start, items.length);
         arr.setSize(size);
 
         return res;
     }
     @Expose public static String __toString(Arguments args) {
-        return __join(new Arguments(args.ctx, args.self, ","));
+        return __join(new Arguments(args.env, args.self, ","));
     }
 
     @Expose public static String __join(Arguments args) {
@@ -422,7 +422,7 @@ public class ArrayLib {
             var el = arr.get(i);
             if (el == null || el == Values.NULL) continue;
 
-            res.append(Values.toString(args.ctx, el));
+            res.append(Values.toString(args.env, el));
         }
 
         return res.toString();
@@ -434,7 +434,7 @@ public class ArrayLib {
     }
     @Expose(target = ExposeTarget.STATIC)
     public static ArrayValue __of(Arguments args) {
-        return new ArrayValue(args.ctx, args.slice(0).args);
+        return new ArrayValue(args.env, args.slice(0).args);
     }
 
     @ExposeConstructor public static ArrayValue __constructor(Arguments args) {
@@ -448,7 +448,7 @@ public class ArrayLib {
         else {
             var val = args.args;
             res = new ArrayValue(val.length);
-            res.copyFrom(args.ctx, val, 0, 0, val.length);
+            res.copyFrom(args.env, val, 0, 0, val.length);
         }
 
         return res;

@@ -1,15 +1,14 @@
 package me.topchetoeu.jscript.runtime.values;
 
 import me.topchetoeu.jscript.common.FunctionBody;
-import me.topchetoeu.jscript.runtime.Context;
-import me.topchetoeu.jscript.runtime.Extensions;
 import me.topchetoeu.jscript.runtime.Frame;
+import me.topchetoeu.jscript.runtime.environment.Environment;
 import me.topchetoeu.jscript.runtime.scope.ValueVariable;
 
 public class CodeFunction extends FunctionValue {
     public final FunctionBody body;
     public final ValueVariable[] captures;
-    public Extensions extensions;
+    public Environment env;
 
     // public Location loc() {
     //     for (var instr : body.instructions) {
@@ -24,15 +23,13 @@ public class CodeFunction extends FunctionValue {
     //     else return name + "@" + loc;
     // }
 
-    @Override
-    public Object call(Extensions ext, Object thisArg, Object ...args) {
-        var frame = new Frame(Context.of(ext), thisArg, args, this);
-
+    @Override public Object call(Environment env, Object thisArg, Object ...args) {
+        var frame = new Frame(env, thisArg, args, this);
         frame.onPush();
 
         try {
             while (true) {
-                var res = frame.next(Values.NO_RETURN, Values.NO_RETURN, null);
+                var res = frame.next();
                 if (res != Values.NO_RETURN) return res;
             }
         }
@@ -41,10 +38,10 @@ public class CodeFunction extends FunctionValue {
         }
     }
 
-    public CodeFunction(Extensions extensions, String name, FunctionBody body, ValueVariable[] captures) {
+    public CodeFunction(Environment env, String name, FunctionBody body, ValueVariable[] captures) {
         super(name, body.argsN);
         this.captures = captures;
-        this.extensions = Context.clean(extensions);
+        this.env = env;
         this.body = body;
     }
 }

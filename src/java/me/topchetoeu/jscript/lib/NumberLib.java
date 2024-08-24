@@ -85,7 +85,7 @@ public class NumberLib {
         else return args.getDouble(0);
     }
     @Expose public static String __toString(Arguments args) {
-        return Values.toString(args.ctx, args.self);
+        return Values.toString(args.env, args.self);
     }
     @Expose public static String __toFixed(Arguments args) {
         var digits = args.getInt(0, 0);
@@ -98,6 +98,6 @@ public class NumberLib {
     }
     @Expose public static double __valueOf(Arguments args) {
         if (Values.isWrapper(args.self, NumberLib.class)) return Values.wrapper(args.self, NumberLib.class).value;
-        else return Values.toNumber(args.ctx, args.self);
+        else return Values.toNumber(args.env, args.self);
     }
 }
