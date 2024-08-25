@@ -1,11 +1,18 @@
 package me.topchetoeu.jscript.compilation.control;
 
+import java.util.List;
+
+import me.topchetoeu.jscript.common.Filename;
 import me.topchetoeu.jscript.common.Instruction;
 import me.topchetoeu.jscript.common.Location;
+import me.topchetoeu.jscript.common.ParseRes;
 import me.topchetoeu.jscript.common.Instruction.BreakpointType;
 import me.topchetoeu.jscript.common.Instruction.Type;
 import me.topchetoeu.jscript.compilation.CompileResult;
 import me.topchetoeu.jscript.compilation.Statement;
+import me.topchetoeu.jscript.compilation.parsing.Operator;
+import me.topchetoeu.jscript.compilation.parsing.Parsing;
+import me.topchetoeu.jscript.compilation.parsing.Token;
 
 public class WhileStatement extends Statement {
     public final Statement condition, body;
@@ -31,6 +38,14 @@ public class WhileStatement extends Statement {
         if (pollute) target.add(Instruction.pushUndefined());
     }
 
+    public static ParseRes<String> parseLabel(List<Token> tokens, int i) {
+        int n = 0;
+    
+        var nameRes = Parsing.parseIdentifier(tokens, i + n++);
+        if (!Parsing.isOperator(tokens, i + n++, Operator.COLON)) return ParseRes.failed();
+    
+        return ParseRes.res(nameRes.result, n);
+    }
     public WhileStatement(Location loc, String label, Statement condition, Statement body) {
         super(loc);
         this.label = label;
@@ -48,5 +63,28 @@ public class WhileStatement extends Statement {
                 target.set(i, Instruction.jmp(breakPoint - i));
             }
         }
+    }
+
+    public static ParseRes<WhileStatement> parseWhile(Filename filename, List<Token> tokens, int i) {
+        var loc = Parsing.getLoc(filename, tokens, i);
+        int n = 0;
+
+        var labelRes = WhileStatement.parseLabel(tokens, i + n);
+        n += labelRes.n;
+
+        if (!Parsing.isIdentifier(tokens, i + n++, "while")) return ParseRes.failed();
+        if (!Parsing.isOperator(tokens, i + n++, Operator.PAREN_OPEN)) return ParseRes.error(loc, "Expected a open paren after 'while'.");
+
+        var condRes = Parsing.parseValue(filename, tokens, i + n, 0);
+        if (!condRes.isSuccess()) return ParseRes.error(loc, "Expected a while condition.", condRes);
+        n += condRes.n;
+
+        if (!Parsing.isOperator(tokens, i + n++, Operator.PAREN_CLOSE)) return ParseRes.error(loc, "Expected a closing paren after while condition.");
+
+        var res = Parsing.parseStatement(filename, tokens, i + n);
+        if (!res.isSuccess()) return ParseRes.error(loc, "Expected a while body.", res);
+        n += res.n;
+
+        return ParseRes.res(new WhileStatement(loc, labelRes.result, condRes.result, res.result), n);
     }
 }
