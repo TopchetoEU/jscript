@@ -8,6 +8,7 @@ import me.topchetoeu.jscript.common.ParseRes;
 import me.topchetoeu.jscript.compilation.parsing.Operator;
 import me.topchetoeu.jscript.compilation.parsing.Parsing;
 import me.topchetoeu.jscript.compilation.parsing.Token;
+import me.topchetoeu.jscript.compilation.values.ConstantStatement;
 import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 
 public class JSON {
@@ -15,7 +16,7 @@ public class JSON {
         return Parsing.parseIdentifier(tokens, i);
     }
     public static ParseRes<String> parseString(Filename filename, List<Token> tokens, int i) {
-        var res = Parsing.parseString(filename, tokens, i);
+        var res = ConstantStatement.parseString(filename, tokens, i);
         if (res.isSuccess()) return ParseRes.res((String)res.result.value, res.n);
         else return res.transform();
     }
@@ -23,7 +24,7 @@ public class JSON {
         var minus = Parsing.isOperator(tokens, i, Operator.SUBTRACT);
         if (minus) i++;
 
-        var res = Parsing.parseNumber(filename, tokens, i);
+        var res = ConstantStatement.parseNumber(filename, tokens, i);
         if (res.isSuccess()) return ParseRes.res((minus ? -1 : 1) * (Double)res.result.value, res.n + (minus ? 1 : 0));
         else return res.transform();
     }

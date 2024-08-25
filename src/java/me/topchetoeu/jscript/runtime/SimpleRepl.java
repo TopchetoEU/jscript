@@ -16,6 +16,7 @@ import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 import me.topchetoeu.jscript.runtime.scope.GlobalScope;
 import me.topchetoeu.jscript.runtime.values.Value;
 import me.topchetoeu.jscript.runtime.values.functions.NativeFunction;
+import me.topchetoeu.jscript.runtime.values.primitives.VoidValue;
 
 public class SimpleRepl {
     static Thread engineTask, debugTask;
@@ -48,7 +49,7 @@ public class SimpleRepl {
 
                     if (raw == null) break;
                     var func = Compiler.compile(environment, new Filename("jscript", "repl/" + i + ".js"), raw);
-                    var res = engine.pushMsg(false, environment, func, null).await();
+                    var res = engine.pushMsg(false, environment, func, VoidValue.UNDEFINED).await();
                     System.err.println(res.toReadable(environment));
                 }
                 catch (EngineException | SyntaxException e) { System.err.println(Value.errorToReadable(e, null)); }

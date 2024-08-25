@@ -1,9 +1,15 @@
 package me.topchetoeu.jscript.compilation.values;
 
+import java.util.List;
+
+import me.topchetoeu.jscript.common.Filename;
 import me.topchetoeu.jscript.common.Instruction;
 import me.topchetoeu.jscript.common.Location;
+import me.topchetoeu.jscript.common.ParseRes;
 import me.topchetoeu.jscript.compilation.CompileResult;
 import me.topchetoeu.jscript.compilation.Statement;
+import me.topchetoeu.jscript.compilation.parsing.Parsing;
+import me.topchetoeu.jscript.compilation.parsing.Token;
 
 public class ConstantStatement extends Statement {
     public final Object value;
@@ -43,5 +49,26 @@ public class ConstantStatement extends Statement {
     }
     public static ConstantStatement ofNull(Location loc) {
         return new ConstantStatement(loc, null, true);
+    }
+
+    public static ParseRes<ConstantStatement> parseNumber(Filename filename, List<Token> tokens, int i) {
+        var loc = Parsing.getLoc(filename, tokens, i);
+        if (Parsing.inBounds(tokens, i)) {
+            if (tokens.get(i).isNumber()) {
+                return ParseRes.res(new ConstantStatement(loc, tokens.get(i).number()), 1);
+            }
+            else return ParseRes.failed();
+        }
+        else return ParseRes.failed();
+    }
+    public static ParseRes<ConstantStatement> parseString(Filename filename, List<Token> tokens, int i) {
+        var loc = Parsing.getLoc(filename, tokens, i);
+        if (Parsing.inBounds(tokens, i)) {
+            if (tokens.get(i).isString()) {
+                return ParseRes.res(new ConstantStatement(loc, tokens.get(i).string()), 1);
+            }
+            else return ParseRes.failed();
+        }
+        else return ParseRes.failed();
     }
 }

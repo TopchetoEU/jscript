@@ -1,5 +1,6 @@
 package me.topchetoeu.jscript.runtime;
 
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Stack;
@@ -19,6 +20,7 @@ import me.topchetoeu.jscript.runtime.values.functions.CodeFunction;
 import me.topchetoeu.jscript.runtime.values.objects.ArrayValue;
 import me.topchetoeu.jscript.runtime.values.objects.ObjectValue;
 import me.topchetoeu.jscript.runtime.values.objects.ScopeValue;
+import me.topchetoeu.jscript.runtime.values.primitives.VoidValue;
 
 public class Frame {
     public static final Key<Frame> KEY = new Key<>();
@@ -124,7 +126,7 @@ public class Frame {
         else return stack[stackPtr - 1 - offset];
     }
     public Value pop() {
-        if (stackPtr == 0) return null;
+        if (stackPtr == 0) return VoidValue.UNDEFINED;
         return stack[--stackPtr];
     }
     public Value[] take(int n) {
@@ -135,6 +137,7 @@ public class Frame {
         int copyN = stackPtr - srcI;
 
         Value[] res = new Value[n];
+        Arrays.fill(res, VoidValue.UNDEFINED);
         System.arraycopy(stack, srcI, res, dstI, copyN);
         stackPtr -= copyN;
 
