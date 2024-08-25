@@ -7,9 +7,9 @@ import java.util.Random;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import me.topchetoeu.jscript.runtime.Compiler;
-import me.topchetoeu.jscript.runtime.values.FunctionValue;
-import me.topchetoeu.jscript.runtime.values.ObjectValue;
+import me.topchetoeu.jscript.common.Compiler;
+import me.topchetoeu.jscript.runtime.values.functions.FunctionValue;
+import me.topchetoeu.jscript.runtime.values.objects.ObjectValue;
 
 public class Environment {
     public static final Key<Compiler> COMPILE_FUNC = new Key<>();

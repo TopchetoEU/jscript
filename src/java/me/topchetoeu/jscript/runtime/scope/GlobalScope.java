@@ -6,55 +6,48 @@ import java.util.Set;
 import me.topchetoeu.jscript.runtime.environment.Environment;
 import me.topchetoeu.jscript.runtime.environment.Key;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
-import me.topchetoeu.jscript.runtime.values.FunctionValue;
-import me.topchetoeu.jscript.runtime.values.NativeFunction;
-import me.topchetoeu.jscript.runtime.values.ObjectValue;
-import me.topchetoeu.jscript.runtime.values.Values;
+import me.topchetoeu.jscript.runtime.values.Value;
+import me.topchetoeu.jscript.runtime.values.Member.FieldMember;
+import me.topchetoeu.jscript.runtime.values.functions.FunctionValue;
+import me.topchetoeu.jscript.runtime.values.objects.ObjectValue;
+import me.topchetoeu.jscript.runtime.values.primitives.StringValue;
+import me.topchetoeu.jscript.runtime.values.primitives.VoidValue;
 
 public class GlobalScope {
     public static final Key<GlobalScope> KEY = new Key<>();
 
-    public final ObjectValue obj;
+    public final ObjectValue object;
 
     public boolean has(Environment ext, String name) {
-        return Values.hasMember(ext, obj, name, false);
+        return object.hasMember(ext, new StringValue(name), false);
     }
 
     public GlobalScope child() {
-        var obj = new ObjectValue();
-        Values.setPrototype(null, obj, this.obj);
-        return new GlobalScope(obj);
+        var res = new GlobalScope();
+        res.object.setPrototype(null, this.object);
+        return res;
     }
 
-    public Object define(Environment ext, String name) {
-        if (Values.hasMember(ext, obj, name, false)) return name;
-        obj.defineProperty(ext, name, null);
-        return name;
+    public void define(Environment ext, String name, Variable variable) {
+        object.defineOwnMember(ext, new StringValue(name), variable.toField(true, true));
     }
-    public void define(Environment ext, String name, Variable val) {
-        obj.defineProperty(ext, name,
-            new NativeFunction("get " + name, args -> val.get(args.env)),
-            new NativeFunction("set " + name, args -> { val.set(args.env, args.get(0)); return null; }),
-            true, true
-        );
+    public void define(Environment ext, boolean readonly, String name, Value val) {
+        object.defineOwnMember(ext, new StringValue(name), FieldMember.of(val, !readonly));
     }
-    public void define(Environment ext, String name, boolean readonly, Object val) {
-        obj.defineProperty(ext, name, val, readonly, true, true);
-    }
-    public void define(Environment ext, String ...names) {
-        for (var n : names) define(ext, n);
+    public void define(Environment ext, boolean readonly, String ...names) {
+        for (var name : names) define(ext, name, new ValueVariable(readonly, VoidValue.UNDEFINED));
     }
     public void define(Environment ext, boolean readonly, FunctionValue val) {
-        define(ext, val.name, readonly, val);
+        define(ext, readonly, val.name, val);
     }
 
-    public Object get(Environment ext, String name) {
-        if (!Values.hasMember(ext, obj, name, false)) throw EngineException.ofSyntax("The variable '" + name + "' doesn't exist.");
-        else return Values.getMember(ext, obj, name);
+    public Value get(Environment env, String name) {
+        if (!object.hasMember(env, new StringValue(name), false)) throw EngineException.ofSyntax("The variable '" + name + "' doesn't exist.");
+        else return object.getMember(env, new StringValue(name));
     }
-    public void set(Environment ext, String name, Object val) {
-        if (!Values.hasMember(ext, obj, name, false)) throw EngineException.ofSyntax("The variable '" + name + "' doesn't exist.");
-        if (!Values.setMember(ext, obj, name, val)) throw EngineException.ofSyntax("The global '" + name + "' is readonly.");
+    public void set(Environment ext, String name, Value val) {
+        if (!object.hasMember(ext, new StringValue(name), false)) throw EngineException.ofSyntax("The variable '" + name + "' doesn't exist.");
+        if (!object.setMember(ext, new StringValue(name), val)) throw EngineException.ofSyntax("The global '" + name + "' is read-only.");
     }
 
     public Set<String> keys() {
@@ -68,10 +61,11 @@ public class GlobalScope {
     }
 
     public GlobalScope() {
-        this.obj = new ObjectValue();
+        this.object = new ObjectValue();
+        this.object.setPrototype(null, null);
     }
     public GlobalScope(ObjectValue val) {
-        this.obj = val;
+        this.object = val;
     }
 
     public static GlobalScope get(Environment ext) {

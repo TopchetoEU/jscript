@@ -1,27 +1,24 @@
 package me.topchetoeu.jscript.runtime.scope;
 
 import me.topchetoeu.jscript.runtime.environment.Environment;
-import me.topchetoeu.jscript.runtime.values.Values;
+import me.topchetoeu.jscript.runtime.values.Value;
 
 public class ValueVariable implements Variable {
     public boolean readonly;
-    public Object value;
+    public Value value;
 
-    @Override
-    public boolean readonly() { return readonly; }
+    @Override public boolean readonly() { return readonly; }
+    @Override public final Value get(Environment env) { return get(); }
+    @Override public final boolean set(Environment env, Value val) { return set(val); }
 
-    @Override
-    public Object get(Environment ext) {
-        return value;
+    public Value get() { return value; }
+    public boolean set(Value val) {
+        if (readonly) return false;
+        this.value = val;
+        return true;
     }
 
-    @Override
-    public void set(Environment ext, Object val) {
-        if (readonly) return;
-        this.value = Values.normalize(ext, val);
-    }
-    
-    public ValueVariable(boolean readonly, Object val) {
+    public ValueVariable(boolean readonly, Value val) {
         this.readonly = readonly;
         this.value = val;
     }

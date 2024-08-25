@@ -14,8 +14,8 @@ import me.topchetoeu.jscript.runtime.Frame;
 import me.topchetoeu.jscript.runtime.environment.Environment;
 import me.topchetoeu.jscript.runtime.environment.Key;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
-import me.topchetoeu.jscript.runtime.values.CodeFunction;
-import me.topchetoeu.jscript.runtime.values.FunctionValue;
+import me.topchetoeu.jscript.runtime.values.functions.CodeFunction;
+import me.topchetoeu.jscript.runtime.values.functions.FunctionValue;
 
 public class DebugContext {
     public static final Key<DebugContext> KEY = new Key<>();
@@ -71,6 +71,7 @@ public class DebugContext {
         return getMapOrEmpty(((CodeFunction)func).body);
     }
     public List<Frame> getStackFrames() {
+        if (debugger == null) return List.of();
         return this.debugger.getStackFrame();
     }
 

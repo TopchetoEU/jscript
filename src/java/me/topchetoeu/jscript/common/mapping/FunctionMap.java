@@ -15,7 +15,6 @@ import me.topchetoeu.jscript.common.Filename;
 import me.topchetoeu.jscript.common.Location;
 import me.topchetoeu.jscript.common.Instruction.BreakpointType;
 import me.topchetoeu.jscript.compilation.scope.LocalScopeRecord;
-import me.topchetoeu.jscript.utils.mapping.SourceMap;
 
 public class FunctionMap {
     public static class FunctionMapBuilder {
@@ -131,27 +130,27 @@ public class FunctionMap {
         return pcToLoc.lastEntry().getValue();
     }
 
-    public FunctionMap apply(SourceMap map) {
-        var res = new FunctionMap(Map.of(), Map.of(), localNames, captureNames);
+    // public static FunctionMap apply(FunctionMap funcMap, SourceMap map) {
+    //     var res = new FunctionMap(Map.of(), Map.of(), funcMap.localNames, funcMap.captureNames);
 
-        for (var el : pcToLoc.entrySet()) {
-            res.pcToLoc.put(el.getKey(), map.toCompiled(el.getValue()));
-        }
+    //     for (var el : funcMap.pcToLoc.entrySet()) {
+    //         res.pcToLoc.put(el.getKey(), map.toCompiled(el.getValue()));
+    //     }
 
-        res.bps.putAll(bps);
+    //     res.bps.putAll(bps);
 
-        for (var el : bpLocs.entrySet()) {
-            for (var loc : el.getValue()) {
-                loc = map.toCompiled(loc);
-                if (loc == null) continue;
+    //     for (var el : bpLocs.entrySet()) {
+    //         for (var loc : el.getValue()) {
+    //             loc = map.toCompiled(loc);
+    //             if (loc == null) continue;
 
-                if (!res.bpLocs.containsKey(loc.filename())) res.bpLocs.put(loc.filename(), new TreeSet<>());
-                res.bpLocs.get(loc.filename()).add(loc);
-            }
-        }
+    //             if (!res.bpLocs.containsKey(loc.filename())) res.bpLocs.put(loc.filename(), new TreeSet<>());
+    //             res.bpLocs.get(loc.filename()).add(loc);
+    //         }
+    //     }
 
-        return res;
-    }
+    //     return res;
+    // }
 
     public FunctionMap clone() {
         var res = new FunctionMap(Map.of(), Map.of(), localNames, captureNames);
