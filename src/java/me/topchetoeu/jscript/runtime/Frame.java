@@ -1,6 +1,7 @@
 package me.topchetoeu.jscript.runtime;
 
-import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Stack;
 
 import me.topchetoeu.jscript.common.Instruction;
@@ -11,11 +12,13 @@ import me.topchetoeu.jscript.runtime.exceptions.EngineException;
 import me.topchetoeu.jscript.runtime.exceptions.InterruptException;
 import me.topchetoeu.jscript.runtime.scope.LocalScope;
 import me.topchetoeu.jscript.runtime.scope.ValueVariable;
-import me.topchetoeu.jscript.runtime.values.ArrayValue;
-import me.topchetoeu.jscript.runtime.values.CodeFunction;
-import me.topchetoeu.jscript.runtime.values.ObjectValue;
-import me.topchetoeu.jscript.runtime.values.ScopeValue;
-import me.topchetoeu.jscript.runtime.values.Values;
+import me.topchetoeu.jscript.runtime.values.Member;
+import me.topchetoeu.jscript.runtime.values.Value;
+import me.topchetoeu.jscript.runtime.values.Member.FieldMember;
+import me.topchetoeu.jscript.runtime.values.functions.CodeFunction;
+import me.topchetoeu.jscript.runtime.values.objects.ArrayValue;
+import me.topchetoeu.jscript.runtime.values.objects.ObjectValue;
+import me.topchetoeu.jscript.runtime.values.objects.ScopeValue;
 
 public class Frame {
     public static final Key<Frame> KEY = new Key<>();
@@ -64,12 +67,12 @@ public class Frame {
 
     private static class PendingResult {
         public final boolean isReturn, isJump, isThrow;
-        public final Object value;
+        public final Value value;
         public final EngineException error;
         public final int ptr;
         public final Instruction instruction;
 
-        private PendingResult(Instruction instr, boolean isReturn, boolean isJump, boolean isThrow, Object value, EngineException error, int ptr) {
+        private PendingResult(Instruction instr, boolean isReturn, boolean isJump, boolean isThrow, Value value, EngineException error, int ptr) {
             this.instruction = instr;
             this.isReturn = isReturn;
             this.isJump = isJump;
@@ -82,7 +85,7 @@ public class Frame {
         public static PendingResult ofNone() {
             return new PendingResult(null, false, false, false, null, null, 0);
         }
-        public static PendingResult ofReturn(Object value, Instruction instr) {
+        public static PendingResult ofReturn(Value value, Instruction instr) {
             return new PendingResult(instr, true, false, false, value, null, 0);
         }
         public static PendingResult ofThrow(EngineException error, Instruction instr) {
@@ -100,7 +103,7 @@ public class Frame {
     public final CodeFunction function;
     public final Environment env;
 
-    public Object[] stack = new Object[32];
+    public Value[] stack = new Value[32];
     public int stackPtr = 0;
     public int codePtr = 0;
     public boolean jumpFlag = false;
@@ -113,52 +116,54 @@ public class Frame {
         tryStack.add(res);
     }
 
-    public Object peek() {
+    public Value peek() {
         return peek(0);
     }
-    public Object peek(int offset) {
+    public Value peek(int offset) {
         if (stackPtr <= offset) return null;
         else return stack[stackPtr - 1 - offset];
     }
-    public Object pop() {
+    public Value pop() {
         if (stackPtr == 0) return null;
         return stack[--stackPtr];
     }
-    public Object[] take(int n) {
+    public Value[] take(int n) {
         int srcI = stackPtr - n;
         if (srcI < 0) srcI = 0;
 
         int dstI = n + srcI - stackPtr;
         int copyN = stackPtr - srcI;
 
-        Object[] res = new Object[n];
+        Value[] res = new Value[n];
         System.arraycopy(stack, srcI, res, dstI, copyN);
         stackPtr -= copyN;
 
         return res;
     }
-    public void push(Object val) {
+    public void push(Value val) {
         if (stack.length <= stackPtr) {
-            var newStack = new Object[stack.length * 2];
+            var newStack = new Value[stack.length * 2];
             System.arraycopy(stack, 0, newStack, 0, stack.length);
             stack = newStack;
         }
-        stack[stackPtr++] = Values.normalize(env, val);
+
+        stack[stackPtr++] = val;
     }
 
-    private Object next(Object value, Object returnValue, EngineException error) {
-        if (value != Values.NO_RETURN) push(value);
+    // for the love of christ don't touch this
+    private Value next(Value value, Value returnValue, EngineException error) {
+        if (value != null) push(value);
 
         Instruction instr = null;
         if (codePtr >= 0 && codePtr < function.body.instructions.length) instr = function.body.instructions[codePtr];
 
-        if (returnValue == Values.NO_RETURN && error == null) {
+        if (returnValue == null && error == null) {
             try {
                 if (Thread.interrupted()) throw new InterruptException();
 
                 if (instr == null) returnValue = null;
                 else {
-                    DebugContext.get(env).onInstruction(env, this, instr, Values.NO_RETURN, null, false);
+                    DebugContext.get(env).onInstruction(env, this, instr, null, null, false);
 
                     try {
                         this.jumpFlag = this.popTryFlag = false;
@@ -181,7 +186,7 @@ public class Frame {
                 if (tryCtx.hasCatch()) newCtx = tryCtx._catch(error);
                 else if (tryCtx.hasFinally()) newCtx = tryCtx._finally(PendingResult.ofThrow(error, instr));
             }
-            else if (returnValue != Values.NO_RETURN) {
+            else if (returnValue != null) {
                 if (tryCtx.hasFinally()) newCtx = tryCtx._finally(PendingResult.ofReturn(returnValue, instr));
             }
             else if (jumpFlag && !tryCtx.inBounds(codePtr)) {
@@ -209,7 +214,7 @@ public class Frame {
                 }
 
                 error = null;
-                returnValue = Values.NO_RETURN;
+                returnValue = null;
                 break;
             }
             else {
@@ -227,7 +232,7 @@ public class Frame {
                     tryStack.pop();
                     codePtr = tryCtx.end;
                     if (tryCtx.result.instruction != null) instr = tryCtx.result.instruction;
-                    if (!jumpFlag && returnValue == Values.NO_RETURN && error == null) {
+                    if (!jumpFlag && returnValue == null && error == null) {
                         if (tryCtx.result.isJump) {
                             codePtr = tryCtx.result.ptr;
                             jumpFlag = true;
@@ -255,19 +260,19 @@ public class Frame {
             DebugContext.get(env).onInstruction(env, this, instr, null, error, caught);
             throw error;
         }
-        if (returnValue != Values.NO_RETURN) {
+        if (returnValue != null) {
             DebugContext.get(env).onInstruction(env, this, instr, returnValue, null, false);
             return returnValue;
         }
 
-        return Values.NO_RETURN;
+        return null;
     }
 
     /**
      * Executes the next instruction in the frame
      */
-    public Object next() {
-        return next(Values.NO_RETURN, Values.NO_RETURN, null);
+    public Value next() {
+        return next(null, null, null);
     }
     /**
      * Induces a value on the stack (as if it were returned by the last function call)
@@ -275,8 +280,8 @@ public class Frame {
      * 
      * @param value The value to induce
      */
-    public Object next(Object value) {
-        return next(value, Values.NO_RETURN, null);
+    public Value next(Value value) {
+        return next(value, null, null);
     }
     /**
      * Induces a thrown error and executes the next instruction.
@@ -286,8 +291,8 @@ public class Frame {
      * 
      * @param error The error to induce
      */
-    public Object induceError(EngineException error) {
-        return next(Values.NO_RETURN, Values.NO_RETURN, error);
+    public Value induceError(EngineException error) {
+        return next(null, null, error);
     }
     /**
      * Induces a return, as if there was a return statement before
@@ -298,8 +303,8 @@ public class Frame {
      * 
      * @param value The retunr value to induce
      */
-    public Object induceReturn(Object value) {
-        return next(Values.NO_RETURN, value, null);
+    public Value induceReturn(Value value) {
+        return next(null, value, null);
     }
 
     public void onPush() {
@@ -348,35 +353,47 @@ public class Frame {
      */
     public ObjectValue getValStackScope() {
         return new ObjectValue() {
-            @Override
-            protected Object getField(Environment ext, Object key) {
-                var i = (int)Values.toNumber(ext, key);
+            @Override public Member getOwnMember(Environment env, Value key) {
+                var res = super.getOwnMember(env, key);
+                if (res != null) return res;
+
+                var f = key.toNumber(env).value;
+                var i = (int)f;
+
                 if (i < 0 || i >= stackPtr) return null;
-                else return stack[i];
+                else return new FieldMember(false, true, true) {
+                    @Override public Value get(Environment env, Value self) { return stack[i]; }
+                    @Override public boolean set(Environment env, Value val, Value self) {
+                        stack[i] = val;
+                        return true;
+                    }
+                };
             }
-            @Override
-            protected boolean hasField(Environment ext, Object key) {
-                return true;
-            }
-            @Override
-            public List<Object> keys(boolean includeNonEnumerable) {
-                var res = super.keys(includeNonEnumerable);
-                for (var i = 0; i < stackPtr; i++) res.add(i);
+            @Override public Map<String, Member> getOwnMembers(Environment env) {
+                var res = new LinkedHashMap<String, Member>();
+
+                for (var i = 0; i < stackPtr; i++) {
+                    var _i = i;
+                    res.put(i + "", new FieldMember(false, true, true) {
+                        @Override public Value get(Environment env, Value self) { return stack[_i]; }
+                        @Override public boolean set(Environment env, Value val, Value self) {
+                            stack[_i] = val;
+                            return true;
+                        }
+                    });
+                }
+
                 return res;
             }
         };
     }
 
-    public Frame(Environment env, Object thisArg, Object[] args, CodeFunction func) {
+    public Frame(Environment env, Value thisArg, Value[] args, CodeFunction func) {
         this.env = env;
         this.args = args.clone();
         this.scope = new LocalScope(func.body.localsN, func.captures);
-        this.scope.get(0).set(null, thisArg);
-        var argsObj = new ArrayValue();
-        for (var i = 0; i < args.length; i++) {
-            argsObj.set(env, i, args[i]);
-        }
-        this.scope.get(1).value = argsObj;
+        this.scope.get(0).set(thisArg);
+        this.scope.get(1).value = new ArrayValue(args);
 
         this.thisArg = thisArg;
         this.function = func;

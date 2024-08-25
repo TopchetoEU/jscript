@@ -5,9 +5,11 @@ import java.util.List;
 
 import me.topchetoeu.jscript.common.Location;
 import me.topchetoeu.jscript.runtime.environment.Environment;
-import me.topchetoeu.jscript.runtime.values.ObjectValue;
-import me.topchetoeu.jscript.runtime.values.Values;
-import me.topchetoeu.jscript.runtime.values.ObjectValue.PlaceholderProto;
+import me.topchetoeu.jscript.runtime.values.Value;
+import me.topchetoeu.jscript.runtime.values.Member.FieldMember;
+import me.topchetoeu.jscript.runtime.values.objects.ObjectValue;
+import me.topchetoeu.jscript.runtime.values.objects.ObjectValue.PrototypeProvider;
+import me.topchetoeu.jscript.runtime.values.primitives.StringValue;
 
 public class EngineException extends RuntimeException {
     public static class StackElement {
@@ -40,7 +42,7 @@ public class EngineException extends RuntimeException {
         }
     }
 
-    public final Object value;
+    public final Value value;
     public EngineException cause;
     public Environment env = null;
     public final List<StackElement> stackTrace = new ArrayList<>();
@@ -61,10 +63,10 @@ public class EngineException extends RuntimeException {
         return this;
     }
 
-    public String toString(Environment ext) {
+    public String toString(Environment env) {
         var ss = new StringBuilder();
         try {
-            ss.append(Values.toString(ext, value)).append('\n');
+            ss.append(value.toString(env)).append('\n');
         }
         catch (EngineException e) {
             ss.append("[Error while stringifying]\n");
@@ -72,38 +74,40 @@ public class EngineException extends RuntimeException {
         for (var line : stackTrace) {
             if (line.visible()) ss.append("    ").append(line.toString()).append("\n");
         }
-        if (cause != null) ss.append("Caused by ").append(cause.toString(ext)).append('\n');
+        if (cause != null) ss.append("Caused by ").append(cause.toString(env)).append('\n');
         ss.deleteCharAt(ss.length() - 1);
         return ss.toString();
     }
 
-    private static Object err(String name, String msg, PlaceholderProto proto) {
-        var res = new ObjectValue(proto);
-        if (name != null) res.defineProperty(null, "name", name);
-        res.defineProperty(null, "message", msg);
+    private static ObjectValue err(String name, String msg, PrototypeProvider proto) {
+        var res = new ObjectValue();
+        res.setPrototype(proto);
+
+        if (name != null) res.defineOwnMember(Environment.empty(), new StringValue("name"), FieldMember.of(new StringValue(name)));
+        res.defineOwnMember(Environment.empty(), new StringValue("message"), FieldMember.of(new StringValue(msg)));
         return res;
     }
 
-    public EngineException(Object error) {
-        super(error == null ? "null" : error.toString());
+    public EngineException(Value error) {
+        super(error.toReadable(Environment.empty()));
 
         this.value = error;
         this.cause = null;
     }
 
     public static EngineException ofError(String name, String msg) {
-        return new EngineException(err(name, msg, PlaceholderProto.ERROR));
+        return new EngineException(err(name, msg, env -> env.get(Environment.ERROR_PROTO)));
     }
     public static EngineException ofError(String msg) {
-        return new EngineException(err(null, msg, PlaceholderProto.ERROR));
+        return new EngineException(err(null, msg, env -> env.get(Environment.ERROR_PROTO)));
     }
     public static EngineException ofSyntax(String msg) {
-        return new EngineException(err(null, msg, PlaceholderProto.SYNTAX_ERROR));
+        return new EngineException(err(null, msg, env -> env.get(Environment.SYNTAX_ERR_PROTO)));
     }
     public static EngineException ofType(String msg) {
-        return new EngineException(err(null, msg, PlaceholderProto.TYPE_ERROR));
+        return new EngineException(err(null, msg, env -> env.get(Environment.TYPE_ERR_PROTO)));
     }
     public static EngineException ofRange(String msg) {
-        return new EngineException(err(null, msg, PlaceholderProto.RANGE_ERROR));
+        return new EngineException(err(null, msg, env -> env.get(Environment.RANGE_ERR_PROTO)));
     }
 }
