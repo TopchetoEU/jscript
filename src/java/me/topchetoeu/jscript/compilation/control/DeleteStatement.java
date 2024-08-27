@@ -1,18 +1,15 @@
 package me.topchetoeu.jscript.compilation.control;
 
-import java.util.List;
-
-import me.topchetoeu.jscript.common.Filename;
 import me.topchetoeu.jscript.common.Instruction;
 import me.topchetoeu.jscript.common.Location;
-import me.topchetoeu.jscript.common.ParseRes;
 import me.topchetoeu.jscript.compilation.CompileResult;
 import me.topchetoeu.jscript.compilation.Statement;
+import me.topchetoeu.jscript.compilation.parsing.ParseRes;
 import me.topchetoeu.jscript.compilation.parsing.Parsing;
-import me.topchetoeu.jscript.compilation.parsing.Token;
-import me.topchetoeu.jscript.compilation.values.ConstantStatement;
+import me.topchetoeu.jscript.compilation.parsing.Source;
 import me.topchetoeu.jscript.compilation.values.IndexStatement;
 import me.topchetoeu.jscript.compilation.values.VariableStatement;
+import me.topchetoeu.jscript.compilation.values.constants.BoolStatement;
 
 public class DeleteStatement extends Statement {
     public final Statement key;
@@ -27,13 +24,15 @@ public class DeleteStatement extends Statement {
         if (pollute) target.add(Instruction.pushValue(true));
     }
 
-    public static ParseRes<? extends Statement> parseDelete(Filename filename, List<Token> tokens, int i) {
-        var loc = Parsing.getLoc(filename, tokens, i);
-        int n = 0;
-        if (!Parsing.isIdentifier(tokens, i + n++, "delete")) return ParseRes.failed();
+    public static ParseRes<? extends Statement> parse(Source src, int i) {
+        var n = Parsing.skipEmpty(src, i);
+        var loc = src.loc(i + n);
 
-        var valRes = Parsing.parseValue(filename, tokens, i + n, 15);
-        if (!valRes.isSuccess()) return ParseRes.error(loc, "Expected a value after 'delete'.", valRes);
+        if (!Parsing.isIdentifier(src, i + n, "delete")) return ParseRes.failed();
+        n += 6;
+
+        var valRes = Parsing.parseValue(src, i + n, 15);
+        if (!valRes.isSuccess()) return valRes.chainError(src.loc(i + n), "Expected a value after 'delete'");
         n += valRes.n;
 
         if (valRes.result instanceof IndexStatement) {
@@ -41,9 +40,9 @@ public class DeleteStatement extends Statement {
             return ParseRes.res(new DeleteStatement(loc, index.index, index.object), n);
         }
         else if (valRes.result instanceof VariableStatement) {
-            return ParseRes.error(loc, "A variable may not be deleted.");
+            return ParseRes.error(src.loc(i + n), "A variable may not be deleted");
         }
-        else return ParseRes.res(new ConstantStatement(loc, true), n);
+        else return ParseRes.res(new BoolStatement(loc, true), n);
     }
 
     public DeleteStatement(Location loc, Statement key, Statement value) {

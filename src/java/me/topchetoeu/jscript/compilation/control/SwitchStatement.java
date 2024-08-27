@@ -2,21 +2,17 @@ package me.topchetoeu.jscript.compilation.control;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 
-import me.topchetoeu.jscript.common.Filename;
 import me.topchetoeu.jscript.common.Instruction;
 import me.topchetoeu.jscript.common.Location;
 import me.topchetoeu.jscript.common.Operation;
-import me.topchetoeu.jscript.common.ParseRes;
 import me.topchetoeu.jscript.common.Instruction.BreakpointType;
 import me.topchetoeu.jscript.common.Instruction.Type;
 import me.topchetoeu.jscript.compilation.CompileResult;
-import me.topchetoeu.jscript.compilation.CompoundStatement;
 import me.topchetoeu.jscript.compilation.Statement;
-import me.topchetoeu.jscript.compilation.parsing.Operator;
+import me.topchetoeu.jscript.compilation.parsing.ParseRes;
 import me.topchetoeu.jscript.compilation.parsing.Parsing;
-import me.topchetoeu.jscript.compilation.parsing.Token;
+import me.topchetoeu.jscript.compilation.parsing.Source;
 
 public class SwitchStatement extends Statement {
     public static class SwitchCase {
@@ -87,78 +83,96 @@ public class SwitchStatement extends Statement {
         this.body = body;
     }
 
-    private static ParseRes<Statement> parseSwitchCase(Filename filename, List<Token> tokens, int i) {
-        var loc = Parsing.getLoc(filename, tokens, i);
-        int n = 0;
+    private static ParseRes<Statement> parseSwitchCase(Source src, int i) {
+        var n = Parsing.skipEmpty(src, i);
 
-        if (!Parsing.isIdentifier(tokens, i + n++, "case")) return ParseRes.failed();
+        if (!Parsing.isIdentifier(src, i + n, "case")) return ParseRes.failed();
+        n += 4;
 
-        var valRes = Parsing.parseValue(filename, tokens, i + n, 0);
-        if (!valRes.isSuccess()) return ParseRes.error(loc, "Expected a value after 'case'.", valRes);
+        var valRes = Parsing.parseValue(src, i + n, 0);
+        if (!valRes.isSuccess()) return valRes.chainError(src.loc(i + n), "Expected a value after 'case'");
         n += valRes.n;
 
-        if (!Parsing.isOperator(tokens, i + n++, Operator.COLON)) return ParseRes.error(loc, "Expected colons after 'case' value.");
+        if (!src.is(i + n, ":")) return ParseRes.error(src.loc(i + n), "Expected colons after 'case' value");
+        n++;
 
         return ParseRes.res(valRes.result, n);
     }
-    private static ParseRes<Statement> parseDefaultCase(List<Token> tokens, int i) {
-        if (!Parsing.isIdentifier(tokens, i, "default")) return ParseRes.failed();
-        if (!Parsing.isOperator(tokens, i + 1, Operator.COLON)) return ParseRes.error(Parsing.getLoc(null, tokens, i), "Expected colons after 'default'.");
+    private static ParseRes<Void> parseDefaultCase(Source src, int i) {
+        var n = Parsing.skipEmpty(src, i);
 
-        return ParseRes.res(null, 2);
+        if (!Parsing.isIdentifier(src, i + n, "default")) return ParseRes.failed();
+        n += 7;
+        n += Parsing.skipEmpty(src, i + n);
+
+        if (!src.is(i + n, ":")) return ParseRes.error(src.loc(i + n), "Expected colons after 'default'");
+        n++;
+
+        return ParseRes.res(null, n);
     }
-    public static ParseRes<SwitchStatement> parse(Filename filename, List<Token> tokens, int i) {
-        var loc = Parsing.getLoc(filename, tokens, i);
-        int n = 0;
+    @SuppressWarnings("unused")
+    public static ParseRes<SwitchStatement> parse(Source src, int i) {
+        var n = Parsing.skipEmpty(src, i);
+        var loc = src.loc(i + n);
 
-        if (!Parsing.isIdentifier(tokens, i + n++, "switch")) return ParseRes.failed();
-        if (!Parsing.isOperator(tokens, i + n++, Operator.PAREN_OPEN)) return ParseRes.error(loc, "Expected a open paren after 'switch'.");
+        if (!Parsing.isIdentifier(src, i + n, "switch")) return ParseRes.failed();
+        n += 6;
+        n += Parsing.skipEmpty(src, i + n);
+        if (!src.is(i + n, "(")) return ParseRes.error(src.loc(i + n), "Expected a open paren after 'switch'");
+        n++;
 
-        var valRes = Parsing.parseValue(filename, tokens, i + n, 0);
-        if (!valRes.isSuccess()) return ParseRes.error(loc, "Expected a switch value.", valRes);
+        var valRes = Parsing.parseValue(src, i + n, 0);
+        if (!valRes.isSuccess()) return valRes.chainError(src.loc(i + n), "Expected a switch value");
         n += valRes.n;
+        n += Parsing.skipEmpty(src, i + n);
 
-        if (!Parsing.isOperator(tokens, i + n++, Operator.PAREN_CLOSE)) return ParseRes.error(loc, "Expected a closing paren after switch value.");
-        if (!Parsing.isOperator(tokens, i + n++, Operator.BRACE_OPEN)) return ParseRes.error(loc, "Expected an opening brace after switch value.");
+        if (!src.is(i + n, ")")) return ParseRes.error(src.loc(i + n), "Expected a closing paren after switch value");
+        n++;
+        n += Parsing.skipEmpty(src, i + n);
+
+        if (!src.is(i + n, "{")) return ParseRes.error(src.loc(i + n), "Expected an opening brace after switch value");
+        n++;
+        n += Parsing.skipEmpty(src, i + n);
 
         var statements = new ArrayList<Statement>();
         var cases = new ArrayList<SwitchCase>();
         var defaultI = -1;
 
         while (true) {
-            if (Parsing.isOperator(tokens, i + n, Operator.BRACE_CLOSE)) {
+            n += Parsing.skipEmpty(src, i + n);
+
+            if (src.is(i + n, "}")) {
                 n++;
                 break;
             }
-            if (Parsing.isOperator(tokens, i + n, Operator.SEMICOLON)) {
+            if (src.is(i + n, ";")) {
                 n++;
                 continue;
             }
 
-            var defaultRes = SwitchStatement.parseDefaultCase(tokens, i + n);
-            var caseRes = SwitchStatement.parseSwitchCase(filename, tokens, i + n);
+            ParseRes<Statement> caseRes = ParseRes.first(src, i + n,
+                SwitchStatement::parseDefaultCase,
+                SwitchStatement::parseSwitchCase
+            );
 
-            if (defaultRes.isSuccess()) {
-                defaultI = statements.size();
-                n += defaultRes.n;
-            }
-            else if (caseRes.isSuccess()) {
-                cases.add(new SwitchCase(caseRes.result, statements.size()));
+            // Parsing::parseStatement
+
+            if (caseRes.isSuccess()) {
                 n += caseRes.n;
+
+                if (caseRes.result == null) defaultI = statements.size();
+                else cases.add(new SwitchCase(caseRes.result, statements.size()));
+                continue;
             }
-            else if (defaultRes.isError()) return defaultRes.transform();
-            else if (caseRes.isError()) return defaultRes.transform();
-            else {
-                var res = ParseRes.any(
-                    Parsing.parseStatement(filename, tokens, i + n),
-                    CompoundStatement.parse(filename, tokens, i + n)
-                );
-                if (!res.isSuccess()) {
-                    return ParseRes.error(Parsing.getLoc(filename, tokens, i), "Expected a statement.", res);
-                }
-                n += res.n;
-                statements.add(res.result);
+            if (caseRes.isError()) return caseRes.chainError();
+
+            var stm = Parsing.parseStatement(src, i + n);
+            if (stm.isSuccess()) {
+                n += stm.n;
+                statements.add(stm.result);
+                continue;
             }
+            else stm.chainError(src.loc(i + n), "Expected a statement, 'case' or 'default'");
         }
 
         return ParseRes.res(new SwitchStatement(

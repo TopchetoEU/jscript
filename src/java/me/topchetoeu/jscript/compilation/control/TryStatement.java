@@ -1,17 +1,14 @@
 package me.topchetoeu.jscript.compilation.control;
 
-import java.util.List;
-
-import me.topchetoeu.jscript.common.Filename;
 import me.topchetoeu.jscript.common.Instruction;
 import me.topchetoeu.jscript.common.Location;
-import me.topchetoeu.jscript.common.ParseRes;
 import me.topchetoeu.jscript.common.Instruction.BreakpointType;
 import me.topchetoeu.jscript.compilation.CompileResult;
+import me.topchetoeu.jscript.compilation.CompoundStatement;
 import me.topchetoeu.jscript.compilation.Statement;
-import me.topchetoeu.jscript.compilation.parsing.Operator;
+import me.topchetoeu.jscript.compilation.parsing.ParseRes;
 import me.topchetoeu.jscript.compilation.parsing.Parsing;
-import me.topchetoeu.jscript.compilation.parsing.Token;
+import me.topchetoeu.jscript.compilation.parsing.Source;
 
 public class TryStatement extends Statement {
     public final Statement tryBody;
@@ -61,44 +58,56 @@ public class TryStatement extends Statement {
         this.name = name;
     }
 
-    public static ParseRes<TryStatement> parse(Filename filename, List<Token> tokens, int i) {
-        var loc = Parsing.getLoc(filename, tokens, i);
-        int n = 0;
+    public static ParseRes<TryStatement> parse(Source src, int i) {
+        var n = Parsing.skipEmpty(src, i);
+        var loc = src.loc(i + n);
 
-        if (!Parsing.isIdentifier(tokens, i + n++, "try")) return ParseRes.failed();
+        if (!Parsing.isIdentifier(src, i + n, "try")) return ParseRes.failed();
+        n += 3;
 
-        var res = Parsing.parseStatement(filename, tokens, i + n);
-        if (!res.isSuccess()) return ParseRes.error(loc, "Expected an if body.", res);
-        n += res.n;
+        var tryBody = CompoundStatement.parse(src, i + n);
+        if (!tryBody.isSuccess()) return tryBody.chainError(src.loc(i + n), "Expected a try body");
+        n += tryBody.n;
+        n += Parsing.skipEmpty(src, i + n);
 
         String name = null;
         Statement catchBody = null, finallyBody = null;
-        
 
-        if (Parsing.isIdentifier(tokens, i + n, "catch")) {
-            n++;
-            if (Parsing.isOperator(tokens, i + n, Operator.PAREN_OPEN)) {
+        if (Parsing.isIdentifier(src, i + n, "catch")) {
+            n += 5;
+            n += Parsing.skipEmpty(src, i + n);
+            if (src.is(i + n, "(")) {
                 n++;
-                var nameRes = Parsing.parseIdentifier(tokens, i + n++);
-                if (!nameRes.isSuccess()) return ParseRes.error(loc, "Expected a catch variable name.");
+                var nameRes = Parsing.parseIdentifier(src, i + n);
+                if (!nameRes.isSuccess()) return nameRes.chainError(src.loc(i + n), "xpected a catch variable name");
                 name = nameRes.result;
-                if (!Parsing.isOperator(tokens, i + n++, Operator.PAREN_CLOSE)) return ParseRes.error(loc, "Expected a closing paren after catch variable name.");
+                n += nameRes.n;
+                n += Parsing.skipEmpty(src, i + n);
+
+                if (!src.is(i + n, ")")) return ParseRes.error(src.loc(i + n), "Expected a closing paren after catch variable name");
+                n++;
             }
 
-            var catchRes = Parsing.parseStatement(filename, tokens, i + n);
-            if (!catchRes.isSuccess()) return ParseRes.error(loc, "Expected a catch body.", catchRes);
-            n += catchRes.n;
-            catchBody = catchRes.result;
+            var bodyRes = CompoundStatement.parse(src, i + n);
+            if (!bodyRes.isSuccess()) return tryBody.chainError(src.loc(i + n), "Expected a catch body");
+            n += bodyRes.n;
+            n += Parsing.skipEmpty(src, i + n);
+
+            catchBody = bodyRes.result;
         }
 
-        if (Parsing.isIdentifier(tokens, i + n, "finally")) {
-            n++;
-            var finallyRes = Parsing.parseStatement(filename, tokens, i + n);
-            if (!finallyRes.isSuccess()) return ParseRes.error(loc, "Expected a finally body.", finallyRes);
-            n += finallyRes.n;
-            finallyBody = finallyRes.result;
+        if (Parsing.isIdentifier(src, i + n, "finally")) {
+            n += 7;
+
+            var bodyRes = CompoundStatement.parse(src, i + n);
+            if (!bodyRes.isSuccess()) return tryBody.chainError(src.loc(i + n), "Expected a finally body");
+            n += bodyRes.n;
+            n += Parsing.skipEmpty(src, i + n);
+            finallyBody = bodyRes.result;
         }
 
-        return ParseRes.res(new TryStatement(loc, res.result, catchBody, finallyBody, name), n);
+        if (finallyBody == null && catchBody == null) ParseRes.error(src.loc(i + n), "Expected catch or finally");
+
+        return ParseRes.res(new TryStatement(loc, tryBody.result, catchBody, finallyBody, name), n);
     }
 }

@@ -1,16 +1,12 @@
 package me.topchetoeu.jscript.compilation.control;
 
-import java.util.List;
-
-import me.topchetoeu.jscript.common.Filename;
 import me.topchetoeu.jscript.common.Instruction;
 import me.topchetoeu.jscript.common.Location;
-import me.topchetoeu.jscript.common.ParseRes;
 import me.topchetoeu.jscript.compilation.CompileResult;
 import me.topchetoeu.jscript.compilation.Statement;
-import me.topchetoeu.jscript.compilation.parsing.Operator;
+import me.topchetoeu.jscript.compilation.parsing.ParseRes;
 import me.topchetoeu.jscript.compilation.parsing.Parsing;
-import me.topchetoeu.jscript.compilation.parsing.Token;
+import me.topchetoeu.jscript.compilation.parsing.Source;
 
 public class ThrowStatement extends Statement {
     public final Statement value;
@@ -26,21 +22,28 @@ public class ThrowStatement extends Statement {
         this.value = value;
     }
 
-    public static ParseRes<ThrowStatement> parseThrow(Filename filename, List<Token> tokens, int i) {
-        var loc = Parsing.getLoc(filename, tokens, i);
-        int n = 0;
-        if (!Parsing.isIdentifier(tokens, i + n++, "throw")) return ParseRes.failed();
+    public static ParseRes<ThrowStatement> parse(Source src, int i) {
+        var n = Parsing.skipEmpty(src, i);
+        var loc = src.loc(i + n);
 
-        var valRes = Parsing.parseValue(filename, tokens, i + n, 0);
-        n += valRes.n;
-        if (valRes.isError()) return ParseRes.error(loc, "Expected a throw value.", valRes);
+        if (!Parsing.isIdentifier(src, i + n, "throw")) return ParseRes.failed();
+        n += 5;
 
-        var res = ParseRes.res(new ThrowStatement(loc, valRes.result), n);
-
-        if (Parsing.isStatementEnd(tokens, i + n)) {
-            if (Parsing.isOperator(tokens, i + n, Operator.SEMICOLON)) return res.addN(1);
-            else return res;
+        var end = Parsing.parseStatementEnd(src, i + n);
+        if (end.isSuccess()) {
+            n += end.n;
+            return ParseRes.res(new ThrowStatement(loc, null), n);
         }
-        else return ParseRes.error(Parsing.getLoc(filename, tokens, i), "Expected an end of statement.", valRes);
+
+        var val = Parsing.parseValue(src, i + n, 0);
+        if (val.isFailed()) return ParseRes.error(src.loc(i + n), "Expected a value");
+        n += val.n;
+
+        end = Parsing.parseStatementEnd(src, i + n);
+        if (end.isSuccess()) {
+            n += end.n;
+            return ParseRes.res(new ThrowStatement(loc, val.result), n);
+        }
+        else return end.chainError(src.loc(i + n), "Expected end of statement");
     }
 }

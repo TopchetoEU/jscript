@@ -1,18 +1,15 @@
 package me.topchetoeu.jscript.compilation.values;
 
 import java.util.ArrayList;
-import java.util.List;
 
-import me.topchetoeu.jscript.common.Filename;
 import me.topchetoeu.jscript.common.Instruction;
 import me.topchetoeu.jscript.common.Location;
-import me.topchetoeu.jscript.common.ParseRes;
 import me.topchetoeu.jscript.common.Instruction.BreakpointType;
 import me.topchetoeu.jscript.compilation.CompileResult;
 import me.topchetoeu.jscript.compilation.Statement;
-import me.topchetoeu.jscript.compilation.parsing.Operator;
+import me.topchetoeu.jscript.compilation.parsing.ParseRes;
 import me.topchetoeu.jscript.compilation.parsing.Parsing;
-import me.topchetoeu.jscript.compilation.parsing.Token;
+import me.topchetoeu.jscript.compilation.parsing.Source;
 
 public class CallStatement extends Statement {
     public final Statement func;
@@ -47,51 +44,58 @@ public class CallStatement extends Statement {
         this.args = args;
     }
 
-    public static ParseRes<CallStatement> parseCall(Filename filename, List<Token> tokens, int i, Statement prev, int precedence) {
-        var loc = Parsing.getLoc(filename, tokens, i);
-        var n = 0;
-
+    public static ParseRes<CallStatement> parseCall(Source src, int i, Statement prev, int precedence) {
         if (precedence > 17) return ParseRes.failed();
-        if (!Parsing.isOperator(tokens, i + n++, Operator.PAREN_OPEN)) return ParseRes.failed();
+
+        var n = Parsing.skipEmpty(src, i);
+        var loc = src.loc(i + n);
+
+        if (!src.is(i + n, "(")) return ParseRes.failed();
+        n++;
 
         var args = new ArrayList<Statement>();
         boolean prevArg = false;
 
         while (true) {
-            var argRes = Parsing.parseValue(filename, tokens, i + n, 2);
+            var argRes = Parsing.parseValue(src, i + n, 2);
+            n += argRes.n;
+            n += Parsing.skipEmpty(src, i + n);
+
             if (argRes.isSuccess()) {
                 args.add(argRes.result);
-                n += argRes.n;
                 prevArg = true;
             }
-            else if (argRes.isError()) return argRes.transform();
-            else if (prevArg && Parsing.isOperator(tokens, i + n, Operator.COMMA)) {
+            else if (argRes.isError()) return argRes.chainError();
+            else if (prevArg && src.is(i + n, ",")) {
                 prevArg = false;
                 n++;
             }
-            else if (Parsing.isOperator(tokens, i + n, Operator.PAREN_CLOSE)) {
+            else if (src.is(i + n, ")")) {
                 n++;
                 break;
             }
-            else return ParseRes.error(Parsing.getLoc(filename, tokens, i + n), prevArg ? "Expected a comma or a closing paren." : "Expected an expression or a closing paren.");
+            else if (prevArg) return ParseRes.error(src.loc(i + n), "Expected a comma or a closing paren");
+            else return ParseRes.error(src.loc(i + n), "Expected an expression or a closing paren");
         }
 
         return ParseRes.res(new CallStatement(loc, false, prev, args.toArray(Statement[]::new)), n);
     }
-    public static ParseRes<CallStatement> parseNew(Filename filename, List<Token> tokens, int i) {
-        var loc = Parsing.getLoc(filename, tokens, i);
-        var n = 0;
-        if (!Parsing.isIdentifier(tokens, i + n++, "new")) return ParseRes.failed();
+    public static ParseRes<CallStatement> parseNew(Source src, int i) {
+        var n = Parsing.skipEmpty(src, i);
+        var loc = src.loc(i + n);
 
-        var valRes = Parsing.parseValue(filename, tokens, i + n, 18);
+        if (!Parsing.isIdentifier(src, i + n, "new")) return ParseRes.failed();
+        n += 3;
+
+        var valRes = Parsing.parseValue(src, i + n, 18);
+        if (!valRes.isSuccess()) return valRes.chainError(src.loc(i + n), "Expected a value after 'new' keyword.");
         n += valRes.n;
-        if (!valRes.isSuccess()) return ParseRes.error(loc, "Expected a value after 'new' keyword.", valRes);
-        var callRes = CallStatement.parseCall(filename, tokens, i + n, valRes.result, 0);
-        n += callRes.n;
-        if (callRes.isError()) return callRes.transform();
-        else if (callRes.isFailed()) return ParseRes.res(new CallStatement(loc, true, valRes.result), n);
-        var call = (CallStatement)callRes.result;
 
-        return ParseRes.res(new CallStatement(loc, true, call.func, call.args), n);
+        var callRes = CallStatement.parseCall(src, i + n, valRes.result, 0);
+        if (callRes.isFailed()) return ParseRes.res(new CallStatement(loc, true, valRes.result), n);
+        if (callRes.isError()) return callRes.chainError();
+        n += callRes.n;
+
+        return ParseRes.res(new CallStatement(loc, true, callRes.result.func, callRes.result.args), n);
     }
 }

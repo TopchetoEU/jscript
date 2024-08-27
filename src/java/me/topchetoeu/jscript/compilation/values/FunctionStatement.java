@@ -1,20 +1,15 @@
 package me.topchetoeu.jscript.compilation.values;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import me.topchetoeu.jscript.common.Filename;
 import me.topchetoeu.jscript.common.Instruction;
 import me.topchetoeu.jscript.common.Location;
-import me.topchetoeu.jscript.common.ParseRes;
 import me.topchetoeu.jscript.common.Instruction.BreakpointType;
 import me.topchetoeu.jscript.common.Instruction.Type;
 import me.topchetoeu.jscript.compilation.CompileResult;
 import me.topchetoeu.jscript.compilation.CompoundStatement;
 import me.topchetoeu.jscript.compilation.Statement;
-import me.topchetoeu.jscript.compilation.parsing.Operator;
+import me.topchetoeu.jscript.compilation.parsing.ParseRes;
 import me.topchetoeu.jscript.compilation.parsing.Parsing;
-import me.topchetoeu.jscript.compilation.parsing.Token;
+import me.topchetoeu.jscript.compilation.parsing.Source;
 import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 
 public class FunctionStatement extends Statement {
@@ -133,47 +128,30 @@ public class FunctionStatement extends Statement {
         else stm.compile(target, pollute, bp);
     }
 
-    public static ParseRes<FunctionStatement> parseFunction(Filename filename, List<Token> tokens, int i, boolean statement) {
-        var loc = Parsing.getLoc(filename, tokens, i);
-        int n = 0;
+    public static ParseRes<FunctionStatement> parseFunction(Source src, int i, boolean statement) {
+        var n = Parsing.skipEmpty(src, i);
+        var loc = src.loc(i + n);
 
-        if (!Parsing.isIdentifier(tokens, i + n++, "function")) return ParseRes.failed();
+        if (!Parsing.isIdentifier(src, i + n, "function")) return ParseRes.failed();
+        n += 8;
 
-        var nameRes = Parsing.parseIdentifier(tokens, i + n);
-        if (!nameRes.isSuccess() && statement) return ParseRes.error(loc, "A statement function requires a name, one is not present.");
-        var name = nameRes.result;
+        var nameRes = Parsing.parseIdentifier(src, i + n);
+        if (!nameRes.isSuccess() && statement) return ParseRes.error(src.loc(i + n), "A statement function requires a name");
         n += nameRes.n;
+        n += Parsing.skipEmpty(src, i + n);
 
-        if (!Parsing.isOperator(tokens, i + n++, Operator.PAREN_OPEN)) return ParseRes.error(loc, "Expected a parameter list.");
+        var args = Parsing.parseParamList(src, i + n);
+        if (!args.isSuccess()) return args.chainError(src.loc(i + n), "Expected a parameter list");
+        n += args.n;
 
-        var args = new ArrayList<String>();
-
-        if (Parsing.isOperator(tokens, i + n, Operator.PAREN_CLOSE)) {
-            n++;
-        }
-        else {
-            while (true) {
-                var argRes = Parsing.parseIdentifier(tokens, i + n);
-                if (argRes.isSuccess()) {
-                    args.add(argRes.result);
-                    n++;
-                    if (Parsing.isOperator(tokens, i + n, Operator.COMMA)) {
-                        n++;
-                    }
-                    if (Parsing.isOperator(tokens, i + n, Operator.PAREN_CLOSE)) {
-                        n++;
-                        break;
-                    }
-                }
-                else return ParseRes.error(loc, "Expected an argument, comma or a closing brace.");
-            }
-        }
-
-        var res = CompoundStatement.parse(filename, tokens, i + n);
+        var res = CompoundStatement.parse(src, i + n);
+        if (!res.isSuccess()) res.chainError(src.loc(i + n), "Expected a compound statement for function.");
         n += res.n;
-        var end = Parsing.getLoc(filename, tokens, i + n - 1);
 
-        if (res.isSuccess()) return ParseRes.res(new FunctionStatement(loc, end, name, args.toArray(String[]::new), statement, res.result), n);
-        else return ParseRes.error(loc, "Expected a compound statement for function.", res);
+        return ParseRes.res(new FunctionStatement(
+            loc, src.loc(i + n - 1),
+            nameRes.result, args.result.toArray(String[]::new),
+            statement, res.result
+        ), n);
     }
 }

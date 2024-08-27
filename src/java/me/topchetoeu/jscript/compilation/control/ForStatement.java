@@ -1,20 +1,15 @@
 package me.topchetoeu.jscript.compilation.control;
 
-import java.util.List;
-
-import me.topchetoeu.jscript.common.Filename;
 import me.topchetoeu.jscript.common.Instruction;
 import me.topchetoeu.jscript.common.Location;
-import me.topchetoeu.jscript.common.ParseRes;
 import me.topchetoeu.jscript.common.Instruction.BreakpointType;
 import me.topchetoeu.jscript.compilation.CompileResult;
-import me.topchetoeu.jscript.compilation.CompoundStatement;
 import me.topchetoeu.jscript.compilation.Statement;
 import me.topchetoeu.jscript.compilation.VariableDeclareStatement;
-import me.topchetoeu.jscript.compilation.parsing.Operator;
+import me.topchetoeu.jscript.compilation.parsing.ParseRes;
 import me.topchetoeu.jscript.compilation.parsing.Parsing;
-import me.topchetoeu.jscript.compilation.parsing.Token;
-import me.topchetoeu.jscript.compilation.values.ConstantStatement;
+import me.topchetoeu.jscript.compilation.parsing.Source;
+import me.topchetoeu.jscript.compilation.values.DiscardStatement;
 
 public class ForStatement extends Statement {
     public final Statement declaration, assignment, condition, body;
@@ -53,61 +48,69 @@ public class ForStatement extends Statement {
         this.body = body;
     }
 
-    public static ParseRes<ForStatement> parse(Filename filename, List<Token> tokens, int i) {
-        var loc = Parsing.getLoc(filename, tokens, i);
-        int n = 0;
+    private static ParseRes<Statement> parseSemicolon(Source src, int i) {
+        var n = Parsing.skipEmpty(src, i);
 
-        var labelRes = WhileStatement.parseLabel(tokens, i + n);
-        n += labelRes.n;
+        if (!src.is(i + n, ";")) return ParseRes.failed();
+        else return ParseRes.res(new DiscardStatement(src.loc(i), null), n + 1);
+    }
+    private static ParseRes<Statement> parseCondition(Source src, int i) {
+        var n = Parsing.skipEmpty(src, i);
 
-        if (!Parsing.isIdentifier(tokens, i + n++, "for")) return ParseRes.failed();
-        if (!Parsing.isOperator(tokens, i + n++, Operator.PAREN_OPEN)) return ParseRes.error(loc, "Expected a open paren after 'for'.");
-
-        Statement decl, cond, inc;
-
-        if (Parsing.isOperator(tokens, i + n, Operator.SEMICOLON)) {
-            n++;
-            decl = new CompoundStatement(loc, false);
-        }
-        else {
-            var declRes = ParseRes.any(
-                VariableDeclareStatement.parse(filename, tokens, i + n),
-                Parsing.parseValueStatement(filename, tokens, i + n)
-            );
-            if (!declRes.isSuccess()) return ParseRes.error(loc, "Expected a declaration or an expression.", declRes);
-            n += declRes.n;
-            decl = declRes.result;
-        }
-
-        if (Parsing.isOperator(tokens, i + n, Operator.SEMICOLON)) {
-            n++;
-            cond = new ConstantStatement(loc, 1);
-        }
-        else {
-            var condRes = Parsing.parseValue(filename, tokens, i + n, 0);
-            if (!condRes.isSuccess()) return ParseRes.error(loc, "Expected a condition.", condRes);
-            n += condRes.n;
-            if (!Parsing.isOperator(tokens, i + n++, Operator.SEMICOLON)) return ParseRes.error(loc, "Expected a semicolon.", condRes);
-            cond = condRes.result;
-        }
-
-        if (Parsing.isOperator(tokens, i + n, Operator.PAREN_CLOSE)) {
-            n++;
-            inc = new CompoundStatement(loc, false);
-        }
-        else {
-            var incRes = Parsing.parseValue(filename, tokens, i + n, 0);
-            if (!incRes.isSuccess()) return ParseRes.error(loc, "Expected a condition.", incRes);
-            n += incRes.n;
-            inc = incRes.result;
-            if (!Parsing.isOperator(tokens, i + n++, Operator.PAREN_CLOSE)) return ParseRes.error(loc, "Expected a closing paren after for.");
-        }
-        
-
-        var res = Parsing.parseStatement(filename, tokens, i + n);
-        if (!res.isSuccess()) return ParseRes.error(loc, "Expected a for body.", res);
+        var res = Parsing.parseValue(src, i + n, 0);
+        if (!res.isSuccess()) return res.chainError();
         n += res.n;
+        n += Parsing.skipEmpty(src, i + n);
 
-        return ParseRes.res(new ForStatement(loc, labelRes.result, decl, cond, inc, res.result), n);
+        if (!src.is(i + n, ";")) return ParseRes.error(src.loc(i + n), "Expected a semicolon");
+        else return ParseRes.res(res.result, n + 1);
+    }
+    private static ParseRes<? extends Statement> parseUpdater(Source src, int i) {
+        return Parsing.parseValue(src, i, 0);
+    }
+
+    public static ParseRes<ForStatement> parse(Source src, int i) {
+        var n = Parsing.skipEmpty(src, i);
+        var loc = src.loc(i + n);
+
+        var labelRes = WhileStatement.parseLabel(src, i + n);
+        n += labelRes.n;
+        n += Parsing.skipEmpty(src, i + n);
+
+        if (!Parsing.isIdentifier(src, i + n, "for")) return ParseRes.failed();
+        n += 3;
+        n += Parsing.skipEmpty(src, i + n);
+
+        if (!src.is(i + n, "(")) return ParseRes.error(src.loc(i + n), "Expected a open paren after 'for'");
+        n++;
+
+        ParseRes<Statement> decl = ParseRes.first(src, i + n,
+            ForStatement::parseSemicolon,
+            VariableDeclareStatement::parse,
+            ForStatement::parseCondition
+        );
+        if (!decl.isSuccess()) return decl.chainError(src.loc(i + n), "Expected a declaration or an expression");
+        n += decl.n;
+
+        ParseRes<Statement> cond = ParseRes.first(src, i + n,
+            ForStatement::parseSemicolon,
+            ForStatement::parseCondition
+        );
+        if (!cond.isSuccess()) return cond.chainError(src.loc(i + n), "Expected a condition");
+        n += cond.n;
+
+        var update = parseUpdater(src, i + n);
+        if (update.isError()) return update.chainError();
+        n += update.n;
+        n += Parsing.skipEmpty(src, i + n);
+
+        if (!src.is(i + n, ")")) return ParseRes.error(src.loc(i + n), "Expected a close paren after for updater");
+        n++;
+
+        var body = Parsing.parseStatement(src, i + n);
+        if (!body.isSuccess()) return body.chainError(src.loc(i + n), "Expected a for body.");
+        n += body.n;
+
+        return ParseRes.res(new ForStatement(loc, labelRes.result, decl.result, cond.result, update.result, body.result), n);
     }
 }

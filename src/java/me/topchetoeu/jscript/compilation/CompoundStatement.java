@@ -4,14 +4,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Vector;
 
-import me.topchetoeu.jscript.common.Filename;
 import me.topchetoeu.jscript.common.Instruction;
 import me.topchetoeu.jscript.common.Location;
-import me.topchetoeu.jscript.common.ParseRes;
 import me.topchetoeu.jscript.common.Instruction.BreakpointType;
-import me.topchetoeu.jscript.compilation.parsing.Operator;
+import me.topchetoeu.jscript.compilation.parsing.ParseRes;
 import me.topchetoeu.jscript.compilation.parsing.Parsing;
-import me.topchetoeu.jscript.compilation.parsing.Token;
+import me.topchetoeu.jscript.compilation.parsing.Source;
 import me.topchetoeu.jscript.compilation.values.FunctionStatement;
 
 public class CompoundStatement extends Statement {
@@ -68,45 +66,49 @@ public class CompoundStatement extends Statement {
         this.statements = statements;
     }
 
-    public static ParseRes<CompoundStatement> parseComma(Filename filename, List<Token> tokens, int i, Statement prev, int precedence) {
-        var loc = Parsing.getLoc(filename, tokens, i);
-        var n = 0;
-
+    public static ParseRes<CompoundStatement> parseComma(Source src, int i, Statement prev, int precedence) {
         if (precedence > 1) return ParseRes.failed();
-        if (!Parsing.isOperator(tokens, i + n++, Operator.COMMA)) return ParseRes.failed();
 
-        var res = Parsing.parseValue(filename, tokens, i + n, 2);
-        if (!res.isSuccess()) return ParseRes.error(loc, "Expected a value after the comma.", res);
+        var n = Parsing.skipEmpty(src, i);
+        var loc = src.loc(i + n);
+
+        if (!src.is(i + n, ",")) return ParseRes.failed();
+        n++;
+
+        var res = Parsing.parseValue(src, i + n, 2);
+        if (!res.isSuccess()) return res.chainError(src.loc(i + n), "Expected a value after the comma");
         n += res.n;
 
         return ParseRes.res(new CompoundStatement(loc, false, prev, res.result), n);
     }
-    public static ParseRes<CompoundStatement> parse(Filename filename, List<Token> tokens, int i) {
-        var loc = Parsing.getLoc(filename, tokens, i);
-        int n = 0;
-        if (!Parsing.isOperator(tokens, i + n++, Operator.BRACE_OPEN)) return ParseRes.failed();
+    public static ParseRes<CompoundStatement> parse(Source src, int i) {
+        var n = Parsing.skipEmpty(src, i);
+        var loc = src.loc(i + n);
+
+        if (!src.is(i + n, "{")) return ParseRes.failed();
+        n++;
 
         var statements = new ArrayList<Statement>();
 
         while (true) {
-            if (Parsing.isOperator(tokens, i + n, Operator.BRACE_CLOSE)) {
+            n += Parsing.skipEmpty(src, i + n);
+
+            if (src.is(i + n, "}")) {
                 n++;
                 break;
             }
-            if (Parsing.isOperator(tokens, i + n, Operator.SEMICOLON)) {
+            if (src.is(i + n, ";")) {
                 n++;
                 continue;
             }
 
-            var res = Parsing.parseStatement(filename, tokens, i + n);
-            if (!res.isSuccess()) {
-                return ParseRes.error(Parsing.getLoc(filename, tokens, i), "Expected a statement.", res);
-            }
+            var res = Parsing.parseStatement(src, i + n);
+            if (!res.isSuccess()) return res.chainError(src.loc(i + n), "Expected a statement");
             n += res.n;
 
             statements.add(res.result);
         }
 
-        return ParseRes.res(new CompoundStatement(loc, true, statements.toArray(Statement[]::new)).setEnd(Parsing.getLoc(filename, tokens, i + n - 1)), n);
+        return ParseRes.res(new CompoundStatement(loc, true, statements.toArray(Statement[]::new)).setEnd(src.loc(i + n - 1)), n);
     }
 }

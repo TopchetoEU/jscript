@@ -1,13 +1,12 @@
-package me.topchetoeu.jscript.common;
+package me.topchetoeu.jscript.compilation.parsing;
 
-import java.util.List;
-import java.util.Map;
-
-import me.topchetoeu.jscript.compilation.parsing.TestRes;
-import me.topchetoeu.jscript.compilation.parsing.Token;
-import me.topchetoeu.jscript.compilation.parsing.Parsing.Parser;
+import me.topchetoeu.jscript.common.Location;
 
 public class ParseRes<T> {
+    public static interface Parser<T> {
+        public ParseRes<T> parse(Source src, int i);
+    }
+
     public static enum State {
         SUCCESS,
         FAILED,
@@ -34,11 +33,11 @@ public class ParseRes<T> {
         if (!state.isSuccess()) return this;
         return new ParseRes<>(state, null, result, i);
     }
-    public ParseRes<T> addN(int i) {
+    public ParseRes<T> addN(int n) {
         if (!state.isSuccess()) return this;
-        return new ParseRes<>(state, null, result, this.n + i);
+        return new ParseRes<>(state, null, result, this.n + n);
     }
-    public <T2> ParseRes<T2> transform() {
+    public <T2> ParseRes<T2> chainError() {
         if (isSuccess()) throw new RuntimeException("Can't transform a ParseRes that hasn't failed.");
         return new ParseRes<>(state, error, null, 0);
     }
@@ -59,41 +58,26 @@ public class ParseRes<T> {
         if (loc != null) error = loc + ": " + error;
         return new ParseRes<>(State.ERROR, error, null, 0);
     }
-    public static <T> ParseRes<T> error(Location loc, String error, ParseRes<?> other) {
+    public <T2> ParseRes<T2> chainError(Location loc, String error) {
         if (loc != null) error = loc + ": " + error;
-        if (!other.isError()) return new ParseRes<>(State.ERROR, error, null, 0);
-        return new ParseRes<>(State.ERROR, other.error, null, 0);
+        if (!this.isError()) return new ParseRes<>(State.ERROR, error, null, 0);
+        return new ParseRes<>(State.ERROR, this.error, null, 0);
     }
     public static <T> ParseRes<T> res(T val, int i) {
         return new ParseRes<>(State.SUCCESS, null, val, i);
     }
 
     @SafeVarargs
-    public static <T> ParseRes<? extends T> any(ParseRes<? extends T> ...parsers) {
-        return any(List.of(parsers));
-    }
-    public static <T> ParseRes<? extends T> any(List<ParseRes<? extends T>> parsers) {
-        ParseRes<? extends T> best = null;
-        ParseRes<? extends T> error = ParseRes.failed();
+    @SuppressWarnings("all")
+    // to hell with all of java's bullshit generics that do jack shit nothing
+    public static <T> ParseRes<T> first(Source src, int i, Parser ...parsers) {
+        int n = Parsing.skipEmpty(src, i);
+        ParseRes<T> error = ParseRes.failed();
 
         for (var parser : parsers) {
-            if (parser.isSuccess()) {
-                if (best == null || best.n < parser.n) best = parser;
-            }
-            else if (parser.isError() && error.isFailed()) error = parser.transform();
-        }
-
-        if (best != null) return best;
-        else return error;
-    }
-    @SafeVarargs
-    public static <T> ParseRes<? extends T> first(String filename, List<Token> tokens, Map<String, Parser<T>> named, Parser<? extends T> ...parsers) {
-        ParseRes<? extends T> error = ParseRes.failed();
-
-        for (var parser : parsers) {
-            var res = parser.parse(null, tokens, 0);
-            if (res.isSuccess()) return res;
-            else if (res.isError() && error.isFailed()) error = res.transform();
+            var res = parser.parse(src, i + n);
+            if (res.isSuccess()) return res.addN(n);
+            if (res.isError() && error.isFailed()) error = res.chainError();
         }
 
         return error;

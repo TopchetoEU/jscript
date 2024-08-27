@@ -1,8 +1,7 @@
 package me.topchetoeu.jscript.compilation.parsing;
 
 import me.topchetoeu.jscript.common.Location;
-import me.topchetoeu.jscript.common.ParseRes;
-import me.topchetoeu.jscript.common.ParseRes.State;
+import me.topchetoeu.jscript.compilation.parsing.ParseRes.State;
 
 public class TestRes {
     public final State state;

@@ -53,7 +53,7 @@ public abstract class FunctionValue extends ObjectValue {
         return super.getOwnMember(env, key);
     }
     @Override public boolean deleteOwnMember(Environment env, Value key) {
-        if (!super.deleteMember(env, key)) return false;
+        if (!super.deleteOwnMember(env, key)) return false;
 
         var el = key.toString(env).value;
 

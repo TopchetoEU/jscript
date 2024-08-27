@@ -1,17 +1,14 @@
 package me.topchetoeu.jscript.compilation.values;
 
 import java.util.ArrayList;
-import java.util.List;
 
-import me.topchetoeu.jscript.common.Filename;
 import me.topchetoeu.jscript.common.Instruction;
 import me.topchetoeu.jscript.common.Location;
-import me.topchetoeu.jscript.common.ParseRes;
 import me.topchetoeu.jscript.compilation.CompileResult;
 import me.topchetoeu.jscript.compilation.Statement;
-import me.topchetoeu.jscript.compilation.parsing.Operator;
+import me.topchetoeu.jscript.compilation.parsing.ParseRes;
 import me.topchetoeu.jscript.compilation.parsing.Parsing;
-import me.topchetoeu.jscript.compilation.parsing.Token;
+import me.topchetoeu.jscript.compilation.parsing.Source;
 
 public class ArrayStatement extends Statement {
     public final Statement[] statements;
@@ -46,36 +43,42 @@ public class ArrayStatement extends Statement {
         this.statements = statements;
     }
 
-    public static ParseRes<ArrayStatement> parse(Filename filename, List<Token> tokens, int i) {
-        var loc = Parsing.getLoc(filename, tokens, i);
-        int n = 0;
-        if (!Parsing.isOperator(tokens, i + n++, Operator.BRACKET_OPEN)) return ParseRes.failed();
+    public static ParseRes<ArrayStatement> parse(Source src, int i) {
+        var n = Parsing.skipEmpty(src, i);
+        var loc = src.loc(i + n);
+
+        if (!src.is(i + n, "[")) return ParseRes.failed();
+        n++;
 
         var values = new ArrayList<Statement>();
 
         loop: while (true) {
-            if (Parsing.isOperator(tokens, i + n, Operator.BRACKET_CLOSE)) {
+            n += Parsing.skipEmpty(src, i + n);
+            if (src.is(i + n, "]")) {
                 n++;
                 break;
             }
 
-            while (Parsing.isOperator(tokens, i + n, Operator.COMMA)) {
+            while (src.is(i + n, ",")) {
                 n++;
+                n += Parsing.skipEmpty(src, i + n);
                 values.add(null);
-                if (Parsing.isOperator(tokens, i + n, Operator.BRACKET_CLOSE)) {
+
+                if (src.is(i + n, "]")) {
                     n++;
                     break loop;
                 }
             }
 
-            var res = Parsing.parseValue(filename, tokens, i + n, 2);
-            if (!res.isSuccess()) return ParseRes.error(loc, "Expected an array element.", res);
-            else n += res.n;
+            var res = Parsing.parseValue(src, i + n, 2);
+            if (!res.isSuccess()) return res.chainError(src.loc(i + n), "Expected an array element.");
+            n += res.n;
+            n += Parsing.skipEmpty(src, i + n);
 
             values.add(res.result);
 
-            if (Parsing.isOperator(tokens, i + n, Operator.COMMA)) n++;
-            else if (Parsing.isOperator(tokens, i + n, Operator.BRACKET_CLOSE)) {
+            if (src.is(i + n, ",")) n++;
+            else if (src.is(i + n, "]")) {
                 n++;
                 break;
             }
