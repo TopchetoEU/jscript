@@ -1,16 +1,12 @@
 package me.topchetoeu.jscript.compilation.control;
 
-import java.util.List;
-
-import me.topchetoeu.jscript.common.Filename;
 import me.topchetoeu.jscript.common.Instruction;
 import me.topchetoeu.jscript.common.Location;
-import me.topchetoeu.jscript.common.ParseRes;
 import me.topchetoeu.jscript.compilation.CompileResult;
 import me.topchetoeu.jscript.compilation.Statement;
-import me.topchetoeu.jscript.compilation.parsing.Operator;
+import me.topchetoeu.jscript.compilation.parsing.ParseRes;
 import me.topchetoeu.jscript.compilation.parsing.Parsing;
-import me.topchetoeu.jscript.compilation.parsing.Token;
+import me.topchetoeu.jscript.compilation.parsing.Source;
 
 public class ContinueStatement extends Statement {
     public final String label;
@@ -25,22 +21,28 @@ public class ContinueStatement extends Statement {
         this.label = label;
     }
 
-    public static ParseRes<ContinueStatement> parseContinue(Filename filename, List<Token> tokens, int i) {
-        if (!Parsing.isIdentifier(tokens, i, "continue")) return ParseRes.failed();
+    public static ParseRes<ContinueStatement> parse(Source src, int i) {
+        var n = Parsing.skipEmpty(src, i);
+        var loc = src.loc(i + n);
 
-        if (Parsing.isStatementEnd(tokens, i + 1)) {
-            if (Parsing.isOperator(tokens, i + 1, Operator.SEMICOLON)) return ParseRes.res(new ContinueStatement(Parsing.getLoc(filename, tokens, i), null), 2);
-            else return ParseRes.res(new ContinueStatement(Parsing.getLoc(filename, tokens, i), null), 1);
+        if (!Parsing.isIdentifier(src, i + n, "continue")) return ParseRes.failed();
+        n += 8;
+
+        var end = Parsing.parseStatementEnd(src, i + n);
+        if (end.isSuccess()) {
+            n += end.n;
+            return ParseRes.res(new ContinueStatement(loc, null), n);
         }
 
-        var labelRes = Parsing.parseIdentifier(tokens, i + 1);
-        if (labelRes.isFailed()) return ParseRes.error(Parsing.getLoc(filename, tokens, i), "Expected a label name or an end of statement.");
-        var label = labelRes.result;
+        var label = Parsing.parseIdentifier(src, i + n);
+        if (label.isFailed()) return ParseRes.error(src.loc(i + n), "Expected a label name or an end of statement");
+        n += label.n;
 
-        if (Parsing.isStatementEnd(tokens, i + 2)) {
-            if (Parsing.isOperator(tokens, i + 2, Operator.SEMICOLON)) return ParseRes.res(new ContinueStatement(Parsing.getLoc(filename, tokens, i), label), 3);
-            else return ParseRes.res(new ContinueStatement(Parsing.getLoc(filename, tokens, i), label), 2);
+        end = Parsing.parseStatementEnd(src, i + n);
+        if (end.isSuccess()) {
+            n += end.n;
+            return ParseRes.res(new ContinueStatement(loc, label.result), n);
         }
-        else return ParseRes.error(Parsing.getLoc(filename, tokens, i), "Expected an end of statement.");
+        else return end.chainError(src.loc(i + n), "Expected end of statement");
     }
 }

@@ -3,14 +3,12 @@ package me.topchetoeu.jscript.compilation;
 import java.util.ArrayList;
 import java.util.List;
 
-import me.topchetoeu.jscript.common.Filename;
 import me.topchetoeu.jscript.common.Instruction;
 import me.topchetoeu.jscript.common.Location;
-import me.topchetoeu.jscript.common.ParseRes;
 import me.topchetoeu.jscript.common.Instruction.BreakpointType;
-import me.topchetoeu.jscript.compilation.parsing.Operator;
+import me.topchetoeu.jscript.compilation.parsing.ParseRes;
 import me.topchetoeu.jscript.compilation.parsing.Parsing;
-import me.topchetoeu.jscript.compilation.parsing.Token;
+import me.topchetoeu.jscript.compilation.parsing.Source;
 import me.topchetoeu.jscript.compilation.values.FunctionStatement;
 
 public class VariableDeclareStatement extends Statement {
@@ -56,48 +54,59 @@ public class VariableDeclareStatement extends Statement {
         this.values = values;
     }
 
-    public static ParseRes<VariableDeclareStatement> parse(Filename filename, List<Token> tokens, int i) {
-        var loc = Parsing.getLoc(filename, tokens, i);
-        int n = 0;
-        if (!Parsing.isIdentifier(tokens, i + n++, "var")) return ParseRes.failed();
+    public static ParseRes<VariableDeclareStatement> parse(Source src, int i) {
+        var n = Parsing.skipEmpty(src, i);
+        var loc = src.loc(i + n);
+
+        if (!Parsing.isIdentifier(src, i + n, "var")) return ParseRes.failed();
+        n += 3;
 
         var res = new ArrayList<Pair>();
 
-        if (Parsing.isStatementEnd(tokens, i + n)) {
-            if (Parsing.isOperator(tokens, i + n, Operator.SEMICOLON)) return ParseRes.res(new VariableDeclareStatement(loc, res), 2);
-            else return ParseRes.res(new VariableDeclareStatement(loc, res), 1);
+        var end = Parsing.parseStatementEnd(src, i + n);
+        if (end.isSuccess()) {
+            n += end.n;
+            return ParseRes.res(new VariableDeclareStatement(loc, res), n);
         }
 
         while (true) {
-            var nameLoc = Parsing.getLoc(filename, tokens, i + n);
-            var nameRes = Parsing.parseIdentifier(tokens, i + n++);
-            if (!nameRes.isSuccess()) return ParseRes.error(loc, "Expected a variable name.");
+            var nameLoc = src.loc(i + n);
+            var name = Parsing.parseIdentifier(src, i + n);
+            if (!name.isSuccess()) return name.chainError(nameLoc, "Expected a variable name");
+            n += name.n;
 
-            if (!Parsing.checkVarName(nameRes.result)) {
-                return ParseRes.error(loc, String.format("Unexpected identifier '%s'.", nameRes.result));
+            if (!Parsing.checkVarName(name.result)) {
+                return ParseRes.error(src.loc(i + n), String.format("Unexpected identifier '%s'", name.result));
             }
 
             Statement val = null;
+            n += Parsing.skipEmpty(src, i + n);
 
-            if (Parsing.isOperator(tokens, i + n, Operator.ASSIGN)) {
+            if (src.is(i + n, "=")) {
                 n++;
-                var valRes = Parsing.parseValue(filename, tokens, i + n, 2);
-                if (!valRes.isSuccess()) return ParseRes.error(loc, "Expected a value after '='.", valRes);
+
+                var valRes = Parsing.parseValue(src, i + n, 2);
+                if (!valRes.isSuccess()) return valRes.chainError(src.loc(i + n), "Expected a value after '='");
+
                 n += valRes.n;
+                n += Parsing.skipEmpty(src, i + n);
                 val = valRes.result;
             }
 
-            res.add(new Pair(nameRes.result, val, nameLoc));
+            res.add(new Pair(name.result, val, nameLoc));
 
-            if (Parsing.isOperator(tokens, i + n, Operator.COMMA)) {
+            if (src.is(i + n, ",")) {
                 n++;
                 continue;
             }
-            else if (Parsing.isStatementEnd(tokens, i + n)) {
-                if (Parsing.isOperator(tokens, i + n, Operator.SEMICOLON)) return ParseRes.res(new VariableDeclareStatement(loc, res), n + 1);
-                else return ParseRes.res(new VariableDeclareStatement(loc, res), n);
+
+            end = Parsing.parseStatementEnd(src, i + n);
+
+            if (end.isSuccess()) {
+                n += end.n;
+                return ParseRes.res(new VariableDeclareStatement(loc, res), n);
             }
-            else return ParseRes.error(loc, "Expected a comma or end of statement.");
+            else return end.chainError(src.loc(i + n), "Expected a comma or end of statement");
         }
     }
 }

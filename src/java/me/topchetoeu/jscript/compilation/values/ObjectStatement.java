@@ -2,22 +2,30 @@ package me.topchetoeu.jscript.compilation.values;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 
-import me.topchetoeu.jscript.common.Filename;
 import me.topchetoeu.jscript.common.Instruction;
 import me.topchetoeu.jscript.common.Location;
-import me.topchetoeu.jscript.common.ParseRes;
 import me.topchetoeu.jscript.compilation.CompileResult;
 import me.topchetoeu.jscript.compilation.CompoundStatement;
 import me.topchetoeu.jscript.compilation.Statement;
-import me.topchetoeu.jscript.compilation.parsing.Operator;
+import me.topchetoeu.jscript.compilation.parsing.ParseRes;
 import me.topchetoeu.jscript.compilation.parsing.Parsing;
-import me.topchetoeu.jscript.compilation.parsing.Parsing.ObjProp;
-import me.topchetoeu.jscript.compilation.parsing.Token;
+import me.topchetoeu.jscript.compilation.parsing.Source;
 
 public class ObjectStatement extends Statement {
+    public static class ObjProp {
+        public final String name;
+        public final String access;
+        public final FunctionStatement func;
+    
+        public ObjProp(String name, String access, FunctionStatement func) {
+            this.name = name;
+            this.access = access;
+            this.func = func;
+        }
+    }
+
     public final Map<String, Statement> map;
     public final Map<String, FunctionStatement> getters;
     public final Map<String, FunctionStatement> setters;
@@ -68,100 +76,107 @@ public class ObjectStatement extends Statement {
         this.setters = setters;
     }
 
-    private static ParseRes<String> parsePropName(Filename filename, List<Token> tokens, int i) {
-        var loc = Parsing.getLoc(filename, tokens, i);
+    private static ParseRes<String> parsePropName(Source src, int i) {
+        var n = Parsing.skipEmpty(src, i);
 
-        if (Parsing.inBounds(tokens, i)) {
-            var token = tokens.get(i);
-
-            if (token.isNumber() || token.isIdentifier() || token.isString()) return ParseRes.res(token.rawValue, 1);
-            else return ParseRes.error(loc, "Expected identifier, string or number literal.");
-        }
-        else return ParseRes.failed();
-    }
-    private static ParseRes<ObjProp> parseObjectProp(Filename filename, List<Token> tokens, int i) {
-        var loc =Parsing. getLoc(filename, tokens, i);
-        int n = 0;
-
-        var accessRes = Parsing.parseIdentifier(tokens, i + n++);
-        if (!accessRes.isSuccess()) return ParseRes.failed();
-        var access = accessRes.result;
-        if (!access.equals("get") && !access.equals("set")) return ParseRes.failed();
-
-        var nameRes = parsePropName(filename, tokens, i + n);
-        if (!nameRes.isSuccess()) return ParseRes.error(loc, "Expected a property name after '" + access + "'.");
-        var name = nameRes.result;
-        n += nameRes.n;
-
-        var argsRes = Parsing.parseParamList(filename, tokens, i + n);
-        if (!argsRes.isSuccess()) return ParseRes.error(loc, "Expected an argument list.", argsRes);
-        n += argsRes.n;
-
-        var res = CompoundStatement.parse(filename, tokens, i + n);
-        if (!res.isSuccess()) return ParseRes.error(loc, "Expected a compound statement for property accessor.", res);
+        var res = ParseRes.first(src, i + n,
+            Parsing::parseIdentifier,
+            Parsing::parseString,
+            Parsing::parseNumber
+        );
         n += res.n;
 
-        var end = Parsing.getLoc(filename, tokens, i + n - 1);
+        if (!res.isSuccess()) return res.chainError();
+        return ParseRes.res(res.result.toString(), n);
+    }
+    private static ParseRes<ObjectStatement.ObjProp> parseObjectProp(Source src, int i) {
+        var n = Parsing.skipEmpty(src, i);
+        var loc = src.loc(i + n);
+
+        var access = Parsing.parseIdentifier(src, i + n);
+        if (!access.isSuccess()) return ParseRes.failed();
+        if (!access.result.equals("get") && !access.result.equals("set")) return ParseRes.failed();
+        n += access.n;
+
+        var name = parsePropName(src, i + n);
+        if (!name.isSuccess()) return name.chainError(src.loc(i + n), "Expected a property name after '" + access + "'");
+        n += name.n;
+
+        var params = Parsing.parseParamList(src, i + n);
+        if (!params.isSuccess()) return params.chainError(src.loc(i + n), "Expected an argument list");
+        n += params.n;
+
+        var body = CompoundStatement.parse(src, i + n);
+        if (!body.isSuccess()) return body.chainError(src.loc(i + n), "Expected a compound statement for property accessor.");
+        n += body.n;
+
+        var end = src.loc(i + n - 1);
 
         return ParseRes.res(new ObjProp(
-            name, access,
-            new FunctionStatement(loc, end, access + " " + name.toString(), argsRes.result.toArray(String[]::new), false, res.result)
+            name.result, access.result,
+            new FunctionStatement(loc, end, access + " " + name.result.toString(), params.result.toArray(String[]::new), false, body.result)
         ), n);
     }
 
-    public static ParseRes<ObjectStatement> parse(Filename filename, List<Token> tokens, int i) {
-        var loc = Parsing.getLoc(filename, tokens, i);
-        int n = 0;
-        if (!Parsing.isOperator(tokens, i + n++, Operator.BRACE_OPEN)) return ParseRes.failed();
-    
+    public static ParseRes<ObjectStatement> parse(Source src, int i) {
+        var n = Parsing.skipEmpty(src, i);
+        var loc = src.loc(i + n);
+
+        if (!src.is(i + n, "{")) return ParseRes.failed();
+        n++;
+        n += Parsing.skipEmpty(src, i + n);
+
         var values = new LinkedHashMap<String, Statement>();
         var getters = new LinkedHashMap<String, FunctionStatement>();
         var setters = new LinkedHashMap<String, FunctionStatement>();
-    
-        if (Parsing.isOperator(tokens, i + n, Operator.BRACE_CLOSE)) {
+
+        if (src.is(i + n, "}")) {
             n++;
             return ParseRes.res(new ObjectStatement(loc, values, getters, setters), n);
         }
-    
+
         while (true) {
-            var propRes = parseObjectProp(filename, tokens, i + n);
-    
-            if (propRes.isSuccess()) {
-                n += propRes.n;
-                if (propRes.result.access.equals("set")) {
-                    setters.put(propRes.result.name, propRes.result.func);
-                }
-                else {
-                    getters.put(propRes.result.name, propRes.result.func);
-                }
+            var prop = parseObjectProp(src, i + n);
+
+            if (prop.isSuccess()) {
+                n += prop.n;
+
+                if (prop.result.access.equals("set")) setters.put(prop.result.name, prop.result.func);
+                else getters.put(prop.result.name, prop.result.func);
             }
             else {
-                var nameRes = parsePropName(filename, tokens, i + n);
-                if (!nameRes.isSuccess()) return ParseRes.error(loc, "Expected a field name.", propRes);
-                n += nameRes.n;
-    
-                if (!Parsing.isOperator(tokens, i + n++, Operator.COLON)) return ParseRes.error(loc, "Expected a colon.");
-    
-                var valRes = Parsing.parseValue(filename, tokens, i + n, 2);
-                if (!valRes.isSuccess()) return ParseRes.error(loc, "Expected a value in array list.", valRes);
-                n += valRes.n;
-    
-                values.put(nameRes.result, valRes.result);
-            }
-    
-            if (Parsing.isOperator(tokens, i + n, Operator.COMMA)) {
+                var name = parsePropName(src, i + n);
+                if (!name.isSuccess()) return prop.chainError(src.loc(i + n), "Expected a field name");
+                n += name.n;
+                n += Parsing.skipEmpty(src, i + n);
+
+                if (!src.is(i + n, ":")) return ParseRes.error(src.loc(i + n), "Expected a colon");
                 n++;
-                if (Parsing.isOperator(tokens, i + n, Operator.BRACE_CLOSE)) {
+
+                var valRes = Parsing.parseValue(src, i + n, 2);
+                if (!valRes.isSuccess()) return valRes.chainError(src.loc(i + n), "Expected a value in array list");
+                n += valRes.n;
+
+                values.put(name.result, valRes.result);
+            }
+
+            n += Parsing.skipEmpty(src, i + n);
+            if (src.is(i + n, ",")) {
+                n++;
+                n += Parsing.skipEmpty(src, i + n);
+
+                if (src.is(i + n, "}")) {
                     n++;
                     break;
                 }
+
                 continue;
             }
-            else if (Parsing.isOperator(tokens, i + n, Operator.BRACE_CLOSE)) {
+            else if (src.is(i + n, "}")) {
                 n++;
                 break;
             }
-            else ParseRes.error(loc, "Expected a comma or a closing brace.");
+            else ParseRes.error(src.loc(i + n), "Expected a comma or a closing brace.");
         }
     
         return ParseRes.res(new ObjectStatement(loc, values, getters, setters), n);

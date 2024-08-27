@@ -1,18 +1,14 @@
 package me.topchetoeu.jscript.compilation.values;
 
-import java.util.List;
-
-import me.topchetoeu.jscript.common.Filename;
 import me.topchetoeu.jscript.common.Instruction;
 import me.topchetoeu.jscript.common.Location;
 import me.topchetoeu.jscript.common.Operation;
-import me.topchetoeu.jscript.common.ParseRes;
-import me.topchetoeu.jscript.compilation.AssignableStatement;
 import me.topchetoeu.jscript.compilation.CompileResult;
 import me.topchetoeu.jscript.compilation.Statement;
 import me.topchetoeu.jscript.compilation.parsing.Operator;
+import me.topchetoeu.jscript.compilation.parsing.ParseRes;
 import me.topchetoeu.jscript.compilation.parsing.Parsing;
-import me.topchetoeu.jscript.compilation.parsing.Token;
+import me.topchetoeu.jscript.compilation.parsing.Source;
 
 public class OperationStatement extends Statement {
     public final Statement[] args;
@@ -41,75 +37,74 @@ public class OperationStatement extends Statement {
         this.args = args;
     }
 
-    public static ParseRes<OperationStatement> parseUnary(Filename filename, List<Token> tokens, int i) {
-        var loc = Parsing.getLoc(filename, tokens, i);
-        int n = 0;
-
-        var opState = Parsing.parseOperator(tokens, i + n++);
-        if (!opState.isSuccess()) return ParseRes.failed();
-        var op = opState.result;
+    public static ParseRes<OperationStatement> parsePrefix(Source src, int i) {
+        var n = Parsing.skipEmpty(src, i);
+        var loc = src.loc(i + n);
 
         Operation operation = null;
+        String op;
 
-        if (op == Operator.ADD) operation = Operation.POS;
-        else if (op == Operator.SUBTRACT) operation = Operation.NEG;
-        else if (op == Operator.INVERSE) operation = Operation.INVERSE;
-        else if (op == Operator.NOT) operation = Operation.NOT;
+        if (src.is(i + n, op = "+")) operation = Operation.POS;
+        else if (src.is(i + n, op = "-")) operation = Operation.NEG;
+        else if (src.is(i + n, op = "~")) operation = Operation.INVERSE;
+        else if (src.is(i + n, op = "!")) operation = Operation.NOT;
         else return ParseRes.failed();
 
-        var res = Parsing.parseValue(filename, tokens, n + i, 14);
+        n++;
+
+        var res = Parsing.parseValue(src, i + n, 14);
 
         if (res.isSuccess()) return ParseRes.res(new OperationStatement(loc, operation, res.result), n + res.n);
-        else return ParseRes.error(loc, String.format("Expected a value after the unary operator '%s'.", op.readable), res);
+        else return res.chainError(src.loc(i + n), String.format("Expected a value after the unary operator '%s'.", op));
     }
-    public static ParseRes<OperationStatement> parseInstanceof(Filename filename, List<Token> tokens, int i, Statement prev, int precedence) {
-        var loc = Parsing.getLoc(filename, tokens, i);
-        int n = 0;
-
+    public static ParseRes<OperationStatement> parseInstanceof(Source src, int i, Statement prev, int precedence) {
         if (precedence > 9) return ParseRes.failed();
-        if (!Parsing.isIdentifier(tokens, i + n++, "instanceof")) return ParseRes.failed();
 
-        var valRes = Parsing.parseValue(filename, tokens, i + n, 10);
-        if (!valRes.isSuccess()) return ParseRes.error(loc, "Expected a value after 'instanceof'.", valRes);
+        var n = Parsing.skipEmpty(src, i);
+        var loc = src.loc(i + n);
+
+        var kw = Parsing.parseIdentifier(src, i + n, "instanceof");
+        if (!kw.isSuccess()) return kw.chainError();
+        n += kw.n;
+
+        var valRes = Parsing.parseValue(src, i + n, 10);
+        if (!valRes.isSuccess()) return valRes.chainError(src.loc(i + n), "Expected a value after 'instanceof'.");
         n += valRes.n;
 
         return ParseRes.res(new OperationStatement(loc, Operation.INSTANCEOF, prev, valRes.result), n);
     }
-    public static ParseRes<OperationStatement> parseIn(Filename filename, List<Token> tokens, int i, Statement prev, int precedence) {
-        var loc = Parsing.getLoc(filename, tokens, i);
-        int n = 0;
-
+    public static ParseRes<OperationStatement> parseIn(Source src, int i, Statement prev, int precedence) {
         if (precedence > 9) return ParseRes.failed();
-        if (!Parsing.isIdentifier(tokens, i + n++, "in")) return ParseRes.failed();
 
-        var valRes = Parsing.parseValue(filename, tokens, i + n, 10);
-        if (!valRes.isSuccess()) return ParseRes.error(loc, "Expected a value after 'in'.", valRes);
+        var n = Parsing.skipEmpty(src, i);
+        var loc = src.loc(i + n);
+
+        var kw = Parsing.parseIdentifier(src, i + n, "in");
+        if (!kw.isSuccess()) return kw.chainError();
+        n += kw.n;
+
+        var valRes = Parsing.parseValue(src, i + n, 10);
+        if (!valRes.isSuccess()) return valRes.chainError(src.loc(i + n), "Expected a value after 'in'.");
         n += valRes.n;
 
-        return ParseRes.res(new OperationStatement(loc, Operation.IN, prev, valRes.result), n);
+        return ParseRes.res(new OperationStatement(loc, Operation.IN, valRes.result, prev), n);
     }
-    public static ParseRes<? extends Statement> parseOperator(Filename filename, List<Token> tokens, int i, Statement prev, int precedence) {
-        var loc = Parsing.getLoc(filename, tokens, i);
-        var n = 0;
+    public static ParseRes<? extends Statement> parseOperator(Source src, int i, Statement prev, int precedence) {
+        var n = Parsing.skipEmpty(src, i);
+        var loc = src.loc(i + n);
 
-        var opRes = Parsing.parseOperator(tokens, i + n++);
-        if (!opRes.isSuccess()) return ParseRes.failed();
-        var op = opRes.result;
+        for (var op : Operator.opsByLength) {
+            if (!src.is(i + n, op.readable)) continue;
+            if (op.precedence < precedence) return ParseRes.failed();
+            n += op.readable.length();
 
-        if (op.precedence < precedence) return ParseRes.failed();
-        if (op.isAssign()) return AssignableStatement.parse(filename, tokens, i + n - 1, prev, precedence);
+            var res = Parsing.parseValue(src, i + n, op.precedence + 1);
+            if (!res.isSuccess()) return res.chainError(src.loc(i + n), String.format("Expected a value after the '%s' operator.", op.readable));
+            n += res.n;
 
-        var res = Parsing.parseValue(filename, tokens, i + n, op.precedence + (op.reverse ? 0 : 1));
-        if (!res.isSuccess()) return ParseRes.error(loc, String.format("Expected a value after the '%s' operator.", op.readable), res);
-        n += res.n;
-
-        if (op == Operator.LAZY_AND) {
-            return ParseRes.res(new LazyAndStatement(loc, prev, res.result), n);
-        }
-        if (op == Operator.LAZY_OR) {
-            return ParseRes.res(new LazyOrStatement(loc, prev, res.result), n);
+            return ParseRes.res(new OperationStatement(loc, op.operation, prev, res.result), n);
         }
 
-        return ParseRes.res(new OperationStatement(loc, op.operation, prev, res.result), n);
+        return ParseRes.failed();
     }
 }

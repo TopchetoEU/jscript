@@ -1,15 +1,12 @@
 package me.topchetoeu.jscript.compilation.values;
 
-import java.util.List;
-
-import me.topchetoeu.jscript.common.Filename;
 import me.topchetoeu.jscript.common.Instruction;
 import me.topchetoeu.jscript.common.Location;
-import me.topchetoeu.jscript.common.ParseRes;
 import me.topchetoeu.jscript.compilation.CompileResult;
 import me.topchetoeu.jscript.compilation.Statement;
+import me.topchetoeu.jscript.compilation.parsing.ParseRes;
 import me.topchetoeu.jscript.compilation.parsing.Parsing;
-import me.topchetoeu.jscript.compilation.parsing.Token;
+import me.topchetoeu.jscript.compilation.parsing.Source;
 
 public class TypeofStatement extends Statement {
     public final Statement value;
@@ -36,13 +33,15 @@ public class TypeofStatement extends Statement {
         this.value = value;
     }
 
-    public static ParseRes<TypeofStatement> parse(Filename filename, List<Token> tokens, int i) {
-        var loc = Parsing.getLoc(filename, tokens, i);
-        var n = 0;
-        if (!Parsing.isIdentifier(tokens, i + n++, "typeof")) return ParseRes.failed();
-    
-        var valRes = Parsing.parseValue(filename, tokens, i + n, 15);
-        if (!valRes.isSuccess()) return ParseRes.error(loc, "Expected a value after 'typeof' keyword.", valRes);
+    public static ParseRes<TypeofStatement> parse(Source src, int i) {
+        var n = Parsing.skipEmpty(src, i);
+        var loc = src.loc(i + n);
+
+        if (!Parsing.isIdentifier(src, i + n, "typeof")) return ParseRes.failed();
+        n += 6;
+
+        var valRes = Parsing.parseValue(src, i + n, 15);
+        if (!valRes.isSuccess()) return valRes.chainError(src.loc(i + n), "Expected a value after 'typeof' keyword.");
         n += valRes.n;
     
         return ParseRes.res(new TypeofStatement(loc, valRes.result), n);

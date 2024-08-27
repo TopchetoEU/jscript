@@ -19,7 +19,7 @@ import me.topchetoeu.jscript.runtime.values.functions.NativeFunction;
 import me.topchetoeu.jscript.runtime.values.primitives.VoidValue;
 
 public class SimpleRepl {
-    static Thread engineTask, debugTask;
+    static Thread engineTask;
     static Engine engine = new Engine();
     static Environment environment = Environment.empty();
 
@@ -69,11 +69,6 @@ public class SimpleRepl {
     }
 
     private static void initEnv() {
-        var glob = GlobalScope.get(environment);
-
-        glob.define(null, false, new NativeFunction("exit", args -> {
-            throw new InterruptException();
-        }));
         // glob.define(null, false, new NativeFunction("go", args -> {
         //     try {
         //         var f = Path.of("do.js");
@@ -84,13 +79,6 @@ public class SimpleRepl {
         //         throw new EngineException("Couldn't open do.js");
         //     }
         // }));
-        glob.define(null, false, new NativeFunction("log", args -> {
-            for (var el : args.args) {
-                System.out.print(el.toReadable(args.env));
-            }
-
-            return null;
-        }));
 
         // var fs = new RootFilesystem(PermissionsProvider.get(environment));
         // fs.protocols.put("temp", new MemoryFilesystem(Mode.READ_WRITE));
@@ -107,6 +95,18 @@ public class SimpleRepl {
         environment.add(Compiler.KEY, (filename, source) -> {
             return Parsing.compile(filename, source).body();
         });
+
+        var glob = GlobalScope.get(environment);
+        glob.define(null, false, new NativeFunction("exit", args -> {
+            throw new InterruptException();
+        }));
+        glob.define(null, false, new NativeFunction("log", args -> {
+            for (var el : args.args) {
+                System.out.print(el.toReadable(args.env));
+            }
+
+            return null;
+        }));
     }
     private static void initEngine() {
         // var ctx = new DebugContext();
@@ -131,7 +131,7 @@ public class SimpleRepl {
         reader.start();
 
         engine.thread().join();
-        debugTask.interrupt();
+        // debugTask.interrupt();
         engineTask.interrupt();
     }
 }

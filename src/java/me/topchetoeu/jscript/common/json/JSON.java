@@ -1,85 +1,85 @@
 package me.topchetoeu.jscript.common.json;
 
-import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import me.topchetoeu.jscript.common.Filename;
-import me.topchetoeu.jscript.common.ParseRes;
-import me.topchetoeu.jscript.compilation.parsing.Operator;
+import me.topchetoeu.jscript.compilation.parsing.ParseRes;
 import me.topchetoeu.jscript.compilation.parsing.Parsing;
-import me.topchetoeu.jscript.compilation.parsing.Token;
-import me.topchetoeu.jscript.compilation.values.ConstantStatement;
+import me.topchetoeu.jscript.compilation.parsing.Source;
 import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 
 public class JSON {
-    public static ParseRes<String> parseIdentifier(List<Token> tokens, int i) {
-        return Parsing.parseIdentifier(tokens, i);
+    public static ParseRes<JSONElement> parseString(Source src, int i) {
+        var res = Parsing.parseString(src, i);
+        if (!res.isSuccess()) return res.chainError();
+        return ParseRes.res(JSONElement.string(res.result), res.n);
     }
-    public static ParseRes<String> parseString(Filename filename, List<Token> tokens, int i) {
-        var res = ConstantStatement.parseString(filename, tokens, i);
-        if (res.isSuccess()) return ParseRes.res((String)res.result.value, res.n);
-        else return res.transform();
-    }
-    public static ParseRes<Double> parseNumber(Filename filename, List<Token> tokens, int i) {
-        var minus = Parsing.isOperator(tokens, i, Operator.SUBTRACT);
-        if (minus) i++;
+    public static ParseRes<JSONElement> parseNumber(Source src, int i) {
+        var n = Parsing.skipEmpty(src, i);
 
-        var res = ConstantStatement.parseNumber(filename, tokens, i);
-        if (res.isSuccess()) return ParseRes.res((minus ? -1 : 1) * (Double)res.result.value, res.n + (minus ? 1 : 0));
-        else return res.transform();
+        if (src.is(i + n, "-")) {
+            n++;
+
+            var res = Parsing.parseNumber(src, i);
+            if (!res.isSuccess()) return res.chainError(src.loc(i + n), "Expected a number after minus");
+            n += res.n;
+
+            return ParseRes.res(JSONElement.number(-res.result), n);
+        }
+        else {
+            var res = Parsing.parseNumber(src, i + n).addN(n);
+            if (!res.isSuccess()) return res.chainError();
+            n += res.n;
+            return ParseRes.res(JSONElement.number(res.result), n);
+        }
     }
-    public static ParseRes<Boolean> parseBool(Filename filename, List<Token> tokens, int i) {
-        var id = parseIdentifier(tokens, i);
+    public static ParseRes<JSONElement> parseLiteral(Source src, int i) {
+        var id = Parsing.parseIdentifier(src, i);
 
         if (!id.isSuccess()) return ParseRes.failed();
-        else if (id.result.equals("true")) return ParseRes.res(true, 1);
-        else if (id.result.equals("false")) return ParseRes.res(false, 1);
+        else if (id.result.equals("true")) return ParseRes.res(JSONElement.bool(true), id.n);
+        else if (id.result.equals("false")) return ParseRes.res(JSONElement.bool(false), id.n);
+        else if (id.result.equals("null")) return ParseRes.res(JSONElement.NULL, id.n);
         else return ParseRes.failed();
     }
 
-    public static ParseRes<?> parseValue(Filename filename, List<Token> tokens, int i) {
-        return ParseRes.any(
-            parseString(filename, tokens, i),
-            parseNumber(filename, tokens, i),
-            parseBool(filename, tokens, i),
-            parseMap(filename, tokens, i),
-            parseList(filename, tokens, i)
+    public static ParseRes<JSONElement> parseValue(Source src, int i) {
+        return ParseRes.first(src, i,
+            JSON::parseString,
+            JSON::parseNumber,
+            JSON::parseLiteral,
+            JSON::parseMap,
+            JSON::parseList
         );
     }
 
-    public static ParseRes<JSONMap> parseMap(Filename filename, List<Token> tokens, int i) {
-        int n = 0;
-        if (!Parsing.isOperator(tokens, i + n++, Operator.BRACE_OPEN)) return ParseRes.failed();
+    public static ParseRes<JSONMap> parseMap(Source src, int i) {
+        var n = Parsing.skipEmpty(src, i);
+
+        if (!src.is(i + n, "{")) return ParseRes.failed();
+        n++;
 
         var values = new JSONMap();
 
+        if (src.is(i + n, "}")) return ParseRes.res(new JSONMap(Map.of()), n + 1);
         while (true) {
-            if (Parsing.isOperator(tokens, i + n, Operator.BRACE_CLOSE)) {
-                n++;
-                break;
-            }
+            var name = parseString(src, i + n);
+            if (!name.isSuccess()) return name.chainError(src.loc(i + n), "Expected an index");
+            n += name.n;
+            n += Parsing.skipEmpty(src, i + n);
 
-            var name = ParseRes.any(
-                parseIdentifier(tokens, i + n),
-                parseString(filename, tokens, i + n),
-                parseNumber(filename, tokens, i + n)
-            );
-            if (!name.isSuccess()) return ParseRes.error(Parsing.getLoc(filename, tokens, i + n), "Expected an index.", name);
-            else n += name.n;
-
-            if (!Parsing.isOperator(tokens, i + n, Operator.COLON)) {
-                return ParseRes.error(Parsing.getLoc(filename, tokens, i + n), "Expected a colon.", name);
-            }
+            if (!src.is(i + n, ":")) return name.chainError(src.loc(i + n), "Expected a colon");
             n++;
 
-            var res = parseValue(filename, tokens, i + n);
-            if (!res.isSuccess()) return ParseRes.error(Parsing.getLoc(filename, tokens, i + n), "Expected a list element.", res);
-            else n += res.n;
+            var res = parseValue(src, i + n);
+            if (!res.isSuccess()) return res.chainError(src.loc(i + n), "Expected a list element");
+            values.put(name.result.toString(), res.result);
+            n += res.n;
+            n += Parsing.skipEmpty(src, i + n);
 
-            values.put(name.result.toString(), JSONElement.of(res.result));
-
-            if (Parsing.isOperator(tokens, i + n, Operator.COMMA)) n++;
-            else if (Parsing.isOperator(tokens, i + n, Operator.BRACE_CLOSE)) {
+            if (src.is(i + n, ",")) n++;
+            else if (src.is(i + n, "}")) {
                 n++;
                 break;
             }
@@ -87,26 +87,23 @@ public class JSON {
 
         return ParseRes.res(values, n);
     }
-    public static ParseRes<JSONList> parseList(Filename filename, List<Token> tokens, int i) {
-        int n = 0;
-        if (!Parsing.isOperator(tokens, i + n++, Operator.BRACKET_OPEN)) return ParseRes.failed();
+    public static ParseRes<JSONList> parseList(Source src, int i) {
+        var n = Parsing.skipEmpty(src, i);
+
+        if (!src.is(i + n++, "[]")) return ParseRes.failed();
 
         var values = new JSONList();
 
+        if (src.is(i + n, "]")) return ParseRes.res(new JSONList(), n + 1);
         while (true) {
-            if (Parsing.isOperator(tokens, i + n, Operator.BRACKET_CLOSE)) {
-                n++;
-                break;
-            }
+            var res = parseValue(src, i + n);
+            if (!res.isSuccess()) return res.chainError(src.loc(i + n), "Expected a list element");
+            values.add(res.result);
+            n += res.n;
+            n += Parsing.skipEmpty(src, i + n);
 
-            var res = parseValue(filename, tokens, i + n);
-            if (!res.isSuccess()) return ParseRes.error(Parsing.getLoc(filename, tokens, i + n), "Expected a list element.", res);
-            else n += res.n;
-
-            values.add(JSONElement.of(res.result));
-
-            if (Parsing.isOperator(tokens, i + n, Operator.COMMA)) n++;
-            else if (Parsing.isOperator(tokens, i + n, Operator.BRACKET_CLOSE)) {
+            if (src.is(i + n, ",")) n++;
+            else if (src.is(i + n, "]")) {
                 n++;
                 break;
             }
@@ -116,7 +113,8 @@ public class JSON {
     }
     public static JSONElement parse(Filename filename, String raw) {
         if (filename == null) filename = new Filename("jscript", "json");
-        var res = parseValue(filename, Parsing.tokenize(filename, raw), 0);
+
+        var res = parseValue(new Source(filename, raw), 0);
         if (res.isFailed()) throw new SyntaxException(null, "Invalid JSON given.");
         else if (res.isError()) throw new SyntaxException(null, res.error);
         else return JSONElement.of(res.result);
