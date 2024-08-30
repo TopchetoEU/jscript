@@ -12,7 +12,7 @@ import me.topchetoeu.jscript.runtime.values.functions.CodeFunction;
 
 public interface Compiler {
     public static final Compiler DEFAULT = (env, filename, raw) -> {
-        var res = JavaScript.compile(filename, raw);
+        var res = JavaScript.compile(env, filename, raw);
         var body = res.body();
         DebugContext.get(env).onSource(filename, raw);
         registerFunc(env, body, res);

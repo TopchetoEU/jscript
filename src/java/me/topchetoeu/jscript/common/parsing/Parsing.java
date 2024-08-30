@@ -3,8 +3,6 @@ package me.topchetoeu.jscript.common.parsing;
 import me.topchetoeu.jscript.compilation.values.constants.NumberStatement;
 import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 
-// TODO: this has to be rewritten
-// @SourceFile
 public class Parsing {
     public static boolean isDigit(Character c) {
         return c != null && c >= '0' && c <= '9';

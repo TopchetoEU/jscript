@@ -43,7 +43,7 @@ public final class NumberValue extends PrimitiveValue {
         if (radix < 2 || radix > 36) return new NumberValue(Double.NaN);
 
         str = str.trim();
-        var res = Parsing.parseInt(new Source(null, str), 0, "0123456789abcdefghijklmnopqrstuvwxyz".substring(0, radix), true);
+        var res = Parsing.parseInt(new Source(str), 0, "0123456789abcdefghijklmnopqrstuvwxyz".substring(0, radix), true);
         if (res.isSuccess()) {
             if (relaxed || res.n == str.length()) return new NumberValue(res.result);
         }
@@ -51,7 +51,7 @@ public final class NumberValue extends PrimitiveValue {
     }
     public static NumberValue parseFloat(String str, boolean relaxed) {
         str = str.trim();
-        var res = Parsing.parseFloat(new Source(null, str), 0, true);
+        var res = Parsing.parseFloat(new Source(str), 0, true);
         if (res.isSuccess()) {
             if (relaxed || res.n == str.length()) return new NumberValue(res.result);
         }
