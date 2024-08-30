@@ -10,38 +10,38 @@ import me.topchetoeu.jscript.common.parsing.Filename;
 import me.topchetoeu.jscript.common.parsing.ParseRes;
 import me.topchetoeu.jscript.common.parsing.Parsing;
 import me.topchetoeu.jscript.common.parsing.Source;
-import me.topchetoeu.jscript.compilation.control.BreakStatement;
-import me.topchetoeu.jscript.compilation.control.ContinueStatement;
-import me.topchetoeu.jscript.compilation.control.DebugStatement;
-import me.topchetoeu.jscript.compilation.control.DeleteStatement;
-import me.topchetoeu.jscript.compilation.control.DoWhileStatement;
-import me.topchetoeu.jscript.compilation.control.ForInStatement;
-import me.topchetoeu.jscript.compilation.control.ForOfStatement;
-import me.topchetoeu.jscript.compilation.control.ForStatement;
-import me.topchetoeu.jscript.compilation.control.IfStatement;
-import me.topchetoeu.jscript.compilation.control.ReturnStatement;
-import me.topchetoeu.jscript.compilation.control.SwitchStatement;
-import me.topchetoeu.jscript.compilation.control.ThrowStatement;
-import me.topchetoeu.jscript.compilation.control.TryStatement;
-import me.topchetoeu.jscript.compilation.control.WhileStatement;
+import me.topchetoeu.jscript.compilation.control.BreakNode;
+import me.topchetoeu.jscript.compilation.control.ContinueNode;
+import me.topchetoeu.jscript.compilation.control.DebugNode;
+import me.topchetoeu.jscript.compilation.control.DeleteNode;
+import me.topchetoeu.jscript.compilation.control.DoWhileNode;
+import me.topchetoeu.jscript.compilation.control.ForInNode;
+import me.topchetoeu.jscript.compilation.control.ForOfNode;
+import me.topchetoeu.jscript.compilation.control.ForNode;
+import me.topchetoeu.jscript.compilation.control.IfNode;
+import me.topchetoeu.jscript.compilation.control.ReturnNode;
+import me.topchetoeu.jscript.compilation.control.SwitchNode;
+import me.topchetoeu.jscript.compilation.control.ThrowNode;
+import me.topchetoeu.jscript.compilation.control.TryNode;
+import me.topchetoeu.jscript.compilation.control.WhileNode;
 import me.topchetoeu.jscript.compilation.scope.LocalScopeRecord;
-import me.topchetoeu.jscript.compilation.values.ArrayStatement;
-import me.topchetoeu.jscript.compilation.values.FunctionStatement;
-import me.topchetoeu.jscript.compilation.values.GlobalThisStatement;
-import me.topchetoeu.jscript.compilation.values.ObjectStatement;
-import me.topchetoeu.jscript.compilation.values.RegexStatement;
-import me.topchetoeu.jscript.compilation.values.VariableStatement;
-import me.topchetoeu.jscript.compilation.values.constants.BoolStatement;
-import me.topchetoeu.jscript.compilation.values.constants.NullStatement;
-import me.topchetoeu.jscript.compilation.values.constants.NumberStatement;
-import me.topchetoeu.jscript.compilation.values.constants.StringStatement;
-import me.topchetoeu.jscript.compilation.values.operations.CallStatement;
-import me.topchetoeu.jscript.compilation.values.operations.ChangeStatement;
-import me.topchetoeu.jscript.compilation.values.operations.DiscardStatement;
-import me.topchetoeu.jscript.compilation.values.operations.IndexStatement;
-import me.topchetoeu.jscript.compilation.values.operations.OperationStatement;
-import me.topchetoeu.jscript.compilation.values.operations.TypeofStatement;
-import me.topchetoeu.jscript.compilation.values.operations.VariableIndexStatement;
+import me.topchetoeu.jscript.compilation.values.ArrayNode;
+import me.topchetoeu.jscript.compilation.values.FunctionNode;
+import me.topchetoeu.jscript.compilation.values.GlobalThisNode;
+import me.topchetoeu.jscript.compilation.values.ObjectNode;
+import me.topchetoeu.jscript.compilation.values.RegexNode;
+import me.topchetoeu.jscript.compilation.values.VariableNode;
+import me.topchetoeu.jscript.compilation.values.constants.BoolNode;
+import me.topchetoeu.jscript.compilation.values.constants.NullNode;
+import me.topchetoeu.jscript.compilation.values.constants.NumberNode;
+import me.topchetoeu.jscript.compilation.values.constants.StringNode;
+import me.topchetoeu.jscript.compilation.values.operations.CallNode;
+import me.topchetoeu.jscript.compilation.values.operations.ChangeNode;
+import me.topchetoeu.jscript.compilation.values.operations.DiscardNode;
+import me.topchetoeu.jscript.compilation.values.operations.IndexNode;
+import me.topchetoeu.jscript.compilation.values.operations.OperationNode;
+import me.topchetoeu.jscript.compilation.values.operations.TypeofNode;
+import me.topchetoeu.jscript.compilation.values.operations.VariableIndexNode;
 import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 
 public class JavaScript {
@@ -53,7 +53,7 @@ public class JavaScript {
         "protected", "public", "static"
     );
 
-    public static ParseRes<? extends Statement> parseParens(Source src, int i) {
+    public static ParseRes<? extends Node> parseParens(Source src, int i) {
         int n = 0;
 
         var openParen = Parsing.parseOperator(src, i + n, "(");
@@ -71,28 +71,28 @@ public class JavaScript {
         return ParseRes.res(res.result, n);
     }
 
-    public static ParseRes<? extends Statement> parseSimple(Source src, int i, boolean statement) {
+    public static ParseRes<? extends Node> parseSimple(Source src, int i, boolean statement) {
         return ParseRes.first(src, i,
-            (s, j) -> statement ? ParseRes.failed() : ObjectStatement.parse(s, j),
-            (s, j) -> statement ? ParseRes.failed() : FunctionStatement.parseFunction(s, j, false),
+            (s, j) -> statement ? ParseRes.failed() : ObjectNode.parse(s, j),
+            (s, j) -> statement ? ParseRes.failed() : FunctionNode.parseFunction(s, j, false),
             JavaScript::parseLiteral,
-            StringStatement::parse,
-            RegexStatement::parse,
-            NumberStatement::parse,
-            ChangeStatement::parsePrefixDecrease,
-            ChangeStatement::parsePrefixIncrease,
-            OperationStatement::parsePrefix,
-            ArrayStatement::parse,
+            StringNode::parse,
+            RegexNode::parse,
+            NumberNode::parse,
+            ChangeNode::parsePrefixDecrease,
+            ChangeNode::parsePrefixIncrease,
+            OperationNode::parsePrefix,
+            ArrayNode::parse,
             JavaScript::parseParens,
-            CallStatement::parseNew,
-            TypeofStatement::parse,
-            DiscardStatement::parse,
-            DeleteStatement::parse,
-            VariableStatement::parse
+            CallNode::parseNew,
+            TypeofNode::parse,
+            DiscardNode::parse,
+            DeleteNode::parse,
+            VariableNode::parse
         );
     }
 
-    public static ParseRes<? extends Statement> parseLiteral(Source src, int i) {
+    public static ParseRes<? extends Node> parseLiteral(Source src, int i) {
         var n = Parsing.skipEmpty(src, i);
         var loc = src.loc(i + n);
 
@@ -100,20 +100,20 @@ public class JavaScript {
         if (!id.isSuccess()) return id.chainError();
         n += id.n;
 
-        if (id.result.equals("true")) return ParseRes.res(new BoolStatement(loc, true), n);
-        if (id.result.equals("false")) return ParseRes.res(new BoolStatement(loc, false), n);
-        if (id.result.equals("undefined")) return ParseRes.res(new DiscardStatement(loc, null), n);
-        if (id.result.equals("null")) return ParseRes.res(new NullStatement(loc), n);
-        if (id.result.equals("this")) return ParseRes.res(new VariableIndexStatement(loc, 0), n);
-        if (id.result.equals("arguments")) return ParseRes.res(new VariableIndexStatement(loc, 1), n);
-        if (id.result.equals("globalThis")) return ParseRes.res(new GlobalThisStatement(loc), n);
+        if (id.result.equals("true")) return ParseRes.res(new BoolNode(loc, true), n);
+        if (id.result.equals("false")) return ParseRes.res(new BoolNode(loc, false), n);
+        if (id.result.equals("undefined")) return ParseRes.res(new DiscardNode(loc, null), n);
+        if (id.result.equals("null")) return ParseRes.res(new NullNode(loc), n);
+        if (id.result.equals("this")) return ParseRes.res(new VariableIndexNode(loc, 0), n);
+        if (id.result.equals("arguments")) return ParseRes.res(new VariableIndexNode(loc, 1), n);
+        if (id.result.equals("globalThis")) return ParseRes.res(new GlobalThisNode(loc), n);
 
         return ParseRes.failed();
     }
 
-    public static ParseRes<? extends Statement> parseExpression(Source src, int i, int precedence, boolean statement) {
+    public static ParseRes<? extends Node> parseExpression(Source src, int i, int precedence, boolean statement) {
         var n = Parsing.skipEmpty(src, i);
-        Statement prev = null;
+        Node prev = null;
 
         while (true) {
             if (prev == null) {
@@ -127,17 +127,17 @@ public class JavaScript {
             }
             else {
                 var _prev = prev;
-                ParseRes<Statement> res = ParseRes.first(src, i + n,
-                    (s, j) -> OperationStatement.parseInstanceof(s, j, _prev, precedence),
-                    (s, j) -> OperationStatement.parseIn(s, j, _prev, precedence),
-                    (s, j) -> ChangeStatement.parsePostfixIncrease(s, j, _prev, precedence),
-                    (s, j) -> ChangeStatement.parsePostfixDecrease(s, j, _prev, precedence),
-                    (s, j) -> OperationStatement.parseOperator(s, j, _prev, precedence),
-                    (s, j) -> IfStatement.parseTernary(s, j, _prev, precedence),
-                    (s, j) -> IndexStatement.parseMember(s, j, _prev, precedence),
-                    (s, j) -> IndexStatement.parseIndex(s, j, _prev, precedence),
-                    (s, j) -> CallStatement.parseCall(s, j, _prev, precedence),
-                    (s, j) -> CompoundStatement.parseComma(s, j, _prev, precedence)
+                ParseRes<Node> res = ParseRes.first(src, i + n,
+                    (s, j) -> OperationNode.parseInstanceof(s, j, _prev, precedence),
+                    (s, j) -> OperationNode.parseIn(s, j, _prev, precedence),
+                    (s, j) -> ChangeNode.parsePostfixIncrease(s, j, _prev, precedence),
+                    (s, j) -> ChangeNode.parsePostfixDecrease(s, j, _prev, precedence),
+                    (s, j) -> OperationNode.parseOperator(s, j, _prev, precedence),
+                    (s, j) -> IfNode.parseTernary(s, j, _prev, precedence),
+                    (s, j) -> IndexNode.parseMember(s, j, _prev, precedence),
+                    (s, j) -> IndexNode.parseIndex(s, j, _prev, precedence),
+                    (s, j) -> CallNode.parseCall(s, j, _prev, precedence),
+                    (s, j) -> CompoundNode.parseComma(s, j, _prev, precedence)
                 );
 
                 if (res.isSuccess()) {
@@ -155,11 +155,11 @@ public class JavaScript {
         else return ParseRes.res(prev, n);
     }
 
-    public static ParseRes<? extends Statement> parseExpression(Source src, int i, int precedence) {
+    public static ParseRes<? extends Node> parseExpression(Source src, int i, int precedence) {
         return parseExpression(src, i, precedence, false);
     }
 
-    public static ParseRes<? extends Statement> parseExpressionStatement(Source src, int i) {
+    public static ParseRes<? extends Node> parseExpressionStatement(Source src, int i) {
         var res = parseExpression(src, i, 0, true);
         if (!res.isSuccess()) return res.chainError();
 
@@ -169,29 +169,29 @@ public class JavaScript {
         return res.addN(end.n);
     }
 
-    public static ParseRes<? extends Statement> parseStatement(Source src, int i) {
+    public static ParseRes<? extends Node> parseStatement(Source src, int i) {
         var n = Parsing.skipEmpty(src, i);
 
-        if (src.is(i + n, ";")) return ParseRes.res(new DiscardStatement(src.loc(i+ n), null), n + 1);
+        if (src.is(i + n, ";")) return ParseRes.res(new DiscardNode(src.loc(i+ n), null), n + 1);
         if (Parsing.isIdentifier(src, i + n, "with")) return ParseRes.error(src.loc(i + n), "'with' statements are not allowed.");
 
-        ParseRes<? extends Statement> res = ParseRes.first(src, i + n,
-            VariableDeclareStatement::parse,
-            ReturnStatement::parse,
-            ThrowStatement::parse,
-            ContinueStatement::parse,
-            BreakStatement::parse,
-            DebugStatement::parse,
-            IfStatement::parse,
-            WhileStatement::parse,
-            SwitchStatement::parse,
-            ForStatement::parse,
-            ForInStatement::parse,
-            ForOfStatement::parse,
-            DoWhileStatement::parse,
-            TryStatement::parse,
-            CompoundStatement::parse,
-            (s, j) -> FunctionStatement.parseFunction(s, j, true),
+        ParseRes<? extends Node> res = ParseRes.first(src, i + n,
+            VariableDeclareNode::parse,
+            ReturnNode::parse,
+            ThrowNode::parse,
+            ContinueNode::parse,
+            BreakNode::parse,
+            DebugNode::parse,
+            IfNode::parse,
+            WhileNode::parse,
+            SwitchNode::parse,
+            ForNode::parse,
+            ForInNode::parse,
+            ForOfNode::parse,
+            DoWhileNode::parse,
+            TryNode::parse,
+            CompoundNode::parse,
+            (s, j) -> FunctionNode.parseFunction(s, j, true),
             JavaScript::parseExpressionStatement
         );
         return res.addN(n);
@@ -247,9 +247,9 @@ public class JavaScript {
         return ParseRes.res(args, n);
     }
 
-    public static Statement[] parse(Environment env, Filename filename, String raw) {
+    public static Node[] parse(Environment env, Filename filename, String raw) {
         var src = new Source(env, filename, raw);
-        var list = new ArrayList<Statement>();
+        var list = new ArrayList<Node>();
         int i = 0;
 
         while (true) {
@@ -265,23 +265,23 @@ public class JavaScript {
             list.add(res.result);
         }
 
-        return list.toArray(Statement[]::new);
+        return list.toArray(Node[]::new);
     }
 
     public static boolean checkVarName(String name) {
         return !JavaScript.reserved.contains(name);
     }
 
-    public static CompileResult compile(Statement ...statements) {
+    public static CompileResult compile(Node ...statements) {
         var target = new CompileResult(new LocalScopeRecord());
-        var stm = new CompoundStatement(null, true, statements);
+        var stm = new CompoundNode(null, true, statements);
 
         target.scope.define("this");
         target.scope.define("arguments");
 
         try {
             stm.compile(target, true);
-            FunctionStatement.checkBreakAndCont(target, 0);
+            FunctionNode.checkBreakAndCont(target, 0);
         }
         catch (SyntaxException e) {
             target = new CompileResult(new LocalScopeRecord());
