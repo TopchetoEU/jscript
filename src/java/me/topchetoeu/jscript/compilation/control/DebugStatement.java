@@ -6,7 +6,7 @@ import me.topchetoeu.jscript.common.parsing.ParseRes;
 import me.topchetoeu.jscript.common.parsing.Parsing;
 import me.topchetoeu.jscript.common.parsing.Source;
 import me.topchetoeu.jscript.compilation.CompileResult;
-import me.topchetoeu.jscript.compilation.ES5;
+import me.topchetoeu.jscript.compilation.JavaScript;
 import me.topchetoeu.jscript.compilation.Statement;
 
 public class DebugStatement extends Statement {
@@ -26,7 +26,7 @@ public class DebugStatement extends Statement {
         if (!Parsing.isIdentifier(src, i + n, "debugger")) return ParseRes.failed();
         n += 8;
 
-        var end = ES5.parseStatementEnd(src, i + n);
+        var end = JavaScript.parseStatementEnd(src, i + n);
         if (end.isSuccess()) {
             n += end.n;
             return ParseRes.res(new DebugStatement(loc), n);

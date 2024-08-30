@@ -9,7 +9,7 @@ import me.topchetoeu.jscript.common.parsing.Parsing;
 import me.topchetoeu.jscript.common.parsing.Source;
 import me.topchetoeu.jscript.compilation.CompileResult;
 import me.topchetoeu.jscript.compilation.CompoundStatement;
-import me.topchetoeu.jscript.compilation.ES5;
+import me.topchetoeu.jscript.compilation.JavaScript;
 import me.topchetoeu.jscript.compilation.Statement;
 import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 
@@ -133,7 +133,7 @@ public class FunctionStatement extends Statement {
         n += nameRes.n;
         n += Parsing.skipEmpty(src, i + n);
 
-        var args = ES5.parseParamList(src, i + n);
+        var args = JavaScript.parseParamList(src, i + n);
         if (!args.isSuccess()) return args.chainError(src.loc(i + n), "Expected a parameter list");
         n += args.n;
 

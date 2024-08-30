@@ -6,7 +6,7 @@ import me.topchetoeu.jscript.common.parsing.ParseRes;
 import me.topchetoeu.jscript.common.parsing.Parsing;
 import me.topchetoeu.jscript.common.parsing.Source;
 import me.topchetoeu.jscript.compilation.CompileResult;
-import me.topchetoeu.jscript.compilation.ES5;
+import me.topchetoeu.jscript.compilation.JavaScript;
 import me.topchetoeu.jscript.compilation.Statement;
 
 public class DiscardStatement extends Statement {
@@ -31,7 +31,7 @@ public class DiscardStatement extends Statement {
         if (!Parsing.isIdentifier(src, i + n, "void")) return ParseRes.failed();
         n += 4;
 
-        var valRes = ES5.parseExpression(src, i + n, 14);
+        var valRes = JavaScript.parseExpression(src, i + n, 14);
         if (!valRes.isSuccess()) return valRes.chainError(src.loc(i + n), "Expected a value after 'void' keyword.");
         n += valRes.n;
 

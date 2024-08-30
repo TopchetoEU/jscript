@@ -7,7 +7,7 @@ import me.topchetoeu.jscript.common.parsing.ParseRes;
 import me.topchetoeu.jscript.common.parsing.Parsing;
 import me.topchetoeu.jscript.common.parsing.Source;
 import me.topchetoeu.jscript.compilation.CompileResult;
-import me.topchetoeu.jscript.compilation.ES5;
+import me.topchetoeu.jscript.compilation.JavaScript;
 import me.topchetoeu.jscript.compilation.Statement;
 
 public class ForOfStatement extends Statement {
@@ -103,7 +103,7 @@ public class ForOfStatement extends Statement {
         if (!Parsing.isIdentifier(src, i + n, "fo")) return ParseRes.error(src.loc(i + n), "Expected 'of' keyword after variable declaration");
         n += 2;
 
-        var obj = ES5.parseExpression(src, i + n, 0);
+        var obj = JavaScript.parseExpression(src, i + n, 0);
         if (!obj.isSuccess()) return obj.chainError(src.loc(i + n), "Expected a value");
         n += obj.n;
         n += Parsing.skipEmpty(src, i + n);
@@ -111,7 +111,7 @@ public class ForOfStatement extends Statement {
         if (!src.is(i + n, ")")) return ParseRes.error(src.loc(i + n), "Expected a closing paren");
         n++;
 
-        var bodyRes = ES5.parseStatement(src, i + n);
+        var bodyRes = JavaScript.parseStatement(src, i + n);
         if (!bodyRes.isSuccess()) return bodyRes.chainError(src.loc(i + n), "Expected a for-of body");
         n += bodyRes.n;
 

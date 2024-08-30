@@ -8,7 +8,7 @@ import me.topchetoeu.jscript.common.parsing.ParseRes;
 import me.topchetoeu.jscript.common.parsing.Parsing;
 import me.topchetoeu.jscript.common.parsing.Source;
 import me.topchetoeu.jscript.compilation.CompileResult;
-import me.topchetoeu.jscript.compilation.ES5;
+import me.topchetoeu.jscript.compilation.JavaScript;
 import me.topchetoeu.jscript.compilation.Statement;
 
 public class ArrayStatement extends Statement {
@@ -70,7 +70,7 @@ public class ArrayStatement extends Statement {
                 }
             }
 
-            var res = ES5.parseExpression(src, i + n, 2);
+            var res = JavaScript.parseExpression(src, i + n, 2);
             if (!res.isSuccess()) return res.chainError(src.loc(i + n), "Expected an array element.");
             n += res.n;
             n += Parsing.skipEmpty(src, i + n);

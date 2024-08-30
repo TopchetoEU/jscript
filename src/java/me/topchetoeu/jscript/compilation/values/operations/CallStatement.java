@@ -11,7 +11,7 @@ import me.topchetoeu.jscript.common.parsing.ParseRes;
 import me.topchetoeu.jscript.common.parsing.Parsing;
 import me.topchetoeu.jscript.common.parsing.Source;
 import me.topchetoeu.jscript.compilation.CompileResult;
-import me.topchetoeu.jscript.compilation.ES5;
+import me.topchetoeu.jscript.compilation.JavaScript;
 import me.topchetoeu.jscript.compilation.Statement;
 import me.topchetoeu.jscript.compilation.values.ArrayStatement;
 import me.topchetoeu.jscript.compilation.values.ObjectStatement;
@@ -136,7 +136,7 @@ public class CallStatement extends Statement {
         boolean prevArg = false;
 
         while (true) {
-            var argRes = ES5.parseExpression(src, i + n, 2);
+            var argRes = JavaScript.parseExpression(src, i + n, 2);
             n += argRes.n;
             n += Parsing.skipEmpty(src, i + n);
 
@@ -166,7 +166,7 @@ public class CallStatement extends Statement {
         if (!Parsing.isIdentifier(src, i + n, "new")) return ParseRes.failed();
         n += 3;
 
-        var valRes = ES5.parseExpression(src, i + n, 18);
+        var valRes = JavaScript.parseExpression(src, i + n, 18);
         if (!valRes.isSuccess()) return valRes.chainError(src.loc(i + n), "Expected a value after 'new' keyword.");
         n += valRes.n;
 

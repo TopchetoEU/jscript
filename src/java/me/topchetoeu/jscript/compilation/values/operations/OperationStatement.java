@@ -13,7 +13,7 @@ import me.topchetoeu.jscript.common.parsing.Parsing;
 import me.topchetoeu.jscript.common.parsing.Source;
 import me.topchetoeu.jscript.compilation.AssignableStatement;
 import me.topchetoeu.jscript.compilation.CompileResult;
-import me.topchetoeu.jscript.compilation.ES5;
+import me.topchetoeu.jscript.compilation.JavaScript;
 import me.topchetoeu.jscript.compilation.Statement;
 
 public class OperationStatement extends Statement {
@@ -33,7 +33,7 @@ public class OperationStatement extends Statement {
         @Override public ParseRes<Statement> construct(Source src, int i, Statement prev) {
             var loc = src.loc(i);
 
-            var other = ES5.parseExpression(src, i, precedence + 1);
+            var other = JavaScript.parseExpression(src, i, precedence + 1);
             if (!other.isSuccess()) return other.chainError(src.loc(i + other.n), String.format("Expected a value after '%s'", token));
             return ParseRes.res(new OperationStatement(loc, operation, prev, (Statement)other.result), other.n);
         }
@@ -56,7 +56,7 @@ public class OperationStatement extends Statement {
 
             if (!(prev instanceof AssignableStatement)) return ParseRes.error(loc, String.format("Expected an assignable expression before '%s'", token));
 
-            var other = ES5.parseExpression(src, i, precedence);
+            var other = JavaScript.parseExpression(src, i, precedence);
             if (!other.isSuccess()) return other.chainError(src.loc(i + other.n), String.format("Expected a value after '%s'", token));
             return ParseRes.res(((AssignableStatement)prev).toAssign(other.result, operation), other.n);
         }
@@ -73,7 +73,7 @@ public class OperationStatement extends Statement {
         @Override public ParseRes<Statement> construct(Source src, int i, Statement prev) {
             var loc = src.loc(i);
 
-            var other = ES5.parseExpression(src, i, 5);
+            var other = JavaScript.parseExpression(src, i, 5);
             if (!other.isSuccess()) return other.chainError(src.loc(i + other.n), "Expected a value after '&&'");
             return ParseRes.res(new LazyAndStatement(loc, prev, (Statement)other.result), other.n);
         }
@@ -84,7 +84,7 @@ public class OperationStatement extends Statement {
         @Override public ParseRes<Statement> construct(Source src, int i, Statement prev) {
             var loc = src.loc(i);
 
-            var other = ES5.parseExpression(src, i, 6);
+            var other = JavaScript.parseExpression(src, i, 6);
             if (!other.isSuccess()) return other.chainError(src.loc(i + other.n), "Expected a value after '||'");
             return ParseRes.res(new LazyOrStatement(loc, prev, (Statement)other.result), other.n);
         }
@@ -171,7 +171,7 @@ public class OperationStatement extends Statement {
 
         n++;
 
-        var res = ES5.parseExpression(src, i + n, 14);
+        var res = JavaScript.parseExpression(src, i + n, 14);
 
         if (res.isSuccess()) return ParseRes.res(new OperationStatement(loc, operation, res.result), n + res.n);
         else return res.chainError(src.loc(i + n), String.format("Expected a value after the unary operator '%s'.", op));
@@ -186,7 +186,7 @@ public class OperationStatement extends Statement {
         if (!kw.isSuccess()) return kw.chainError();
         n += kw.n;
 
-        var valRes = ES5.parseExpression(src, i + n, 10);
+        var valRes = JavaScript.parseExpression(src, i + n, 10);
         if (!valRes.isSuccess()) return valRes.chainError(src.loc(i + n), "Expected a value after 'instanceof'.");
         n += valRes.n;
 
@@ -202,7 +202,7 @@ public class OperationStatement extends Statement {
         if (!kw.isSuccess()) return kw.chainError();
         n += kw.n;
 
-        var valRes = ES5.parseExpression(src, i + n, 10);
+        var valRes = JavaScript.parseExpression(src, i + n, 10);
         if (!valRes.isSuccess()) return valRes.chainError(src.loc(i + n), "Expected a value after 'in'.");
         n += valRes.n;
 

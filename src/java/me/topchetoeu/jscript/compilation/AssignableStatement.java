@@ -1,14 +1,10 @@
 package me.topchetoeu.jscript.compilation;
 
 import me.topchetoeu.jscript.common.Operation;
-import me.topchetoeu.jscript.common.parsing.Location;
 
-public abstract class AssignableStatement extends Statement {
+public interface AssignableStatement {
     public abstract Statement toAssign(Statement val, Operation operation);
 
-    protected AssignableStatement(Location loc) {
-        super(loc);
-    }
     // private static final Map<String, Operation> operations = Map.ofEntries(
     //     Map.entry("*=", Operation.MULTIPLY),
     //     Map.entry("/=", Operation.DIVIDE),

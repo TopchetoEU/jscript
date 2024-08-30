@@ -43,7 +43,7 @@ import me.topchetoeu.jscript.compilation.values.operations.TypeofStatement;
 import me.topchetoeu.jscript.compilation.values.operations.VariableIndexStatement;
 import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 
-public class ES5 {
+public class JavaScript {
     static final Set<String> reserved = Set.of(
         "true", "false", "void", "null", "this", "if", "else", "try", "catch",
         "finally", "for", "do", "while", "switch", "case", "default", "new",
@@ -59,7 +59,7 @@ public class ES5 {
         if (!openParen.isSuccess()) return openParen.chainError();
         n += openParen.n;
 
-        var res = ES5.parseExpression(src, i + n, 0);
+        var res = JavaScript.parseExpression(src, i + n, 0);
         if (!res.isSuccess()) return res.chainError(src.loc(i + n), "Expected an expression in parens");
         n += res.n;
 
@@ -74,7 +74,7 @@ public class ES5 {
         return ParseRes.first(src, i,
             (a, b) -> statement ? ParseRes.failed() : ObjectStatement.parse(a, b),
             (a, b) -> statement ? ParseRes.failed() : FunctionStatement.parseFunction(a, b, false),
-            ES5::parseLiteral,
+            JavaScript::parseLiteral,
             StringStatement::parse,
             RegexStatement::parse,
             NumberStatement::parse,
@@ -82,7 +82,7 @@ public class ES5 {
             ChangeStatement::parsePrefixIncrease,
             OperationStatement::parsePrefix,
             ArrayStatement::parse,
-            ES5::parseParens,
+            JavaScript::parseParens,
             CallStatement::parseNew,
             TypeofStatement::parse,
             DiscardStatement::parse,
@@ -162,7 +162,7 @@ public class ES5 {
         var res = parseExpression(src, i, 0, true);
         if (!res.isSuccess()) return res.chainError();
 
-        var end = ES5.parseStatementEnd(src, i + res.n);
+        var end = JavaScript.parseStatementEnd(src, i + res.n);
         if (!end.isSuccess()) return ParseRes.error(src.loc(i + res.n), "Expected an end of statement");
 
         return res.addN(end.n);
@@ -191,7 +191,7 @@ public class ES5 {
             TryStatement::parse,
             CompoundStatement::parse,
             (s, j) -> FunctionStatement.parseFunction(s, j, true),
-            ES5::parseExpressionStatement
+            JavaScript::parseExpressionStatement
         );
         return res.addN(n);
     }
@@ -232,7 +232,7 @@ public class ES5 {
     }
 
     public static boolean checkVarName(String name) {
-        return !ES5.reserved.contains(name);
+        return !JavaScript.reserved.contains(name);
     }
 
     public static ParseRes<List<String>> parseParamList(Source src, int i) {
@@ -297,6 +297,6 @@ public class ES5 {
     }
 
     public static CompileResult compile(Filename filename, String raw) {
-        return ES5.compile(ES5.parse(filename, raw));
+        return JavaScript.compile(JavaScript.parse(filename, raw));
     }
 }

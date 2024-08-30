@@ -9,11 +9,11 @@ import me.topchetoeu.jscript.common.parsing.Parsing;
 import me.topchetoeu.jscript.common.parsing.Source;
 import me.topchetoeu.jscript.compilation.AssignableStatement;
 import me.topchetoeu.jscript.compilation.CompileResult;
-import me.topchetoeu.jscript.compilation.ES5;
+import me.topchetoeu.jscript.compilation.JavaScript;
 import me.topchetoeu.jscript.compilation.Statement;
 import me.topchetoeu.jscript.compilation.values.constants.StringStatement;
 
-public class IndexStatement extends AssignableStatement {
+public class IndexStatement extends Statement implements AssignableStatement {
     public final Statement object;
     public final Statement index;
 
@@ -49,7 +49,7 @@ public class IndexStatement extends AssignableStatement {
         if (!src.is(i + n, "[")) return ParseRes.failed();
         n++;
 
-        var valRes = ES5.parseExpression(src, i + n, 0);
+        var valRes = JavaScript.parseExpression(src, i + n, 0);
         if (!valRes.isSuccess()) return valRes.chainError(src.loc(i + n), "Expected a value in index expression");
         n += valRes.n;
         n += Parsing.skipEmpty(src, i + n);
