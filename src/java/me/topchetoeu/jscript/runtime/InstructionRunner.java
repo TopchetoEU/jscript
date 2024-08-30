@@ -5,7 +5,7 @@ import java.util.Collections;
 
 import me.topchetoeu.jscript.common.Instruction;
 import me.topchetoeu.jscript.common.Operation;
-import me.topchetoeu.jscript.runtime.environment.Environment;
+import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
 import me.topchetoeu.jscript.runtime.scope.GlobalScope;
 import me.topchetoeu.jscript.runtime.scope.ValueVariable;
@@ -19,7 +19,6 @@ import me.topchetoeu.jscript.runtime.values.objects.ObjectValue;
 import me.topchetoeu.jscript.runtime.values.primitives.BoolValue;
 import me.topchetoeu.jscript.runtime.values.primitives.NumberValue;
 import me.topchetoeu.jscript.runtime.values.primitives.StringValue;
-import me.topchetoeu.jscript.runtime.values.primitives.VoidValue;
 
 public class InstructionRunner {
     private static Value execReturn(Environment env, Instruction instr, Frame frame) {
@@ -36,7 +35,7 @@ public class InstructionRunner {
         var callArgs = frame.take(instr.get(0));
         var func = frame.pop();
 
-        frame.push(func.call(env, false, instr.get(1), VoidValue.UNDEFINED, callArgs));
+        frame.push(func.call(env, false, instr.get(1), Value.UNDEFINED, callArgs));
 
         frame.codePtr++;
         return null;
@@ -75,11 +74,11 @@ public class InstructionRunner {
 
         FunctionValue getter, setter;
 
-        if (getterVal == VoidValue.UNDEFINED) getter = null;
+        if (getterVal == Value.UNDEFINED) getter = null;
         else if (getterVal instanceof FunctionValue) getter = (FunctionValue)getterVal;
         else throw EngineException.ofType("Getter must be a function or undefined.");
 
-        if (setterVal == VoidValue.UNDEFINED) setter = null;
+        if (setterVal == Value.UNDEFINED) setter = null;
         else if (setterVal instanceof FunctionValue) setter = (FunctionValue)setterVal;
         else throw EngineException.ofType("Setter must be a function or undefined.");
 
@@ -135,8 +134,8 @@ public class InstructionRunner {
     }
     private static Value execLoadValue(Environment env, Instruction instr, Frame frame) {
         switch (instr.type) {
-            case PUSH_UNDEFINED: frame.push(VoidValue.UNDEFINED); break;
-            case PUSH_NULL: frame.push(VoidValue.NULL); break;
+            case PUSH_UNDEFINED: frame.push(Value.UNDEFINED); break;
+            case PUSH_NULL: frame.push(Value.NULL); break;
             case PUSH_BOOL: frame.push(BoolValue.of(instr.get(0))); break;
             case PUSH_NUMBER: frame.push(new NumberValue(instr.get(0))); break;
             case PUSH_STRING: frame.push(new StringValue(instr.get(0))); break;
@@ -157,7 +156,7 @@ public class InstructionRunner {
     }
     private static Value execLoadObj(Environment env, Instruction instr, Frame frame) {
         var obj = new ObjectValue();
-        obj.setPrototype(Environment.OBJECT_PROTO);
+        obj.setPrototype(Value.OBJECT_PROTO);
         frame.push(obj);
         frame.codePtr++;
         return null;
@@ -204,8 +203,8 @@ public class InstructionRunner {
         return null;
     }
     private static Value execLoadRegEx(Environment env, Instruction instr, Frame frame) {
-        if (env.hasNotNull(Environment.REGEX_CONSTR)) {
-            frame.push(env.get(Environment.REGEX_CONSTR).callNew(env, instr.get(0), instr.get(1)));
+        if (env.hasNotNull(Value.REGEX_CONSTR)) {
+            frame.push(env.get(Value.REGEX_CONSTR).callNew(env, instr.get(0), instr.get(1)));
         }
         else {
             throw EngineException.ofSyntax("Regex is not supported.");

@@ -1,6 +1,6 @@
 package me.topchetoeu.jscript.runtime.values.functions;
 
-import me.topchetoeu.jscript.runtime.environment.Environment;
+import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.runtime.values.KeyCache;
 import me.topchetoeu.jscript.runtime.values.Member;
 import me.topchetoeu.jscript.runtime.values.Value;
@@ -82,7 +82,7 @@ public abstract class FunctionValue extends ObjectValue {
     }
 
     public FunctionValue(String name, int length) {
-        setPrototype(Environment.FUNCTION_PROTO);
+        setPrototype(FUNCTION_PROTO);
 
         if (name == null) name = "";
         this.length = length;

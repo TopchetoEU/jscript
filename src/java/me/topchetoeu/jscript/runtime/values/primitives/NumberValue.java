@@ -1,10 +1,10 @@
 package me.topchetoeu.jscript.runtime.values.primitives;
 
+import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.common.json.JSON;
 import me.topchetoeu.jscript.common.json.JSONElement;
 import me.topchetoeu.jscript.common.parsing.Parsing;
 import me.topchetoeu.jscript.common.parsing.Source;
-import me.topchetoeu.jscript.runtime.environment.Environment;
 import me.topchetoeu.jscript.runtime.values.Value;
 import me.topchetoeu.jscript.runtime.values.objects.ObjectValue;
 
@@ -22,7 +22,7 @@ public final class NumberValue extends PrimitiveValue {
     @Override public String toString() { return JSON.stringify(JSONElement.number(value)); }
 
     @Override public ObjectValue getPrototype(Environment env) {
-        return env.get(Environment.NUMBER_PROTO);
+        return env.get(NUMBER_PROTO);
     }
 
     @Override public CompareResult compare(Environment env, Value other) {

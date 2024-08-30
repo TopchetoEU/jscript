@@ -7,19 +7,19 @@ import java.util.WeakHashMap;
 
 import me.topchetoeu.jscript.common.FunctionBody;
 import me.topchetoeu.jscript.common.Instruction;
+import me.topchetoeu.jscript.common.environment.Environment;
+import me.topchetoeu.jscript.common.environment.Key;
 import me.topchetoeu.jscript.common.mapping.FunctionMap;
 import me.topchetoeu.jscript.common.parsing.Filename;
 import me.topchetoeu.jscript.common.parsing.Location;
 import me.topchetoeu.jscript.runtime.Frame;
-import me.topchetoeu.jscript.runtime.environment.Environment;
-import me.topchetoeu.jscript.runtime.environment.Key;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
 import me.topchetoeu.jscript.runtime.values.functions.CodeFunction;
 import me.topchetoeu.jscript.runtime.values.functions.FunctionValue;
 
 public class DebugContext {
-    public static final Key<DebugContext> KEY = new Key<>();
-    public static final Key<Void> IGNORE = new Key<>();
+    public static final Key<DebugContext> KEY = Key.of();
+    public static final Key<Void> IGNORE = Key.of();
 
     private HashMap<Filename, String> sources;
     private WeakHashMap<FunctionBody, FunctionMap> maps;

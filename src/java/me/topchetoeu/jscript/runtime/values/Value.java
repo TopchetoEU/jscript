@@ -10,11 +10,12 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import me.topchetoeu.jscript.common.Operation;
+import me.topchetoeu.jscript.common.environment.Environment;
+import me.topchetoeu.jscript.common.environment.Key;
 import me.topchetoeu.jscript.common.json.JSON;
 import me.topchetoeu.jscript.common.json.JSONElement;
 import me.topchetoeu.jscript.runtime.EventLoop;
 import me.topchetoeu.jscript.runtime.debug.DebugContext;
-import me.topchetoeu.jscript.runtime.environment.Environment;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
 import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 import me.topchetoeu.jscript.runtime.values.Member.FieldMember;
@@ -48,8 +49,24 @@ public abstract class Value {
         }
     }
 
-    public static final Object NULL = new Object();
-    public static final Object NO_RETURN = new Object();
+    public static final Key<FunctionValue> REGEX_CONSTR = Key.of();
+
+    public static final Key<Integer> MAX_STACK_COUNT = Key.of();
+    public static final Key<Boolean> HIDE_STACK = Key.of();
+    public static final Key<ObjectValue> OBJECT_PROTO = Key.of();
+    public static final Key<ObjectValue> FUNCTION_PROTO = Key.of();
+    public static final Key<ObjectValue> ARRAY_PROTO = Key.of();
+    public static final Key<ObjectValue> BOOL_PROTO = Key.of();
+    public static final Key<ObjectValue> NUMBER_PROTO = Key.of();
+    public static final Key<ObjectValue> STRING_PROTO = Key.of();
+    public static final Key<ObjectValue> SYMBOL_PROTO = Key.of();
+    public static final Key<ObjectValue> ERROR_PROTO = Key.of();
+    public static final Key<ObjectValue> SYNTAX_ERR_PROTO = Key.of();
+    public static final Key<ObjectValue> TYPE_ERR_PROTO = Key.of();
+    public static final Key<ObjectValue> RANGE_ERR_PROTO = Key.of();
+
+    public static final VoidValue UNDEFINED = new VoidValue("undefined", new StringValue("undefined"));
+    public static final VoidValue NULL = new VoidValue("null", new StringValue("object"));
 
     public abstract StringValue type();
     public abstract boolean isPrimitive();
@@ -267,7 +284,7 @@ public abstract class Value {
             if (member != null) return member.get(env, obj);
         }
 
-        return VoidValue.UNDEFINED;
+        return Value.UNDEFINED;
     }
     public final Value getMember(Environment env, Value key) {
         return getMember(env, new KeyCache(key));
@@ -437,74 +454,6 @@ public abstract class Value {
         return a.toString(env).strictEquals(env, b.toString(env));
     }
 
-    // @SuppressWarnings("unchecked")
-    // public static <T> T convert(Environment ext, Class<T> clazz) {
-    //     if (clazz == Void.class) return null;
-
-    //     if (this instanceof NativeWrapper) {
-    //         var res = ((NativeWrapper)this).wrapped;
-    //         if (clazz.isInstance(res)) return (T)res;
-    //     }
-
-    //     if (clazz == null || clazz == Object.class) return (T)this;
-
-    //     if (this instanceof ArrayValue) {
-    //         if (clazz.isAssignableFrom(ArrayList.class)) {
-    //             var raw = ((ArrayValue)this).toArray();
-    //             var res = new ArrayList<>();
-    //             for (var i = 0; i < raw.length; i++) res.add(convert(ext, raw[i], Object.class));
-    //             return (T)new ArrayList<>(res);
-    //         }
-    //         if (clazz.isAssignableFrom(HashSet.class)) {
-    //             var raw = ((ArrayValue)this).toArray();
-    //             var res = new HashSet<>();
-    //             for (var i = 0; i < raw.length; i++) res.add(convert(ext, raw[i], Object.class));
-    //             return (T)new HashSet<>(res);
-    //         }
-    //         if (clazz.isArray()) {
-    //             var raw = ((ArrayValue)this).toArray();
-    //             Object res = Array.newInstance(clazz.getComponentType(), raw.length);
-    //             for (var i = 0; i < raw.length; i++) Array.set(res, i, convert(ext, raw[i], Object.class));
-    //             return (T)res;
-    //         }
-    //     }
-
-    //     if (this instanceof ObjectValue && clazz.isAssignableFrom(HashMap.class)) {
-    //         var res = new HashMap<>();
-    //         for (var el : ((ObjectValue)this).values.entrySet()) res.put(
-    //             convert(ext, el.getKey(), null),
-    //             convert(ext, el.getValue(), null)
-    //         );
-    //         return (T)res;
-    //     }
-
-    //     if (clazz == String.class) return (T)toString(ext, this);
-    //     if (clazz == Boolean.class || clazz == Boolean.TYPE) return (T)(Boolean)toBoolean(this);
-    //     if (clazz == Byte.class || clazz == byte.class) return (T)(Byte)(byte)toNumber(ext, this);
-    //     if (clazz == Integer.class || clazz == int.class) return (T)(Integer)(int)toNumber(ext, this);
-    //     if (clazz == Long.class || clazz == long.class) return (T)(Long)(long)toNumber(ext, this);
-    //     if (clazz == Short.class || clazz == short.class) return (T)(Short)(short)toNumber(ext, this);
-    //     if (clazz == Float.class || clazz == float.class) return (T)(Float)(float)toNumber(ext, this);
-    //     if (clazz == Double.class || clazz == double.class) return (T)(Double)toNumber(ext, this);
-
-    //     if (clazz == Character.class || clazz == char.class) {
-    //         if (this instanceof Number) return (T)(Character)(char)number(this);
-    //         else {
-    //             var res = toString(ext, this);
-    //             if (res.length() == 0) throw new ConvertException("\"\"", "Character");
-    //             else return (T)(Character)res.charAt(0);
-    //         }
-    //     }
-
-    //     if (this == null) return null;
-    //     if (clazz.isInstance(this)) return (T)this;
-    //     if (clazz.isAssignableFrom(NativeWrapper.class)) {
-    //         return (T)NativeWrapper.of(ext, this);
-    //     }
-
-    //     throw new ConvertException(type(this), clazz.getSimpleName());
-    // }
-
     public Iterable<Object> toIterable(Environment env) {
         return () -> {
             if (!(this instanceof FunctionValue)) return Collections.emptyIterator();
@@ -518,7 +467,7 @@ public abstract class Value {
                 private void loadNext() {
                     if (supplier == null) value = null;
                     else if (consumed) {
-                        var curr = supplier.call(env, VoidValue.UNDEFINED);
+                        var curr = supplier.call(env, Value.UNDEFINED);
 
                         if (curr == null) { supplier = null; value = null; }
                         if (curr.getMember(env, new StringValue("done")).toBoolean()) { supplier = null; value = null; }
@@ -561,12 +510,12 @@ public abstract class Value {
 
     public void callWith(Environment env, Iterable<? extends Value> it) {
         for (var el : it) {
-            this.call(env, VoidValue.UNDEFINED, el);
+            this.call(env, Value.UNDEFINED, el);
         }
     }
     public void callWithAsync(Environment env, Iterable<? extends Value> it, boolean async) {
         for (var el : it) {
-            env.get(EventLoop.KEY).pushMsg(() -> this.call(env, VoidValue.UNDEFINED, el), true);
+            env.get(EventLoop.KEY).pushMsg(() -> this.call(env, Value.UNDEFINED, el), true);
         }
     }
 

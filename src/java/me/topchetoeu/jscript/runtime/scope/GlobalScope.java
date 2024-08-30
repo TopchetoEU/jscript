@@ -3,18 +3,17 @@ package me.topchetoeu.jscript.runtime.scope;
 import java.util.HashSet;
 import java.util.Set;
 
-import me.topchetoeu.jscript.runtime.environment.Environment;
-import me.topchetoeu.jscript.runtime.environment.Key;
+import me.topchetoeu.jscript.common.environment.Environment;
+import me.topchetoeu.jscript.common.environment.Key;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
 import me.topchetoeu.jscript.runtime.values.Value;
 import me.topchetoeu.jscript.runtime.values.Member.FieldMember;
 import me.topchetoeu.jscript.runtime.values.functions.FunctionValue;
 import me.topchetoeu.jscript.runtime.values.objects.ObjectValue;
 import me.topchetoeu.jscript.runtime.values.primitives.StringValue;
-import me.topchetoeu.jscript.runtime.values.primitives.VoidValue;
 
 public class GlobalScope {
-    public static final Key<GlobalScope> KEY = new Key<>();
+    public static final Key<GlobalScope> KEY = Key.of();
 
     public final ObjectValue object;
 
@@ -35,7 +34,7 @@ public class GlobalScope {
         object.defineOwnMember(ext, name, FieldMember.of(val, !readonly));
     }
     public void define(Environment ext, boolean readonly, String ...names) {
-        for (var name : names) define(ext, name, new ValueVariable(readonly, VoidValue.UNDEFINED));
+        for (var name : names) define(ext, name, new ValueVariable(readonly, Value.UNDEFINED));
     }
     public void define(Environment ext, boolean readonly, FunctionValue val) {
         define(ext, readonly, val.name, val);

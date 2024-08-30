@@ -1,8 +1,8 @@
 package me.topchetoeu.jscript.runtime.values.functions;
 
 import me.topchetoeu.jscript.common.FunctionBody;
+import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.runtime.Frame;
-import me.topchetoeu.jscript.runtime.environment.Environment;
 import me.topchetoeu.jscript.runtime.scope.ValueVariable;
 import me.topchetoeu.jscript.runtime.values.Value;
 

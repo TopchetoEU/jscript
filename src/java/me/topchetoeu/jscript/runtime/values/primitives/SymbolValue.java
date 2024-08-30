@@ -2,7 +2,7 @@ package me.topchetoeu.jscript.runtime.values.primitives;
 
 import java.util.HashMap;
 
-import me.topchetoeu.jscript.runtime.environment.Environment;
+import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
 import me.topchetoeu.jscript.runtime.values.Value;
 import me.topchetoeu.jscript.runtime.values.objects.ObjectValue;
@@ -14,7 +14,7 @@ public final class SymbolValue extends PrimitiveValue {
     public final String value;
 
     public Value key() {
-        return registry.containsKey(value) && registry.get(value) == this ? new StringValue(value) : VoidValue.UNDEFINED;
+        return registry.containsKey(value) && registry.get(value) == this ? new StringValue(value) : Value.UNDEFINED;
     }
 
     @Override public StringValue type() { return typeString; }
@@ -30,7 +30,7 @@ public final class SymbolValue extends PrimitiveValue {
     @Override public boolean strictEquals(Environment ext, Value other) {
         return other == this;
     }
-    @Override public ObjectValue getPrototype(Environment env) { return env.get(Environment.SYMBOL_PROTO); }
+    @Override public ObjectValue getPrototype(Environment env) { return env.get(SYMBOL_PROTO); }
 
     @Override public String toString() {
         if (value == null) return "Symbol()";

@@ -3,9 +3,9 @@ package me.topchetoeu.jscript.runtime.values.primitives;
 import java.util.Map;
 import java.util.Objects;
 
+import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.common.parsing.Parsing;
 import me.topchetoeu.jscript.common.parsing.Source;
-import me.topchetoeu.jscript.runtime.environment.Environment;
 import me.topchetoeu.jscript.runtime.values.Member;
 import me.topchetoeu.jscript.runtime.values.Value;
 import me.topchetoeu.jscript.runtime.values.objects.ObjectValue;
@@ -38,7 +38,7 @@ public final class StringValue extends PrimitiveValue {
     @Override public boolean strictEquals(Environment ext, Value other) {
         return (other instanceof StringValue) && Objects.equals(((StringValue)other).value, value);
     }
-    @Override public ObjectValue getPrototype(Environment env) { return env.get(Environment.STRING_PROTO); }
+    @Override public ObjectValue getPrototype(Environment env) { return env.get(STRING_PROTO); }
 
     @Override public Map<String, Member> getOwnMembers(Environment env) {
         // TODO Auto-generated method stub

@@ -1,10 +1,9 @@
 package me.topchetoeu.jscript.runtime.values;
 
-import me.topchetoeu.jscript.runtime.environment.Environment;
+import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.runtime.values.functions.FunctionValue;
 import me.topchetoeu.jscript.runtime.values.objects.ObjectValue;
 import me.topchetoeu.jscript.runtime.values.primitives.BoolValue;
-import me.topchetoeu.jscript.runtime.values.primitives.VoidValue;
 
 public interface Member {
     public static final class PropertyMember implements Member {
@@ -15,7 +14,7 @@ public interface Member {
 
         @Override public Value get(Environment env, Value self) {
             if (getter != null) return getter.call(env, self);
-            else return VoidValue.UNDEFINED;
+            else return Value.UNDEFINED;
         }
         @Override public boolean set(Environment env, Value val, Value self) {
             if (setter == null) return false;
@@ -41,10 +40,10 @@ public interface Member {
         @Override public ObjectValue descriptor(Environment env, Value self) {
             var res = new ObjectValue();
 
-            if (getter == null) res.defineOwnMember(env, "getter", FieldMember.of(VoidValue.UNDEFINED));
+            if (getter == null) res.defineOwnMember(env, "getter", FieldMember.of(Value.UNDEFINED));
             else res.defineOwnMember(env, "getter", FieldMember.of(getter));
 
-            if (setter == null) res.defineOwnMember(env, "setter", FieldMember.of(VoidValue.UNDEFINED));
+            if (setter == null) res.defineOwnMember(env, "setter", FieldMember.of(Value.UNDEFINED));
             else res.defineOwnMember(env, "setter", FieldMember.of(setter));
 
             res.defineOwnMember(env, "enumerable", FieldMember.of(BoolValue.of(enumerable)));

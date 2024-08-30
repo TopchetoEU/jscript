@@ -1,6 +1,6 @@
 package me.topchetoeu.jscript.runtime.values.objects;
 
-import me.topchetoeu.jscript.runtime.environment.Environment;
+import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.runtime.scope.ValueVariable;
 import me.topchetoeu.jscript.runtime.values.Value;
 import me.topchetoeu.jscript.runtime.values.Member.FieldMember;

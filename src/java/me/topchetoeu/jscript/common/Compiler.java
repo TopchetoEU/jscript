@@ -1,18 +1,18 @@
 package me.topchetoeu.jscript.common;
 
+import me.topchetoeu.jscript.common.environment.Environment;
+import me.topchetoeu.jscript.common.environment.Key;
 import me.topchetoeu.jscript.common.parsing.Filename;
 import me.topchetoeu.jscript.compilation.CompileResult;
-import me.topchetoeu.jscript.compilation.ES5;
+import me.topchetoeu.jscript.compilation.JavaScript;
 import me.topchetoeu.jscript.runtime.debug.DebugContext;
-import me.topchetoeu.jscript.runtime.environment.Environment;
-import me.topchetoeu.jscript.runtime.environment.Key;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
 import me.topchetoeu.jscript.runtime.scope.ValueVariable;
 import me.topchetoeu.jscript.runtime.values.functions.CodeFunction;
 
 public interface Compiler {
     public static final Compiler DEFAULT = (env, filename, raw) -> {
-        var res = ES5.compile(filename, raw);
+        var res = JavaScript.compile(filename, raw);
         var body = res.body();
         DebugContext.get(env).onSource(filename, raw);
         registerFunc(env, body, res);
@@ -20,7 +20,7 @@ public interface Compiler {
         return body;
     };
 
-    public Key<Compiler> KEY = new Key<>();
+    public Key<Compiler> KEY = Key.of();
 
     public FunctionBody compile(Environment env, Filename filename, String source);
 
