@@ -1,6 +1,6 @@
 package me.topchetoeu.jscript.common.parsing;
 
-import me.topchetoeu.jscript.compilation.values.constants.NumberStatement;
+import me.topchetoeu.jscript.compilation.values.constants.NumberNode;
 import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 
 public class Parsing {
@@ -276,8 +276,8 @@ public class Parsing {
             if (negative) return ParseRes.error(src.loc(i + n), "Expected number immediatly after minus");
             return ParseRes.failed();
         }
-        else if (negative) return ParseRes.res(-(whole + fract) * NumberStatement.power(10, exponent), n);
-        else return ParseRes.res((whole + fract) * NumberStatement.power(10, exponent), n);
+        else if (negative) return ParseRes.res(-(whole + fract) * NumberNode.power(10, exponent), n);
+        else return ParseRes.res((whole + fract) * NumberNode.power(10, exponent), n);
     }
     public static ParseRes<Double> parseFloat(Source src, int i, boolean withMinus) {
         var n = skipEmpty(src, i);
@@ -336,8 +336,8 @@ public class Parsing {
             if (negative) return ParseRes.error(src.loc(i + n), "Expected number immediatly after minus");
             return ParseRes.failed();
         }
-        else if (negative) return ParseRes.res(-(whole + fract) * NumberStatement.power(10, exponent), n);
-        else return ParseRes.res((whole + fract) * NumberStatement.power(10, exponent), n);
+        else if (negative) return ParseRes.res(-(whole + fract) * NumberNode.power(10, exponent), n);
+        else return ParseRes.res((whole + fract) * NumberNode.power(10, exponent), n);
     }
     public static ParseRes<Double> parseInt(Source src, int i, String alphabet, boolean withMinus) {
         var n = skipEmpty(src, i);
