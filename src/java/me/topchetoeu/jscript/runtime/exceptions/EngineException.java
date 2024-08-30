@@ -3,13 +3,14 @@ package me.topchetoeu.jscript.runtime.exceptions;
 import java.util.ArrayList;
 import java.util.List;
 
-import me.topchetoeu.jscript.common.Location;
+import me.topchetoeu.jscript.common.parsing.Location;
 import me.topchetoeu.jscript.runtime.environment.Environment;
 import me.topchetoeu.jscript.runtime.values.Value;
 import me.topchetoeu.jscript.runtime.values.Member.FieldMember;
 import me.topchetoeu.jscript.runtime.values.objects.ObjectValue;
 import me.topchetoeu.jscript.runtime.values.objects.ObjectValue.PrototypeProvider;
 import me.topchetoeu.jscript.runtime.values.primitives.StringValue;
+import me.topchetoeu.jscript.runtime.values.primitives.VoidValue;
 
 public class EngineException extends RuntimeException {
     public static class StackElement {
@@ -69,7 +70,19 @@ public class EngineException extends RuntimeException {
             ss.append(value.toString(env)).append('\n');
         }
         catch (EngineException e) {
-            ss.append("[Error while stringifying]\n");
+            var name = value.getMember(env, "name");
+            var desc = value.getMember(env, "message");
+
+            if (name.isPrimitive() && desc.isPrimitive()) {
+                if (name instanceof VoidValue) ss.append("Error: ");
+                else ss.append(name.toString(env).value + ": ");
+
+                if (desc instanceof VoidValue) ss.append("An error occurred");
+                else ss.append(desc.toString(env).value);
+
+                ss.append("\n");
+            }
+            else ss.append("[Error while stringifying]\n");
         }
         for (var line : stackTrace) {
             if (line.visible()) ss.append("    ").append(line.toString()).append("\n");
@@ -83,8 +96,8 @@ public class EngineException extends RuntimeException {
         var res = new ObjectValue();
         res.setPrototype(proto);
 
-        if (name != null) res.defineOwnMember(Environment.empty(), new StringValue("name"), FieldMember.of(new StringValue(name)));
-        res.defineOwnMember(Environment.empty(), new StringValue("message"), FieldMember.of(new StringValue(msg)));
+        if (name != null) res.defineOwnMember(Environment.empty(), "name", FieldMember.of(new StringValue(name)));
+        res.defineOwnMember(Environment.empty(), "message", FieldMember.of(new StringValue(msg)));
         return res;
     }
 

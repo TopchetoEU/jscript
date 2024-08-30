@@ -1,13 +1,14 @@
 package me.topchetoeu.jscript.compilation.control;
 
 import me.topchetoeu.jscript.common.Instruction;
-import me.topchetoeu.jscript.common.Location;
 import me.topchetoeu.jscript.common.Instruction.BreakpointType;
+import me.topchetoeu.jscript.common.parsing.Location;
+import me.topchetoeu.jscript.common.parsing.ParseRes;
+import me.topchetoeu.jscript.common.parsing.Parsing;
+import me.topchetoeu.jscript.common.parsing.Source;
 import me.topchetoeu.jscript.compilation.CompileResult;
+import me.topchetoeu.jscript.compilation.ES5;
 import me.topchetoeu.jscript.compilation.Statement;
-import me.topchetoeu.jscript.compilation.parsing.ParseRes;
-import me.topchetoeu.jscript.compilation.parsing.Parsing;
-import me.topchetoeu.jscript.compilation.parsing.Source;
 
 public class IfStatement extends Statement {
     public final Statement condition, body, elseBody;
@@ -58,7 +59,7 @@ public class IfStatement extends Statement {
         var loc = src.loc(i + n);
         n++;
 
-        var a = Parsing.parseValue(src, i + n, 2);
+        var a = ES5.parseExpression(src, i + n, 2);
         if (!a.isSuccess()) return a.chainError(src.loc(i + n), "Expected a value after the ternary operator.");
         n += a.n;
         n += Parsing.skipEmpty(src, i);
@@ -66,7 +67,7 @@ public class IfStatement extends Statement {
         if (!src.is(i + n, ":")) return ParseRes.failed();
         n++;
 
-        var b = Parsing.parseValue(src, i + n, 2);
+        var b = ES5.parseExpression(src, i + n, 2);
         if (!b.isSuccess()) return b.chainError(src.loc(i + n), "Expected a second value after the ternary operator.");
         n += b.n;
 
@@ -83,7 +84,7 @@ public class IfStatement extends Statement {
         if (!src.is(i + n, "(")) return ParseRes.error(src.loc(i + n), "Expected a open paren after 'if'.");
         n++;
 
-        var condRes = Parsing.parseValue(src, i + n, 0);
+        var condRes = ES5.parseExpression(src, i + n, 0);
         if (!condRes.isSuccess()) return condRes.chainError(src.loc(i + n), "Expected an if condition.");
         n += condRes.n;
         n += Parsing.skipEmpty(src, i + n);
@@ -91,7 +92,7 @@ public class IfStatement extends Statement {
         if (!src.is(i + n, ")")) return ParseRes.error(src.loc(i + n), "Expected a closing paren after if condition.");
         n++;
 
-        var res = Parsing.parseStatement(src, i + n);
+        var res = ES5.parseStatement(src, i + n);
         if (!res.isSuccess()) return res.chainError(src.loc(i + n), "Expected an if body.");
         n += res.n;
 
@@ -99,7 +100,7 @@ public class IfStatement extends Statement {
         if (!elseKw.isSuccess()) return ParseRes.res(new IfStatement(loc, condRes.result, res.result, null), n);
         n += elseKw.n;
 
-        var elseRes = Parsing.parseStatement(src, i + n);
+        var elseRes = ES5.parseStatement(src, i + n);
         if (!elseRes.isSuccess()) return elseRes.chainError(src.loc(i + n), "Expected an else body.");
         n += elseRes.n;
 

@@ -5,11 +5,11 @@ import java.util.List;
 import java.util.Vector;
 
 import me.topchetoeu.jscript.common.Instruction;
-import me.topchetoeu.jscript.common.Location;
 import me.topchetoeu.jscript.common.Instruction.BreakpointType;
-import me.topchetoeu.jscript.compilation.parsing.ParseRes;
-import me.topchetoeu.jscript.compilation.parsing.Parsing;
-import me.topchetoeu.jscript.compilation.parsing.Source;
+import me.topchetoeu.jscript.common.parsing.Location;
+import me.topchetoeu.jscript.common.parsing.ParseRes;
+import me.topchetoeu.jscript.common.parsing.Parsing;
+import me.topchetoeu.jscript.common.parsing.Source;
 import me.topchetoeu.jscript.compilation.values.FunctionStatement;
 
 public class CompoundStatement extends Statement {
@@ -75,7 +75,7 @@ public class CompoundStatement extends Statement {
         if (!src.is(i + n, ",")) return ParseRes.failed();
         n++;
 
-        var res = Parsing.parseValue(src, i + n, 2);
+        var res = ES5.parseExpression(src, i + n, 2);
         if (!res.isSuccess()) return res.chainError(src.loc(i + n), "Expected a value after the comma");
         n += res.n;
 
@@ -102,7 +102,7 @@ public class CompoundStatement extends Statement {
                 continue;
             }
 
-            var res = Parsing.parseStatement(src, i + n);
+            var res = ES5.parseStatement(src, i + n);
             if (!res.isSuccess()) return res.chainError(src.loc(i + n), "Expected a statement");
             n += res.n;
 

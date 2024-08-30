@@ -35,9 +35,18 @@ public class InstructionRunner {
     private static Value execCall(Environment env, Instruction instr, Frame frame) {
         var callArgs = frame.take(instr.get(0));
         var func = frame.pop();
-        var thisArg = frame.pop();
 
-        frame.push(func.call(env, thisArg, callArgs));
+        frame.push(func.call(env, false, instr.get(1), VoidValue.UNDEFINED, callArgs));
+
+        frame.codePtr++;
+        return null;
+    }
+    private static Value execCallMember(Environment env, Instruction instr, Frame frame) {
+        var callArgs = frame.take(instr.get(0));
+        var index = frame.pop();
+        var obj = frame.pop();
+
+        frame.push(obj.getMember(env, index).call(env, false, instr.get(1), obj, callArgs));
 
         frame.codePtr++;
         return null;
@@ -46,7 +55,7 @@ public class InstructionRunner {
         var callArgs = frame.take(instr.get(0));
         var funcObj = frame.pop();
 
-        frame.push(funcObj.callNew(env, callArgs));
+        frame.push(funcObj.callNew(env, instr.get(1), callArgs));
 
         frame.codePtr++;
         return null;
@@ -61,7 +70,7 @@ public class InstructionRunner {
     private static Value execDefProp(Environment env, Instruction instr, Frame frame) {
         var setterVal = frame.pop();
         var getterVal = frame.pop();
-        var name = frame.pop();
+        var key = frame.pop();
         var obj = frame.pop();
 
         FunctionValue getter, setter;
@@ -74,7 +83,7 @@ public class InstructionRunner {
         else if (setterVal instanceof FunctionValue) setter = (FunctionValue)setterVal;
         else throw EngineException.ofType("Setter must be a function or undefined.");
 
-        obj.defineOwnMember(env, name, new PropertyMember(getter, setter, true, true));
+        obj.defineOwnMember(env, key, new PropertyMember(getter, setter, true, true));
 
         frame.push(obj);
         frame.codePtr++;
@@ -90,7 +99,7 @@ public class InstructionRunner {
 
         for (var el : members) {
             var obj = new ObjectValue();
-            obj.defineOwnMember(env, new StringValue("value"), FieldMember.of(new StringValue(el)));
+            obj.defineOwnMember(env, "value", FieldMember.of(new StringValue(el)));
             frame.push(obj);
         }
 
@@ -147,7 +156,9 @@ public class InstructionRunner {
         return null;
     }
     private static Value execLoadObj(Environment env, Instruction instr, Frame frame) {
-        frame.push(new ObjectValue());
+        var obj = new ObjectValue();
+        obj.setPrototype(Environment.OBJECT_PROTO);
+        frame.push(obj);
         frame.codePtr++;
         return null;
     }
@@ -165,13 +176,14 @@ public class InstructionRunner {
     }
     private static Value execLoadFunc(Environment env, Instruction instr, Frame frame) {
         int id = instr.get(0);
-        var captures = new ValueVariable[instr.params.length - 1];
+        String name = instr.get(1);
+        var captures = new ValueVariable[instr.params.length - 2];
 
-        for (var i = 1; i < instr.params.length; i++) {
-            captures[i - 1] = frame.scope.get(instr.get(i));
+        for (var i = 2; i < instr.params.length; i++) {
+            captures[i - 2] = frame.scope.get(instr.get(i));
         }
 
-        var func = new CodeFunction(env, "", frame.function.body.children[id], captures);
+        var func = new CodeFunction(env, name, frame.function.body.children[id], captures);
 
         frame.push(func);
 
@@ -240,7 +252,7 @@ public class InstructionRunner {
         return null;
     }
     private static Value execJmpIf(Environment env, Instruction instr, Frame frame) {
-        if (frame.pop().toBoolean().value) {
+        if (frame.pop().toBoolean()) {
             frame.codePtr += (int)instr.get(0);
             frame.jumpFlag = true;
         }
@@ -248,7 +260,7 @@ public class InstructionRunner {
         return null;
     }
     private static Value execJmpIfNot(Environment env, Instruction instr, Frame frame) {
-        if (frame.pop().not().value) {
+        if (!frame.pop().toBoolean()) {
             frame.codePtr += (int)instr.get(0);
             frame.jumpFlag = true;
         }
@@ -306,6 +318,7 @@ public class InstructionRunner {
             case THROW_SYNTAX: return execThrowSyntax(env, instr, frame);
             case CALL: return execCall(env, instr, frame);
             case CALL_NEW: return execCallNew(env, instr, frame);
+            case CALL_MEMBER: return execCallMember(env, instr, frame);
             case TRY_START: return execTryStart(env, instr, frame);
             case TRY_END: return execTryEnd(env, instr, frame);
 

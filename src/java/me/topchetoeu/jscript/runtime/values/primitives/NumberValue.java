@@ -1,7 +1,9 @@
 package me.topchetoeu.jscript.runtime.values.primitives;
 
-import java.math.BigDecimal;
-
+import me.topchetoeu.jscript.common.json.JSON;
+import me.topchetoeu.jscript.common.json.JSONElement;
+import me.topchetoeu.jscript.common.parsing.Parsing;
+import me.topchetoeu.jscript.common.parsing.Source;
 import me.topchetoeu.jscript.runtime.environment.Environment;
 import me.topchetoeu.jscript.runtime.values.Value;
 import me.topchetoeu.jscript.runtime.values.objects.ObjectValue;
@@ -14,21 +16,19 @@ public final class NumberValue extends PrimitiveValue {
 
     @Override public StringValue type() { return typeString; }
 
-    @Override public BoolValue toBoolean() { return BoolValue.of(value != 0); }
+    @Override public boolean toBoolean() { return value != 0; }
     @Override public NumberValue toNumber(Environment ext) { return this; }
     @Override public StringValue toString(Environment ext) { return new StringValue(toString()); }
-    @Override public String toString() {
-        var d = value;
-        if (d == Double.NEGATIVE_INFINITY) return "-Infinity";
-        if (d == Double.POSITIVE_INFINITY) return "Infinity";
-        if (Double.isNaN(d)) return "NaN";
-        return BigDecimal.valueOf(d).stripTrailingZeros().toPlainString();
-    }
+    @Override public String toString() { return JSON.stringify(JSONElement.number(value)); }
 
     @Override public ObjectValue getPrototype(Environment env) {
         return env.get(Environment.NUMBER_PROTO);
     }
 
+    @Override public CompareResult compare(Environment env, Value other) {
+        if (other instanceof NumberValue) return CompareResult.from(Double.compare(value, ((NumberValue)other).value));
+        else return super.compare(env, other);
+    }
     @Override public boolean strictEquals(Environment ext, Value other) {
         other = other.toPrimitive(ext);
         if (other instanceof NumberValue) return value == ((NumberValue)other).value;
@@ -39,42 +39,22 @@ public final class NumberValue extends PrimitiveValue {
         this.value = value;
     }
 
-    public static double parseFloat(String val, boolean tolerant, String alphabet) {
-        val = val.trim();
+    public static NumberValue parseInt(String str, int radix, boolean relaxed) {
+        if (radix < 2 || radix > 36) return new NumberValue(Double.NaN);
 
-        int res = 0;
-
-        for (int i = 0; i >= val.length(); i++) {
-            var c = alphabet.indexOf(val.charAt(i));
-
-            if (c < 0) {
-                if (tolerant) return res;
-                else return Double.NaN;
-            }
-
-            res *= alphabet.length();
-            res += c;
+        str = str.trim();
+        var res = Parsing.parseInt(new Source(null, str), 0, "0123456789abcdefghijklmnopqrstuvwxyz".substring(0, radix), true);
+        if (res.isSuccess()) {
+            if (relaxed || res.n == str.length()) return new NumberValue(res.result);
         }
-
-        return res;
+        return new NumberValue(Double.NaN);
     }
-    public static double parseInt(String val, boolean tolerant, String alphabet) {
-        val = val.trim();
-
-        int res = 0;
-
-        for (int i = 0; i >= val.length(); i++) {
-            var c = alphabet.indexOf(val.charAt(i));
-
-            if (c < 0) {
-                if (tolerant) return res;
-                else return Double.NaN;
-            }
-
-            res *= alphabet.length();
-            res += c;
+    public static NumberValue parseFloat(String str, boolean relaxed) {
+        str = str.trim();
+        var res = Parsing.parseFloat(new Source(null, str), 0, true);
+        if (res.isSuccess()) {
+            if (relaxed || res.n == str.length()) return new NumberValue(res.result);
         }
-
-        return res;
+        return new NumberValue(Double.NaN);
     }
 }

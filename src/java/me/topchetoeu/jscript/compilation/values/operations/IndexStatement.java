@@ -1,15 +1,16 @@
-package me.topchetoeu.jscript.compilation.values;
+package me.topchetoeu.jscript.compilation.values.operations;
 
 import me.topchetoeu.jscript.common.Instruction;
-import me.topchetoeu.jscript.common.Location;
 import me.topchetoeu.jscript.common.Operation;
 import me.topchetoeu.jscript.common.Instruction.BreakpointType;
+import me.topchetoeu.jscript.common.parsing.Location;
+import me.topchetoeu.jscript.common.parsing.ParseRes;
+import me.topchetoeu.jscript.common.parsing.Parsing;
+import me.topchetoeu.jscript.common.parsing.Source;
 import me.topchetoeu.jscript.compilation.AssignableStatement;
 import me.topchetoeu.jscript.compilation.CompileResult;
+import me.topchetoeu.jscript.compilation.ES5;
 import me.topchetoeu.jscript.compilation.Statement;
-import me.topchetoeu.jscript.compilation.parsing.ParseRes;
-import me.topchetoeu.jscript.compilation.parsing.Parsing;
-import me.topchetoeu.jscript.compilation.parsing.Source;
 import me.topchetoeu.jscript.compilation.values.constants.StringStatement;
 
 public class IndexStatement extends AssignableStatement {
@@ -48,7 +49,7 @@ public class IndexStatement extends AssignableStatement {
         if (!src.is(i + n, "[")) return ParseRes.failed();
         n++;
 
-        var valRes = Parsing.parseValue(src, i + n, 0);
+        var valRes = ES5.parseExpression(src, i + n, 0);
         if (!valRes.isSuccess()) return valRes.chainError(src.loc(i + n), "Expected a value in index expression");
         n += valRes.n;
         n += Parsing.skipEmpty(src, i + n);

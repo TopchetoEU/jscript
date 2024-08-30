@@ -1,12 +1,13 @@
 package me.topchetoeu.jscript.common.json;
 
+import java.math.BigDecimal;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import me.topchetoeu.jscript.common.Filename;
-import me.topchetoeu.jscript.compilation.parsing.ParseRes;
-import me.topchetoeu.jscript.compilation.parsing.Parsing;
-import me.topchetoeu.jscript.compilation.parsing.Source;
+import me.topchetoeu.jscript.common.parsing.Filename;
+import me.topchetoeu.jscript.common.parsing.ParseRes;
+import me.topchetoeu.jscript.common.parsing.Parsing;
+import me.topchetoeu.jscript.common.parsing.Source;
 import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 
 public class JSON {
@@ -16,23 +17,9 @@ public class JSON {
         return ParseRes.res(JSONElement.string(res.result), res.n);
     }
     public static ParseRes<JSONElement> parseNumber(Source src, int i) {
-        var n = Parsing.skipEmpty(src, i);
-
-        if (src.is(i + n, "-")) {
-            n++;
-
-            var res = Parsing.parseNumber(src, i);
-            if (!res.isSuccess()) return res.chainError(src.loc(i + n), "Expected a number after minus");
-            n += res.n;
-
-            return ParseRes.res(JSONElement.number(-res.result), n);
-        }
-        else {
-            var res = Parsing.parseNumber(src, i + n).addN(n);
-            if (!res.isSuccess()) return res.chainError();
-            n += res.n;
-            return ParseRes.res(JSONElement.number(res.result), n);
-        }
+        var res = Parsing.parseNumber(src, i, true);
+        if (!res.isSuccess()) return res.chainError();
+        else return ParseRes.res(JSONElement.number(res.result), res.n);
     }
     public static ParseRes<JSONElement> parseLiteral(Source src, int i) {
         var id = Parsing.parseIdentifier(src, i);
@@ -121,7 +108,13 @@ public class JSON {
     }
 
     public static String stringify(JSONElement el) {
-        if (el.isNumber()) return Double.toString(el.number());
+        if (el.isNumber()) {
+            var d = el.number();
+            if (d == Double.NEGATIVE_INFINITY) return "-Infinity";
+            if (d == Double.POSITIVE_INFINITY) return "Infinity";
+            if (Double.isNaN(d)) return "NaN";
+            return BigDecimal.valueOf(d).stripTrailingZeros().toPlainString();
+        }
         if (el.isBoolean()) return el.bool() ? "true" : "false";
         if (el.isNull()) return "null";
         if (el.isString()) {

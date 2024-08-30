@@ -1,12 +1,14 @@
-package me.topchetoeu.jscript.compilation.values;
+package me.topchetoeu.jscript.compilation.values.operations;
 
 import me.topchetoeu.jscript.common.Instruction;
-import me.topchetoeu.jscript.common.Location;
+import me.topchetoeu.jscript.common.parsing.Location;
+import me.topchetoeu.jscript.common.parsing.ParseRes;
+import me.topchetoeu.jscript.common.parsing.Parsing;
+import me.topchetoeu.jscript.common.parsing.Source;
 import me.topchetoeu.jscript.compilation.CompileResult;
+import me.topchetoeu.jscript.compilation.ES5;
 import me.topchetoeu.jscript.compilation.Statement;
-import me.topchetoeu.jscript.compilation.parsing.ParseRes;
-import me.topchetoeu.jscript.compilation.parsing.Parsing;
-import me.topchetoeu.jscript.compilation.parsing.Source;
+import me.topchetoeu.jscript.compilation.values.VariableStatement;
 
 public class TypeofStatement extends Statement {
     public final Statement value;
@@ -40,7 +42,7 @@ public class TypeofStatement extends Statement {
         if (!Parsing.isIdentifier(src, i + n, "typeof")) return ParseRes.failed();
         n += 6;
 
-        var valRes = Parsing.parseValue(src, i + n, 15);
+        var valRes = ES5.parseExpression(src, i + n, 15);
         if (!valRes.isSuccess()) return valRes.chainError(src.loc(i + n), "Expected a value after 'typeof' keyword.");
         n += valRes.n;
     

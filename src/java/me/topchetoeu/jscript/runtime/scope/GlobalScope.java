@@ -29,10 +29,10 @@ public class GlobalScope {
     }
 
     public void define(Environment ext, String name, Variable variable) {
-        object.defineOwnMember(ext, new StringValue(name), variable.toField(true, true));
+        object.defineOwnMember(ext, name, variable.toField(true, true));
     }
     public void define(Environment ext, boolean readonly, String name, Value val) {
-        object.defineOwnMember(ext, new StringValue(name), FieldMember.of(val, !readonly));
+        object.defineOwnMember(ext, name, FieldMember.of(val, !readonly));
     }
     public void define(Environment ext, boolean readonly, String ...names) {
         for (var name : names) define(ext, name, new ValueVariable(readonly, VoidValue.UNDEFINED));
@@ -42,12 +42,12 @@ public class GlobalScope {
     }
 
     public Value get(Environment env, String name) {
-        if (!object.hasMember(env, new StringValue(name), false)) throw EngineException.ofSyntax("The variable '" + name + "' doesn't exist.");
-        else return object.getMember(env, new StringValue(name));
+        if (!object.hasMember(env, name, false)) throw EngineException.ofSyntax(name + " is not defined");
+        else return object.getMember(env, name);
     }
     public void set(Environment ext, String name, Value val) {
-        if (!object.hasMember(ext, new StringValue(name), false)) throw EngineException.ofSyntax("The variable '" + name + "' doesn't exist.");
-        if (!object.setMember(ext, new StringValue(name), val)) throw EngineException.ofSyntax("The global '" + name + "' is read-only.");
+        if (!object.hasMember(ext, name, false)) throw EngineException.ofSyntax(name + " is not defined");
+        if (!object.setMember(ext, name, val)) throw EngineException.ofSyntax("Assignment to constant variable");
     }
 
     public Set<String> keys() {

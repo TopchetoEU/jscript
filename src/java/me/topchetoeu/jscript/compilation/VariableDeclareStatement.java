@@ -4,11 +4,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import me.topchetoeu.jscript.common.Instruction;
-import me.topchetoeu.jscript.common.Location;
 import me.topchetoeu.jscript.common.Instruction.BreakpointType;
-import me.topchetoeu.jscript.compilation.parsing.ParseRes;
-import me.topchetoeu.jscript.compilation.parsing.Parsing;
-import me.topchetoeu.jscript.compilation.parsing.Source;
+import me.topchetoeu.jscript.common.parsing.Location;
+import me.topchetoeu.jscript.common.parsing.ParseRes;
+import me.topchetoeu.jscript.common.parsing.Parsing;
+import me.topchetoeu.jscript.common.parsing.Source;
 import me.topchetoeu.jscript.compilation.values.FunctionStatement;
 
 public class VariableDeclareStatement extends Statement {
@@ -63,7 +63,7 @@ public class VariableDeclareStatement extends Statement {
 
         var res = new ArrayList<Pair>();
 
-        var end = Parsing.parseStatementEnd(src, i + n);
+        var end = ES5.parseStatementEnd(src, i + n);
         if (end.isSuccess()) {
             n += end.n;
             return ParseRes.res(new VariableDeclareStatement(loc, res), n);
@@ -75,7 +75,7 @@ public class VariableDeclareStatement extends Statement {
             if (!name.isSuccess()) return name.chainError(nameLoc, "Expected a variable name");
             n += name.n;
 
-            if (!Parsing.checkVarName(name.result)) {
+            if (!ES5.checkVarName(name.result)) {
                 return ParseRes.error(src.loc(i + n), String.format("Unexpected identifier '%s'", name.result));
             }
 
@@ -85,7 +85,7 @@ public class VariableDeclareStatement extends Statement {
             if (src.is(i + n, "=")) {
                 n++;
 
-                var valRes = Parsing.parseValue(src, i + n, 2);
+                var valRes = ES5.parseExpression(src, i + n, 2);
                 if (!valRes.isSuccess()) return valRes.chainError(src.loc(i + n), "Expected a value after '='");
 
                 n += valRes.n;
@@ -100,7 +100,7 @@ public class VariableDeclareStatement extends Statement {
                 continue;
             }
 
-            end = Parsing.parseStatementEnd(src, i + n);
+            end = ES5.parseStatementEnd(src, i + n);
 
             if (end.isSuccess()) {
                 n += end.n;

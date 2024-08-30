@@ -1,4 +1,4 @@
-package me.topchetoeu.jscript.common;
+package me.topchetoeu.jscript.common.parsing;
 
 import java.io.File;
 import java.nio.file.Path;

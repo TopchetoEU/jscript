@@ -1,6 +1,4 @@
-package me.topchetoeu.jscript.compilation.parsing;
-
-import me.topchetoeu.jscript.common.Location;
+package me.topchetoeu.jscript.common.parsing;
 
 public class ParseRes<T> {
     public static interface Parser<T> {
@@ -40,11 +38,6 @@ public class ParseRes<T> {
     public <T2> ParseRes<T2> chainError() {
         if (isSuccess()) throw new RuntimeException("Can't transform a ParseRes that hasn't failed.");
         return new ParseRes<>(state, error, null, 0);
-    }
-    public TestRes toTest() {
-        if (isSuccess()) return TestRes.res(n);
-        else if (isError()) return TestRes.error(null, error);
-        else return TestRes.failed();
     }
 
     public boolean isSuccess() { return state.isSuccess(); }

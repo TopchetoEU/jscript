@@ -9,48 +9,46 @@ import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 
 public class Instruction {
     public static enum Type {
-        NOP(0),
-        RETURN(1),
-        THROW(2),
-        THROW_SYNTAX(3),
-        DELETE(4),
-        TRY_START(5),
-        TRY_END(6),
+        NOP(0x00),
+        RETURN(0x01),
+        THROW(0x02),
+        THROW_SYNTAX(0x03),
+        DELETE(0x04),
+        TRY_START(0x05),
+        TRY_END(0x06),
 
-        CALL(7),
-        CALL_NEW(8),
-        JMP_IF(9),
-        JMP_IFN(10),
-        JMP(11),
+        CALL(0x10),
+        CALL_MEMBER(0x11),
+        CALL_NEW(0x12),
+        JMP_IF(0x13),
+        JMP_IFN(0x14),
+        JMP(0x15),
 
-        PUSH_UNDEFINED(12),
-        PUSH_NULL(13),
-        PUSH_BOOL(14),
-        PUSH_NUMBER(15),
-        PUSH_STRING(16),
+        PUSH_UNDEFINED(0x20),
+        PUSH_NULL(0x21),
+        PUSH_BOOL(0x22),
+        PUSH_NUMBER(0x23),
+        PUSH_STRING(0x24),
+        DUP(0x25),
+        DISCARD(0x26),
 
-        LOAD_VAR(17),
-        LOAD_MEMBER(18),
-        LOAD_GLOB(20),
+        LOAD_FUNC(0x30),
+        LOAD_ARR(0x31),
+        LOAD_OBJ(0x32),
+        STORE_SELF_FUNC(0x33),
+        LOAD_REGEX(0x34),
 
-        LOAD_FUNC(21),
-        LOAD_ARR(22),
-        LOAD_OBJ(23),
-        STORE_SELF_FUNC(24),
-        LOAD_REGEX(25),
+        LOAD_VAR(0x40),
+        LOAD_MEMBER(0x41),
+        LOAD_GLOB(0x42),
+        STORE_VAR(0x43),
+        STORE_MEMBER(0x44),
 
-        DUP(26),
-
-        STORE_VAR(27),
-        STORE_MEMBER(28),
-        DISCARD(29),
-
-        MAKE_VAR(30),
-        DEF_PROP(31),
-        KEYS(32),
-
-        TYPEOF(33),
-        OPERATION(34);
+        MAKE_VAR(0x50),
+        DEF_PROP(0x51),
+        KEYS(0x52),
+        TYPEOF(0x53),
+        OPERATION(0x54);
 
         private static final HashMap<Integer, Type> types = new HashMap<>();
         public final int numeric;
@@ -125,8 +123,12 @@ public class Instruction {
         writer.writeByte(rawType);
 
         switch (type) {
-            case CALL: writer.writeInt(get(0)); break;
-            case CALL_NEW: writer.writeInt(get(0)); break;
+            case CALL:
+            case CALL_NEW:
+            case CALL_MEMBER:
+                writer.writeInt(get(0));
+                writer.writeUTF(get(1));
+                break;
             case DUP: writer.writeInt(get(0)); break;
             case JMP: writer.writeInt(get(0)); break;
             case JMP_IF: writer.writeInt(get(0)); break;
@@ -140,6 +142,7 @@ public class Instruction {
                 }
 
                 writer.writeInt(get(0));
+                writer.writeUTF(get(0));
                 break;
             }
             case LOAD_REGEX: writer.writeUTF(get(0)); break;
@@ -174,8 +177,9 @@ public class Instruction {
         var flag = (rawType & 128) != 0;
 
         switch (type) {
-            case CALL: return call(stream.readInt());
-            case CALL_NEW: return callNew(stream.readInt());
+            case CALL: return call(stream.readInt(), stream.readUTF());
+            case CALL_NEW: return callNew(stream.readInt(), stream.readUTF());
+            case CALL_MEMBER: return callNew(stream.readInt(), stream.readUTF());
             case DEF_PROP: return defProp();
             case DELETE: return delete();
             case DISCARD: return discard();
@@ -192,7 +196,7 @@ public class Instruction {
                     captures[i] = stream.readInt();
                 }
 
-                return loadFunc(stream.readInt(), captures);
+                return loadFunc(stream.readInt(), stream.readUTF(), captures);
             }
             case LOAD_GLOB: return loadGlob();
             case LOAD_MEMBER: return loadMember();
@@ -251,11 +255,23 @@ public class Instruction {
         return new Instruction(Type.NOP, params);
     }
 
+    public static Instruction call(int argn, String name) {
+        return new Instruction(Type.CALL, argn, name);
+    }
     public static Instruction call(int argn) {
-        return new Instruction(Type.CALL, argn);
+        return call(argn, "");
+    }
+    public static Instruction callMember(int argn, String name) {
+        return new Instruction(Type.CALL_MEMBER, argn, name);
+    }
+    public static Instruction callMember(int argn) {
+        return new Instruction(Type.CALL_MEMBER, argn, "");
+    }
+    public static Instruction callNew(int argn, String name) {
+        return new Instruction(Type.CALL_NEW, argn, name);
     }
     public static Instruction callNew(int argn) {
-        return new Instruction(Type.CALL_NEW, argn);
+        return new Instruction(Type.CALL_NEW, argn, "");
     }
     public static Instruction jmp(int offset) {
         return new Instruction(Type.JMP, offset);
@@ -299,10 +315,13 @@ public class Instruction {
     public static Instruction loadRegex(String pattern, String flags) {
         return new Instruction(Type.LOAD_REGEX, pattern, flags);
     }
-    public static Instruction loadFunc(int id, int[] captures) {
-        var args = new Object[1 + captures.length];
+    public static Instruction loadFunc(int id, String name, int[] captures) {
+        if (name == null) name = "";
+
+        var args = new Object[2 + captures.length];
         args[0] = id;
-        for (var i = 0; i < captures.length; i++) args[i + 1] = captures[i];
+        args[1] = name;
+        for (var i = 0; i < captures.length; i++) args[i + 2] = captures[i];
         return new Instruction(Type.LOAD_FUNC, args);
     }
     public static Instruction loadObj() {

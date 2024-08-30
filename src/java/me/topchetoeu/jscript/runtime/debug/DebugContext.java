@@ -5,11 +5,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.WeakHashMap;
 
-import me.topchetoeu.jscript.common.Filename;
 import me.topchetoeu.jscript.common.FunctionBody;
 import me.topchetoeu.jscript.common.Instruction;
-import me.topchetoeu.jscript.common.Location;
 import me.topchetoeu.jscript.common.mapping.FunctionMap;
+import me.topchetoeu.jscript.common.parsing.Filename;
+import me.topchetoeu.jscript.common.parsing.Location;
 import me.topchetoeu.jscript.runtime.Frame;
 import me.topchetoeu.jscript.runtime.environment.Environment;
 import me.topchetoeu.jscript.runtime.environment.Key;

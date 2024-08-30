@@ -4,7 +4,6 @@ import me.topchetoeu.jscript.runtime.environment.Environment;
 import me.topchetoeu.jscript.runtime.scope.ValueVariable;
 import me.topchetoeu.jscript.runtime.values.Value;
 import me.topchetoeu.jscript.runtime.values.Member.FieldMember;
-import me.topchetoeu.jscript.runtime.values.primitives.StringValue;
 
 public class ScopeValue extends ObjectValue {
     private class VariableField extends FieldMember {
@@ -29,7 +28,7 @@ public class ScopeValue extends ObjectValue {
     public ScopeValue(ValueVariable[] variables, String[] names) {
         this.variables = variables;
         for (var i = 0; i < names.length && i < variables.length; i++) {
-            defineOwnMember(Environment.empty(), new StringValue(i + ""), new VariableField(i));
+            defineOwnMember(Environment.empty(), i, new VariableField(i));
         }
     }
 }

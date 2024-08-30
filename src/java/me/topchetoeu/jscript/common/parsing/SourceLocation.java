@@ -1,7 +1,4 @@
-package me.topchetoeu.jscript.compilation.parsing;
-
-import me.topchetoeu.jscript.common.Filename;
-import me.topchetoeu.jscript.common.Location;
+package me.topchetoeu.jscript.common.parsing;
 
 public class SourceLocation extends Location {
     private int[] lineStarts;
