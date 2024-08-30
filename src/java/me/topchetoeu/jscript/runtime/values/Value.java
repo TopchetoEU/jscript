@@ -53,31 +53,41 @@ public abstract class Value {
 
     public abstract StringValue type();
     public abstract boolean isPrimitive();
-    public abstract BoolValue toBoolean();
 
     public final boolean isNaN() {
         return this instanceof NumberValue && Double.isNaN(((NumberValue)this).value);
     }
 
-    public Value call(Environment env, Value self, Value ...args) {
-        throw EngineException.ofType("Tried to call a non-function value.");
+    public Value call(Environment env, boolean isNew, String name, Value self, Value ...args) {
+        if (name == null || name.equals("")) name = "(intermediate value)";
+
+        if (isNew) throw EngineException.ofType(name + " is not a constructor");
+        else throw EngineException.ofType(name + " is not a function");
     }
-    public final Value callNew(Environment env, Value ...args) {
+    public final Value callNew(Environment env, String name, Value ...args) {
         var res = new ObjectValue();
         var proto = getMember(env, new StringValue("prototype"));
 
         if (proto instanceof ObjectValue) res.setPrototype(env, (ObjectValue)proto);
         else res.setPrototype(env, null);
 
-        var ret = this.call(env, res, args);
+        var ret = this.call(env, true, name, res, args);
 
         if (!ret.isPrimitive()) return ret;
         return res;
     }
 
+    public final Value call(Environment env, Value self, Value ...args) {
+        return call(env, false, "", self, args);
+    }
+    public final Value callNew(Environment env, Value ...args) {
+        return callNew(env, "", args);
+    }
+
     public abstract Value toPrimitive(Environment env);
     public abstract NumberValue toNumber(Environment env);
     public abstract StringValue toString(Environment env);
+    public abstract boolean toBoolean();
 
     public final int toInt(Environment env) { return (int)toNumber(env).value; }
     public final long toLong(Environment env) { return (long)toNumber(env).value; }
@@ -134,11 +144,11 @@ public abstract class Value {
     }
 
     public CompareResult compare(Environment env, Value other) {
-        return toPrimitive(env).compare(env, other);
-    }
+        var a = this.toPrimitive(env);
+        var b = other.toPrimitive(env);
 
-    public final BoolValue not() {
-        return toBoolean().value ? BoolValue.FALSE : BoolValue.TRUE;
+        if (a instanceof StringValue && b instanceof StringValue) return a.compare(env, b);
+        else return a.toNumber(env).compare(env, b.toNumber(env));
     }
 
     public final boolean isInstanceOf(Environment env, Value proto) {
@@ -172,7 +182,7 @@ public abstract class Value {
             case LESS_EQUALS: return BoolValue.of(args[0].compare(env, args[1]).lessOrEqual());
 
             case INVERSE: return args[0].bitwiseNot(env);
-            case NOT: return args[0].not();
+            case NOT: return BoolValue.of(!args[0].toBoolean());
             case POS: return args[0].toNumber(env);
             case NEG: return args[0].negative(env);
 
@@ -187,16 +197,71 @@ public abstract class Value {
         }
     }
 
-    public abstract Member getOwnMember(Environment env, Value key);
+    public abstract Member getOwnMember(Environment env, KeyCache key);
     public abstract Map<String, Member> getOwnMembers(Environment env);
     public abstract Map<SymbolValue, Member> getOwnSymbolMembers(Environment env);
-    public abstract boolean defineOwnMember(Environment env, Value key, Member member);
-    public abstract boolean deleteOwnMember(Environment env, Value key);
+    public abstract boolean defineOwnMember(Environment env, KeyCache key, Member member);
+    public abstract boolean deleteOwnMember(Environment env, KeyCache key);
 
     public abstract ObjectValue getPrototype(Environment env);
     public abstract boolean setPrototype(Environment env, ObjectValue val);
 
-    public final Value getMember(Environment env, Value key) {
+    public final Member getOwnMember(Environment env, Value key) {
+        return getOwnMember(env, new KeyCache(key));
+    }
+    public final Member getOwnMember(Environment env, String key) {
+        return getOwnMember(env, new KeyCache(key));
+    }
+    public final Member getOwnMember(Environment env, int key) {
+        return getOwnMember(env, new KeyCache(key));
+    }
+    public final Member getOwnMember(Environment env, double key) {
+        return getOwnMember(env, new KeyCache(key));
+    }
+
+    public final boolean defineOwnMember(Environment env, Value key, Member member) {
+        return defineOwnMember(env, new KeyCache(key), member);
+    }
+    public final boolean defineOwnMember(Environment env, String key, Member member) {
+        return defineOwnMember(env, new KeyCache(key), member);
+    }
+    public final boolean defineOwnMember(Environment env, int key, Member member) {
+        return defineOwnMember(env, new KeyCache(key), member);
+    }
+    public final boolean defineOwnMember(Environment env, double key, Member member) {
+        return defineOwnMember(env, new KeyCache(key), member);
+    }
+
+    public final boolean defineOwnMember(Environment env, KeyCache key, Value val) {
+        return defineOwnMember(env, key, FieldMember.of(val));
+    }
+    public final boolean defineOwnMember(Environment env, Value key, Value val) {
+        return defineOwnMember(env, new KeyCache(key), FieldMember.of(val));
+    }
+    public final boolean defineOwnMember(Environment env, String key, Value val) {
+        return defineOwnMember(env, new KeyCache(key), FieldMember.of(val));
+    }
+    public final boolean defineOwnMember(Environment env, int key, Value val) {
+        return defineOwnMember(env, new KeyCache(key), FieldMember.of(val));
+    }
+    public final boolean defineOwnMember(Environment env, double key, Value val) {
+        return defineOwnMember(env, new KeyCache(key), FieldMember.of(val));
+    }
+
+    public final boolean deleteOwnMember(Environment env, Value key) {
+        return deleteOwnMember(env, new KeyCache(key));
+    }
+    public final boolean deleteOwnMember(Environment env, String key) {
+        return deleteOwnMember(env, new KeyCache(key));
+    }
+    public final boolean deleteOwnMember(Environment env, int key) {
+        return deleteOwnMember(env, new KeyCache(key));
+    }
+    public final boolean deleteOwnMember(Environment env, double key) {
+        return deleteOwnMember(env, new KeyCache(key));
+    }
+
+    public final Value getMember(Environment env, KeyCache key) {
         for (Value obj = this; obj != null; obj = obj.getPrototype(env)) {
             var member = obj.getOwnMember(env, key);
             if (member != null) return member.get(env, obj);
@@ -204,15 +269,51 @@ public abstract class Value {
 
         return VoidValue.UNDEFINED;
     }
-    public final boolean setMember(Environment env, Value key, Value val) {
+    public final Value getMember(Environment env, Value key) {
+        return getMember(env, new KeyCache(key));
+    }
+    public final Value getMember(Environment env, String key) {
+        return getMember(env, new KeyCache(key));
+    }
+    public final Value getMember(Environment env, int key) {
+        return getMember(env, new KeyCache(key));
+    }
+    public final Value getMember(Environment env, double key) {
+        return getMember(env, new KeyCache(key));
+    }
+
+    public final boolean setMember(Environment env, KeyCache key, Value val) {
         for (Value obj = this; obj != null; obj = obj.getPrototype(env)) {
             var member = obj.getOwnMember(env, key);
-            if (member != null) return member.set(env, val, obj);
+            if (member != null) {
+                if (member.set(env, val, obj)) {
+                    if (val instanceof FunctionValue) ((FunctionValue)val).setName(key.toString(env));
+                    return true;
+                }
+                else return false;
+            }
         }
 
-        return defineOwnMember(env, key, FieldMember.of(val));
+        if (defineOwnMember(env, key, FieldMember.of(val))) {
+            if (val instanceof FunctionValue) ((FunctionValue)val).setName(key.toString(env));
+            return true;
+        }
+        else return false;
     }
-    public final boolean hasMember(Environment env, Value key, boolean own) {
+    public final boolean setMember(Environment env, Value key, Value val) {
+        return setMember(env, new KeyCache(key), val);
+    }
+    public final boolean setMember(Environment env, String key, Value val) {
+        return setMember(env, new KeyCache(key), val);
+    }
+    public final boolean setMember(Environment env, int key, Value val) {
+        return setMember(env, new KeyCache(key), val);
+    }
+    public final boolean setMember(Environment env, double key, Value val) {
+        return setMember(env, new KeyCache(key), val);
+    }
+
+    public final boolean hasMember(Environment env, KeyCache key, boolean own) {
         for (Value obj = this; obj != null; obj = obj.getPrototype(env)) {
             if (obj.getOwnMember(env, key) != null) return true;
             if (own) return false;
@@ -220,10 +321,36 @@ public abstract class Value {
 
         return false;
     }
-    public final boolean deleteMember(Environment env, Value key) {
+    public final boolean hasMember(Environment env, Value key, boolean own) {
+        return hasMember(env, new KeyCache(key), own);
+    }
+    public final boolean hasMember(Environment env, String key, boolean own) {
+        return hasMember(env, new KeyCache(key), own);
+    }
+    public final boolean hasMember(Environment env, int key, boolean own) {
+        return hasMember(env, new KeyCache(key), own);
+    }
+    public final boolean hasMember(Environment env, double key, boolean own) {
+        return hasMember(env, new KeyCache(key), own);
+    }
+
+    public final boolean deleteMember(Environment env, KeyCache key) {
         if (!hasMember(env, key, true)) return true;
         return deleteOwnMember(env, key);
     }
+    public final boolean deleteMember(Environment env, Value key) {
+        return deleteMember(env, new KeyCache(key));
+    }
+    public final boolean deleteMember(Environment env, String key) {
+        return deleteMember(env, new KeyCache(key));
+    }
+    public final boolean deleteMember(Environment env, int key) {
+        return deleteMember(env, new KeyCache(key));
+    }
+    public final boolean deleteMember(Environment env, double key) {
+        return deleteMember(env, new KeyCache(key));
+    }
+
     public final Map<String, Member> getMembers(Environment env, boolean own, boolean onlyEnumerable) {
         var res = new LinkedHashMap<String, Member>();
         var protos = new ArrayList<Value>();
@@ -277,7 +404,7 @@ public abstract class Value {
         return res;
     }
     public final ObjectValue getMemberDescriptor(Environment env, Value key) {
-        var member = getOwnMember(env, key);
+        var member = getOwnMember(env, new KeyCache(key));
 
         if (member != null) return member.descriptor(env, this);
         else return null;
@@ -394,7 +521,7 @@ public abstract class Value {
                         var curr = supplier.call(env, VoidValue.UNDEFINED);
 
                         if (curr == null) { supplier = null; value = null; }
-                        if (curr.getMember(env, new StringValue("done")).toBoolean().value) { supplier = null; value = null; }
+                        if (curr.getMember(env, new StringValue("done")).toBoolean()) { supplier = null; value = null; }
                         else {
                             this.value = curr.getMember(env, new StringValue("value"));
                             consumed = false;
@@ -425,8 +552,8 @@ public abstract class Value {
         return new NativeFunction("", args -> {
             var obj = new ObjectValue();
 
-            if (!it.hasNext()) obj.defineOwnMember(args.env, new StringValue("done"), FieldMember.of(BoolValue.TRUE));
-            else obj.defineOwnMember(args.env, new StringValue("value"), FieldMember.of(it.next()));
+            if (!it.hasNext()) obj.defineOwnMember(args.env, "done", FieldMember.of(BoolValue.TRUE));
+            else obj.defineOwnMember(args.env, "value", FieldMember.of(it.next()));
 
             return obj;
         });
@@ -526,11 +653,11 @@ public abstract class Value {
         }
         else if (this instanceof VoidValue) return ((VoidValue)this).name;
         else if (this instanceof StringValue) return JSON.stringify(JSONElement.string(((StringValue)this).value));
+        else if (this instanceof SymbolValue) return this.toString();
         else return this.toString(env).value;
     }
 
     public final String toReadable(Environment ext) {
-        if (this instanceof StringValue) return ((StringValue)this).value;
         return toReadable(ext, new HashSet<>(), 0);
     }
 

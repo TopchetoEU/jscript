@@ -1,12 +1,13 @@
-package me.topchetoeu.jscript.compilation.values;
+package me.topchetoeu.jscript.compilation.values.operations;
 
 import me.topchetoeu.jscript.common.Instruction;
-import me.topchetoeu.jscript.common.Location;
+import me.topchetoeu.jscript.common.parsing.Location;
+import me.topchetoeu.jscript.common.parsing.ParseRes;
+import me.topchetoeu.jscript.common.parsing.Parsing;
+import me.topchetoeu.jscript.common.parsing.Source;
 import me.topchetoeu.jscript.compilation.CompileResult;
+import me.topchetoeu.jscript.compilation.ES5;
 import me.topchetoeu.jscript.compilation.Statement;
-import me.topchetoeu.jscript.compilation.parsing.ParseRes;
-import me.topchetoeu.jscript.compilation.parsing.Parsing;
-import me.topchetoeu.jscript.compilation.parsing.Source;
 
 public class LazyAndStatement extends Statement {
     public final Statement first, second;
@@ -38,7 +39,7 @@ public class LazyAndStatement extends Statement {
         var loc = src.loc(i + n);
         n += 2;
 
-        var res = Parsing.parseValue(src, i + n, 4);
+        var res = ES5.parseExpression(src, i + n, 4);
         if (!res.isSuccess()) return res.chainError(src.loc(i + n), "Expected a value after the '&&' operator.");
         n += res.n;
 

@@ -1,14 +1,15 @@
-package me.topchetoeu.jscript.compilation.values;
+package me.topchetoeu.jscript.compilation.values.operations;
 
 import me.topchetoeu.jscript.common.Instruction;
-import me.topchetoeu.jscript.common.Location;
 import me.topchetoeu.jscript.common.Operation;
+import me.topchetoeu.jscript.common.parsing.Location;
+import me.topchetoeu.jscript.common.parsing.ParseRes;
+import me.topchetoeu.jscript.common.parsing.Parsing;
+import me.topchetoeu.jscript.common.parsing.Source;
 import me.topchetoeu.jscript.compilation.AssignableStatement;
 import me.topchetoeu.jscript.compilation.CompileResult;
+import me.topchetoeu.jscript.compilation.ES5;
 import me.topchetoeu.jscript.compilation.Statement;
-import me.topchetoeu.jscript.compilation.parsing.ParseRes;
-import me.topchetoeu.jscript.compilation.parsing.Parsing;
-import me.topchetoeu.jscript.compilation.parsing.Source;
 import me.topchetoeu.jscript.compilation.values.constants.NumberStatement;
 
 public class ChangeStatement extends Statement {
@@ -39,7 +40,7 @@ public class ChangeStatement extends Statement {
         if (!src.is(i + n, "++")) return ParseRes.failed();
         n += 2;
 
-        var res = Parsing.parseValue(src, i + n, 15);
+        var res = ES5.parseExpression(src, i + n, 15);
         if (!res.isSuccess()) return res.chainError(src.loc(i + n), "Expected assignable value after prefix operator.");
         else if (!(res.result instanceof AssignableStatement)) return ParseRes.error(src.loc(i + n), "Expected assignable value after prefix operator.");
 
@@ -52,7 +53,7 @@ public class ChangeStatement extends Statement {
         if (!src.is(i + n, "--")) return ParseRes.failed();
         n += 2;
 
-        var res = Parsing.parseValue(src, i + n, 15);
+        var res = ES5.parseExpression(src, i + n, 15);
         if (!res.isSuccess()) return res.chainError(src.loc(i + n), "Expected assignable value after prefix operator.");
         else if (!(res.result instanceof AssignableStatement)) return ParseRes.error(src.loc(i + n), "Expected assignable value after prefix operator.");
 

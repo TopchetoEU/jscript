@@ -13,14 +13,18 @@ public final class SymbolValue extends PrimitiveValue {
 
     public final String value;
 
+    public Value key() {
+        return registry.containsKey(value) && registry.get(value) == this ? new StringValue(value) : VoidValue.UNDEFINED;
+    }
+
     @Override public StringValue type() { return typeString; }
 
-    @Override public BoolValue toBoolean() { return BoolValue.TRUE; }
+    @Override public boolean toBoolean() { return false; }
     @Override public StringValue toString(Environment env) {
-        return new StringValue(toString());
+        throw EngineException.ofType("Cannot convert a Symbol value to a string");
     }
     @Override public NumberValue toNumber(Environment env) {
-        throw EngineException.ofType("Can't convert symbol to number");
+        throw EngineException.ofType("Cannot convert a Symbol value to a number");
     }
 
     @Override public boolean strictEquals(Environment ext, Value other) {
@@ -29,8 +33,8 @@ public final class SymbolValue extends PrimitiveValue {
     @Override public ObjectValue getPrototype(Environment env) { return env.get(Environment.SYMBOL_PROTO); }
 
     @Override public String toString() {
-        if (value == null) return "Symbol";
-        else return "@@" + value;
+        if (value == null) return "Symbol()";
+        else return "Symbol(" + value + ")";
     }
 
     public SymbolValue(String value) {

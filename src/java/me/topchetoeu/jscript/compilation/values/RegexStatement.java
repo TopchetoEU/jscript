@@ -1,12 +1,12 @@
 package me.topchetoeu.jscript.compilation.values;
 
 import me.topchetoeu.jscript.common.Instruction;
-import me.topchetoeu.jscript.common.Location;
+import me.topchetoeu.jscript.common.parsing.Location;
+import me.topchetoeu.jscript.common.parsing.ParseRes;
+import me.topchetoeu.jscript.common.parsing.Parsing;
+import me.topchetoeu.jscript.common.parsing.Source;
 import me.topchetoeu.jscript.compilation.CompileResult;
 import me.topchetoeu.jscript.compilation.Statement;
-import me.topchetoeu.jscript.compilation.parsing.ParseRes;
-import me.topchetoeu.jscript.compilation.parsing.Parsing;
-import me.topchetoeu.jscript.compilation.parsing.Source;
 
 public class RegexStatement extends Statement {
     public final String pattern, flags;

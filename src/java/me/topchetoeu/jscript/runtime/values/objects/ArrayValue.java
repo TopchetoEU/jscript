@@ -8,6 +8,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import me.topchetoeu.jscript.runtime.environment.Environment;
+import me.topchetoeu.jscript.runtime.values.KeyCache;
 import me.topchetoeu.jscript.runtime.values.Member;
 import me.topchetoeu.jscript.runtime.values.Member.FieldMember;
 import me.topchetoeu.jscript.runtime.values.Value;
@@ -18,6 +19,16 @@ import me.topchetoeu.jscript.runtime.values.primitives.VoidValue;
 public class ArrayValue extends ObjectValue implements Iterable<Value> {
     private Value[] values;
     private int size;
+
+    private final FieldMember lengthField = new FieldMember(false, false, true) {
+        @Override public Value get(Environment env, Value self) {
+            return new NumberValue(size);
+        }
+        @Override public boolean set(Environment env, Value val, Value self) {
+            size = val.toInt(env);
+            return true;
+        }
+    };
 
     private class IndexField extends FieldMember {
         private int i;
@@ -44,7 +55,7 @@ public class ArrayValue extends ObjectValue implements Iterable<Value> {
 
         var arr = new Value[index];
         System.arraycopy(values, 0, arr, 0, values.length);
-        return arr;
+        return values = arr;
     }
 
     public int size() { return size; }
@@ -95,11 +106,11 @@ public class ArrayValue extends ObjectValue implements Iterable<Value> {
     }
 
     public void copyTo(Value[] arr, int sourceStart, int destStart, int count) {
-        var nullFill = values.length - destStart + count;
+        var nullFill = Math.max(0, arr.length - size - destStart);
         count -= nullFill;
 
         System.arraycopy(values, sourceStart, arr, destStart, count);
-        Arrays.fill(arr, count, nullFill, null);
+        Arrays.fill(arr, count, nullFill + count, null);
     }
     public void copyTo(ArrayValue arr, int sourceStart, int destStart, int count) {
         if (arr == this) {
@@ -138,36 +149,37 @@ public class ArrayValue extends ObjectValue implements Iterable<Value> {
         });
     }
 
-    @Override public Member getOwnMember(Environment env, Value key) {
+    @Override public Member getOwnMember(Environment env, KeyCache key) {
         var res = super.getOwnMember(env, key);
         if (res != null) return res;
 
         var num = key.toNumber(env);
-        var i = num.toInt(env);
+        var i = key.toInt(env);
 
-        if (i == num.value && i >= 0 && i < size) return new IndexField(i, this);
+        if (i == num && i >= 0 && i < size && has(i)) return new IndexField(i, this);
+        else if (key.toString(env).equals("length")) return lengthField;
         else return null;
     }
-    @Override public boolean defineOwnMember(Environment env, Value key, Member member) {
+    @Override public boolean defineOwnMember(Environment env, KeyCache key, Member member) {
         if (!(member instanceof FieldMember) || hasMember(env, key, true)) return super.defineOwnMember(env, key, member);
         if (!extensible) return false;
 
         var num = key.toNumber(env);
-        var i = num.toInt(env);
+        var i = key.toInt(env);
 
-        if (i == num.value && i >= 0) {
+        if (i == num && i >= 0) {
             set(i, ((FieldMember)member).get(env, this));
             return true;
         }
         else return super.defineOwnMember(env, key, member);
     }
-    @Override public boolean deleteOwnMember(Environment env, Value key) {
+    @Override public boolean deleteOwnMember(Environment env, KeyCache key) {
         if (!super.deleteOwnMember(env, key)) return false;
 
         var num = key.toNumber(env);
-        var i = num.toInt(env);
+        var i = key.toInt(env);
 
-        if (i == num.value && i >= 0 && i < size) return super.deleteOwnMember(env, key);
+        if (i == num && i >= 0 && i < size) return super.deleteOwnMember(env, key);
         else return true;
     }
 
@@ -175,8 +187,11 @@ public class ArrayValue extends ObjectValue implements Iterable<Value> {
         var res = new LinkedHashMap<String, Member>();
 
         for (var i = 0; i < size; i++) {
-            res.put(i + "", getOwnMember(env, new NumberValue(i)));
+            var member = getOwnMember(env, i);
+            if (member != null) res.put(i + "", member);
         }
+
+        res.put("length", lengthField);
 
         res.putAll(super.getOwnMembers(env));
 

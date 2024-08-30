@@ -1,9 +1,9 @@
-package me.topchetoeu.jscript.compilation.values;
+package me.topchetoeu.jscript.compilation.values.operations;
 
 import me.topchetoeu.jscript.common.Instruction;
-import me.topchetoeu.jscript.common.Location;
 import me.topchetoeu.jscript.common.Operation;
 import me.topchetoeu.jscript.common.Instruction.BreakpointType;
+import me.topchetoeu.jscript.common.parsing.Location;
 import me.topchetoeu.jscript.compilation.CompileResult;
 import me.topchetoeu.jscript.compilation.Statement;
 

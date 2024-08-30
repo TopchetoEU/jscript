@@ -1,15 +1,16 @@
 package me.topchetoeu.jscript.compilation.values;
 
 import me.topchetoeu.jscript.common.Instruction;
-import me.topchetoeu.jscript.common.Location;
 import me.topchetoeu.jscript.common.Instruction.BreakpointType;
 import me.topchetoeu.jscript.common.Instruction.Type;
+import me.topchetoeu.jscript.common.parsing.Location;
+import me.topchetoeu.jscript.common.parsing.ParseRes;
+import me.topchetoeu.jscript.common.parsing.Parsing;
+import me.topchetoeu.jscript.common.parsing.Source;
 import me.topchetoeu.jscript.compilation.CompileResult;
 import me.topchetoeu.jscript.compilation.CompoundStatement;
+import me.topchetoeu.jscript.compilation.ES5;
 import me.topchetoeu.jscript.compilation.Statement;
-import me.topchetoeu.jscript.compilation.parsing.ParseRes;
-import me.topchetoeu.jscript.compilation.parsing.Parsing;
-import me.topchetoeu.jscript.compilation.parsing.Source;
 import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 
 public class FunctionStatement extends Statement {
@@ -39,7 +40,7 @@ public class FunctionStatement extends Statement {
         }
     }
 
-    private CompileResult compileBody(CompileResult target, boolean pollute, BreakpointType bp) {
+    private CompileResult compileBody(CompileResult target, String name, boolean pollute, BreakpointType bp) {
         for (var i = 0; i < args.length; i++) {
             for (var j = 0; j < i; j++) {
                 if (args[i].equals(args[j])) {
@@ -72,7 +73,7 @@ public class FunctionStatement extends Statement {
         subtarget.add(Instruction.ret()).setLocation(end);
         checkBreakAndCont(subtarget, 0);
 
-        if (pollute) target.add(Instruction.loadFunc(target.children.size(), subtarget.scope.getCaptures()));
+        if (pollute) target.add(Instruction.loadFunc(target.children.size(), name, subtarget.scope.getCaptures()));
         return target.addChild(subtarget);
     }
 
@@ -80,16 +81,8 @@ public class FunctionStatement extends Statement {
         if (this.varName != null) name = this.varName;
 
         var hasVar = this.varName != null && statement;
-        var hasName = name != null;
 
-        compileBody(target, pollute || hasVar || hasName, bp);
-
-        if (hasName) {
-            if (pollute || hasVar) target.add(Instruction.dup());
-            target.add(Instruction.pushValue("name"));
-            target.add(Instruction.pushValue(name));
-            target.add(Instruction.storeMember());
-        }
+        compileBody(target, name, pollute || hasVar, bp);
 
         if (hasVar) {
             var key = target.scope.getKey(this.varName);
@@ -140,12 +133,12 @@ public class FunctionStatement extends Statement {
         n += nameRes.n;
         n += Parsing.skipEmpty(src, i + n);
 
-        var args = Parsing.parseParamList(src, i + n);
+        var args = ES5.parseParamList(src, i + n);
         if (!args.isSuccess()) return args.chainError(src.loc(i + n), "Expected a parameter list");
         n += args.n;
 
         var res = CompoundStatement.parse(src, i + n);
-        if (!res.isSuccess()) res.chainError(src.loc(i + n), "Expected a compound statement for function.");
+        if (!res.isSuccess()) return res.chainError(src.loc(i + n), "Expected a compound statement for function.");
         n += res.n;
 
         return ParseRes.res(new FunctionStatement(

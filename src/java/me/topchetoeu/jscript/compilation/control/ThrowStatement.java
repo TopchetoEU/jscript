@@ -1,12 +1,13 @@
 package me.topchetoeu.jscript.compilation.control;
 
 import me.topchetoeu.jscript.common.Instruction;
-import me.topchetoeu.jscript.common.Location;
+import me.topchetoeu.jscript.common.parsing.Location;
+import me.topchetoeu.jscript.common.parsing.ParseRes;
+import me.topchetoeu.jscript.common.parsing.Parsing;
+import me.topchetoeu.jscript.common.parsing.Source;
 import me.topchetoeu.jscript.compilation.CompileResult;
+import me.topchetoeu.jscript.compilation.ES5;
 import me.topchetoeu.jscript.compilation.Statement;
-import me.topchetoeu.jscript.compilation.parsing.ParseRes;
-import me.topchetoeu.jscript.compilation.parsing.Parsing;
-import me.topchetoeu.jscript.compilation.parsing.Source;
 
 public class ThrowStatement extends Statement {
     public final Statement value;
@@ -29,17 +30,17 @@ public class ThrowStatement extends Statement {
         if (!Parsing.isIdentifier(src, i + n, "throw")) return ParseRes.failed();
         n += 5;
 
-        var end = Parsing.parseStatementEnd(src, i + n);
+        var end = ES5.parseStatementEnd(src, i + n);
         if (end.isSuccess()) {
             n += end.n;
             return ParseRes.res(new ThrowStatement(loc, null), n);
         }
 
-        var val = Parsing.parseValue(src, i + n, 0);
+        var val = ES5.parseExpression(src, i + n, 0);
         if (val.isFailed()) return ParseRes.error(src.loc(i + n), "Expected a value");
         n += val.n;
 
-        end = Parsing.parseStatementEnd(src, i + n);
+        end = ES5.parseStatementEnd(src, i + n);
         if (end.isSuccess()) {
             n += end.n;
             return ParseRes.res(new ThrowStatement(loc, val.result), n);

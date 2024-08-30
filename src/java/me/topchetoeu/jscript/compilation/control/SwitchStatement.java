@@ -4,15 +4,16 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import me.topchetoeu.jscript.common.Instruction;
-import me.topchetoeu.jscript.common.Location;
 import me.topchetoeu.jscript.common.Operation;
 import me.topchetoeu.jscript.common.Instruction.BreakpointType;
 import me.topchetoeu.jscript.common.Instruction.Type;
+import me.topchetoeu.jscript.common.parsing.Location;
+import me.topchetoeu.jscript.common.parsing.ParseRes;
+import me.topchetoeu.jscript.common.parsing.Parsing;
+import me.topchetoeu.jscript.common.parsing.Source;
 import me.topchetoeu.jscript.compilation.CompileResult;
+import me.topchetoeu.jscript.compilation.ES5;
 import me.topchetoeu.jscript.compilation.Statement;
-import me.topchetoeu.jscript.compilation.parsing.ParseRes;
-import me.topchetoeu.jscript.compilation.parsing.Parsing;
-import me.topchetoeu.jscript.compilation.parsing.Source;
 
 public class SwitchStatement extends Statement {
     public static class SwitchCase {
@@ -89,7 +90,7 @@ public class SwitchStatement extends Statement {
         if (!Parsing.isIdentifier(src, i + n, "case")) return ParseRes.failed();
         n += 4;
 
-        var valRes = Parsing.parseValue(src, i + n, 0);
+        var valRes = ES5.parseExpression(src, i + n, 0);
         if (!valRes.isSuccess()) return valRes.chainError(src.loc(i + n), "Expected a value after 'case'");
         n += valRes.n;
 
@@ -121,7 +122,7 @@ public class SwitchStatement extends Statement {
         if (!src.is(i + n, "(")) return ParseRes.error(src.loc(i + n), "Expected a open paren after 'switch'");
         n++;
 
-        var valRes = Parsing.parseValue(src, i + n, 0);
+        var valRes = ES5.parseExpression(src, i + n, 0);
         if (!valRes.isSuccess()) return valRes.chainError(src.loc(i + n), "Expected a switch value");
         n += valRes.n;
         n += Parsing.skipEmpty(src, i + n);
@@ -166,7 +167,7 @@ public class SwitchStatement extends Statement {
             }
             if (caseRes.isError()) return caseRes.chainError();
 
-            var stm = Parsing.parseStatement(src, i + n);
+            var stm = ES5.parseStatement(src, i + n);
             if (stm.isSuccess()) {
                 n += stm.n;
                 statements.add(stm.result);

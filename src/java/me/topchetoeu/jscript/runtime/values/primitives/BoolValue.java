@@ -13,7 +13,7 @@ public final class BoolValue extends PrimitiveValue {
 
     @Override public StringValue type() { return typeString; }
 
-    @Override public BoolValue toBoolean() { return this; }
+    @Override public boolean toBoolean() { return value; }
     @Override public NumberValue toNumber(Environment ext) {
         return value ? new NumberValue(1) : new NumberValue(0);
     }

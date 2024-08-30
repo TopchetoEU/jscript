@@ -1,12 +1,13 @@
 package me.topchetoeu.jscript.compilation.control;
 
 import me.topchetoeu.jscript.common.Instruction;
-import me.topchetoeu.jscript.common.Location;
+import me.topchetoeu.jscript.common.parsing.Location;
+import me.topchetoeu.jscript.common.parsing.ParseRes;
+import me.topchetoeu.jscript.common.parsing.Parsing;
+import me.topchetoeu.jscript.common.parsing.Source;
 import me.topchetoeu.jscript.compilation.CompileResult;
+import me.topchetoeu.jscript.compilation.ES5;
 import me.topchetoeu.jscript.compilation.Statement;
-import me.topchetoeu.jscript.compilation.parsing.ParseRes;
-import me.topchetoeu.jscript.compilation.parsing.Parsing;
-import me.topchetoeu.jscript.compilation.parsing.Source;
 
 public class ReturnStatement extends Statement {
     public final Statement value;
@@ -30,21 +31,21 @@ public class ReturnStatement extends Statement {
         if (!Parsing.isIdentifier(src, i + n, "return")) return ParseRes.failed();
         n += 6;
 
-        var end = Parsing.parseStatementEnd(src, i + n);
+        var end = ES5.parseStatementEnd(src, i + n);
         if (end.isSuccess()) {
             n += end.n;
             return ParseRes.res(new ReturnStatement(loc, null), n);
         }
 
-        var val = Parsing.parseValue(src, i + n, 0);
-        if (val.isFailed()) return ParseRes.error(src.loc(i + n), "Expected a value");
+        var val = ES5.parseExpression(src, i + n, 0);
+        if (val.isError()) return val.chainError();
         n += val.n;
 
-        end = Parsing.parseStatementEnd(src, i + n);
+        end = ES5.parseStatementEnd(src, i + n);
         if (end.isSuccess()) {
             n += end.n;
             return ParseRes.res(new ReturnStatement(loc, val.result), n);
         }
-        else return end.chainError(src.loc(i + n), "Expected end of statement");
+        else return end.chainError(src.loc(i + n), "Expected end of statement or a return value");
     }
 }

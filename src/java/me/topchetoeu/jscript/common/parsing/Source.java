@@ -1,9 +1,6 @@
-package me.topchetoeu.jscript.compilation.parsing;
+package me.topchetoeu.jscript.common.parsing;
 
 import java.util.function.Predicate;
-
-import me.topchetoeu.jscript.common.Filename;
-import me.topchetoeu.jscript.common.Location;
 
 public class Source {
     public final Filename filename;

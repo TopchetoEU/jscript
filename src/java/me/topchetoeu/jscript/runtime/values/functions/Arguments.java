@@ -9,6 +9,7 @@ public class Arguments {
     public final Value self;
     public final Value[] args;
     public final Environment env;
+    public final boolean isNew;
 
     public int n() {
         return args.length;
@@ -31,9 +32,10 @@ public class Arguments {
         else return get(i);
     }
 
-    public Arguments(Environment env, Value thisArg, Value... args) {
+    public Arguments(Environment env, boolean isNew, Value thisArg, Value... args) {
         this.env = env;
         this.args = args;
         this.self = thisArg;
+        this.isNew = isNew;
     }
 }

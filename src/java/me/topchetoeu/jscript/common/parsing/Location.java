@@ -1,4 +1,4 @@
-package me.topchetoeu.jscript.common;
+package me.topchetoeu.jscript.common.parsing;
 
 import java.util.ArrayList;
 import java.util.Objects;

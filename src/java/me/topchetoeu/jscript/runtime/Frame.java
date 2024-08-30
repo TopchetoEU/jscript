@@ -13,11 +13,11 @@ import me.topchetoeu.jscript.runtime.exceptions.EngineException;
 import me.topchetoeu.jscript.runtime.exceptions.InterruptException;
 import me.topchetoeu.jscript.runtime.scope.LocalScope;
 import me.topchetoeu.jscript.runtime.scope.ValueVariable;
+import me.topchetoeu.jscript.runtime.values.KeyCache;
 import me.topchetoeu.jscript.runtime.values.Member;
 import me.topchetoeu.jscript.runtime.values.Value;
 import me.topchetoeu.jscript.runtime.values.Member.FieldMember;
 import me.topchetoeu.jscript.runtime.values.functions.CodeFunction;
-import me.topchetoeu.jscript.runtime.values.objects.ArrayValue;
 import me.topchetoeu.jscript.runtime.values.objects.ObjectValue;
 import me.topchetoeu.jscript.runtime.values.objects.ScopeValue;
 import me.topchetoeu.jscript.runtime.values.primitives.VoidValue;
@@ -101,6 +101,7 @@ public class Frame {
     public final LocalScope scope;
     public final Object thisArg;
     public final Object[] args;
+    public final boolean isNew;
     public final Stack<TryCtx> tryStack = new Stack<>();
     public final CodeFunction function;
     public final Environment env;
@@ -356,14 +357,14 @@ public class Frame {
      */
     public ObjectValue getValStackScope() {
         return new ObjectValue() {
-            @Override public Member getOwnMember(Environment env, Value key) {
+            @Override public Member getOwnMember(Environment env, KeyCache key) {
                 var res = super.getOwnMember(env, key);
                 if (res != null) return res;
 
-                var f = key.toNumber(env).value;
-                var i = (int)f;
+                var num = key.toNumber(env);
+                var i = key.toInt(env);
 
-                if (i < 0 || i >= stackPtr) return null;
+                if (num != i || i < 0 || i >= stackPtr) return null;
                 else return new FieldMember(false, true, true) {
                     @Override public Value get(Environment env, Value self) { return stack[i]; }
                     @Override public boolean set(Environment env, Value val, Value self) {
@@ -391,12 +392,13 @@ public class Frame {
         };
     }
 
-    public Frame(Environment env, Value thisArg, Value[] args, CodeFunction func) {
+    public Frame(Environment env, boolean isNew, Value thisArg, Value[] args, CodeFunction func) {
         this.env = env;
-        this.args = args.clone();
+        this.args = args;
+        this.isNew = isNew;
         this.scope = new LocalScope(func.body.localsN, func.captures);
         this.scope.get(0).set(thisArg);
-        this.scope.get(1).value = new ArrayValue(args);
+        this.scope.get(1).value = new ArgumentsValue(this, args);
 
         this.thisArg = thisArg;
         this.function = func;

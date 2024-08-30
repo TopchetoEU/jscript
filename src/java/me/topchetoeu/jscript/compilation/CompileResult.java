@@ -6,10 +6,10 @@ import java.util.Vector;
 
 import me.topchetoeu.jscript.common.FunctionBody;
 import me.topchetoeu.jscript.common.Instruction;
-import me.topchetoeu.jscript.common.Location;
 import me.topchetoeu.jscript.common.Instruction.BreakpointType;
 import me.topchetoeu.jscript.common.mapping.FunctionMap;
 import me.topchetoeu.jscript.common.mapping.FunctionMap.FunctionMapBuilder;
+import me.topchetoeu.jscript.common.parsing.Location;
 import me.topchetoeu.jscript.compilation.scope.LocalScopeRecord;
 
 public class CompileResult {

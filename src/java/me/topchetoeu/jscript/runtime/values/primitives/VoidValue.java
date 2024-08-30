@@ -4,13 +4,14 @@ import java.util.Map;
 
 import me.topchetoeu.jscript.runtime.environment.Environment;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
+import me.topchetoeu.jscript.runtime.values.KeyCache;
 import me.topchetoeu.jscript.runtime.values.Member;
 import me.topchetoeu.jscript.runtime.values.Value;
 import me.topchetoeu.jscript.runtime.values.objects.ObjectValue;
 
 public final class VoidValue extends PrimitiveValue {
     public static final VoidValue UNDEFINED = new VoidValue("undefined", new StringValue("undefined"));
-    public static final VoidValue NULL = new VoidValue("null", new StringValue("null"));
+    public static final VoidValue NULL = new VoidValue("null", new StringValue("object"));
 
     private final StringValue namestring;
 
@@ -18,7 +19,7 @@ public final class VoidValue extends PrimitiveValue {
     public final StringValue typeString;
 
     @Override public StringValue type() { return typeString; }
-    @Override public BoolValue toBoolean() { return BoolValue.FALSE; }
+    @Override public boolean toBoolean() { return false; }
     @Override public NumberValue toNumber(Environment ext) { return NumberValue.NAN; }
     @Override public StringValue toString(Environment ext) { return namestring; }
 
@@ -34,8 +35,8 @@ public final class VoidValue extends PrimitiveValue {
     }
     @Override public ObjectValue getPrototype(Environment env) { return null; }
 
-    @Override public Member getOwnMember(Environment env, Value key) {
-        throw EngineException.ofError(String.format("Cannot read properties of %s (reading %s)", name, key.toString(env).value));
+    @Override public Member getOwnMember(Environment env, KeyCache key) {
+        throw EngineException.ofError(String.format("Cannot read properties of %s (reading '%s')", name, key.toString(env)));
     }
     @Override public Map<String, Member> getOwnMembers(Environment env) {
         throw EngineException.ofError(String.format("Cannot read properties of %s (listing all members)", name));
@@ -43,6 +44,10 @@ public final class VoidValue extends PrimitiveValue {
     @Override public Map<SymbolValue, Member> getOwnSymbolMembers(Environment env) {
         throw EngineException.ofError(String.format("Cannot read properties of %s (listing all symbol members)", name));
     }
+
+    // @Override public Value call(Environment env, Value self, Value... args) {
+    //     throw EngineException.ofType(String.format("Tried to call a value of %s", name));
+    // }
 
     public VoidValue(String name, StringValue type) {
         this.name = name;

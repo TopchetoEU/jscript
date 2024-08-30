@@ -7,10 +7,10 @@ import java.util.Map;
 import me.topchetoeu.jscript.runtime.environment.Environment;
 import me.topchetoeu.jscript.runtime.environment.Key;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
+import me.topchetoeu.jscript.runtime.values.KeyCache;
 import me.topchetoeu.jscript.runtime.values.Member;
 import me.topchetoeu.jscript.runtime.values.Value;
 import me.topchetoeu.jscript.runtime.values.functions.FunctionValue;
-import me.topchetoeu.jscript.runtime.values.primitives.BoolValue;
 import me.topchetoeu.jscript.runtime.values.primitives.NumberValue;
 import me.topchetoeu.jscript.runtime.values.primitives.StringValue;
 import me.topchetoeu.jscript.runtime.values.primitives.SymbolValue;
@@ -66,7 +66,7 @@ public class ObjectValue extends Value {
         throw EngineException.ofType("Value couldn't be converted to a primitive.");
     }
     @Override public StringValue toString(Environment env) { return toPrimitive(env).toString(env); }
-    @Override public BoolValue toBoolean() { return BoolValue.TRUE; }
+    @Override public boolean toBoolean() { return true; }
     @Override public NumberValue toNumber(Environment env) { return toPrimitive(env).toNumber(env);  }
     @Override public StringValue type() { return typeString; }
 
@@ -76,33 +76,29 @@ public class ObjectValue extends Value {
         extensible = false;
     }
 
-    @Override public Member getOwnMember(Environment env, Value key) {
-        if (key instanceof SymbolValue) return symbolMembers.get(key);
-        else return members.get(key.toString(env).value);
+    @Override public Member getOwnMember(Environment env, KeyCache key) {
+        if (key.isSymbol()) return symbolMembers.get(key.toSymbol());
+        else return members.get(key.toString(env));
     }
-    @Override public boolean defineOwnMember(Environment env, Value key, Member member) {
-        if (!(key instanceof SymbolValue)) key = key.toString(env);
-
+    @Override public boolean defineOwnMember(Environment env, KeyCache key, Member member) {
         var old = getOwnMember(env, key);
         if (old != null && old.configure(env, member, this)) return true;
         if (old != null && !old.configurable()) return false;
 
-        if (key instanceof SymbolValue) symbolMembers.put((SymbolValue)key, member);
-        else members.put(key.toString(env).value, member);
+        if (key.isSymbol()) symbolMembers.put(key.toSymbol(), member);
+        else members.put(key.toString(env), member);
 
         return true;
     }
-    @Override public boolean deleteOwnMember(Environment env, Value key) {
+    @Override public boolean deleteOwnMember(Environment env, KeyCache key) {
         if (!extensible) return false;
-
-        if (!(key instanceof SymbolValue)) key = key.toString(env);
 
         var member = getOwnMember(env, key);
         if (member == null) return true;
         if (member.configurable()) return false;
 
-        if (key instanceof SymbolValue) symbolMembers.remove(key);
-        else members.remove(key.toString(env).value);
+        if (key.isSymbol()) symbolMembers.remove(key.toSymbol());
+        else members.remove(key.toString(env));
         return true;
     }
 
@@ -114,7 +110,7 @@ public class ObjectValue extends Value {
     }
 
     @Override public ObjectValue getPrototype(Environment env) {
-        if (prototype == null) return null;
+        if (prototype == null || env == null) return null;
         else return prototype.get(env);
     }
     @Override public final boolean setPrototype(Environment env, ObjectValue val) {

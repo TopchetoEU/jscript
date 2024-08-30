@@ -11,9 +11,9 @@ import java.util.TreeSet;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import me.topchetoeu.jscript.common.Filename;
-import me.topchetoeu.jscript.common.Location;
 import me.topchetoeu.jscript.common.Instruction.BreakpointType;
+import me.topchetoeu.jscript.common.parsing.Filename;
+import me.topchetoeu.jscript.common.parsing.Location;
 import me.topchetoeu.jscript.compilation.scope.LocalScopeRecord;
 
 public class FunctionMap {

@@ -27,7 +27,7 @@ public class JSONConverter {
             var res = new ObjectValue();
     
             for (var el : val.map().entrySet()) {
-                res.defineOwnMember(null, new StringValue(el.getKey()), FieldMember.of(toJs(el.getValue())));
+                res.defineOwnMember(null, el.getKey(), FieldMember.of(toJs(el.getValue())));
             }
     
             return res;

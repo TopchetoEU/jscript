@@ -1,8 +1,12 @@
 package me.topchetoeu.jscript.runtime.values.primitives;
 
+import java.util.Map;
 import java.util.Objects;
 
+import me.topchetoeu.jscript.common.parsing.Parsing;
+import me.topchetoeu.jscript.common.parsing.Source;
 import me.topchetoeu.jscript.runtime.environment.Environment;
+import me.topchetoeu.jscript.runtime.values.Member;
 import me.topchetoeu.jscript.runtime.values.Value;
 import me.topchetoeu.jscript.runtime.values.objects.ObjectValue;
 
@@ -12,10 +16,14 @@ public final class StringValue extends PrimitiveValue {
 
     @Override public StringValue type() { return typeString; }
 
-    @Override public BoolValue toBoolean() { return BoolValue.of(!value.equals("")); }
+    @Override public boolean toBoolean() { return !value.equals(""); }
     @Override public NumberValue toNumber(Environment ext) {
-        try { return new NumberValue(Double.parseDouble(value)); }
-        catch (NumberFormatException e) { return new NumberValue(Double.NaN); }
+        var val = value.trim();
+        if (val.equals("")) return new NumberValue(0);
+        var res = Parsing.parseNumber(new Source(null, val), 0, true);
+
+        if (res.isSuccess() && res.n == val.length()) return new NumberValue(res.result);
+        else return new NumberValue(Double.NaN);
     }
     @Override public StringValue toString(Environment ext) { return this; }
 
@@ -23,10 +31,19 @@ public final class StringValue extends PrimitiveValue {
         return new StringValue(value + other.toString(ext).value);
     }
 
+    @Override public CompareResult compare(Environment env, Value other) {
+        if (other instanceof StringValue) return CompareResult.from(value.compareTo(((StringValue)other).value));
+        else return super.compare(env, other);
+    }
     @Override public boolean strictEquals(Environment ext, Value other) {
         return (other instanceof StringValue) && Objects.equals(((StringValue)other).value, value);
     }
     @Override public ObjectValue getPrototype(Environment env) { return env.get(Environment.STRING_PROTO); }
+
+    @Override public Map<String, Member> getOwnMembers(Environment env) {
+        // TODO Auto-generated method stub
+        return super.getOwnMembers(env);
+    }
 
     public StringValue(String value) {
         this.value = value;

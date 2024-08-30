@@ -4,7 +4,6 @@ import me.topchetoeu.jscript.runtime.environment.Environment;
 import me.topchetoeu.jscript.runtime.values.functions.FunctionValue;
 import me.topchetoeu.jscript.runtime.values.objects.ObjectValue;
 import me.topchetoeu.jscript.runtime.values.primitives.BoolValue;
-import me.topchetoeu.jscript.runtime.values.primitives.StringValue;
 import me.topchetoeu.jscript.runtime.values.primitives.VoidValue;
 
 public interface Member {
@@ -42,14 +41,14 @@ public interface Member {
         @Override public ObjectValue descriptor(Environment env, Value self) {
             var res = new ObjectValue();
 
-            if (getter == null) res.defineOwnMember(env, new StringValue("getter"), FieldMember.of(VoidValue.UNDEFINED));
-            else res.defineOwnMember(env, new StringValue("getter"), FieldMember.of(getter));
+            if (getter == null) res.defineOwnMember(env, "getter", FieldMember.of(VoidValue.UNDEFINED));
+            else res.defineOwnMember(env, "getter", FieldMember.of(getter));
 
-            if (setter == null) res.defineOwnMember(env, new StringValue("setter"), FieldMember.of(VoidValue.UNDEFINED));
-            else res.defineOwnMember(env, new StringValue("setter"), FieldMember.of(setter));
+            if (setter == null) res.defineOwnMember(env, "setter", FieldMember.of(VoidValue.UNDEFINED));
+            else res.defineOwnMember(env, "setter", FieldMember.of(setter));
 
-            res.defineOwnMember(env, new StringValue("enumerable"), FieldMember.of(BoolValue.of(enumerable)));
-            res.defineOwnMember(env, new StringValue("configurable"), FieldMember.of(BoolValue.of(configurable)));
+            res.defineOwnMember(env, "enumerable", FieldMember.of(BoolValue.of(enumerable)));
+            res.defineOwnMember(env, "configurable", FieldMember.of(BoolValue.of(configurable)));
             return res;
         }
 
@@ -98,10 +97,10 @@ public interface Member {
 
         @Override public ObjectValue descriptor(Environment env, Value self) {
             var res = new ObjectValue();
-            res.defineOwnMember(env, new StringValue("value"), FieldMember.of(get(env, self)));
-            res.defineOwnMember(env, new StringValue("writable"), FieldMember.of(BoolValue.of(writable)));
-            res.defineOwnMember(env, new StringValue("enumerable"), FieldMember.of(BoolValue.of(enumerable)));
-            res.defineOwnMember(env, new StringValue("configurable"), FieldMember.of(BoolValue.of(configurable)));
+            res.defineOwnMember(env, "value", FieldMember.of(get(env, self)));
+            res.defineOwnMember(env, "writable", FieldMember.of(BoolValue.of(writable)));
+            res.defineOwnMember(env, "enumerable", FieldMember.of(BoolValue.of(enumerable)));
+            res.defineOwnMember(env, "configurable", FieldMember.of(BoolValue.of(configurable)));
             return res;
         }
 

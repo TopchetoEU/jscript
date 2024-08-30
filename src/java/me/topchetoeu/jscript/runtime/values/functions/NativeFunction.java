@@ -10,8 +10,8 @@ public class NativeFunction extends FunctionValue {
 
     public final NativeFunctionRunner action;
 
-    @Override public Value call(Environment env, Value self, Value ...args) {
-        return action.run(new Arguments(env, self, args));
+    @Override public Value onCall(Environment env, boolean isNew, String name, Value self, Value ...args) {
+        return action.run(new Arguments(env, isNew, self, args));
     }
 
     public NativeFunction(String name, NativeFunctionRunner action) {

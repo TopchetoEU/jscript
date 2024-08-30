@@ -1,6 +1,6 @@
 package me.topchetoeu.jscript.runtime.exceptions;
 
-import me.topchetoeu.jscript.common.Location;
+import me.topchetoeu.jscript.common.parsing.Location;
 
 public class SyntaxException extends RuntimeException {
     public final Location loc;

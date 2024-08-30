@@ -11,8 +11,8 @@ public class CodeFunction extends FunctionValue {
     public final ValueVariable[] captures;
     public Environment env;
 
-    @Override public Value call(Environment env, Value thisArg, Value ...args) {
-        var frame = new Frame(env, thisArg, args, this);
+    @Override public Value onCall(Environment env, boolean isNew, String name, Value thisArg, Value ...args) {
+        var frame = new Frame(env, isNew, thisArg, args, this);
         frame.onPush();
 
         try {

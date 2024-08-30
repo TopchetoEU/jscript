@@ -3,12 +3,13 @@ package me.topchetoeu.jscript.compilation.values;
 import java.util.ArrayList;
 
 import me.topchetoeu.jscript.common.Instruction;
-import me.topchetoeu.jscript.common.Location;
+import me.topchetoeu.jscript.common.parsing.Location;
+import me.topchetoeu.jscript.common.parsing.ParseRes;
+import me.topchetoeu.jscript.common.parsing.Parsing;
+import me.topchetoeu.jscript.common.parsing.Source;
 import me.topchetoeu.jscript.compilation.CompileResult;
+import me.topchetoeu.jscript.compilation.ES5;
 import me.topchetoeu.jscript.compilation.Statement;
-import me.topchetoeu.jscript.compilation.parsing.ParseRes;
-import me.topchetoeu.jscript.compilation.parsing.Parsing;
-import me.topchetoeu.jscript.compilation.parsing.Source;
 
 public class ArrayStatement extends Statement {
     public final Statement[] statements;
@@ -21,8 +22,7 @@ public class ArrayStatement extends Statement {
         return true;
     }
 
-    @Override
-    public void compile(CompileResult target, boolean pollute) {
+    @Override public void compile(CompileResult target, boolean pollute) {
         target.add(Instruction.loadArr(statements.length));
 
         for (var i = 0; i < statements.length; i++) {
@@ -70,7 +70,7 @@ public class ArrayStatement extends Statement {
                 }
             }
 
-            var res = Parsing.parseValue(src, i + n, 2);
+            var res = ES5.parseExpression(src, i + n, 2);
             if (!res.isSuccess()) return res.chainError(src.loc(i + n), "Expected an array element.");
             n += res.n;
             n += Parsing.skipEmpty(src, i + n);

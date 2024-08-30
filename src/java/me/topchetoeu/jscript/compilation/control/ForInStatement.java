@@ -1,14 +1,15 @@
 package me.topchetoeu.jscript.compilation.control;
 
 import me.topchetoeu.jscript.common.Instruction;
-import me.topchetoeu.jscript.common.Location;
 import me.topchetoeu.jscript.common.Operation;
 import me.topchetoeu.jscript.common.Instruction.BreakpointType;
+import me.topchetoeu.jscript.common.parsing.Location;
+import me.topchetoeu.jscript.common.parsing.ParseRes;
+import me.topchetoeu.jscript.common.parsing.Parsing;
+import me.topchetoeu.jscript.common.parsing.Source;
 import me.topchetoeu.jscript.compilation.CompileResult;
+import me.topchetoeu.jscript.compilation.ES5;
 import me.topchetoeu.jscript.compilation.Statement;
-import me.topchetoeu.jscript.compilation.parsing.ParseRes;
-import me.topchetoeu.jscript.compilation.parsing.Parsing;
-import me.topchetoeu.jscript.compilation.parsing.Source;
 
 public class ForInStatement extends Statement {
     public final String varName;
@@ -90,7 +91,7 @@ public class ForInStatement extends Statement {
         if (!Parsing.isIdentifier(src, i + n, "in")) return ParseRes.error(src.loc(i + n), "Expected 'in' keyword after variable declaration");
         n += 2;
 
-        var obj = Parsing.parseValue(src, i + n, 0);
+        var obj = ES5.parseExpression(src, i + n, 0);
         if (!obj.isSuccess()) return obj.chainError(src.loc(i + n), "Expected a value");
         n += obj.n;
         n += Parsing.skipEmpty(src, i + n);
@@ -98,7 +99,7 @@ public class ForInStatement extends Statement {
         if (!src.is(i + n, ")")) return ParseRes.error(src.loc(i + n), "Expected a closing paren");
         n++;
 
-        var bodyRes = Parsing.parseStatement(src, i + n);
+        var bodyRes = ES5.parseStatement(src, i + n);
         if (!bodyRes.isSuccess()) return bodyRes.chainError(src.loc(i + n), "Expected a for-in body");
         n += bodyRes.n;
 

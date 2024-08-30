@@ -1,13 +1,14 @@
 package me.topchetoeu.jscript.compilation.control;
 
 import me.topchetoeu.jscript.common.Instruction;
-import me.topchetoeu.jscript.common.Location;
 import me.topchetoeu.jscript.common.Instruction.BreakpointType;
+import me.topchetoeu.jscript.common.parsing.Location;
+import me.topchetoeu.jscript.common.parsing.ParseRes;
+import me.topchetoeu.jscript.common.parsing.Parsing;
+import me.topchetoeu.jscript.common.parsing.Source;
 import me.topchetoeu.jscript.compilation.CompileResult;
+import me.topchetoeu.jscript.compilation.ES5;
 import me.topchetoeu.jscript.compilation.Statement;
-import me.topchetoeu.jscript.compilation.parsing.ParseRes;
-import me.topchetoeu.jscript.compilation.parsing.Parsing;
-import me.topchetoeu.jscript.compilation.parsing.Source;
 
 public class DoWhileStatement extends Statement {
     public final Statement condition, body;
@@ -47,7 +48,7 @@ public class DoWhileStatement extends Statement {
         if (!Parsing.isIdentifier(src, i + n, "do")) return ParseRes.failed();
         n += 2;
 
-        var bodyRes = Parsing.parseStatement(src, i + n);
+        var bodyRes = ES5.parseStatement(src, i + n);
         if (!bodyRes.isSuccess()) return bodyRes.chainError(src.loc(i + n), "Expected a do-while body.");
         n += bodyRes.n;
 
@@ -58,7 +59,7 @@ public class DoWhileStatement extends Statement {
         if (!src.is(i + n, "(")) return ParseRes.error(src.loc(i + n), "Expected a open paren after 'while'.");
         n++;
 
-        var condRes = Parsing.parseValue(src, i + n, 0);
+        var condRes = ES5.parseExpression(src, i + n, 0);
         if (!condRes.isSuccess()) return condRes.chainError(src.loc(i + n), "Expected a do-while condition.");
         n += condRes.n;
         n += Parsing.skipEmpty(src, i + n);
@@ -66,7 +67,7 @@ public class DoWhileStatement extends Statement {
         if (!src.is(i + n, ")")) return ParseRes.error(src.loc(i + n), "Expected a closing paren after do-while condition.");
         n++;
 
-        var end = Parsing.parseStatementEnd(src, i + n);
+        var end = ES5.parseStatementEnd(src, i + n);
         if (end.isSuccess()) {
             n += end.n;
             return ParseRes.res(new DoWhileStatement(loc, labelRes.result, condRes.result, bodyRes.result), n);
