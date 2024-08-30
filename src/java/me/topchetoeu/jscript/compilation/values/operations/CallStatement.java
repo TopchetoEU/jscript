@@ -77,7 +77,7 @@ public class CallStatement extends Statement {
             var bracket = JSON.stringify(JSONElement.string(val));
 
             if (!bracket.substring(1, bracket.length() - 1).equals(val)) return res + "[" + bracket + "]";
-            if (Parsing.parseIdentifier(new Source(null, val), 0).n != val.length()) return res + "[" + bracket + "]";
+            if (Parsing.parseIdentifier(new Source(val), 0).n != val.length()) return res + "[" + bracket + "]";
 
             return res + "." + val;
         }

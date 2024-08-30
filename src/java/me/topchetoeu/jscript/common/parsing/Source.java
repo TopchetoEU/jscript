@@ -2,7 +2,10 @@ package me.topchetoeu.jscript.common.parsing;
 
 import java.util.function.Predicate;
 
+import me.topchetoeu.jscript.common.environment.Environment;
+
 public class Source {
+    public final Environment env;
     public final Filename filename;
     public final String src;
 
@@ -41,7 +44,10 @@ public class Source {
         return src.substring(start, end);
     }
 
-    public Source(Filename filename, String src) {
+    public Source(Environment env, Filename filename, String src) {
+        if (env == null) this.env = new Environment();
+        else this.env = env;
+
         this.filename = filename;
         this.src = src;
 
@@ -62,5 +68,8 @@ public class Source {
         var newArr = new int[n];
         System.arraycopy(lineStarts, 0, newArr, 0, n);
         lineStarts = newArr;
+    }
+    public Source(String src) {
+        this(null, null, src);
     }
 }

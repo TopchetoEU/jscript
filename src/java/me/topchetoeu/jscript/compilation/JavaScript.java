@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Set;
 
 import me.topchetoeu.jscript.common.Instruction;
+import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.common.parsing.Filename;
 import me.topchetoeu.jscript.common.parsing.ParseRes;
 import me.topchetoeu.jscript.common.parsing.Parsing;
@@ -72,8 +73,8 @@ public class JavaScript {
 
     public static ParseRes<? extends Statement> parseSimple(Source src, int i, boolean statement) {
         return ParseRes.first(src, i,
-            (a, b) -> statement ? ParseRes.failed() : ObjectStatement.parse(a, b),
-            (a, b) -> statement ? ParseRes.failed() : FunctionStatement.parseFunction(a, b, false),
+            (s, j) -> statement ? ParseRes.failed() : ObjectStatement.parse(s, j),
+            (s, j) -> statement ? ParseRes.failed() : FunctionStatement.parseFunction(s, j, false),
             JavaScript::parseLiteral,
             StringStatement::parse,
             RegexStatement::parse,
@@ -196,27 +197,6 @@ public class JavaScript {
         return res.addN(n);
     }
 
-    public static Statement[] parse(Filename filename, String raw) {
-        var src = new Source(filename, raw);
-        var list = new ArrayList<Statement>();
-        int i = 0;
-
-        while (true) {
-            if (i >= src.size()) break;
-
-            var res = parseStatement(src, i);
-
-            if (res.isError()) throw new SyntaxException(src.loc(i), res.error);
-            else if (res.isFailed()) throw new SyntaxException(src.loc(i), "Unexpected syntax");
-
-            i += res.n;
-
-            list.add(res.result);
-        }
-
-        return list.toArray(Statement[]::new);
-    }
-
     public static ParseRes<Boolean> parseStatementEnd(Source src, int i) {
         var n = Parsing.skipEmpty(src, i);
         if (i >= src.size()) return ParseRes.res(true, n + 1);
@@ -229,10 +209,6 @@ public class JavaScript {
         if (src.is(i + n, '}')) return ParseRes.res(true, n);
 
         return ParseRes.failed();
-    }
-
-    public static boolean checkVarName(String name) {
-        return !JavaScript.reserved.contains(name);
     }
 
     public static ParseRes<List<String>> parseParamList(Source src, int i) {
@@ -271,6 +247,31 @@ public class JavaScript {
         return ParseRes.res(args, n);
     }
 
+    public static Statement[] parse(Environment env, Filename filename, String raw) {
+        var src = new Source(env, filename, raw);
+        var list = new ArrayList<Statement>();
+        int i = 0;
+
+        while (true) {
+            if (i >= src.size()) break;
+
+            var res = parseStatement(src, i);
+
+            if (res.isError()) throw new SyntaxException(src.loc(i), res.error);
+            else if (res.isFailed()) throw new SyntaxException(src.loc(i), "Unexpected syntax");
+
+            i += res.n;
+
+            list.add(res.result);
+        }
+
+        return list.toArray(Statement[]::new);
+    }
+
+    public static boolean checkVarName(String name) {
+        return !JavaScript.reserved.contains(name);
+    }
+
     public static CompileResult compile(Statement ...statements) {
         var target = new CompileResult(new LocalScopeRecord());
         var stm = new CompoundStatement(null, true, statements);
@@ -296,7 +297,7 @@ public class JavaScript {
         return target;
     }
 
-    public static CompileResult compile(Filename filename, String raw) {
-        return JavaScript.compile(JavaScript.parse(filename, raw));
+    public static CompileResult compile(Environment env, Filename filename, String raw) {
+        return JavaScript.compile(JavaScript.parse(env, filename, raw));
     }
 }

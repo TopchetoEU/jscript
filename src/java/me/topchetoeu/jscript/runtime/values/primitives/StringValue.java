@@ -20,7 +20,7 @@ public final class StringValue extends PrimitiveValue {
     @Override public NumberValue toNumber(Environment ext) {
         var val = value.trim();
         if (val.equals("")) return new NumberValue(0);
-        var res = Parsing.parseNumber(new Source(null, val), 0, true);
+        var res = Parsing.parseNumber(new Source(val), 0, true);
 
         if (res.isSuccess() && res.n == val.length()) return new NumberValue(res.result);
         else return new NumberValue(Double.NaN);
