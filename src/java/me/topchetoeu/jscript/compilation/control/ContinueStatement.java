@@ -6,7 +6,7 @@ import me.topchetoeu.jscript.common.parsing.ParseRes;
 import me.topchetoeu.jscript.common.parsing.Parsing;
 import me.topchetoeu.jscript.common.parsing.Source;
 import me.topchetoeu.jscript.compilation.CompileResult;
-import me.topchetoeu.jscript.compilation.ES5;
+import me.topchetoeu.jscript.compilation.JavaScript;
 import me.topchetoeu.jscript.compilation.Statement;
 
 public class ContinueStatement extends Statement {
@@ -29,7 +29,7 @@ public class ContinueStatement extends Statement {
         if (!Parsing.isIdentifier(src, i + n, "continue")) return ParseRes.failed();
         n += 8;
 
-        var end = ES5.parseStatementEnd(src, i + n);
+        var end = JavaScript.parseStatementEnd(src, i + n);
         if (end.isSuccess()) {
             n += end.n;
             return ParseRes.res(new ContinueStatement(loc, null), n);
@@ -39,7 +39,7 @@ public class ContinueStatement extends Statement {
         if (label.isFailed()) return ParseRes.error(src.loc(i + n), "Expected a label name or an end of statement");
         n += label.n;
 
-        end = ES5.parseStatementEnd(src, i + n);
+        end = JavaScript.parseStatementEnd(src, i + n);
         if (end.isSuccess()) {
             n += end.n;
             return ParseRes.res(new ContinueStatement(loc, label.result), n);

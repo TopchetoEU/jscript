@@ -11,7 +11,7 @@ import me.topchetoeu.jscript.common.parsing.Parsing;
 import me.topchetoeu.jscript.common.parsing.Source;
 import me.topchetoeu.jscript.compilation.CompileResult;
 import me.topchetoeu.jscript.compilation.CompoundStatement;
-import me.topchetoeu.jscript.compilation.ES5;
+import me.topchetoeu.jscript.compilation.JavaScript;
 import me.topchetoeu.jscript.compilation.Statement;
 
 public class ObjectStatement extends Statement {
@@ -103,7 +103,7 @@ public class ObjectStatement extends Statement {
         if (!name.isSuccess()) return name.chainError(src.loc(i + n), "Expected a property name after '" + access + "'");
         n += name.n;
 
-        var params = ES5.parseParamList(src, i + n);
+        var params = JavaScript.parseParamList(src, i + n);
         if (!params.isSuccess()) return params.chainError(src.loc(i + n), "Expected an argument list");
         n += params.n;
 
@@ -154,7 +154,7 @@ public class ObjectStatement extends Statement {
                 if (!src.is(i + n, ":")) return ParseRes.error(src.loc(i + n), "Expected a colon");
                 n++;
 
-                var valRes = ES5.parseExpression(src, i + n, 2);
+                var valRes = JavaScript.parseExpression(src, i + n, 2);
                 if (!valRes.isSuccess()) return valRes.chainError(src.loc(i + n), "Expected a value in array list");
                 n += valRes.n;
 

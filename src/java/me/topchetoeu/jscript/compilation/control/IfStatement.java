@@ -7,7 +7,7 @@ import me.topchetoeu.jscript.common.parsing.ParseRes;
 import me.topchetoeu.jscript.common.parsing.Parsing;
 import me.topchetoeu.jscript.common.parsing.Source;
 import me.topchetoeu.jscript.compilation.CompileResult;
-import me.topchetoeu.jscript.compilation.ES5;
+import me.topchetoeu.jscript.compilation.JavaScript;
 import me.topchetoeu.jscript.compilation.Statement;
 
 public class IfStatement extends Statement {
@@ -59,7 +59,7 @@ public class IfStatement extends Statement {
         var loc = src.loc(i + n);
         n++;
 
-        var a = ES5.parseExpression(src, i + n, 2);
+        var a = JavaScript.parseExpression(src, i + n, 2);
         if (!a.isSuccess()) return a.chainError(src.loc(i + n), "Expected a value after the ternary operator.");
         n += a.n;
         n += Parsing.skipEmpty(src, i);
@@ -67,7 +67,7 @@ public class IfStatement extends Statement {
         if (!src.is(i + n, ":")) return ParseRes.failed();
         n++;
 
-        var b = ES5.parseExpression(src, i + n, 2);
+        var b = JavaScript.parseExpression(src, i + n, 2);
         if (!b.isSuccess()) return b.chainError(src.loc(i + n), "Expected a second value after the ternary operator.");
         n += b.n;
 
@@ -84,7 +84,7 @@ public class IfStatement extends Statement {
         if (!src.is(i + n, "(")) return ParseRes.error(src.loc(i + n), "Expected a open paren after 'if'.");
         n++;
 
-        var condRes = ES5.parseExpression(src, i + n, 0);
+        var condRes = JavaScript.parseExpression(src, i + n, 0);
         if (!condRes.isSuccess()) return condRes.chainError(src.loc(i + n), "Expected an if condition.");
         n += condRes.n;
         n += Parsing.skipEmpty(src, i + n);
@@ -92,7 +92,7 @@ public class IfStatement extends Statement {
         if (!src.is(i + n, ")")) return ParseRes.error(src.loc(i + n), "Expected a closing paren after if condition.");
         n++;
 
-        var res = ES5.parseStatement(src, i + n);
+        var res = JavaScript.parseStatement(src, i + n);
         if (!res.isSuccess()) return res.chainError(src.loc(i + n), "Expected an if body.");
         n += res.n;
 
@@ -100,7 +100,7 @@ public class IfStatement extends Statement {
         if (!elseKw.isSuccess()) return ParseRes.res(new IfStatement(loc, condRes.result, res.result, null), n);
         n += elseKw.n;
 
-        var elseRes = ES5.parseStatement(src, i + n);
+        var elseRes = JavaScript.parseStatement(src, i + n);
         if (!elseRes.isSuccess()) return elseRes.chainError(src.loc(i + n), "Expected an else body.");
         n += elseRes.n;
 

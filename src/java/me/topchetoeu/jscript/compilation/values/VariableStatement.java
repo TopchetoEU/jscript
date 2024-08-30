@@ -8,11 +8,11 @@ import me.topchetoeu.jscript.common.parsing.Parsing;
 import me.topchetoeu.jscript.common.parsing.Source;
 import me.topchetoeu.jscript.compilation.AssignableStatement;
 import me.topchetoeu.jscript.compilation.CompileResult;
-import me.topchetoeu.jscript.compilation.ES5;
+import me.topchetoeu.jscript.compilation.JavaScript;
 import me.topchetoeu.jscript.compilation.Statement;
 import me.topchetoeu.jscript.compilation.values.operations.VariableAssignStatement;
 
-public class VariableStatement extends AssignableStatement {
+public class VariableStatement extends Statement implements AssignableStatement {
     public final String name;
 
     @Override public boolean pure() { return false; }
@@ -42,7 +42,7 @@ public class VariableStatement extends AssignableStatement {
         if (!literal.isSuccess()) return literal.chainError();
         n += literal.n;
 
-        if (!ES5.checkVarName(literal.result)) {
+        if (!JavaScript.checkVarName(literal.result)) {
             if (literal.result.equals("await")) return ParseRes.error(src.loc(i + n), "'await' expressions are not supported.");
             if (literal.result.equals("const")) return ParseRes.error(src.loc(i + n), "'const' declarations are not supported.");
             if (literal.result.equals("let")) return ParseRes.error(src.loc(i + n), "'let' declarations are not supported.");

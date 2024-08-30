@@ -6,7 +6,7 @@ import me.topchetoeu.jscript.common.parsing.ParseRes;
 import me.topchetoeu.jscript.common.parsing.Parsing;
 import me.topchetoeu.jscript.common.parsing.Source;
 import me.topchetoeu.jscript.compilation.CompileResult;
-import me.topchetoeu.jscript.compilation.ES5;
+import me.topchetoeu.jscript.compilation.JavaScript;
 import me.topchetoeu.jscript.compilation.Statement;
 import me.topchetoeu.jscript.compilation.values.VariableStatement;
 import me.topchetoeu.jscript.compilation.values.constants.BoolStatement;
@@ -32,7 +32,7 @@ public class DeleteStatement extends Statement {
         if (!Parsing.isIdentifier(src, i + n, "delete")) return ParseRes.failed();
         n += 6;
 
-        var valRes = ES5.parseExpression(src, i + n, 15);
+        var valRes = JavaScript.parseExpression(src, i + n, 15);
         if (!valRes.isSuccess()) return valRes.chainError(src.loc(i + n), "Expected a value after 'delete'");
         n += valRes.n;
 

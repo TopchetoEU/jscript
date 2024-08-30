@@ -7,7 +7,7 @@ import me.topchetoeu.jscript.common.parsing.ParseRes;
 import me.topchetoeu.jscript.common.parsing.Parsing;
 import me.topchetoeu.jscript.common.parsing.Source;
 import me.topchetoeu.jscript.compilation.CompileResult;
-import me.topchetoeu.jscript.compilation.ES5;
+import me.topchetoeu.jscript.compilation.JavaScript;
 import me.topchetoeu.jscript.compilation.Statement;
 
 public class DoWhileStatement extends Statement {
@@ -48,7 +48,7 @@ public class DoWhileStatement extends Statement {
         if (!Parsing.isIdentifier(src, i + n, "do")) return ParseRes.failed();
         n += 2;
 
-        var bodyRes = ES5.parseStatement(src, i + n);
+        var bodyRes = JavaScript.parseStatement(src, i + n);
         if (!bodyRes.isSuccess()) return bodyRes.chainError(src.loc(i + n), "Expected a do-while body.");
         n += bodyRes.n;
 
@@ -59,7 +59,7 @@ public class DoWhileStatement extends Statement {
         if (!src.is(i + n, "(")) return ParseRes.error(src.loc(i + n), "Expected a open paren after 'while'.");
         n++;
 
-        var condRes = ES5.parseExpression(src, i + n, 0);
+        var condRes = JavaScript.parseExpression(src, i + n, 0);
         if (!condRes.isSuccess()) return condRes.chainError(src.loc(i + n), "Expected a do-while condition.");
         n += condRes.n;
         n += Parsing.skipEmpty(src, i + n);
@@ -67,7 +67,7 @@ public class DoWhileStatement extends Statement {
         if (!src.is(i + n, ")")) return ParseRes.error(src.loc(i + n), "Expected a closing paren after do-while condition.");
         n++;
 
-        var end = ES5.parseStatementEnd(src, i + n);
+        var end = JavaScript.parseStatementEnd(src, i + n);
         if (end.isSuccess()) {
             n += end.n;
             return ParseRes.res(new DoWhileStatement(loc, labelRes.result, condRes.result, bodyRes.result), n);

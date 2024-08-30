@@ -7,7 +7,7 @@ import me.topchetoeu.jscript.common.parsing.ParseRes;
 import me.topchetoeu.jscript.common.parsing.Parsing;
 import me.topchetoeu.jscript.common.parsing.Source;
 import me.topchetoeu.jscript.compilation.CompileResult;
-import me.topchetoeu.jscript.compilation.ES5;
+import me.topchetoeu.jscript.compilation.JavaScript;
 import me.topchetoeu.jscript.compilation.Statement;
 import me.topchetoeu.jscript.compilation.VariableDeclareStatement;
 import me.topchetoeu.jscript.compilation.values.operations.DiscardStatement;
@@ -58,7 +58,7 @@ public class ForStatement extends Statement {
     private static ParseRes<Statement> parseCondition(Source src, int i) {
         var n = Parsing.skipEmpty(src, i);
 
-        var res = ES5.parseExpression(src, i + n, 0);
+        var res = JavaScript.parseExpression(src, i + n, 0);
         if (!res.isSuccess()) return res.chainError();
         n += res.n;
         n += Parsing.skipEmpty(src, i + n);
@@ -67,7 +67,7 @@ public class ForStatement extends Statement {
         else return ParseRes.res(res.result, n + 1);
     }
     private static ParseRes<? extends Statement> parseUpdater(Source src, int i) {
-        return ES5.parseExpression(src, i, 0);
+        return JavaScript.parseExpression(src, i, 0);
     }
 
     public static ParseRes<ForStatement> parse(Source src, int i) {
@@ -108,7 +108,7 @@ public class ForStatement extends Statement {
         if (!src.is(i + n, ")")) return ParseRes.error(src.loc(i + n), "Expected a close paren after for updater");
         n++;
 
-        var body = ES5.parseStatement(src, i + n);
+        var body = JavaScript.parseStatement(src, i + n);
         if (!body.isSuccess()) return body.chainError(src.loc(i + n), "Expected a for body.");
         n += body.n;
 

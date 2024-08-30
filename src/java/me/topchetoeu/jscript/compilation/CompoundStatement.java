@@ -75,7 +75,7 @@ public class CompoundStatement extends Statement {
         if (!src.is(i + n, ",")) return ParseRes.failed();
         n++;
 
-        var res = ES5.parseExpression(src, i + n, 2);
+        var res = JavaScript.parseExpression(src, i + n, 2);
         if (!res.isSuccess()) return res.chainError(src.loc(i + n), "Expected a value after the comma");
         n += res.n;
 
@@ -102,7 +102,7 @@ public class CompoundStatement extends Statement {
                 continue;
             }
 
-            var res = ES5.parseStatement(src, i + n);
+            var res = JavaScript.parseStatement(src, i + n);
             if (!res.isSuccess()) return res.chainError(src.loc(i + n), "Expected a statement");
             n += res.n;
 
