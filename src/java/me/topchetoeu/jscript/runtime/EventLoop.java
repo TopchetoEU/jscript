@@ -4,15 +4,15 @@ import java.util.concurrent.Future;
 import java.util.function.Supplier;
 
 import me.topchetoeu.jscript.common.Compiler;
+import me.topchetoeu.jscript.common.environment.Environment;
+import me.topchetoeu.jscript.common.environment.Key;
 import me.topchetoeu.jscript.common.parsing.Filename;
-import me.topchetoeu.jscript.runtime.environment.Environment;
-import me.topchetoeu.jscript.runtime.environment.Key;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
 import me.topchetoeu.jscript.runtime.values.Value;
 import me.topchetoeu.jscript.runtime.values.functions.FunctionValue;
 
 public interface EventLoop {
-    public static final Key<EventLoop> KEY = new Key<>();
+    public static final Key<EventLoop> KEY = Key.of();
 
     public static EventLoop get(Environment ext) {
         if (ext.hasNotNull(KEY)) return ext.get(KEY);

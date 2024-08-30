@@ -7,7 +7,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import me.topchetoeu.jscript.runtime.environment.Environment;
+import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.runtime.values.KeyCache;
 import me.topchetoeu.jscript.runtime.values.Member;
 import me.topchetoeu.jscript.runtime.values.Member.FieldMember;
@@ -73,7 +73,7 @@ public class ArrayValue extends ObjectValue implements Iterable<Value> {
         if (i < 0 || i >= size) return null;
         var res = values[i];
 
-        if (res == null) return VoidValue.UNDEFINED;
+        if (res == null) return Value.UNDEFINED;
         else return res;
     }
     public void set(int i, Value val) {
@@ -217,7 +217,7 @@ public class ArrayValue extends ObjectValue implements Iterable<Value> {
         this(16);
     }
     public ArrayValue(int cap) {
-        setPrototype(env -> env.get(Environment.ARRAY_PROTO));
+        setPrototype(env -> env.get(ARRAY_PROTO));
         values = new Value[Math.min(cap, 16)];
         size = 0;
     }

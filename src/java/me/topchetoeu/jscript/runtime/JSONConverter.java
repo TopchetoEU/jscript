@@ -3,10 +3,10 @@ package me.topchetoeu.jscript.runtime;
 import java.util.HashSet;
 import java.util.stream.Collectors;
 
+import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.common.json.JSONElement;
 import me.topchetoeu.jscript.common.json.JSONList;
 import me.topchetoeu.jscript.common.json.JSONMap;
-import me.topchetoeu.jscript.runtime.environment.Environment;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
 import me.topchetoeu.jscript.runtime.values.Member.FieldMember;
 import me.topchetoeu.jscript.runtime.values.Value;
@@ -32,8 +32,8 @@ public class JSONConverter {
     
             return res;
         }
-        if (val.isNull()) return VoidValue.NULL;
-        return VoidValue.UNDEFINED;
+        if (val.isNull()) return Value.NULL;
+        return Value.UNDEFINED;
     }
 
     public static JSONElement fromJs(Environment ext, Value val) {
@@ -46,7 +46,7 @@ public class JSONConverter {
         if (val instanceof BoolValue) return JSONElement.bool(((BoolValue)val).value);
         if (val instanceof NumberValue) return JSONElement.number(((NumberValue)val).value);
         if (val instanceof StringValue) return JSONElement.string(((StringValue)val).value);
-        if (val == VoidValue.NULL) return JSONElement.NULL;
+        if (val == Value.NULL) return JSONElement.NULL;
         if (val instanceof VoidValue) return null;
     
         if (val instanceof ArrayValue) {

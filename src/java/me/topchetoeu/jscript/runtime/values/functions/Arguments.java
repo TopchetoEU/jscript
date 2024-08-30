@@ -1,9 +1,8 @@
 package me.topchetoeu.jscript.runtime.values.functions;
 
 
-import me.topchetoeu.jscript.runtime.environment.Environment;
+import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.runtime.values.Value;
-import me.topchetoeu.jscript.runtime.values.primitives.VoidValue;
 
 public class Arguments {
     public final Value self;
@@ -23,7 +22,7 @@ public class Arguments {
         return get(-1);
     }
     public Value get(int i) {
-        if (i >= args.length || i < -1) return VoidValue.UNDEFINED;
+        if (i >= args.length || i < -1) return Value.UNDEFINED;
         else if (i == -1) return self;
         else return args[i];
     }

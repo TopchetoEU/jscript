@@ -1,6 +1,6 @@
 package me.topchetoeu.jscript.runtime.values.functions;
 
-import me.topchetoeu.jscript.runtime.environment.Environment;
+import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.runtime.values.Value;
 
 public class NativeFunction extends FunctionValue {
