@@ -29,6 +29,13 @@ public class LocalScope extends Scope {
         return null;
     }
 
+    @Override public boolean has(String name) {
+        if (locals.has(name)) return true;
+        if (parent != null) return parent.has(name);
+
+        return false;
+    }
+
     @Override public boolean end() {
         if (!super.end()) return false;
 
@@ -39,6 +46,7 @@ public class LocalScope extends Scope {
     public Iterable<VariableDescriptor> all() {
         return () -> locals.iterator();
     }
+
 
     public LocalScope(Scope parent) {
         super(parent);

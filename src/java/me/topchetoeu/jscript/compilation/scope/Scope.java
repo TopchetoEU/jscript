@@ -35,6 +35,7 @@ public abstract class Scope {
      * which could break the semantics of a capture
      */
     public abstract VariableDescriptor get(String name, boolean capture);
+    public abstract boolean has(String name);
     /**
      * Gets the index offset from this scope to its children
      */
