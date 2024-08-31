@@ -15,4 +15,9 @@ public final class GlobalScope extends Scope {
     @Override public int offset() {
         return 0;
     }
+    @Override public boolean has(String name) {
+        return false;
+    }
+
+    public GlobalScope() { super(); }
 }

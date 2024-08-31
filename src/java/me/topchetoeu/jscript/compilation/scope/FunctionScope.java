@@ -39,6 +39,14 @@ public class FunctionScope extends Scope {
         return childVar;
     }
 
+    @Override public boolean has(String name) {
+        if (locals.has(name)) return true;
+        if (captures.has(name)) return true;
+        if (parent != null) return parent.has(name);
+
+        return false;
+    }
+
     public int localsCount() {
         return locals.size();
     }
