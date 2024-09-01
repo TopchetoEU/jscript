@@ -157,6 +157,11 @@ public class InstructionRunner {
         frame.codePtr++;
         return null;
     }
+    private static Value execLoadIntrinsics(Environment env, Instruction instr, Frame frame) {
+        frame.push(Value.intrinsics(env).get((String)instr.get(0)));
+        frame.codePtr++;
+        return null;
+    }
     private static Value execLoadArr(Environment env, Instruction instr, Frame frame) {
         var res = new ArrayValue();
         res.setSize(instr.get(0));
@@ -382,6 +387,7 @@ public class InstructionRunner {
             case LOAD_MEMBER: return execLoadMember(env, instr, frame);
             case LOAD_REGEX: return execLoadRegEx(env, instr, frame);
             case LOAD_GLOB: return execLoadGlob(env, instr, frame);
+            case LOAD_INTRINSICS: return execLoadIntrinsics(env, instr, frame);
             case LOAD_ARGS: return execLoadArgs(env, instr, frame);
             case LOAD_THIS: return execLoadThis(env, instr, frame);
 
