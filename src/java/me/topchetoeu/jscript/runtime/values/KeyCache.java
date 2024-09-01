@@ -5,7 +5,7 @@ import me.topchetoeu.jscript.runtime.values.primitives.NumberValue;
 import me.topchetoeu.jscript.runtime.values.primitives.StringValue;
 import me.topchetoeu.jscript.runtime.values.primitives.SymbolValue;
 
-public class KeyCache {
+public final class KeyCache {
     public final Value value;
     private Integer intCache;
     private Double doubleCache;

@@ -5,7 +5,7 @@ import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.runtime.Frame;
 import me.topchetoeu.jscript.runtime.values.Value;
 
-public class CodeFunction extends FunctionValue {
+public final class CodeFunction extends FunctionValue {
     public final FunctionBody body;
     public final Value[][] captures;
     public Environment env;
