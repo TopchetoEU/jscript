@@ -4,6 +4,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -65,6 +66,7 @@ public abstract class Value {
     public static final Key<ObjectValue> TYPE_ERR_PROTO = Key.of();
     public static final Key<ObjectValue> RANGE_ERR_PROTO = Key.of();
     public static final Key<ObjectValue> GLOBAL = Key.of();
+    public static final Key<Map<String, Value>> INTRINSICS = Key.of();
 
     public static final VoidValue UNDEFINED = new VoidValue("undefined", new StringValue("undefined"));
     public static final VoidValue NULL = new VoidValue("null", new StringValue("object"));
@@ -679,5 +681,8 @@ public abstract class Value {
 
     public static final ObjectValue global(Environment env) {
         return env.initFrom(GLOBAL, () -> new ObjectValue());
+    }
+    public static final Map<String, Value> intrinsics(Environment env) {
+        return env.initFrom(INTRINSICS, () -> new HashMap<>());
     }
 }

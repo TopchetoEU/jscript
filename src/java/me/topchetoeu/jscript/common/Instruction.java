@@ -36,7 +36,8 @@ public class Instruction {
         LOAD_ARR(0x31),
         LOAD_OBJ(0x32),
         LOAD_GLOB(0x33),
-        LOAD_REGEX(0x34),
+        LOAD_INTRINSICS(0x34),
+        LOAD_REGEX(0x35),
 
         LOAD_VAR(0x40),
         LOAD_MEMBER(0x41),
@@ -333,6 +334,9 @@ public class Instruction {
     }
     public static Instruction loadGlob() {
         return new Instruction(Type.LOAD_GLOB);
+    }
+    public static Instruction loadIntrinsics(String key) {
+        return new Instruction(Type.LOAD_INTRINSICS, key);
     }
     public static Instruction loadMember() {
         return new Instruction(Type.LOAD_MEMBER);
