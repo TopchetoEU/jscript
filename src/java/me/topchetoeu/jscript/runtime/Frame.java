@@ -1,7 +1,6 @@
 package me.topchetoeu.jscript.runtime;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -109,6 +108,7 @@ public final class Frame {
     public final Stack<TryCtx> tryStack = new Stack<>();
     public final CodeFunction function;
     public final Environment env;
+    private final DebugContext dbg;
 
     public Value[] getVar(int i) {
         if (i < 0) return captures[~i];
@@ -132,24 +132,15 @@ public final class Frame {
         return peek(0);
     }
     public Value peek(int offset) {
-        if (stackPtr <= offset) return null;
-        else return stack[stackPtr - 1 - offset];
+        return stack[stackPtr - 1 - offset];
     }
     public Value pop() {
-        if (stackPtr == 0) return Value.UNDEFINED;
         return stack[--stackPtr];
     }
     public Value[] take(int n) {
-        int srcI = stackPtr - n;
-        if (srcI < 0) srcI = 0;
-
-        int dstI = n + srcI - stackPtr;
-        int copyN = stackPtr - srcI;
-
         Value[] res = new Value[n];
-        Arrays.fill(res, Value.UNDEFINED);
-        System.arraycopy(stack, srcI, res, dstI, copyN);
-        stackPtr -= copyN;
+        System.arraycopy(stack, stackPtr - n, res, 0, n);
+        stackPtr -= n;
 
         return res;
     }
@@ -162,33 +153,45 @@ public final class Frame {
 
         stack[stackPtr++] = val;
     }
+    public void replace(Value val) {
+        stack[stackPtr - 1] = val;
+    }
 
     // for the love of christ don't touch this
-    private Value next(Value value, Value returnValue, EngineException error) {
+    /**
+     * This is provided only for optimization-sike. All parameters must be null except at most one, otherwise undefined behavior
+     */
+    public final Value next(Value value, Value returnValue, EngineException error) {
         if (value != null) push(value);
 
         Instruction instr = null;
-        if (codePtr >= 0 && codePtr < function.body.instructions.length) instr = function.body.instructions[codePtr];
+        if (codePtr != function.body.instructions.length) instr = function.body.instructions[codePtr];
 
         if (returnValue == null && error == null) {
             try {
                 if (Thread.interrupted()) throw new InterruptException();
 
-                if (instr == null) returnValue = null;
+                if (instr == null) {
+                    if (stackPtr > 0) returnValue = stack[stackPtr - 1];
+                    else returnValue = Value.UNDEFINED;
+                }
                 else {
-                    DebugContext.get(env).onInstruction(env, this, instr, null, null, false);
+                    dbg.onInstruction(env, this, instr);
 
                     try {
                         this.jumpFlag = this.popTryFlag = false;
                         returnValue = InstructionRunner.exec(env, instr, this);
                     }
                     catch (EngineException e) {
-                        error = e.add(env, function.name, DebugContext.get(env).getMapOrEmpty(function).toLocation(codePtr, true));
+                        error = e.add(env, function.name, dbg.getMapOrEmpty(function).toLocation(codePtr, true));
                     }
                 }
             }
             catch (EngineException e) { error = e; }
-            // catch (RuntimeException e) { error = EngineException.ofError("InternalError", e.getMessage()); }
+            catch (RuntimeException e) {
+                System.out.println(dbg.getMapOrEmpty(function).toLocation(codePtr, true));
+                throw e;
+            }
         }
 
         while (!tryStack.empty()) {
@@ -265,17 +268,17 @@ public final class Frame {
         if (error != null) {
             var caught = false;
 
-            for (var frame : DebugContext.get(env).getStackFrames()) {
+            for (var frame : dbg.getStackFrames()) {
                 for (var tryCtx : frame.tryStack) {
                     if (tryCtx.state == TryState.TRY) caught = true;
                 }
             }
 
-            DebugContext.get(env).onInstruction(env, this, instr, null, error, caught);
+            dbg.onInstruction(env, this, instr, null, error, caught);
             throw error;
         }
         if (returnValue != null) {
-            DebugContext.get(env).onInstruction(env, this, instr, returnValue, null, false);
+            dbg.onInstruction(env, this, instr, returnValue, null, false);
             return returnValue;
         }
 
@@ -285,7 +288,7 @@ public final class Frame {
     /**
      * Executes the next instruction in the frame
      */
-    public Value next() {
+    public final Value next() {
         return next(null, null, null);
     }
     /**
@@ -294,7 +297,7 @@ public final class Frame {
      * 
      * @param value The value to induce
      */
-    public Value next(Value value) {
+    public final Value next(Value value) {
         return next(value, null, null);
     }
     /**
@@ -305,7 +308,7 @@ public final class Frame {
      * 
      * @param error The error to induce
      */
-    public Value induceError(EngineException error) {
+    public final Value induceError(EngineException error) {
         return next(null, null, error);
     }
     /**
@@ -317,7 +320,7 @@ public final class Frame {
      * 
      * @param value The retunr value to induce
      */
-    public Value induceReturn(Value value) {
+    public final Value induceReturn(Value value) {
         return next(null, value, null);
     }
 
@@ -408,6 +411,7 @@ public final class Frame {
 
     public Frame(Environment env, boolean isNew, Value thisArg, Value[] args, CodeFunction func) {
         this.env = env;
+        this.dbg = DebugContext.get(env);
         this.function = func;
         this.isNew = isNew;
 

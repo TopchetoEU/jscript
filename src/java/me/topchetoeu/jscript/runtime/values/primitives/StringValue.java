@@ -1,13 +1,11 @@
 package me.topchetoeu.jscript.runtime.values.primitives;
 
 import java.util.Map;
-import java.util.Objects;
 
 import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.common.parsing.Parsing;
 import me.topchetoeu.jscript.common.parsing.Source;
 import me.topchetoeu.jscript.runtime.values.Member;
-import me.topchetoeu.jscript.runtime.values.Value;
 import me.topchetoeu.jscript.runtime.values.objects.ObjectValue;
 
 public final class StringValue extends PrimitiveValue {
@@ -27,17 +25,11 @@ public final class StringValue extends PrimitiveValue {
     }
     @Override public StringValue toString(Environment ext) { return this; }
 
-    @Override public Value add(Environment ext, Value other) {
-        return new StringValue(value + other.toString(ext).value);
+    @Override public boolean equals(Object other) {
+        if (other instanceof StringValue val) return value.length() == val.value.length() && value.equals(val.value);
+        else return false;
     }
 
-    @Override public CompareResult compare(Environment env, Value other) {
-        if (other instanceof StringValue) return CompareResult.from(value.compareTo(((StringValue)other).value));
-        else return super.compare(env, other);
-    }
-    @Override public boolean strictEquals(Environment ext, Value other) {
-        return (other instanceof StringValue) && Objects.equals(((StringValue)other).value, value);
-    }
     @Override public ObjectValue getPrototype(Environment env) { return env.get(STRING_PROTO); }
 
     @Override public Map<String, Member> getOwnMembers(Environment env) {

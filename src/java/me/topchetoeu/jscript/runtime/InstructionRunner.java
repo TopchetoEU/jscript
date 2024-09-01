@@ -285,11 +285,105 @@ public class InstructionRunner {
 
     private static Value execOperation(Environment env, Instruction instr, Frame frame) {
         Operation op = instr.get(0);
-        var args = new Value[op.operands];
+        Value res;
+        var stack = frame.stack;
 
-        for (var i = op.operands - 1; i >= 0; i--) args[i] = frame.pop();
+        frame.stackPtr -= 1;
+        var ptr = frame.stackPtr;
 
-        frame.push(Value.operation(env, op, args));
+        // for (var i = op.operands - 1; i >= 0; i--) args[i] = frame.pop();
+
+        switch (op) {
+            case ADD:
+                res = Value.add(env, stack[ptr - 1], stack[ptr]);
+                break;
+            case SUBTRACT:
+                res = Value.subtract(env, stack[ptr - 1], stack[ptr]);
+                break;
+            case DIVIDE:
+                res = Value.divide(env, stack[ptr - 1], stack[ptr]);
+                break;
+            case MULTIPLY:
+                res = Value.multiply(env, stack[ptr - 1], stack[ptr]);
+                break;
+            case MODULO:
+                res = Value.modulo(env, stack[ptr - 1], stack[ptr]);
+                break;
+
+            case AND:
+                res = Value.and(env, stack[ptr - 1], stack[ptr]);
+                break;
+            case OR:
+                res = Value.or(env, stack[ptr - 1], stack[ptr]);
+                break;
+            case XOR:
+                res = Value.xor(env, stack[ptr - 1], stack[ptr]);
+                break;
+
+            case EQUALS:
+                res = BoolValue.of(stack[ptr - 1].equals(stack[ptr]));
+                break;
+            case NOT_EQUALS:
+                res = BoolValue.of(!stack[ptr - 1].equals(stack[ptr]));
+                break;
+            case LOOSE_EQUALS:
+                res = BoolValue.of(Value.looseEqual(env, stack[ptr - 1], stack[ptr]));
+                break;
+            case LOOSE_NOT_EQUALS:
+                res = BoolValue.of(!Value.looseEqual(env, stack[ptr - 1], stack[ptr]));
+                break;
+
+            case GREATER:
+                res = BoolValue.of(Value.greater(env, stack[ptr - 1], stack[ptr]));
+                break;
+            case GREATER_EQUALS:
+                res = BoolValue.of(Value.greaterOrEqual(env, stack[ptr - 1], stack[ptr]));
+                break;
+            case LESS:
+                res = BoolValue.of(Value.less(env, stack[ptr - 1], stack[ptr]));
+                break;
+            case LESS_EQUALS:
+                res = BoolValue.of(Value.lessOrEqual(env, stack[ptr - 1], stack[ptr]));
+                break;
+
+            case INVERSE:
+                res = Value.bitwiseNot(env, stack[ptr++]);
+                frame.stackPtr++;
+                break;
+            case NOT:
+                res = BoolValue.of(!stack[ptr++].toBoolean());
+                frame.stackPtr++;
+                break;
+            case POS:
+                res = stack[ptr++].toNumber(env);
+                frame.stackPtr++;
+                break;
+            case NEG:
+                res = Value.negative(env, stack[ptr++]);
+                frame.stackPtr++;
+                break;
+
+            case SHIFT_LEFT:
+                res = Value.shiftLeft(env, stack[ptr], stack[ptr]);
+                break;
+            case SHIFT_RIGHT:
+                res = Value.shiftRight(env, stack[ptr], stack[ptr]);
+                break;
+            case USHIFT_RIGHT:
+                res = Value.unsignedShiftRight(env, stack[ptr], stack[ptr]);
+                break;
+
+            case IN:
+                res = BoolValue.of(stack[ptr - 1].hasMember(env, stack[ptr], false));
+                break;
+            case INSTANCEOF:
+                res = BoolValue.of(stack[ptr - 1].isInstanceOf(env, stack[ptr].getMember(env, new StringValue("prototype"))));
+                break;
+
+            default: return null;
+        }
+
+        stack[ptr - 1] = res;
         frame.codePtr++;
         return null;
     }

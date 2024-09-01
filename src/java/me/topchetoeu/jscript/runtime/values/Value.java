@@ -10,7 +10,6 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import me.topchetoeu.jscript.common.Operation;
 import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.common.environment.Key;
 import me.topchetoeu.jscript.common.json.JSON;
@@ -112,109 +111,12 @@ public abstract class Value {
     public final int toInt(Environment env) { return (int)toNumber(env).value; }
     public final long toLong(Environment env) { return (long)toNumber(env).value; }
 
-    public Value add(Environment env, Value other) {
-        if (this instanceof StringValue || other instanceof StringValue) {
-            return new StringValue(this.toString(env).value + other.toString(env).value);
-        }
-        else return new NumberValue(this.toNumber(env).value + other.toNumber(env).value);
-    }
-    public NumberValue subtract(Environment env, Value other) {
-        return new NumberValue(toNumber(env).value - other.toNumber(env).value);
-    }
-    public NumberValue multiply(Environment env, Value other) {
-        return new NumberValue(toNumber(env).value - other.toNumber(env).value);
-    }
-    public NumberValue divide(Environment env, Value other) {
-        return new NumberValue(toNumber(env).value / other.toNumber(env).value);
-    }
-    public NumberValue modulo(Environment env, Value other) {
-        return new NumberValue(toNumber(env).value % other.toNumber(env).value);
-    }
-    public NumberValue negative(Environment env) {
-        return new NumberValue(-toNumber(env).value);
-    }
-
-    public NumberValue and(Environment env, Value other) {
-        return new NumberValue(this.toInt(env) & other.toInt(env));
-    }
-    public NumberValue or(Environment env, Value other) {
-        return new NumberValue(this.toInt(env) | other.toInt(env));
-    }
-    public NumberValue xor(Environment env, Value other) {
-        return new NumberValue(this.toInt(env) ^ other.toInt(env));
-    }
-    public NumberValue bitwiseNot(Environment env) {
-        return new NumberValue(~this.toInt(env));
-    }
-
-    public NumberValue shiftLeft(Environment env, Value other) {
-        return new NumberValue(this.toInt(env) << other.toInt(env));
-    }
-    public NumberValue shiftRight(Environment env, Value other) {
-        return new NumberValue(this.toInt(env) >> other.toInt(env));
-    }
-    public NumberValue unsignedShiftRight(Environment env, Value other) {
-        long a = this.toInt(env);
-        long b = other.toInt(env);
-
-        if (a < 0) a += 0x100000000l;
-        if (b < 0) b += 0x100000000l;
-
-        return new NumberValue(a >>> b);
-    }
-
-    public CompareResult compare(Environment env, Value other) {
-        var a = this.toPrimitive(env);
-        var b = other.toPrimitive(env);
-
-        if (a instanceof StringValue && b instanceof StringValue) return a.compare(env, b);
-        else return a.toNumber(env).compare(env, b.toNumber(env));
-    }
-
     public final boolean isInstanceOf(Environment env, Value proto) {
         for (var val = getPrototype(env); val != null; val = getPrototype(env)) {
             if (val.equals(proto)) return true;
         }
 
         return false;
-    }
-
-    public static Value operation(Environment env, Operation op, Value ...args) {
-        switch (op) {
-            case ADD: return args[0].add(env, args[1]);
-            case SUBTRACT: return args[0].subtract(env, args[1]);
-            case DIVIDE: return args[0].divide(env, args[1]);
-            case MULTIPLY: return args[0].multiply(env, args[1]);
-            case MODULO: return args[0].modulo(env, args[1]);
-
-            case AND: return args[0].and(env, args[1]);
-            case OR: return args[0].or(env, args[1]);
-            case XOR: return args[0].xor(env, args[1]);
-
-            case EQUALS: return BoolValue.of(args[0].strictEquals(env, args[1]));
-            case NOT_EQUALS: return BoolValue.of(!args[0].strictEquals(env, args[1]));
-            case LOOSE_EQUALS: return BoolValue.of(args[0].looseEqual(env, args[1]));
-            case LOOSE_NOT_EQUALS: return BoolValue.of(!args[0].looseEqual(env, args[1]));
-
-            case GREATER: return BoolValue.of(args[0].compare(env, args[1]).greater());
-            case GREATER_EQUALS: return BoolValue.of(args[0].compare(env, args[1]).greaterOrEqual());
-            case LESS: return BoolValue.of(args[0].compare(env, args[1]).less());
-            case LESS_EQUALS: return BoolValue.of(args[0].compare(env, args[1]).lessOrEqual());
-
-            case INVERSE: return args[0].bitwiseNot(env);
-            case NOT: return BoolValue.of(!args[0].toBoolean());
-            case POS: return args[0].toNumber(env);
-            case NEG: return args[0].negative(env);
-
-            case SHIFT_LEFT: return args[0].shiftLeft(env, args[1]);
-            case SHIFT_RIGHT: return args[0].shiftRight(env, args[1]);
-            case USHIFT_RIGHT: return args[0].unsignedShiftRight(env, args[1]);
-
-            case IN: return BoolValue.of(args[0].hasMember(env, args[1], false));
-            case INSTANCEOF: return BoolValue.of(args[0].isInstanceOf(env, args[1].getMember(env, new StringValue("prototype"))));
-
-            default: return null;
-        }
     }
 
     public abstract Member getOwnMember(Environment env, KeyCache key);
@@ -475,33 +377,6 @@ public abstract class Value {
         else return null;
     }
 
-    public abstract boolean strictEquals(Environment env, Value other);
-
-    public final boolean looseEqual(Environment env, Value other) {
-        var a = this;
-        var b = other;
-
-        // In loose equality, null is equivalent to undefined
-        if (a instanceof VoidValue || b instanceof VoidValue) return a instanceof VoidValue && b instanceof VoidValue;
-
-        // If both are objects, just compare their references
-        if (!a.isPrimitive() && !b.isPrimitive()) return a.strictEquals(env, b);
-
-        // Convert values to primitives
-        a = a.toPrimitive(env);
-        b = b.toPrimitive(env);
-
-        // Compare symbols by reference
-        if (a instanceof SymbolValue || b instanceof SymbolValue) return a.strictEquals(env, b);
-        // Compare booleans as numbers
-        if (a instanceof BoolValue || b instanceof BoolValue) return a.toNumber(env).strictEquals(env, b.toNumber(env));
-        // Comparse numbers as numbers
-        if (a instanceof NumberValue || b instanceof NumberValue) return a.toNumber(env).strictEquals(env, b.toNumber(env));
-
-        // Default to strings
-        return a.toString(env).strictEquals(env, b.toString(env));
-    }
-
     public Iterable<Object> toIterable(Environment env) {
         return () -> {
             if (!(this instanceof FunctionValue)) return Collections.emptyIterator();
@@ -539,19 +414,6 @@ public abstract class Value {
                 }
             };
         };
-    }
-
-    public static FunctionValue fromIterator(Environment ext, Iterable<? extends Value> iterable) {
-        var it = iterable.iterator();
-
-        return new NativeFunction("", args -> {
-            var obj = new ObjectValue();
-
-            if (!it.hasNext()) obj.defineOwnMember(args.env, "done", FieldMember.of(BoolValue.TRUE));
-            else obj.defineOwnMember(args.env, "value", FieldMember.of(it.next()));
-
-            return obj;
-        });
     }
 
     public void callWith(Environment env, Iterable<? extends Value> it) {
@@ -656,6 +518,153 @@ public abstract class Value {
         return toReadable(ext, new HashSet<>(), 0);
     }
 
+    public static final ObjectValue global(Environment env) {
+        return env.initFrom(GLOBAL, () -> new ObjectValue());
+    }
+    public static final Map<String, Value> intrinsics(Environment env) {
+        return env.initFrom(INTRINSICS, () -> new HashMap<>());
+    }
+
+    public static FunctionValue fromIterator(Environment ext, Iterable<? extends Value> iterable) {
+        var it = iterable.iterator();
+
+        return new NativeFunction("", args -> {
+            var obj = new ObjectValue();
+
+            if (!it.hasNext()) obj.defineOwnMember(args.env, "done", FieldMember.of(BoolValue.TRUE));
+            else obj.defineOwnMember(args.env, "value", FieldMember.of(it.next()));
+
+            return obj;
+        });
+    }
+
+    public static final boolean lessOrEqual(Environment env, Value a, Value b) {
+        a = a.toPrimitive(env);
+        b = b.toPrimitive(env);
+
+        if (a instanceof StringValue aStr && b instanceof StringValue bStr) {
+            return aStr.value.compareTo(bStr.value) <= 0;
+        }
+        else {
+            return a.toNumber(env).value <= b.toNumber(env).value;
+        }
+    }
+    public static final boolean greaterOrEqual(Environment env, Value a, Value b) {
+        a = a.toPrimitive(env);
+        b = b.toPrimitive(env);
+
+        if (a instanceof StringValue aStr && b instanceof StringValue bStr) {
+            return aStr.value.compareTo(bStr.value) >= 0;
+        }
+        else {
+            return a.toNumber(env).value >= b.toNumber(env).value;
+        }
+    }
+    public static final boolean less(Environment env, Value a, Value b) {
+        a = a.toPrimitive(env);
+        b = b.toPrimitive(env);
+
+        if (a instanceof StringValue aStr && b instanceof StringValue bStr) {
+            return aStr.value.compareTo(bStr.value) >= 0;
+        }
+        else {
+            return a.toNumber(env).value < b.toNumber(env).value;
+        }
+    }
+    public static final boolean greater(Environment env, Value a, Value b) {
+        a = a.toPrimitive(env);
+        b = b.toPrimitive(env);
+
+        if (a instanceof StringValue aStr && b instanceof StringValue bStr) {
+            return aStr.value.compareTo(bStr.value) >= 0;
+        }
+        else {
+            return a.toNumber(env).value > b.toNumber(env).value;
+        }
+    }
+
+    public static final Value add(Environment env, Value a, Value b) {
+        a = a.toPrimitive(env);
+        b = b.toPrimitive(env);
+
+        if (a instanceof StringValue || b instanceof StringValue) {
+            return new StringValue(a.toString(env).value + b.toString(env).value);
+        }
+        else {
+            return new NumberValue(a.toNumber(env).value + b.toNumber(env).value);
+        }
+    }
+
+    public static final NumberValue subtract(Environment env, Value a, Value b) {
+        return new NumberValue(a.toNumber(env).value - b.toNumber(env).value);
+    }
+    public static final NumberValue multiply(Environment env, Value a, Value b) {
+        return new NumberValue(a.toNumber(env).value - b.toNumber(env).value);
+    }
+    public static final NumberValue divide(Environment env, Value a, Value b) {
+        return new NumberValue(a.toNumber(env).value / b.toNumber(env).value);
+    }
+    public static final NumberValue modulo(Environment env, Value a, Value b) {
+        return new NumberValue(a.toNumber(env).value % b.toNumber(env).value);
+    }
+    public static final NumberValue negative(Environment env, Value a) {
+        return new NumberValue(-a.toNumber(env).value);
+    }
+
+    public static final NumberValue and(Environment env, Value a, Value b) {
+        return new NumberValue(a.toInt(env) & b.toInt(env));
+    }
+    public static final NumberValue or(Environment env, Value a, Value b) {
+        return new NumberValue(a.toInt(env) | b.toInt(env));
+    }
+    public static final NumberValue xor(Environment env, Value a, Value b) {
+        return new NumberValue(a.toInt(env) ^ b.toInt(env));
+    }
+    public static final NumberValue bitwiseNot(Environment env, Value a) {
+        return new NumberValue(~a.toInt(env));
+    }
+
+    public static final NumberValue shiftLeft(Environment env, Value a, Value b) {
+        return new NumberValue(a.toInt(env) << b.toInt(env));
+    }
+    public static final NumberValue shiftRight(Environment env, Value a, Value b) {
+        return new NumberValue(a.toInt(env) >> b.toInt(env));
+    }
+    public static final NumberValue unsignedShiftRight(Environment env, Value a, Value b) {
+        long _a = a.toInt(env);
+        long _b = b.toInt(env);
+
+        if (_a < 0) _a += 0x100000000l;
+        if (_b < 0) _b += 0x100000000l;
+
+        return new NumberValue(_a >>> _b);
+    }
+
+    public static final boolean looseEqual(Environment env, Value a, Value b) {
+        // In loose equality, null is equivalent to undefined
+        if (a instanceof VoidValue || b instanceof VoidValue) return a instanceof VoidValue && b instanceof VoidValue;
+
+        // If both are objects, just compare their references
+        if (!a.isPrimitive() && !b.isPrimitive()) return a.equals(b);
+
+        // Convert values to primitives
+        a = a.toPrimitive(env);
+        b = b.toPrimitive(env);
+
+        // Compare symbols by reference
+        if (a instanceof SymbolValue || b instanceof SymbolValue) return a.equals(b);
+        // Compare booleans as numbers
+        if (a instanceof BoolValue || b instanceof BoolValue) return a.toNumber(env).equals(b.toNumber(env));
+        // Comparse numbers as numbers
+        if (a instanceof NumberValue || b instanceof NumberValue) return a.toNumber(env).equals(b.toNumber(env));
+
+        // Default to strings
+        return a.toString(env).equals(b.toString(env));
+    }
+
+    // public static Value operation(Environment env, Operation op, Value ...args) {
+    // }
+
     public static final String errorToReadable(RuntimeException err, String prefix) {
         prefix = prefix == null ? "Uncaught" : "Uncaught " + prefix;
         if (err instanceof EngineException) {
@@ -677,12 +686,5 @@ public abstract class Value {
 
             return prefix + " internal error " + str.toString();
         }
-    }
-
-    public static final ObjectValue global(Environment env) {
-        return env.initFrom(GLOBAL, () -> new ObjectValue());
-    }
-    public static final Map<String, Value> intrinsics(Environment env) {
-        return env.initFrom(INTRINSICS, () -> new HashMap<>());
     }
 }
