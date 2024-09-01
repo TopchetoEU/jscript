@@ -3,7 +3,7 @@ package me.topchetoeu.jscript.compilation;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.LinkedList;
-import java.util.function.Supplier;
+import java.util.function.IntFunction;
 
 import me.topchetoeu.jscript.common.FunctionBody;
 import me.topchetoeu.jscript.common.Instruction;
@@ -16,11 +16,11 @@ import me.topchetoeu.jscript.compilation.scope.LocalScope;
 import me.topchetoeu.jscript.compilation.scope.Scope;
 
 public final class CompileResult {
-    public final List<Supplier<Instruction>> instructions;
+    public final List<IntFunction<Instruction>> instructions;
     public final List<CompileResult> children;
     public final FunctionMapBuilder map;
     public final Environment env;
-    public int length = 0;
+    public int length, assignN;
     public final Scope scope;
 
     public int temp() {
@@ -29,18 +29,18 @@ public final class CompileResult {
     }
 
     public CompileResult add(Instruction instr) {
-        instructions.add(() -> instr);
+        instructions.add(i -> instr);
         return this;
     }
-    public CompileResult add(Supplier<Instruction> instr) {
+    public CompileResult add(IntFunction<Instruction> instr) {
         instructions.add(instr);
         return this;
     }
     public CompileResult set(int i, Instruction instr) {
-        instructions.set(i, () -> instr);
+        instructions.set(i, _i -> instr);
         return this;
     }
-    public CompileResult set(int i, Supplier<Instruction>instr) {
+    public CompileResult set(int i, IntFunction<Instruction>instr) {
         instructions.set(i, instr);
         return this;
     }
@@ -76,7 +76,10 @@ public final class CompileResult {
     public Instruction[] instructions() {
         var res = new Instruction[instructions.size()];
         var i = 0;
-        for (var suppl : instructions) res[i++] = suppl.get();
+        for (var suppl : instructions) {
+            res[i] = suppl.apply(i);
+            i++;
+        }
         return res;
     }
 
@@ -90,10 +93,15 @@ public final class CompileResult {
 
         var instrRes = new Instruction[instructions.size()];
         var i = 0;
-        for (var suppl : instructions) instrRes[i++] = suppl.get();
+
+        for (var suppl : instructions) {
+            instrRes[i] = suppl.apply(i);
+            i++;
+        }
 
         return new FunctionBody(
-            scope.localsCount() + scope.allocCount(), scope.capturesCount(), length,
+            scope.localsCount() + scope.allocCount(), scope.capturesCount(),
+            length, assignN,
             instrRes, builtChildren
         );
     }

@@ -18,8 +18,8 @@ public class FunctionStatementNode extends FunctionNode {
         target.add(VariableNode.toSet(target, end, this.name, pollute, true));
     }
 
-    public FunctionStatementNode(Location loc, Location end, String[] args, CompoundNode body, String name) {
-        super(loc, end, args, body);
+    public FunctionStatementNode(Location loc, Location end, Parameters params, CompoundNode body, String name) {
+        super(loc, end, params, body);
         this.name = name;
     }
 }

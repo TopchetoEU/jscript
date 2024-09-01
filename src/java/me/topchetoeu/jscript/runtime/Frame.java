@@ -420,11 +420,16 @@ public final class Frame {
         this.argsVal = new ArgumentsValue(this, args);
         this.captures = func.captures;
 
-        for (var i = 0; i < func.body.argsN; i++) {
+        var i = 0;
+
+        for (; i < func.body.argsN && i < args.length; i++) {
             this.locals.add(new Value[] { args[i] });
         }
+        for (; i < args.length; i++) {
+            this.locals.add(new Value[] { Value.UNDEFINED });
+        }
 
-        for (var i = 0; i < func.body.localsN; i++) {
+        for (i = 0; i < func.body.localsN; i++) {
             this.locals.add(new Value[] { Value.UNDEFINED });
         }
 

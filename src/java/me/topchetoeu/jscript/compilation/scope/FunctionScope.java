@@ -27,7 +27,7 @@ public class FunctionScope extends Scope {
         else if (parent == null) throw new RuntimeException("Strict variables may be defined only in local scopes");
         else return parent.defineStrict(name, readonly, loc);
     }
-    public VariableDescriptor defineArg(String name, Location loc) {
+    public VariableDescriptor defineParam(String name, Location loc) {
         return specials.add(name, false);
     }
     public boolean hasArg(String name) {

@@ -40,7 +40,7 @@ public class VariableDeclareNode extends Node {
                 target.add(VariableNode.toSet(target, entry.location, entry.name, false, true));
             }
             else {
-                target.add(() -> {
+                target.add(_i -> {
                     var i = target.scope.get(entry.name, true);
 
                     if (i == null) return Instruction.globDef(entry.name);

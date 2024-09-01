@@ -2,8 +2,8 @@ package me.topchetoeu.jscript.compilation;
 
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.function.IntFunction;
 import java.util.function.IntSupplier;
-import java.util.function.Supplier;
 
 import me.topchetoeu.jscript.common.Instruction;
 import me.topchetoeu.jscript.common.environment.Environment;
@@ -25,15 +25,15 @@ public class LabelContext {
         return map.get(name);
     }
 
-    public Supplier<Instruction> getJump(int offset) {
+    public IntFunction<Instruction> getJump() {
         var res = get();
         if (res == null) return null;
-        else return () -> Instruction.jmp(res.getAsInt() - offset);
+        else return i -> Instruction.jmp(res.getAsInt() - i);
     }
-    public Supplier<Instruction> getJump(int offset, String name) {
+    public IntFunction<Instruction> getJump(String name) {
         var res = get(name);
         if (res == null) return null;
-        else return () -> Instruction.jmp(res.getAsInt() - offset);
+        else return i -> Instruction.jmp(res.getAsInt() - i);
     }
 
     public void push(IntSupplier jumpTarget) {

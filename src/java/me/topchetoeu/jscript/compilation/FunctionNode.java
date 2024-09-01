@@ -1,6 +1,7 @@
 package me.topchetoeu.jscript.compilation;
 
 import me.topchetoeu.jscript.common.Instruction;
+import me.topchetoeu.jscript.common.Operation;
 import me.topchetoeu.jscript.common.Instruction.BreakpointType;
 import me.topchetoeu.jscript.common.parsing.Location;
 import me.topchetoeu.jscript.common.parsing.ParseRes;
@@ -12,7 +13,7 @@ import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 
 public abstract class FunctionNode extends Node {
     public final CompoundNode body;
-    public final String[] args;
+    public final Parameters params;
     public final Location end;
 
     public abstract String name();
@@ -39,14 +40,6 @@ public abstract class FunctionNode extends Node {
     }
 
     private CompileResult compileBody(CompileResult target, String name, boolean storeSelf, boolean pollute, BreakpointType bp) {
-        for (var i = 0; i < args.length; i++) {
-            for (var j = 0; j < i; j++) {
-                if (args[i].equals(args[j])) {
-                    throw new SyntaxException(loc(), "Duplicate parameter '" + args[i] + "'.");
-                }
-            }
-        }
-
         var env = target.env.child()
             .remove(LabelContext.BREAK_CTX)
             .remove(LabelContext.CONTINUE_CTX);
@@ -54,16 +47,31 @@ public abstract class FunctionNode extends Node {
         var funcScope = new FunctionScope(target.scope);
         var subtarget = new CompileResult(env, new LocalScope(funcScope));
 
-        for (var arg : args) {
+        for (var param : params.params) {
             // TODO: Implement default values
             // TODO: Implement argument location
-            funcScope.defineArg(arg, loc());
+            if (funcScope.hasArg(param.name)) throw new SyntaxException(param.loc, "Duplicate parameter name not allowed");
+            var i = funcScope.defineParam(param.name, param.loc);
+
+            if (param.node != null) {
+                var end = new DeferredIntSupplier();
+
+                subtarget.add(_i -> Instruction.loadVar(i.index()));
+                subtarget.add(Instruction.pushUndefined());
+                subtarget.add(Instruction.operation(Operation.EQUALS));
+                subtarget.add(_i -> Instruction.jmpIfNot(end.getAsInt() - _i));
+                param.node.compile(subtarget, pollute);
+                subtarget.add(_i -> Instruction.storeVar(i.index()));
+
+                end.set(subtarget.size());
+            }
         }
 
         body.resolve(subtarget);
-        body.compile(subtarget, false);
+        body.compile(subtarget, false, false, BreakpointType.NONE);
 
-        subtarget.length = args.length;
+        subtarget.length = params.length;
+        subtarget.assignN = params.params.size();
         subtarget.scope.end();
         funcScope.end();
 
@@ -88,11 +96,11 @@ public abstract class FunctionNode extends Node {
         compile(target, pollute, (String)null, BreakpointType.NONE);
     }
 
-    public FunctionNode(Location loc, Location end, String[] args, CompoundNode body) {
+    public FunctionNode(Location loc, Location end, Parameters params, CompoundNode body) {
         super(loc);
 
         this.end = end;
-        this.args = args;
+        this.params = params;
         this.body = body;
     }
 
@@ -117,21 +125,21 @@ public abstract class FunctionNode extends Node {
         n += name.n;
         n += Parsing.skipEmpty(src, i + n);
 
-        var args = JavaScript.parseParamList(src, i + n);
-        if (!args.isSuccess()) return args.chainError(src.loc(i + n), "Expected a parameter list");
-        n += args.n;
+        var params = JavaScript.parseParameters(src, i + n);
+        if (!params.isSuccess()) return params.chainError(src.loc(i + n), "Expected a parameter list");
+        n += params.n;
 
         var body = CompoundNode.parse(src, i + n);
-        if (!body.isSuccess()) return body.chainError(src.loc(i + n), "Expected a compound statement for function.");
+        if (!body.isSuccess()) return body.chainError(src.loc(i + n), "Expected a compound statement for function");
         n += body.n;
 
         if (statement) return ParseRes.res(new FunctionStatementNode(
             loc, src.loc(i + n - 1),
-            args.result.toArray(String[]::new), body.result, name.result
+            params.result, body.result, name.result
         ), n);
         else return ParseRes.res(new FunctionValueNode(
             loc, src.loc(i + n - 1),
-            args.result.toArray(String[]::new), body.result, name.result
+            params.result, body.result, name.result
         ), n);
     }
 }

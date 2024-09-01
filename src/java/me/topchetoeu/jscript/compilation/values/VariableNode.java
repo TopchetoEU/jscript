@@ -1,5 +1,6 @@
 package me.topchetoeu.jscript.compilation.values;
 
+import java.util.function.IntFunction;
 import java.util.function.Supplier;
 
 import me.topchetoeu.jscript.common.Instruction;
@@ -33,7 +34,7 @@ public class VariableNode extends Node implements AssignableNode {
         var i = target.scope.get(name, true);
 
         if (i == null) {
-            target.add((Supplier<Instruction>)() -> {
+            target.add(_i -> {
                 if (target.scope.has(name)) throw new SyntaxException(loc(), String.format("Cannot access '%s' before initialization", name));
                 return Instruction.globGet(name);
             });
@@ -45,28 +46,28 @@ public class VariableNode extends Node implements AssignableNode {
         }
     }
 
-    public static Supplier<Instruction> toGet(CompileResult target, Location loc, String name, Supplier<Instruction> onGlobal) {
+    public static IntFunction<Instruction> toGet(CompileResult target, Location loc, String name, Supplier<Instruction> onGlobal) {
         var i = target.scope.get(name, true);
 
-        if (i == null) return () -> {
+        if (i == null) return _i -> {
             if (target.scope.has(name)) throw new SyntaxException(loc, String.format("Cannot access '%s' before initialization", name));
             else return onGlobal.get();
         };
-        else return () -> Instruction.loadVar(i.index());
+        else return _i -> Instruction.loadVar(i.index());
     }
-    public static Supplier<Instruction> toGet(CompileResult target, Location loc, String name) {
+    public static IntFunction<Instruction> toGet(CompileResult target, Location loc, String name) {
         return toGet(target, loc, name, () -> Instruction.globGet(name));
     }
 
 
-    public static Supplier<Instruction> toSet(CompileResult target, Location loc, String name, boolean keep, boolean define) {
+    public static IntFunction<Instruction> toSet(CompileResult target, Location loc, String name, boolean keep, boolean define) {
         var i = target.scope.get(name, true);
 
-        if (i == null) return () -> {
+        if (i == null) return _i -> {
             if (target.scope.has(name)) throw new SyntaxException(loc, String.format("Cannot access '%s' before initialization", name));
             else return Instruction.globSet(name, keep, define);
         };
-        else return () -> Instruction.storeVar(i.index(), keep);
+        else return _i -> Instruction.storeVar(i.index(), keep);
 
     }
 

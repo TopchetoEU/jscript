@@ -19,11 +19,11 @@ public class CompoundNode extends Node {
         for (var stm : statements) stm.resolve(target);
     }
 
-    @Override public void compile(CompileResult target, boolean pollute, BreakpointType type) {
+    public void compile(CompileResult target, boolean pollute, boolean alloc, BreakpointType type) {
         List<Node> statements = new ArrayList<Node>();
 
         var subtarget = target.subtarget();
-        subtarget.add(() -> Instruction.stackAlloc(subtarget.scope.allocCount()));
+        if (alloc) subtarget.add(i -> Instruction.stackAlloc(subtarget.scope.allocCount()));
 
         for (var stm : this.statements) {
             if (stm instanceof FunctionStatementNode func) {
@@ -42,11 +42,15 @@ public class CompoundNode extends Node {
         }
 
         subtarget.scope.end();
-        subtarget.add(Instruction.stackFree(subtarget.scope.allocCount()));
+        if (alloc) subtarget.add(Instruction.stackFree(subtarget.scope.allocCount()));
 
         if (!polluted && pollute) {
             target.add(Instruction.pushUndefined());
         }
+    }
+
+    @Override public void compile(CompileResult target, boolean pollute, BreakpointType type) {
+        compile(target, pollute, true, type);
     }
 
     public CompoundNode setEnd(Location loc) {
