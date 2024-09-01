@@ -9,8 +9,6 @@ public class FunctionScope extends Scope {
     private final VariableList specials = new VariableList();
     private final VariableList locals = new VariableList(specials);
     private HashMap<VariableDescriptor, VariableDescriptor> childToParent = new HashMap<>();
-    public final String selfName;
-    public final VariableDescriptor selfVar;
 
     private void removeCapture(String name) {
         var res = captures.remove(name);
@@ -29,12 +27,19 @@ public class FunctionScope extends Scope {
         else if (parent == null) throw new RuntimeException("Strict variables may be defined only in local scopes");
         else return parent.defineStrict(name, readonly, loc);
     }
+    public VariableDescriptor defineArg(String name, Location loc) {
+        return specials.add(name, false);
+    }
+    public boolean hasArg(String name) {
+        return specials.has(name);
+    }
 
-    @Override public VariableDescriptor get(String name, boolean capture) {
-        if (specials.has(name)) return specials.get(name);
-        if (locals.has(name)) return locals.get(name);
-        if (captures.has(name)) return captures.get(name);
-        if (selfName != null && selfName.equals(name)) return selfVar;
+    public VariableDescriptor get(String name, boolean capture, boolean skipSelf) {
+        if (!skipSelf) {
+            if (specials.has(name)) return specials.get(name);
+            if (locals.has(name)) return locals.get(name);
+            if (captures.has(name)) return captures.get(name);
+        }
 
         var parentVar = parent.get(name, true);
         if (parentVar == null) return null;
@@ -44,6 +49,10 @@ public class FunctionScope extends Scope {
         childToParent.put(childVar, parentVar);
 
         return childVar;
+    }
+
+    @Override public VariableDescriptor get(String name, boolean capture) {
+        return get(name, capture, false);
     }
 
     @Override public boolean has(String name) {
@@ -89,22 +98,10 @@ public class FunctionScope extends Scope {
         return res;
     }
 
-    public FunctionScope(String selfName, String[] args) {
+    public FunctionScope() {
         super();
-        this.selfName = selfName;
-
-        if (selfName != null) this.selfVar = VariableDescriptor.of(selfName, true, -1);
-        else this.selfVar = null;
-
-        for (var arg : args) specials.add(arg, false);
     }
-    public FunctionScope(String selfName, String[] args, Scope parent) {
+    public FunctionScope(Scope parent) {
         super(parent);
-        this.selfName = selfName;
-
-        if (selfName != null) this.selfVar = VariableDescriptor.of(selfName, true, -1);
-        else this.selfVar = null;
-
-        for (var arg : args) specials.add(arg, false);
     }
 }
