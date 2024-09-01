@@ -14,9 +14,9 @@ import me.topchetoeu.jscript.compilation.LabelContext;
 import me.topchetoeu.jscript.compilation.Node;
 
 public class TryNode extends Node {
-    public final Node tryBody;
-    public final Node catchBody;
-    public final Node finallyBody;
+    public final CompoundNode tryBody;
+    public final CompoundNode catchBody;
+    public final CompoundNode finallyBody;
     public final String captureName;
     public final String label;
 
@@ -34,43 +34,26 @@ public class TryNode extends Node {
 
         LabelContext.getBreak(target.env).push(loc(), label, endSuppl);
 
-        {
-            var subtarget = target.subtarget();
-            subtarget.add(() -> Instruction.stackAlloc(subtarget.scope.allocCount()));
-
-            tryBody.compile(subtarget, false);
-            subtarget.add(Instruction.tryEnd());
-
-            subtarget.scope.end();
-            subtarget.add(Instruction.stackFree(subtarget.scope.allocCount()));
-        }
+        tryBody.compile(target, false);
+        target.add(Instruction.tryEnd());
 
         if (catchBody != null) {
             catchStart = target.size() - start;
 
-            var subtarget = target.subtarget();
-            var decN = captureName != null ? 1 : 0;
+            if (captureName != null) {
+                var subtarget = target.subtarget();
+                subtarget.scope.defineStrict(captureName, false, catchBody.loc());
+                catchBody.compile(subtarget, false);
+                subtarget.scope.end();
+            }
+            else catchBody.compile(target, false);
 
-            if (captureName != null) subtarget.scope.defineStrict(captureName, false, catchBody.loc());
-
-            var _subtarget = subtarget;
-
-            subtarget.add(() -> Instruction.stackAlloc(_subtarget.scope.allocCount() - decN));
-
-            catchBody.compile(subtarget, false);
-
-            subtarget.add(Instruction.tryEnd());
-
-            subtarget.scope.end();
-            subtarget.add(Instruction.stackFree(subtarget.scope.allocCount() - decN));
+            target.add(Instruction.tryEnd());
         }
 
         if (finallyBody != null) {
             finallyStart = target.size() - start;
-
-            var subtarget = target.subtarget();
-            finallyBody.compile(subtarget, false);
-            subtarget.add(Instruction.tryEnd());
+            finallyBody.compile(target, false);
         }
 
         LabelContext.getBreak(target.env).pop(label);
@@ -83,7 +66,7 @@ public class TryNode extends Node {
         if (pollute) target.add(Instruction.pushUndefined());
     }
 
-    public TryNode(Location loc, String label, Node tryBody, Node catchBody, Node finallyBody, String captureName) {
+    public TryNode(Location loc, String label, CompoundNode tryBody, CompoundNode catchBody, CompoundNode finallyBody, String captureName) {
         super(loc);
         this.tryBody = tryBody;
         this.catchBody = catchBody;
@@ -109,7 +92,7 @@ public class TryNode extends Node {
         n += Parsing.skipEmpty(src, i + n);
 
         String capture = null;
-        Node catchBody = null, finallyBody = null;
+        CompoundNode catchBody = null, finallyBody = null;
 
         if (Parsing.isIdentifier(src, i + n, "catch")) {
             n += 5;

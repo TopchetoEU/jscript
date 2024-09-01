@@ -288,8 +288,6 @@ public class JavaScript {
             target.add(Instruction.throwSyntax(e)).setLocation(stm.loc());
         }
 
-        target.add(Instruction.ret()).setLocation(stm.loc());
-
         return target;
     }
 

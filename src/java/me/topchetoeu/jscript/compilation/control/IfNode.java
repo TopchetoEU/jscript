@@ -29,15 +29,7 @@ public class IfNode extends Node {
             var end = new DeferredIntSupplier();
 
             LabelContext.getBreak(target.env).push(loc(), label, end);
-
-            var subtarget = target.subtarget();
-            subtarget.add(() -> Instruction.stackAlloc(subtarget.scope.allocCount()));
-
-            body.compile(subtarget, false, BreakpointType.STEP_OVER);
-
-            subtarget.scope.end();
-            subtarget.add(Instruction.stackFree(subtarget.scope.allocCount()));
-
+            body.compile(target, false, BreakpointType.STEP_OVER);
             LabelContext.getBreak(target.env).pop(label);
 
             int endI = target.size();
@@ -50,25 +42,11 @@ public class IfNode extends Node {
             var end = new DeferredIntSupplier();
 
             LabelContext.getBreak(target.env).push(loc(), label, end);
-
-            var bodyTarget = target.subtarget();
-            bodyTarget.add(() -> Instruction.stackAlloc(bodyTarget.scope.allocCount()));
-
-            body.compile(bodyTarget, false, BreakpointType.STEP_OVER);
-
-            bodyTarget.scope.end();
-            bodyTarget.add(Instruction.stackFree(bodyTarget.scope.allocCount()));
+            body.compile(target, false, BreakpointType.STEP_OVER);
 
             int mid = target.temp();
 
-            var elseTarget = target.subtarget();
-            elseTarget.add(() -> Instruction.stackAlloc(elseTarget.scope.allocCount()));
-
-            body.compile(elseTarget, false, BreakpointType.STEP_OVER);
-
-            elseTarget.scope.end();
-            elseTarget.add(Instruction.stackFree(elseTarget.scope.allocCount()));
-
+            body.compile(target, false, BreakpointType.STEP_OVER);
             LabelContext.getBreak(target.env).pop(label);
 
             int endI = target.size();

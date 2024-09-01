@@ -30,16 +30,9 @@ public class ForNode extends Node {
         int mid = target.temp();
 
         var end = new DeferredIntSupplier();
+
         LabelContext.pushLoop(target.env, loc(), label, end, start);
-
-        var subtarget = target.subtarget();
-        subtarget.add(() -> Instruction.stackAlloc(subtarget.scope.allocCount()));
-
-        body.compile(subtarget, false, BreakpointType.STEP_OVER);
-
-        subtarget.scope.end();
-        subtarget.add(Instruction.stackFree(subtarget.scope.allocCount()));
-
+        body.compile(target, false, BreakpointType.STEP_OVER);
         LabelContext.popLoop(target.env, label);
 
         // int beforeAssign = target.size();

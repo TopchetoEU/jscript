@@ -22,9 +22,12 @@ public class CompoundNode extends Node {
     @Override public void compile(CompileResult target, boolean pollute, BreakpointType type) {
         List<Node> statements = new ArrayList<Node>();
 
+        var subtarget = target.subtarget();
+        subtarget.add(() -> Instruction.stackAlloc(subtarget.scope.allocCount()));
+
         for (var stm : this.statements) {
-            if (stm instanceof FunctionStatementNode) {
-                stm.compile(target, false);
+            if (stm instanceof FunctionStatementNode func) {
+                func.compile(subtarget, false);
             }
             else statements.add(stm);
         }
@@ -34,9 +37,12 @@ public class CompoundNode extends Node {
         for (var i = 0; i < statements.size(); i++) {
             var stm = statements.get(i);
 
-            if (i != statements.size() - 1) stm.compile(target, false, BreakpointType.STEP_OVER);
-            else stm.compile(target, polluted = pollute, BreakpointType.STEP_OVER);
+            if (i != statements.size() - 1) stm.compile(subtarget, false, BreakpointType.STEP_OVER);
+            else stm.compile(subtarget, polluted = pollute, BreakpointType.STEP_OVER);
         }
+
+        subtarget.scope.end();
+        subtarget.add(Instruction.stackFree(subtarget.scope.allocCount()));
 
         if (!polluted && pollute) {
             target.add(Instruction.pushUndefined());

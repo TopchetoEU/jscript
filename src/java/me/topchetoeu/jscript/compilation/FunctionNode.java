@@ -66,7 +66,6 @@ public abstract class FunctionNode extends Node {
         subtarget.length = args.length;
         subtarget.scope.end();
         funcScope.end();
-        subtarget.add(Instruction.ret()).setLocation(end);
 
         if (pollute) compileLoadFunc(target, funcScope.getCaptureIndices(), name);
 
