@@ -85,6 +85,10 @@ public class ForInNode extends Node {
         n += 3;
         n += Parsing.skipEmpty(src, i + n);
 
+        if (!src.is(i + n, "(")) return ParseRes.error(src.loc(i + n), "Expected an opening paren");
+        n++;
+        n += Parsing.skipEmpty(src, i + n);
+
         var isDecl = false;
 
         if (Parsing.isIdentifier(src, i + n, "var")) {
