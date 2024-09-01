@@ -7,8 +7,11 @@ import me.topchetoeu.jscript.common.parsing.ParseRes;
 import me.topchetoeu.jscript.common.parsing.Parsing;
 import me.topchetoeu.jscript.common.parsing.Source;
 import me.topchetoeu.jscript.compilation.CompileResult;
+import me.topchetoeu.jscript.compilation.DeferredIntSupplier;
 import me.topchetoeu.jscript.compilation.JavaScript;
+import me.topchetoeu.jscript.compilation.LabelContext;
 import me.topchetoeu.jscript.compilation.Node;
+import me.topchetoeu.jscript.compilation.values.VariableNode;
 
 public class ForOfNode extends Node {
     public final String varName;
@@ -19,18 +22,13 @@ public class ForOfNode extends Node {
 
     @Override public void resolve(CompileResult target) {
         body.resolve(target);
-        if (isDeclaration) target.scope.resolve(varName);
+        if (isDeclaration) target.scope.define(varName, false, varLocation);
     }
 
     @Override public void compile(CompileResult target, boolean pollute) {
-        var key = target.scope.getKey(varName);
-
-        if (key instanceof String) target.add(Instruction.globDef((String)key));
-
         iterable.compile(target, true, BreakpointType.STEP_OVER);
         target.add(Instruction.dup());
-        target.add(Instruction.loadVar("Symbol"));
-        target.add(Instruction.pushValue("iterator"));
+        target.add(Instruction.loadIntrinsics("it_key"));
         target.add(Instruction.loadMember()).setLocation(iterable.loc());
         target.add(Instruction.loadMember()).setLocation(iterable.loc());
         target.add(Instruction.call(0)).setLocation(iterable.loc());
@@ -48,18 +46,29 @@ public class ForOfNode extends Node {
 
         target.add(Instruction.pushValue("value"));
         target.add(Instruction.loadMember()).setLocation(varLocation);
-        target.add(Instruction.storeVar(key)).setLocationAndDebug(iterable.loc(), BreakpointType.STEP_OVER);
+        target.add(VariableNode.toSet(target, varLocation, varName, false, isDeclaration));
+
+        var end = new DeferredIntSupplier();
+
+        LabelContext.pushLoop(target.env, loc(), label, end, start);
+        var subtarget = target.subtarget();
+        subtarget.add(() -> Instruction.stackAlloc(subtarget.scope.allocCount()));
 
         body.compile(target, false, BreakpointType.STEP_OVER);
 
-        int end = target.size();
+        subtarget.scope.end();
+        subtarget.add(Instruction.stackFree(subtarget.scope.allocCount()));
+        LabelContext.popLoop(target.env, label);
 
-        WhileNode.replaceBreaks(target, label, mid + 1, end, start, end + 1);
+        int endI = target.size();
+        end.set(endI);
 
-        target.add(Instruction.jmp(start - end));
+        // WhileNode.replaceBreaks(target, label, mid + 1, end, start, end + 1);
+
+        target.add(Instruction.jmp(start - endI));
         target.add(Instruction.discard());
         target.add(Instruction.discard());
-        target.set(mid, Instruction.jmpIf(end - mid + 1));
+        target.set(mid, Instruction.jmpIf(endI - mid + 1));
         if (pollute) target.add(Instruction.pushUndefined());
     }
 
@@ -85,6 +94,10 @@ public class ForOfNode extends Node {
         n += 3;
         n += Parsing.skipEmpty(src, i + n);
 
+        if (!src.is(i + n, "(")) return ParseRes.error(src.loc(i + n), "Expected an opening paren");
+        n++;
+        n += Parsing.skipEmpty(src, i + n);
+
         var isDecl = false;
 
         if (Parsing.isIdentifier(src, i + n, "var")) {
@@ -98,7 +111,7 @@ public class ForOfNode extends Node {
         n += name.n;
         n += Parsing.skipEmpty(src, i + n);
 
-        if (!Parsing.isIdentifier(src, i + n, "fo")) return ParseRes.error(src.loc(i + n), "Expected 'of' keyword after variable declaration");
+        if (!Parsing.isIdentifier(src, i + n, "of")) return ParseRes.error(src.loc(i + n), "Expected 'of' keyword after variable declaration");
         n += 2;
 
         var obj = JavaScript.parseExpression(src, i + n, 0);
