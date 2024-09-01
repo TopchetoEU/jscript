@@ -86,6 +86,10 @@ public class DebugContext {
         if (debugger != null) return debugger.onInstruction(env, frame, instruction, returnVal, error, caught);
         else return false;
     }
+    public boolean onInstruction(Environment env, Frame frame, Instruction instruction) {
+        if (debugger != null) return debugger.onInstruction(env, frame, instruction, null, null, false);
+        else return false;
+    }
     public void onSource(Filename filename, String source) {
         if (debugger != null) debugger.onSourceLoad(filename, source);
         if (sources != null) sources.put(filename, source);

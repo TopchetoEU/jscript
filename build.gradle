@@ -1,14 +1,21 @@
+
 plugins {
     id "application"
+    // these idiots don't optimize in the compile-time, but in the runtime
+    // who let these knuckleheads make a language
+
+    // TODO: figure out how to integrate proguard
+    // id "com.github.xaverkapeller.proguard-annotations"
 }
 
 repositories {
     mavenCentral()
+    gradlePluginPortal()
 }
 
 dependencies {
-    annotationProcessor 'com.github.bsideup.jabel:jabel-javac-plugin:0.4.2'
     // Genuinely fuck Java
+    annotationProcessor 'com.github.bsideup.jabel:jabel-javac-plugin:0.4.2'
     compileOnly 'com.github.bsideup.jabel:jabel-javac-plugin:0.4.2'
 }
 

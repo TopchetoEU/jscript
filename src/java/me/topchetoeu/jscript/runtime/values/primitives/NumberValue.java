@@ -5,7 +5,6 @@ import me.topchetoeu.jscript.common.json.JSON;
 import me.topchetoeu.jscript.common.json.JSONElement;
 import me.topchetoeu.jscript.common.parsing.Parsing;
 import me.topchetoeu.jscript.common.parsing.Source;
-import me.topchetoeu.jscript.runtime.values.Value;
 import me.topchetoeu.jscript.runtime.values.objects.ObjectValue;
 
 public final class NumberValue extends PrimitiveValue {
@@ -25,13 +24,8 @@ public final class NumberValue extends PrimitiveValue {
         return env.get(NUMBER_PROTO);
     }
 
-    @Override public CompareResult compare(Environment env, Value other) {
-        if (other instanceof NumberValue) return CompareResult.from(Double.compare(value, ((NumberValue)other).value));
-        else return super.compare(env, other);
-    }
-    @Override public boolean strictEquals(Environment ext, Value other) {
-        other = other.toPrimitive(ext);
-        if (other instanceof NumberValue) return value == ((NumberValue)other).value;
+    @Override public boolean equals(Object other) {
+        if (other instanceof NumberValue val) return value == val.value;
         else return false;
     }
 

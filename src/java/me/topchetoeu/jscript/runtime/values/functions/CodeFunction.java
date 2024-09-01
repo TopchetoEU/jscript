@@ -10,19 +10,23 @@ public final class CodeFunction extends FunctionValue {
     public final Value[][] captures;
     public Environment env;
 
-    @Override public Value onCall(Environment env, boolean isNew, String name, Value thisArg, Value ...args) {
-        var frame = new Frame(env, isNew, thisArg, args, this);
+    private Value onCall(Frame frame) {
         frame.onPush();
 
         try {
             while (true) {
-                var res = frame.next();
+                var res = frame.next(null, null, null);
                 if (res != null) return res;
             }
         }
         finally {
             frame.onPop();
         }
+    }
+
+    @Override public Value onCall(Environment env, boolean isNew, String name, Value thisArg, Value ...args) {
+        var frame = new Frame(env, isNew, thisArg, args, this);
+        return onCall(frame);
     }
 
     public CodeFunction(Environment env, String name, FunctionBody body, Value[][] captures) {

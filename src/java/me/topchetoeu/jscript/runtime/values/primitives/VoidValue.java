@@ -6,7 +6,6 @@ import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
 import me.topchetoeu.jscript.runtime.values.KeyCache;
 import me.topchetoeu.jscript.runtime.values.Member;
-import me.topchetoeu.jscript.runtime.values.Value;
 import me.topchetoeu.jscript.runtime.values.objects.ObjectValue;
 
 public final class VoidValue extends PrimitiveValue {
@@ -20,16 +19,6 @@ public final class VoidValue extends PrimitiveValue {
     @Override public NumberValue toNumber(Environment ext) { return NumberValue.NAN; }
     @Override public StringValue toString(Environment ext) { return nameString; }
 
-    @Override public Value add(Environment ext, Value other) {
-        if (!other.isPrimitive()) other = other.toPrimitive(ext);
-
-        if (other instanceof StringValue) return nameString.add(ext, other);
-        else return NumberValue.NAN;
-    }
-
-    @Override public boolean strictEquals(Environment ext, Value other) {
-        return this == other;
-    }
     @Override public ObjectValue getPrototype(Environment env) { return null; }
 
     @Override public Member getOwnMember(Environment env, KeyCache key) {

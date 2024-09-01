@@ -87,7 +87,7 @@ public interface Member {
 
             if (field.configurable != configurable) return false;
             if (field.enumerable != enumerable) return false;
-            if (!writable) return field.get(env, self).strictEquals(env, get(env, self));
+            if (!writable) return field.get(env, self).equals(get(env, self));
 
             set(env, field.get(env, self), self);
             writable = field.writable;

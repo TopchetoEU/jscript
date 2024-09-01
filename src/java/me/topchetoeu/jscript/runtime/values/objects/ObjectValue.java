@@ -70,8 +70,6 @@ public class ObjectValue extends Value {
     @Override public NumberValue toNumber(Environment env) { return toPrimitive(env).toNumber(env);  }
     @Override public StringValue type() { return typeString; }
 
-    @Override public boolean strictEquals(Environment ext, Value other) { return this == other; }
-
     public final void preventExtensions() {
         extensible = false;
     }

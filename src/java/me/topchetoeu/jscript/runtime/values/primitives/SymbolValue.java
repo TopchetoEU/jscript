@@ -27,9 +27,6 @@ public final class SymbolValue extends PrimitiveValue {
         throw EngineException.ofType("Cannot convert a Symbol value to a number");
     }
 
-    @Override public boolean strictEquals(Environment ext, Value other) {
-        return other == this;
-    }
     @Override public ObjectValue getPrototype(Environment env) { return env.get(SYMBOL_PROTO); }
 
     @Override public String toString() {
