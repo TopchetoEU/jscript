@@ -1,5 +1,6 @@
-package me.topchetoeu.jscript.common;
+package me.topchetoeu.jscript.runtime;
 
+import me.topchetoeu.jscript.common.FunctionBody;
 import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.common.environment.Key;
 import me.topchetoeu.jscript.common.parsing.Filename;
@@ -7,7 +8,7 @@ import me.topchetoeu.jscript.compilation.CompileResult;
 import me.topchetoeu.jscript.compilation.JavaScript;
 import me.topchetoeu.jscript.runtime.debug.DebugContext;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
-import me.topchetoeu.jscript.runtime.scope.ValueVariable;
+import me.topchetoeu.jscript.runtime.values.Value;
 import me.topchetoeu.jscript.runtime.values.functions.CodeFunction;
 
 public interface Compiler {
@@ -30,7 +31,7 @@ public interface Compiler {
         });
     }
 
-    private static void registerFunc(Environment env, FunctionBody body, CompileResult res) {
+    static void registerFunc(Environment env, FunctionBody body, CompileResult res) {
         var map = res.map();
 
         DebugContext.get(env).onFunctionLoad(body, map);
@@ -41,6 +42,6 @@ public interface Compiler {
     }
 
     public static CodeFunction compileFunc(Environment env, Filename filename, String raw) {
-        return new CodeFunction(env, filename.toString(), get(env).compile(env, filename, raw), new ValueVariable[0]);
+        return new CodeFunction(env, filename.toString(), get(env).compile(env, filename, raw), new Value[0][]);
     }
 }

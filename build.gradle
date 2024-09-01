@@ -2,11 +2,27 @@ plugins {
     id "application"
 }
 
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    annotationProcessor 'com.github.bsideup.jabel:jabel-javac-plugin:0.4.2'
+    // Genuinely fuck Java
+    compileOnly 'com.github.bsideup.jabel:jabel-javac-plugin:0.4.2'
+}
+
 java {
-    sourceCompatibility = JavaVersion.VERSION_11
-    targetCompatibility = JavaVersion.VERSION_11
-    toolchain.languageVersion = JavaLanguageVersion.of(11)
-    withSourcesJar()
+    toolchain.languageVersion = JavaLanguageVersion.of(17)
+}
+
+configure([tasks.compileJava]) {
+    sourceCompatibility = 17 // for the IDE support
+    options.release = 11
+
+    javaCompiler = javaToolchains.compilerFor {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
 }
 
 jar {

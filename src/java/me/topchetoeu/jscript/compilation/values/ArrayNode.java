@@ -11,16 +11,9 @@ import me.topchetoeu.jscript.compilation.CompileResult;
 import me.topchetoeu.jscript.compilation.JavaScript;
 import me.topchetoeu.jscript.compilation.Node;
 
+
 public class ArrayNode extends Node {
     public final Node[] statements;
-
-    @Override public boolean pure() {
-        for (var stm : statements) {
-            if (!stm.pure()) return false;
-        }
-
-        return true;
-    }
 
     @Override public void compile(CompileResult target, boolean pollute) {
         target.add(Instruction.loadArr(statements.length));

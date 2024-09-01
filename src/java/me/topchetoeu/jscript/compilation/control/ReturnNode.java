@@ -12,8 +12,7 @@ import me.topchetoeu.jscript.compilation.Node;
 public class ReturnNode extends Node {
     public final Node value;
 
-    @Override
-    public void compile(CompileResult target, boolean pollute) {
+    @Override public void compile(CompileResult target, boolean pollute) {
         if (value == null) target.add(Instruction.pushUndefined());
         else value.compile(target, true);
         target.add(Instruction.ret()).setLocation(loc());

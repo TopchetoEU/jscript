@@ -11,8 +11,6 @@ import me.topchetoeu.jscript.compilation.Node;
 public class NumberNode extends Node {
     public final double value;
 
-    @Override public boolean pure() { return true; }
-
     @Override public void compile(CompileResult target, boolean pollute) {
         if (pollute) target.add(Instruction.pushValue(value));
     }

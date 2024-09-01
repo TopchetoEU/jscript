@@ -13,8 +13,7 @@ public class IndexAssignNode extends Node {
     public final Node value;
     public final Operation operation;
 
-    @Override
-    public void compile(CompileResult target, boolean pollute) {
+    @Override public void compile(CompileResult target, boolean pollute) {
         if (operation != null) {
             object.compile(target, true);
             index.compile(target, true);

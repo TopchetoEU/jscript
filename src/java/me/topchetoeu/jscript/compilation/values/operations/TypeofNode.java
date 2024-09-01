@@ -8,26 +8,32 @@ import me.topchetoeu.jscript.common.parsing.Source;
 import me.topchetoeu.jscript.compilation.CompileResult;
 import me.topchetoeu.jscript.compilation.JavaScript;
 import me.topchetoeu.jscript.compilation.Node;
+
 import me.topchetoeu.jscript.compilation.values.VariableNode;
 
 public class TypeofNode extends Node {
     public final Node value;
 
-    // Not really pure, since a variable from the global scope could be accessed,
-    // which could lead to code execution, that would get omitted
-    @Override public boolean pure() { return true; }
+    // @Override public EvalResult evaluate(CompileResult target) {
+    //     if (value instanceof VariableNode) {
+    //         var i = target.scope.getKey(((VariableNode)value).name);
+    //         if (i instanceof String) return EvalResult.NONE;
+    //     }
 
-    @Override
-    public void compile(CompileResult target, boolean pollute) {
-        if (value instanceof VariableNode) {
-            var i = target.scope.getKey(((VariableNode)value).name);
-            if (i instanceof String) {
-                target.add(Instruction.typeof((String)i));
-                return;
-            }
+    //     return EvalResult.UNKNOWN;
+    // }
+
+    @Override public void compile(CompileResult target, boolean pollute) {
+        if (value instanceof VariableNode varNode) {
+            target.add(VariableNode.toGet(target, varNode.loc(), varNode.name, () -> Instruction.typeof(varNode.name)));
+            if (!pollute) target.add(Instruction.discard());
+
+            return;
         }
+
         value.compile(target, pollute);
         target.add(Instruction.typeof());
+        if (!pollute) target.add(Instruction.discard());
     }
 
     public TypeofNode(Location loc, Node value) {

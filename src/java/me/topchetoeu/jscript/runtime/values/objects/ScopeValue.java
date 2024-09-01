@@ -1,7 +1,6 @@
 package me.topchetoeu.jscript.runtime.values.objects;
 
 import me.topchetoeu.jscript.common.environment.Environment;
-import me.topchetoeu.jscript.runtime.scope.ValueVariable;
 import me.topchetoeu.jscript.runtime.values.Value;
 import me.topchetoeu.jscript.runtime.values.Member.FieldMember;
 
@@ -15,17 +14,18 @@ public class ScopeValue extends ObjectValue {
         }
 
         @Override public Value get(Environment env, Value self) {
-            return variables[i].get(env);
+            return variables[i][0];
         }
 
         @Override public boolean set(Environment env, Value val, Value self) {
-            return variables[i].set(env, val);
+            variables[i][0] = val;
+            return true;
         }
     }
 
-    public final ValueVariable[] variables;
+    public final Value[][] variables;
 
-    public ScopeValue(ValueVariable[] variables, String[] names) {
+    public ScopeValue(Value[][] variables, String[] names) {
         this.variables = variables;
         for (var i = 0; i < names.length && i < variables.length; i++) {
             defineOwnMember(Environment.empty(), i, new VariableField(i));

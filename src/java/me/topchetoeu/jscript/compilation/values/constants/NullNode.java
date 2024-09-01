@@ -6,10 +6,8 @@ import me.topchetoeu.jscript.compilation.CompileResult;
 import me.topchetoeu.jscript.compilation.Node;
 
 public class NullNode extends Node {
-    @Override public boolean pure() { return true; }
-
     @Override public void compile(CompileResult target, boolean pollute) {
-        target.add(Instruction.pushNull());
+        if (pollute) target.add(Instruction.pushNull());
     }
 
     public NullNode(Location loc) { super(loc); }

@@ -9,13 +9,19 @@ import me.topchetoeu.jscript.compilation.CompileResult;
 import me.topchetoeu.jscript.compilation.JavaScript;
 import me.topchetoeu.jscript.compilation.Node;
 
+
 public class LazyOrNode extends Node {
     public final Node first, second;
 
-    @Override public boolean pure() { return first.pure() && second.pure(); }
+    // @Override public EvalResult evaluate(CompileResult target) {
+    //     var firstRes = first.evaluate(target);
+    //     if (firstRes.truthy) return firstRes;
+    //     if (!firstRes.isPure) return firstRes;
 
-    @Override
-    public void compile(CompileResult target, boolean pollute) {
+    //     return second.evaluate(target);
+    // }
+
+    @Override public void compile(CompileResult target, boolean pollute) {
         first.compile(target, true);
         if (pollute) target.add(Instruction.dup());
         int start = target.temp();

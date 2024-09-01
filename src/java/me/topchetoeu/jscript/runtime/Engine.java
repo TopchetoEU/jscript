@@ -18,8 +18,7 @@ public class Engine implements EventLoop {
             this.micro = micro;
         }
 
-        @Override
-        public int compareTo(Task<?> other) {
+        @Override public int compareTo(Task<?> other) {
             return Integer.compare(this.micro ? 0 : 1, other.micro ? 0 : 1);
         }
     }

@@ -17,8 +17,7 @@ public class IndexNode extends Node implements AssignableNode {
     public final Node object;
     public final Node index;
 
-    @Override
-    public Node toAssign(Node val, Operation operation) {
+    @Override public Node toAssign(Node val, Operation operation) {
         return new IndexAssignNode(loc(), object, index, val, operation);
     }
     public void compile(CompileResult target, boolean dupObj, boolean pollute) {
@@ -29,8 +28,7 @@ public class IndexNode extends Node implements AssignableNode {
         target.add(Instruction.loadMember()).setLocationAndDebug(loc(), BreakpointType.STEP_IN);
         if (!pollute) target.add(Instruction.discard());
     }
-    @Override
-    public void compile(CompileResult target, boolean pollute) {
+    @Override public void compile(CompileResult target, boolean pollute) {
         compile(target, false, pollute);
     }
 

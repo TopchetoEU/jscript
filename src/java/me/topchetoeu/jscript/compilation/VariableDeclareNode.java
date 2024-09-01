@@ -9,7 +9,7 @@ import me.topchetoeu.jscript.common.parsing.Location;
 import me.topchetoeu.jscript.common.parsing.ParseRes;
 import me.topchetoeu.jscript.common.parsing.Parsing;
 import me.topchetoeu.jscript.common.parsing.Source;
-import me.topchetoeu.jscript.compilation.values.FunctionNode;
+import me.topchetoeu.jscript.compilation.values.VariableNode;
 
 public class VariableDeclareNode extends Node {
     public static class Pair {
@@ -26,23 +26,26 @@ public class VariableDeclareNode extends Node {
 
     public final List<Pair> values;
 
-    @Override
-    public void declare(CompileResult target) {
-        for (var key : values) {
-            target.scope.define(key.name);
+    @Override public void resolve(CompileResult target) {
+        for (var entry : values) {
+            target.scope.define(entry.name, false, entry.location);
         }
     }
-    @Override
-    public void compile(CompileResult target, boolean pollute) {
+    @Override public void compile(CompileResult target, boolean pollute) {
         for (var entry : values) {
             if (entry.name == null) continue;
-            var key = target.scope.getKey(entry.name);
-
-            if (key instanceof String) target.add(Instruction.makeVar((String)key));
 
             if (entry.value != null) {
                 FunctionNode.compileWithName(entry.value, target, true, entry.name, BreakpointType.STEP_OVER);
-                target.add(Instruction.storeVar(key));
+                target.add(VariableNode.toSet(target, entry.location, entry.name, false, true));
+            }
+            else {
+                target.add(() -> {
+                    var i = target.scope.get(entry.name, true);
+
+                    if (i == null) return Instruction.globDef(entry.name);
+                    else return Instruction.nop();
+                });
             }
         }
 

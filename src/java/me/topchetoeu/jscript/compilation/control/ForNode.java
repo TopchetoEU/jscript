@@ -7,7 +7,9 @@ import me.topchetoeu.jscript.common.parsing.ParseRes;
 import me.topchetoeu.jscript.common.parsing.Parsing;
 import me.topchetoeu.jscript.common.parsing.Source;
 import me.topchetoeu.jscript.compilation.CompileResult;
+import me.topchetoeu.jscript.compilation.DeferredIntSupplier;
 import me.topchetoeu.jscript.compilation.JavaScript;
+import me.topchetoeu.jscript.compilation.LabelContext;
 import me.topchetoeu.jscript.compilation.Node;
 import me.topchetoeu.jscript.compilation.VariableDeclareNode;
 import me.topchetoeu.jscript.compilation.values.operations.DiscardNode;
@@ -16,27 +18,39 @@ public class ForNode extends Node {
     public final Node declaration, assignment, condition, body;
     public final String label;
 
-    @Override
-    public void declare(CompileResult target) {
-        declaration.declare(target);
-        body.declare(target);
+    @Override public void resolve(CompileResult target) {
+        declaration.resolve(target);
+        body.resolve(target);
     }
-    @Override
-    public void compile(CompileResult target, boolean pollute) {
+    @Override public void compile(CompileResult target, boolean pollute) {
         declaration.compile(target, false, BreakpointType.STEP_OVER);
 
         int start = target.size();
         condition.compile(target, true, BreakpointType.STEP_OVER);
         int mid = target.temp();
-        body.compile(target, false, BreakpointType.STEP_OVER);
-        int beforeAssign = target.size();
+
+        var end = new DeferredIntSupplier();
+        LabelContext.pushLoop(target.env, loc(), label, end, start);
+
+        var subtarget = target.subtarget();
+        subtarget.add(() -> Instruction.stackAlloc(subtarget.scope.allocCount()));
+
+        body.compile(subtarget, false, BreakpointType.STEP_OVER);
+
+        subtarget.scope.end();
+        subtarget.add(Instruction.stackFree(subtarget.scope.allocCount()));
+
+        LabelContext.popLoop(target.env, label);
+
+        // int beforeAssign = target.size();
         assignment.compile(target, false, BreakpointType.STEP_OVER);
-        int end = target.size();
+        int endI = target.size();
+        end.set(endI);
 
-        WhileNode.replaceBreaks(target, label, mid + 1, end, beforeAssign, end + 1);
+        // WhileNode.replaceBreaks(target, label, mid + 1, end, beforeAssign, end + 1);
 
-        target.add(Instruction.jmp(start - end));
-        target.set(mid, Instruction.jmpIfNot(end - mid + 1));
+        target.add(Instruction.jmp(start - endI));
+        target.set(mid, Instruction.jmpIfNot(endI - mid + 1));
         if (pollute) target.add(Instruction.pushUndefined());
     }
 
@@ -74,7 +88,7 @@ public class ForNode extends Node {
         var n = Parsing.skipEmpty(src, i);
         var loc = src.loc(i + n);
 
-        var labelRes = WhileNode.parseLabel(src, i + n);
+        var labelRes = JavaScript.parseLabel(src, i + n);
         n += labelRes.n;
         n += Parsing.skipEmpty(src, i + n);
 

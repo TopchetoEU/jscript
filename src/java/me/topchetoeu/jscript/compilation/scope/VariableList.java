@@ -4,22 +4,49 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.function.IntSupplier;
+import java.util.function.IntUnaryOperator;
 
-public class VariableList implements Iterable<VariableDescriptor> {
+public final class VariableList implements Iterable<VariableDescriptor> {
     private class ListVar extends VariableDescriptor {
         private ListVar next;
         private ListVar prev;
+        private boolean frozen;
+        private int index;
 
         @Override public int index() {
-            throw new RuntimeException("The index of a variable may not be retrieved until the scope has been finalized");
-            // var res = 0;
-            // if (offset != null) res = offset.getAsInt();
+            if (frozen) {
+                if (offset == null) {
+                    return indexConverter == null ? index : indexConverter.applyAsInt(index);
+                }
+                else {
+                    return indexConverter == null ?
+                        index + offset.getAsInt() :
+                        indexConverter.applyAsInt(index + offset.getAsInt());
+                }
+            }
 
-            // for (var it = prev; it != null; it = it.prev) {
-            //     res++;
-            // }
+            var res = 0;
+            if (offset != null) res = offset.getAsInt();
 
-            // return res;
+            for (var it = prev; it != null; it = it.prev) {
+                res++;
+            }
+
+            return indexConverter == null ? res : indexConverter.applyAsInt(res);
+        }
+
+        public ListVar freeze() {
+            if (frozen) return this;
+            this.frozen = true;
+
+            if (prev == null) return this;
+            assert prev.frozen;
+
+            this.index = prev.index + 1;
+            this.next = null;
+            this.prev = null;
+
+            return this;
         }
 
         public ListVar(String name, boolean readonly, ListVar next, ListVar prev) {
@@ -38,6 +65,7 @@ public class VariableList implements Iterable<VariableDescriptor> {
     private ArrayList<VariableDescriptor> frozenList = null;
 
     private final IntSupplier offset;
+    private IntUnaryOperator indexConverter = null;
 
     public boolean frozen() {
         if (frozenMap != null) {
@@ -60,26 +88,52 @@ public class VariableList implements Iterable<VariableDescriptor> {
 
     public VariableDescriptor add(VariableDescriptor val) {
         return add(val.name, val.readonly);
-    }
-    public VariableDescriptor add(String name, boolean readonly) {
-        if (frozen()) throw new RuntimeException("The scope has been frozen");
-        if (map.containsKey(name)) return map.get(name);
+            }
+            public VariableDescriptor add(String name, boolean readonly) {
+                if (frozen()) throw new RuntimeException("The scope has been frozen");
+                if (map.containsKey(name)) return map.get(name);
 
-        var res = new ListVar(name, readonly, null, last);
-        last.next = res;
-        last = res;
-        map.put(name, res);
+                var res = new ListVar(name, readonly, null, last);
 
-        return res;
-    }
+                if (last != null) {
+                    assert first != null;
+
+                    last.next = res;
+                    res.prev = last;
+
+                    last = res;
+                }
+                else {
+                    first = last = res;
+                }
+
+                map.put(name, res);
+
+                return res;
+            }
     public VariableDescriptor remove(String name) {
         if (frozen()) throw new RuntimeException("The scope has been frozen");
 
         var el = map.get(name);
         if (el == null) return null;
 
-        el.prev.next = el.next;
-        el.next.prev = el.prev;
+        if (el.prev != null) {
+            assert el != first;
+            el.prev.next = el.next;
+        }
+        else {
+            assert el == first;
+            first = first.next;
+        }
+
+        if (el.next != null) {
+            assert el != last;
+            el.next.prev = el.prev;
+        }
+        else {
+            assert el == last;
+            last = last.prev;
+        }
 
         el.next = null;
         el.prev = null;
@@ -88,7 +142,8 @@ public class VariableList implements Iterable<VariableDescriptor> {
     }
 
     public VariableDescriptor get(String name) {
-        return map.get(name);
+        if (frozen()) return frozenMap.get(name);
+        else return map.get(name);
     }
     public VariableDescriptor get(int i) {
         if (frozen()) {
@@ -126,12 +181,17 @@ public class VariableList implements Iterable<VariableDescriptor> {
         frozenMap = new HashMap<>();
         frozenList = new ArrayList<>();
 
-        var i = 0;
-        if (offset != null) i = offset.getAsInt();
+        for (var it = first; it != null; ) {
+            frozenMap.put(it.name, it);
+            frozenList.add(it);
 
-        for (var it = first; it != null; it = it.next) {
-            frozenMap.put(it.name, VariableDescriptor.of(it.name, it.readonly, i++));
+            var tmp = it;
+            it = it.next;
+            tmp.freeze();
         }
+
+        map = null;
+        first = last = null;
     }
 
     @Override public Iterator<VariableDescriptor> iterator() {
@@ -159,6 +219,11 @@ public class VariableList implements Iterable<VariableDescriptor> {
         for (var el : this) res[i++] = el;
 
         return res;
+    }
+
+    public VariableList setIndexMap(IntUnaryOperator map) {
+        indexConverter = map;
+        return this;
     }
 
     public VariableList(IntSupplier offset) {

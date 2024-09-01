@@ -160,13 +160,17 @@ public class Environment {
         return this;
     }
 
-    public <T> Environment init(Key<T> key, T val) {
+    public <T> T init(Key<T> key, T val) {
         if (!has(key)) this.add(key, val);
-        return this;
+        return val;
     }
-    public <T> Environment init(Key<T> key, Supplier<T> val) {
-        if (!has(key)) this.add(key, val.get());
-        return this;
+    public <T> T initFrom(Key<T> key, Supplier<T> val) {
+        if (!has(key)) {
+            var res = val.get();
+            this.add(key, res);
+            return res;
+        }
+        else return get(key);
     }
 
     public Environment child() {

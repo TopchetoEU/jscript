@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Objects;
 
 public abstract class Location implements Comparable<Location> {
-    public static final Location INTERNAL = Location.of("jscript://native");
+    public static final Location INTERNAL = Location.of(new Filename("jscript", "native"), -1, -1);
 
     public abstract int line();
     public abstract int start();
@@ -39,10 +39,10 @@ public abstract class Location implements Comparable<Location> {
         };
     }
 
-    @Override public final int hashCode() {
+    @Override public int hashCode() {
         return Objects.hash(line(), start(), filename());
     }
-    @Override public final boolean equals(Object obj) {
+    @Override public boolean equals(Object obj) {
         if (this == obj) return true;
         if (!(obj instanceof Location)) return false;
         var other = (Location)obj;

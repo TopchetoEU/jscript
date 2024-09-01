@@ -11,16 +11,19 @@ import me.topchetoeu.jscript.common.parsing.Parsing;
 import me.topchetoeu.jscript.common.parsing.Source;
 import me.topchetoeu.jscript.compilation.CompileResult;
 import me.topchetoeu.jscript.compilation.CompoundNode;
+import me.topchetoeu.jscript.compilation.FunctionNode;
+import me.topchetoeu.jscript.compilation.FunctionValueNode;
 import me.topchetoeu.jscript.compilation.JavaScript;
 import me.topchetoeu.jscript.compilation.Node;
+
 
 public class ObjectNode extends Node {
     public static class ObjProp {
         public final String name;
         public final String access;
-        public final FunctionNode func;
-    
-        public ObjProp(String name, String access, FunctionNode func) {
+        public final FunctionValueNode func;
+
+        public ObjProp(String name, String access, FunctionValueNode func) {
             this.name = name;
             this.access = access;
             this.func = func;
@@ -30,14 +33,6 @@ public class ObjectNode extends Node {
     public final Map<String, Node> map;
     public final Map<String, FunctionNode> getters;
     public final Map<String, FunctionNode> setters;
-
-    @Override public boolean pure() {
-        for (var el : map.values()) {
-            if (!el.pure()) return false;
-        }
-
-        return true;
-    }
 
     @Override public void compile(CompileResult target, boolean pollute) {
         target.add(Instruction.loadObj());
@@ -114,7 +109,7 @@ public class ObjectNode extends Node {
 
         return ParseRes.res(new ObjProp(
             name.result, access.result,
-            new FunctionNode(loc, end, access + " " + name.result.toString(), params.result.toArray(String[]::new), false, body.result)
+            new FunctionValueNode(loc, end, params.result.toArray(String[]::new), body.result, access + " " + name.result.toString())
         ), n);
     }
 

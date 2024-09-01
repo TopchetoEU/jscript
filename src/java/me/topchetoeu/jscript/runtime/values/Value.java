@@ -64,6 +64,7 @@ public abstract class Value {
     public static final Key<ObjectValue> SYNTAX_ERR_PROTO = Key.of();
     public static final Key<ObjectValue> TYPE_ERR_PROTO = Key.of();
     public static final Key<ObjectValue> RANGE_ERR_PROTO = Key.of();
+    public static final Key<ObjectValue> GLOBAL = Key.of();
 
     public static final VoidValue UNDEFINED = new VoidValue("undefined", new StringValue("undefined"));
     public static final VoidValue NULL = new VoidValue("null", new StringValue("object"));
@@ -278,13 +279,31 @@ public abstract class Value {
         return deleteOwnMember(env, new KeyCache(key));
     }
 
-    public final Value getMember(Environment env, KeyCache key) {
+    public final Value getMemberOrNull(Environment env, KeyCache key) {
         for (Value obj = this; obj != null; obj = obj.getPrototype(env)) {
             var member = obj.getOwnMember(env, key);
             if (member != null) return member.get(env, obj);
         }
 
-        return Value.UNDEFINED;
+        return null;
+    }
+    public final Value getMemberOrNull(Environment env, Value key) {
+        return getMemberOrNull(env, new KeyCache(key));
+    }
+    public final Value getMemberOrNull(Environment env, String key) {
+        return getMemberOrNull(env, new KeyCache(key));
+    }
+    public final Value getMemberOrNull(Environment env, int key) {
+        return getMemberOrNull(env, new KeyCache(key));
+    }
+    public final Value getMemberOrNull(Environment env, double key) {
+        return getMemberOrNull(env, new KeyCache(key));
+    }
+
+    public final Value getMember(Environment env, KeyCache key) {
+        var res = getMemberOrNull(env, key);
+        if (res != null) return res;
+        else return Value.UNDEFINED;
     }
     public final Value getMember(Environment env, Value key) {
         return getMember(env, new KeyCache(key));
@@ -328,6 +347,33 @@ public abstract class Value {
     }
     public final boolean setMember(Environment env, double key, Value val) {
         return setMember(env, new KeyCache(key), val);
+    }
+
+    public final boolean setMemberIfExists(Environment env, KeyCache key, Value val) {
+        for (Value obj = this; obj != null; obj = obj.getPrototype(env)) {
+            var member = obj.getOwnMember(env, key);
+            if (member != null) {
+                if (member.set(env, val, obj)) {
+                    if (val instanceof FunctionValue) ((FunctionValue)val).setName(key.toString(env));
+                    return true;
+                }
+                else return false;
+            }
+        }
+
+        return false;
+    }
+    public final boolean setMemberIfExists(Environment env, Value key, Value val) {
+        return setMemberIfExists(env, new KeyCache(key), val);
+    }
+    public final boolean setMemberIfExists(Environment env, String key, Value val) {
+        return setMemberIfExists(env, new KeyCache(key), val);
+    }
+    public final boolean setMemberIfExists(Environment env, int key, Value val) {
+        return setMemberIfExists(env, new KeyCache(key), val);
+    }
+    public final boolean setMemberIfExists(Environment env, double key, Value val) {
+        return setMemberIfExists(env, new KeyCache(key), val);
     }
 
     public final boolean hasMember(Environment env, KeyCache key, boolean own) {
@@ -478,13 +524,11 @@ public abstract class Value {
                     }
                 }
 
-                @Override
-                public boolean hasNext() {
+                @Override public boolean hasNext() {
                     loadNext();
                     return supplier != null;
                 }
-                @Override
-                public Object next() {
+                @Override public Object next() {
                     loadNext();
                     var res = value;
                     value = null;
@@ -631,5 +675,9 @@ public abstract class Value {
 
             return prefix + " internal error " + str.toString();
         }
+    }
+
+    public static final ObjectValue global(Environment env) {
+        return env.initFrom(GLOBAL, () -> new ObjectValue());
     }
 }

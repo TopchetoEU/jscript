@@ -6,12 +6,12 @@ import me.topchetoeu.jscript.compilation.CompileResult;
 import me.topchetoeu.jscript.compilation.Node;
 
 
-public class GlobalThisNode extends Node {
+public class ThisNode extends Node {
     @Override public void compile(CompileResult target, boolean pollute) {
-        if (pollute) target.add(Instruction.loadGlob());
+        if (pollute) target.add(Instruction.loadThis());
     }
 
-    public GlobalThisNode(Location loc) {
+    public ThisNode(Location loc) {
         super(loc);
     }
 }

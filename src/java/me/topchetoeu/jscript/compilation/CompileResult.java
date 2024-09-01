@@ -1,23 +1,27 @@
 package me.topchetoeu.jscript.compilation;
 
 import java.util.List;
+import java.util.ArrayList;
 import java.util.LinkedList;
-import java.util.Vector;
+import java.util.function.Supplier;
 
 import me.topchetoeu.jscript.common.FunctionBody;
 import me.topchetoeu.jscript.common.Instruction;
 import me.topchetoeu.jscript.common.Instruction.BreakpointType;
+import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.common.mapping.FunctionMap;
 import me.topchetoeu.jscript.common.mapping.FunctionMap.FunctionMapBuilder;
 import me.topchetoeu.jscript.common.parsing.Location;
-import me.topchetoeu.jscript.compilation.scope.LocalScopeRecord;
+import me.topchetoeu.jscript.compilation.scope.LocalScope;
+import me.topchetoeu.jscript.compilation.scope.Scope;
 
-public class CompileResult {
-    public final Vector<Instruction> instructions = new Vector<>();
-    public final List<CompileResult> children = new LinkedList<>();
-    public final FunctionMapBuilder map = FunctionMap.builder();
-    public final LocalScopeRecord scope;
+public final class CompileResult {
+    public final List<Supplier<Instruction>> instructions;
+    public final List<CompileResult> children;
+    public final FunctionMapBuilder map;
+    public final Environment env;
     public int length = 0;
+    public final Scope scope;
 
     public int temp() {
         instructions.add(null);
@@ -25,16 +29,24 @@ public class CompileResult {
     }
 
     public CompileResult add(Instruction instr) {
+        instructions.add(() -> instr);
+        return this;
+    }
+    public CompileResult add(Supplier<Instruction> instr) {
         instructions.add(instr);
         return this;
     }
     public CompileResult set(int i, Instruction instr) {
+        instructions.set(i, () -> instr);
+        return this;
+    }
+    public CompileResult set(int i, Supplier<Instruction>instr) {
         instructions.set(i, instr);
         return this;
     }
-    public Instruction get(int i) {
-        return instructions.get(i);
-    }
+    // public Instruction get(int i) {
+    //     return instructions.get(i);
+    // }
     public int size() { return instructions.size(); }
 
     public void setDebug(Location loc, BreakpointType type) {
@@ -61,6 +73,13 @@ public class CompileResult {
         return child;
     }
 
+    public Instruction[] instructions() {
+        var res = new Instruction[instructions.size()];
+        var i = 0;
+        for (var suppl : instructions) res[i++] = suppl.get();
+        return res;
+    }
+
     public FunctionMap map() {
         return map.build(scope);
     }
@@ -69,10 +88,32 @@ public class CompileResult {
 
         for (var i = 0; i < children.size(); i++) builtChildren[i] = children.get(i).body();
 
-        return new FunctionBody(scope.localsCount(), length, instructions.toArray(Instruction[]::new), builtChildren);
+        var instrRes = new Instruction[instructions.size()];
+        var i = 0;
+        for (var suppl : instructions) instrRes[i++] = suppl.get();
+
+        return new FunctionBody(
+            scope.localsCount() + scope.allocCount(), scope.capturesCount(), length,
+            instrRes, builtChildren
+        );
     }
 
-    public CompileResult(LocalScopeRecord scope) {
+    public CompileResult subtarget() {
+        return new CompileResult(new LocalScope(scope), this);
+    }
+
+    public CompileResult(Environment env, Scope scope) {
         this.scope = scope;
+        instructions = new ArrayList<>();
+        children = new LinkedList<>();
+        map = FunctionMap.builder();
+        this.env = env;
+    }
+    private CompileResult(Scope scope, CompileResult parent) {
+        this.scope = scope;
+        this.instructions = parent.instructions;
+        this.children = parent.children;
+        this.map = parent.map;
+        this.env = parent.env;
     }
 }

@@ -93,14 +93,6 @@ public class OperationNode extends Node {
     public final Node[] args;
     public final Operation operation;
 
-    @Override public boolean pure() {
-        for (var el : args) {
-            if (!el.pure()) return false;
-        }
-
-        return true;
-    }
-
     @Override public void compile(CompileResult target, boolean pollute) {
         for (var arg : args) {
             arg.compile(target, true);

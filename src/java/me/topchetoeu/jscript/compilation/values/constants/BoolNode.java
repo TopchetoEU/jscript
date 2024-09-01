@@ -8,8 +8,6 @@ import me.topchetoeu.jscript.compilation.Node;
 public class BoolNode extends Node {
     public final boolean value;
 
-    @Override public boolean pure() { return true; }
-
     @Override public void compile(CompileResult target, boolean pollute) {
         if (pollute) target.add(Instruction.pushValue(value));
     }

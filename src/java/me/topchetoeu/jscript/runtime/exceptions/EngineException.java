@@ -96,6 +96,8 @@ public class EngineException extends RuntimeException {
         var res = new ObjectValue();
         res.setPrototype(proto);
 
+        if (msg == null) msg = "";
+
         if (name != null) res.defineOwnMember(Environment.empty(), "name", FieldMember.of(new StringValue(name)));
         res.defineOwnMember(Environment.empty(), "message", FieldMember.of(new StringValue(msg)));
         return res;

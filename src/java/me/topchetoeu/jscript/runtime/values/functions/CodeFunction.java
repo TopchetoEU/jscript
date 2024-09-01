@@ -3,12 +3,11 @@ package me.topchetoeu.jscript.runtime.values.functions;
 import me.topchetoeu.jscript.common.FunctionBody;
 import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.runtime.Frame;
-import me.topchetoeu.jscript.runtime.scope.ValueVariable;
 import me.topchetoeu.jscript.runtime.values.Value;
 
 public class CodeFunction extends FunctionValue {
     public final FunctionBody body;
-    public final ValueVariable[] captures;
+    public final Value[][] captures;
     public Environment env;
 
     @Override public Value onCall(Environment env, boolean isNew, String name, Value thisArg, Value ...args) {
@@ -26,7 +25,7 @@ public class CodeFunction extends FunctionValue {
         }
     }
 
-    public CodeFunction(Environment env, String name, FunctionBody body, ValueVariable[] captures) {
+    public CodeFunction(Environment env, String name, FunctionBody body, Value[][] captures) {
         super(name, body.argsN);
         this.captures = captures;
         this.env = env;

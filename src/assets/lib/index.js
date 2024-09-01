@@ -1,3 +1,5 @@
+#! my special comment lol
+
 (function(target, primordials) {
     var makeSymbol = primordials.symbol.makeSymbol;
     var getSymbol = primordials.symbol.getSymbol;

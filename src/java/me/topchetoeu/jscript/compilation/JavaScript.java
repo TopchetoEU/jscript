@@ -16,7 +16,6 @@ import me.topchetoeu.jscript.compilation.control.DebugNode;
 import me.topchetoeu.jscript.compilation.control.DeleteNode;
 import me.topchetoeu.jscript.compilation.control.DoWhileNode;
 import me.topchetoeu.jscript.compilation.control.ForInNode;
-import me.topchetoeu.jscript.compilation.control.ForOfNode;
 import me.topchetoeu.jscript.compilation.control.ForNode;
 import me.topchetoeu.jscript.compilation.control.IfNode;
 import me.topchetoeu.jscript.compilation.control.ReturnNode;
@@ -24,12 +23,14 @@ import me.topchetoeu.jscript.compilation.control.SwitchNode;
 import me.topchetoeu.jscript.compilation.control.ThrowNode;
 import me.topchetoeu.jscript.compilation.control.TryNode;
 import me.topchetoeu.jscript.compilation.control.WhileNode;
-import me.topchetoeu.jscript.compilation.scope.LocalScopeRecord;
+import me.topchetoeu.jscript.compilation.scope.GlobalScope;
+import me.topchetoeu.jscript.compilation.scope.LocalScope;
+import me.topchetoeu.jscript.compilation.values.ArgumentsNode;
 import me.topchetoeu.jscript.compilation.values.ArrayNode;
-import me.topchetoeu.jscript.compilation.values.FunctionNode;
 import me.topchetoeu.jscript.compilation.values.GlobalThisNode;
 import me.topchetoeu.jscript.compilation.values.ObjectNode;
 import me.topchetoeu.jscript.compilation.values.RegexNode;
+import me.topchetoeu.jscript.compilation.values.ThisNode;
 import me.topchetoeu.jscript.compilation.values.VariableNode;
 import me.topchetoeu.jscript.compilation.values.constants.BoolNode;
 import me.topchetoeu.jscript.compilation.values.constants.NullNode;
@@ -41,7 +42,6 @@ import me.topchetoeu.jscript.compilation.values.operations.DiscardNode;
 import me.topchetoeu.jscript.compilation.values.operations.IndexNode;
 import me.topchetoeu.jscript.compilation.values.operations.OperationNode;
 import me.topchetoeu.jscript.compilation.values.operations.TypeofNode;
-import me.topchetoeu.jscript.compilation.values.operations.VariableIndexNode;
 import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 
 public class JavaScript {
@@ -104,8 +104,8 @@ public class JavaScript {
         if (id.result.equals("false")) return ParseRes.res(new BoolNode(loc, false), n);
         if (id.result.equals("undefined")) return ParseRes.res(new DiscardNode(loc, null), n);
         if (id.result.equals("null")) return ParseRes.res(new NullNode(loc), n);
-        if (id.result.equals("this")) return ParseRes.res(new VariableIndexNode(loc, 0), n);
-        if (id.result.equals("arguments")) return ParseRes.res(new VariableIndexNode(loc, 1), n);
+        if (id.result.equals("this")) return ParseRes.res(new ThisNode(loc), n);
+        if (id.result.equals("arguments")) return ParseRes.res(new ArgumentsNode(loc), n);
         if (id.result.equals("globalThis")) return ParseRes.res(new GlobalThisNode(loc), n);
 
         return ParseRes.failed();
@@ -187,7 +187,7 @@ public class JavaScript {
             SwitchNode::parse,
             ForNode::parse,
             ForInNode::parse,
-            ForOfNode::parse,
+            // ForOfNode::parse,
             DoWhileNode::parse,
             TryNode::parse,
             CompoundNode::parse,
@@ -257,7 +257,7 @@ public class JavaScript {
 
             var res = parseStatement(src, i);
 
-            if (res.isError()) throw new SyntaxException(src.loc(i), res.error);
+            if (res.isError()) throw new SyntaxException(res.errorLocation, res.error);
             else if (res.isFailed()) throw new SyntaxException(src.loc(i), "Unexpected syntax");
 
             i += res.n;
@@ -272,22 +272,17 @@ public class JavaScript {
         return !JavaScript.reserved.contains(name);
     }
 
-    public static CompileResult compile(Node ...statements) {
-        var target = new CompileResult(new LocalScopeRecord());
-        var stm = new CompoundNode(null, true, statements);
-
-        target.scope.define("this");
-        target.scope.define("arguments");
+    public static CompileResult compile(Environment env, Node ...statements) {
+        var target = new CompileResult(env, new LocalScope(new GlobalScope()));
+        var stm = new CompoundNode(null, statements);
 
         try {
+            stm.resolve(target);
             stm.compile(target, true);
-            FunctionNode.checkBreakAndCont(target, 0);
+            // FunctionNode.checkBreakAndCont(target, 0);
         }
         catch (SyntaxException e) {
-            target = new CompileResult(new LocalScopeRecord());
-
-            target.scope.define("this");
-            target.scope.define("arguments");
+            target = new CompileResult(env, new LocalScope(new GlobalScope()));
 
             target.add(Instruction.throwSyntax(e)).setLocation(stm.loc());
         }
@@ -298,6 +293,24 @@ public class JavaScript {
     }
 
     public static CompileResult compile(Environment env, Filename filename, String raw) {
-        return JavaScript.compile(JavaScript.parse(env, filename, raw));
+        return JavaScript.compile(env, JavaScript.parse(env, filename, raw));
+    }
+    public static CompileResult compile(Filename filename, String raw) {
+        var env = new Environment();
+        return JavaScript.compile(env, JavaScript.parse(env, filename, raw));
+    }
+
+    public static ParseRes<String> parseLabel(Source src, int i) {
+        int n = Parsing.skipEmpty(src, i);
+    
+        var nameRes = Parsing.parseIdentifier(src, i + n);
+        if (!nameRes.isSuccess()) return nameRes.chainError();
+        n += nameRes.n;
+        n += Parsing.skipEmpty(src, i + n);
+    
+        if (!src.is(i + n, ":")) return ParseRes.failed();
+        n++;
+    
+        return ParseRes.res(nameRes.result, n);
     }
 }

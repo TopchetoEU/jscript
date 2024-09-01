@@ -5,9 +5,12 @@ import java.util.HashMap;
 import me.topchetoeu.jscript.common.parsing.Location;
 
 public class FunctionScope extends Scope {
-    private final VariableList captures = new VariableList();
-    private final VariableList locals = new VariableList(captures);
+    private final VariableList captures = new VariableList().setIndexMap(v -> ~v);
+    private final VariableList specials = new VariableList();
+    private final VariableList locals = new VariableList(specials);
     private HashMap<VariableDescriptor, VariableDescriptor> childToParent = new HashMap<>();
+    public final String selfName;
+    public final VariableDescriptor selfVar;
 
     private void removeCapture(String name) {
         var res = captures.remove(name);
@@ -28,10 +31,14 @@ public class FunctionScope extends Scope {
     }
 
     @Override public VariableDescriptor get(String name, boolean capture) {
+        if (specials.has(name)) return specials.get(name);
         if (locals.has(name)) return locals.get(name);
         if (captures.has(name)) return captures.get(name);
+        if (selfName != null && selfName.equals(name)) return selfVar;
 
         var parentVar = parent.get(name, true);
+        if (parentVar == null) return null;
+
         var childVar = captures.add(parentVar);
 
         childToParent.put(childVar, parentVar);
@@ -40,6 +47,7 @@ public class FunctionScope extends Scope {
     }
 
     @Override public boolean has(String name) {
+        if (specials.has(name)) return true;
         if (locals.has(name)) return true;
         if (captures.has(name)) return true;
         if (parent != null) return parent.has(name);
@@ -47,9 +55,24 @@ public class FunctionScope extends Scope {
         return false;
     }
 
-    public int localsCount() {
-        return locals.size();
+    @Override public boolean end() {
+        if (!super.end()) return false;
+
+        captures.freeze();
+        locals.freeze();
+        return true;
     }
+
+    @Override public int localsCount() {
+        return locals.size() + specials.size();
+    }
+    @Override public int capturesCount() {
+        return captures.size();
+    }
+    @Override public int allocCount() {
+        return 0;
+    }
+
     public int offset() {
         return captures.size() + locals.size();
     }
@@ -66,6 +89,22 @@ public class FunctionScope extends Scope {
         return res;
     }
 
-    public FunctionScope() { super(); }
-    public FunctionScope(Scope parent) { super(parent); }
+    public FunctionScope(String selfName, String[] args) {
+        super();
+        this.selfName = selfName;
+
+        if (selfName != null) this.selfVar = VariableDescriptor.of(selfName, true, -1);
+        else this.selfVar = null;
+
+        for (var arg : args) specials.add(arg, false);
+    }
+    public FunctionScope(String selfName, String[] args, Scope parent) {
+        super(parent);
+        this.selfName = selfName;
+
+        if (selfName != null) this.selfVar = VariableDescriptor.of(selfName, true, -1);
+        else this.selfVar = null;
+
+        for (var arg : args) specials.add(arg, false);
+    }
 }
