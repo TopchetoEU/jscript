@@ -1,7 +1,9 @@
 package me.topchetoeu.jscript.runtime;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 
@@ -11,8 +13,6 @@ import me.topchetoeu.jscript.common.environment.Key;
 import me.topchetoeu.jscript.runtime.debug.DebugContext;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
 import me.topchetoeu.jscript.runtime.exceptions.InterruptException;
-import me.topchetoeu.jscript.runtime.scope.LocalScope;
-import me.topchetoeu.jscript.runtime.scope.ValueVariable;
 import me.topchetoeu.jscript.runtime.values.KeyCache;
 import me.topchetoeu.jscript.runtime.values.Member;
 import me.topchetoeu.jscript.runtime.values.Value;
@@ -97,13 +97,23 @@ public class Frame {
         }
     }
 
-    public final LocalScope scope;
-    public final Object thisArg;
-    public final Object[] args;
+    /**
+     * A list of one-element arrays of values. This is so that we can pass captures to other functions
+     */
+    public final Value[][] captures;
+    public final List<Value[]> locals = new ArrayList<>();
+    public final Value self;
+    public final Value argsVal;
+    public final Value[] args;
     public final boolean isNew;
     public final Stack<TryCtx> tryStack = new Stack<>();
     public final CodeFunction function;
     public final Environment env;
+
+    public Value[] getVar(int i) {
+        if (i < 0) return captures[~i];
+        else return locals.get(i);
+    }
 
     public Value[] stack = new Value[32];
     public int stackPtr = 0;
@@ -178,6 +188,7 @@ public class Frame {
                 }
             }
             catch (EngineException e) { error = e; }
+            // catch (RuntimeException e) { error = EngineException.ofError("InternalError", e.getMessage()); }
         }
 
         while (!tryStack.empty()) {
@@ -201,12 +212,12 @@ public class Frame {
                 if (newCtx != tryCtx) {
                     switch (newCtx.state) {
                         case CATCH:
-                            if (tryCtx.state != TryState.CATCH) scope.catchVars.add(new ValueVariable(false, error.value));
+                            if (tryCtx.state != TryState.CATCH) locals.add(new Value[] { error.value });
                             codePtr = tryCtx.catchStart;
                             stackPtr = tryCtx.restoreStackPtr;
                             break;
                         case FINALLY:
-                            if (tryCtx.state == TryState.CATCH) scope.catchVars.remove(scope.catchVars.size() - 1);
+                            if (tryCtx.state == TryState.CATCH) locals.remove(locals.size() - 1);
                             codePtr = tryCtx.finallyStart;
                             stackPtr = tryCtx.restoreStackPtr;
                         default:
@@ -222,7 +233,7 @@ public class Frame {
             }
             else {
                 popTryFlag = false;
-                if (tryCtx.state == TryState.CATCH) scope.catchVars.remove(scope.catchVars.size() - 1);
+                if (tryCtx.state == TryState.CATCH) locals.remove(locals.size() - 1);
 
                 if (tryCtx.state != TryState.FINALLY && tryCtx.hasFinally()) {
                     codePtr = tryCtx.finallyStart;
@@ -318,41 +329,45 @@ public class Frame {
     }
 
     /**
-     * Gets an object proxy of the local scope
+     * Gets an object proxy of the local locals
      */
     public ObjectValue getLocalScope() {
-        var names = new String[scope.locals.length];
-        var map = DebugContext.get(env).getMapOrEmpty(function);
+        throw new RuntimeException("Not supported");
 
-        for (int i = 0; i < scope.locals.length; i++) {
-            var name = "local_" + (i - 2);
+        // var names = new String[locals.locals.length];
+        // var map = DebugContext.get(env).getMapOrEmpty(function);
 
-            if (i == 0) name = "this";
-            else if (i == 1) name = "arguments";
-            else if (i < map.localNames.length) name = map.localNames[i];
+        // for (int i = 0; i < locals.locals.length; i++) {
+        //     var name = "local_" + (i - 2);
 
-            names[i] = name;
-        }
+        //     if (i == 0) name = "this";
+        //     else if (i == 1) name = "arguments";
+        //     else if (i < map.localNames.length) name = map.localNames[i];
 
-        return new ScopeValue(scope.locals, names);
+        //     names[i] = name;
+        // }
+
+        // return new ScopeValue(locals, names);
     }
     /**
-     * Gets an object proxy of the capture scope
+     * Gets an object proxy of the capture locals
      */
     public ObjectValue getCaptureScope() {
-        var names = new String[scope.captures.length];
+        // throw new RuntimeException("Not supported");
+
+        var names = new String[captures.length];
         var map = DebugContext.get(env).getMapOrEmpty(function);
 
-        for (int i = 0; i < scope.captures.length; i++) {
+        for (int i = 0; i < captures.length; i++) {
             var name = "capture_" + (i - 2);
             if (i < map.captureNames.length) name = map.captureNames[i];
             names[i] = name;
         }
 
-        return new ScopeValue(scope.captures, names);
+        return new ScopeValue(captures, names);
     }
     /**
-     * Gets an array proxy of the local scope
+     * Gets an array proxy of the local locals
      */
     public ObjectValue getValStackScope() {
         return new ObjectValue() {
@@ -393,13 +408,25 @@ public class Frame {
 
     public Frame(Environment env, boolean isNew, Value thisArg, Value[] args, CodeFunction func) {
         this.env = env;
-        this.args = args;
-        this.isNew = isNew;
-        this.scope = new LocalScope(func.body.localsN, func.captures);
-        this.scope.get(0).set(thisArg);
-        this.scope.get(1).value = new ArgumentsValue(this, args);
-
-        this.thisArg = thisArg;
         this.function = func;
+        this.isNew = isNew;
+
+        this.self = thisArg;
+        this.args = args;
+        this.argsVal = new ArgumentsValue(this, args);
+        this.captures = func.captures;
+
+        for (var i = 0; i < func.body.argsN; i++) {
+            this.locals.add(new Value[] { args[i] });
+        }
+
+        for (var i = 0; i < func.body.localsN; i++) {
+            this.locals.add(new Value[] { Value.UNDEFINED });
+        }
+
+        // this.locals = new LocalScope(func.body.localsN, func.captures);
+        // this.locals.get(0).set(thisArg);
+        // this.locals.get(1).value = new ArgumentsValue(this, args);
+
     }
 }

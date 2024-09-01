@@ -41,13 +41,17 @@ public abstract class Scope {
      */
     public abstract int offset();
 
+    public abstract int localsCount();
+    public abstract int capturesCount();
+    public abstract int allocCount();
+
     public boolean end() { 
         if (!active) return false;
 
         this.active = false;
         if (this.parent != null) {
             assert this.parent.child == this;
-            this.parent.child = this;
+            this.parent.child = null;
         }
 
         return true;

@@ -2,7 +2,6 @@ package me.topchetoeu.jscript.compilation;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Vector;
 
 import me.topchetoeu.jscript.common.Instruction;
 import me.topchetoeu.jscript.common.Instruction.BreakpointType;
@@ -10,36 +9,25 @@ import me.topchetoeu.jscript.common.parsing.Location;
 import me.topchetoeu.jscript.common.parsing.ParseRes;
 import me.topchetoeu.jscript.common.parsing.Parsing;
 import me.topchetoeu.jscript.common.parsing.Source;
-import me.topchetoeu.jscript.compilation.values.FunctionNode;
+
 
 public class CompoundNode extends Node {
     public final Node[] statements;
-    public final boolean separateFuncs;
     public Location end;
 
-    @Override public boolean pure() {
-        for (var stm : statements) {
-            if (!stm.pure()) return false;
-        }
-
-        return true;
+    @Override public void resolve(CompileResult target) {
+        for (var stm : statements) stm.resolve(target);
     }
 
-    @Override
-    public void declare(CompileResult target) {
-        for (var stm : statements) stm.declare(target);
-    }
+    @Override public void compile(CompileResult target, boolean pollute, BreakpointType type) {
+        List<Node> statements = new ArrayList<Node>();
 
-    @Override
-    public void compile(CompileResult target, boolean pollute, BreakpointType type) {
-        List<Node> statements = new Vector<Node>();
-        if (separateFuncs) for (var stm : this.statements) {
-            if (stm instanceof FunctionNode && ((FunctionNode)stm).statement) {
+        for (var stm : this.statements) {
+            if (stm instanceof FunctionStatementNode) {
                 stm.compile(target, false);
             }
             else statements.add(stm);
         }
-        else statements = List.of(this.statements);
 
         var polluted = false;
 
@@ -60,9 +48,8 @@ public class CompoundNode extends Node {
         return this;
     }
 
-    public CompoundNode(Location loc, boolean separateFuncs, Node ...statements) {
+    public CompoundNode(Location loc, Node ...statements) {
         super(loc);
-        this.separateFuncs = separateFuncs;
         this.statements = statements;
     }
 
@@ -75,11 +62,18 @@ public class CompoundNode extends Node {
         if (!src.is(i + n, ",")) return ParseRes.failed();
         n++;
 
-        var res = JavaScript.parseExpression(src, i + n, 2);
-        if (!res.isSuccess()) return res.chainError(src.loc(i + n), "Expected a value after the comma");
-        n += res.n;
+        var curr = JavaScript.parseExpression(src, i + n, 2);
+        if (!curr.isSuccess()) return curr.chainError(src.loc(i + n), "Expected a value after the comma");
+        n += curr.n;
 
-        return ParseRes.res(new CompoundNode(loc, false, prev, res.result), n);
+        if (prev instanceof CompoundNode) {
+            var children = new ArrayList<Node>();
+            children.addAll(List.of(((CompoundNode)prev).statements));
+            children.add(curr.result);
+
+            return ParseRes.res(new CompoundNode(loc, children.toArray(Node[]::new)), n);
+        }
+        else return ParseRes.res(new CompoundNode(loc, prev, curr.result), n);
     }
     public static ParseRes<CompoundNode> parse(Source src, int i) {
         var n = Parsing.skipEmpty(src, i);
@@ -109,6 +103,6 @@ public class CompoundNode extends Node {
             statements.add(res.result);
         }
 
-        return ParseRes.res(new CompoundNode(loc, true, statements.toArray(Node[]::new)).setEnd(src.loc(i + n - 1)), n);
+        return ParseRes.res(new CompoundNode(loc, statements.toArray(Node[]::new)).setEnd(src.loc(i + n - 1)), n);
     }
 }

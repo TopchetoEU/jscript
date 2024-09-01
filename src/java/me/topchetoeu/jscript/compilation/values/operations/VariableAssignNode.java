@@ -4,28 +4,25 @@ import me.topchetoeu.jscript.common.Instruction;
 import me.topchetoeu.jscript.common.Operation;
 import me.topchetoeu.jscript.common.parsing.Location;
 import me.topchetoeu.jscript.compilation.CompileResult;
+import me.topchetoeu.jscript.compilation.FunctionNode;
 import me.topchetoeu.jscript.compilation.Node;
-import me.topchetoeu.jscript.compilation.values.FunctionNode;
+import me.topchetoeu.jscript.compilation.values.VariableNode;
 
 public class VariableAssignNode extends Node {
     public final String name;
     public final Node value;
     public final Operation operation;
 
-    @Override public boolean pure() { return false; }
-
-    @Override
-    public void compile(CompileResult target, boolean pollute) {
-        var i = target.scope.getKey(name);
+    @Override public void compile(CompileResult target, boolean pollute) {
         if (operation != null) {
-            target.add(Instruction.loadVar(i));
+            target.add(VariableNode.toGet(target, loc(), name));
             FunctionNode.compileWithName(value, target, true, name);
             target.add(Instruction.operation(operation));
-            target.add(Instruction.storeVar(i, pollute));
+            target.add(VariableNode.toSet(target, loc(), name, pollute, false));
         }
         else {
             FunctionNode.compileWithName(value, target, true, name);
-            target.add(Instruction.storeVar(i, pollute));
+            target.add(VariableNode.toSet(target, loc(), name, pollute, false));
         }
     }
 

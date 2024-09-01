@@ -116,32 +116,20 @@ public class JSONMap implements Map<String, JSONElement> {
     public JSONMap set(String key, Map<String, JSONElement> val) { elements.put(key, JSONElement.of(val)); return this; }
     public JSONMap set(String key, Collection<JSONElement> val) { elements.put(key, JSONElement.of(val)); return this; }
 
-    @Override
-    public int size() { return elements.size(); }
-    @Override
-    public boolean isEmpty() { return elements.isEmpty(); }
-    @Override
-    public boolean containsKey(Object key) { return elements.containsKey(key); }
-    @Override
-    public boolean containsValue(Object value) { return elements.containsValue(value); }
-    @Override
-    public JSONElement get(Object key) { return elements.get(key); }
-    @Override
-    public JSONElement put(String key, JSONElement value) { return elements.put(key, value); }
-    @Override
-    public JSONElement remove(Object key) { return elements.remove(key); }
-    @Override
-    public void putAll(Map<? extends String, ? extends JSONElement> m) { elements.putAll(m); }
+    @Override public int size() { return elements.size(); }
+    @Override public boolean isEmpty() { return elements.isEmpty(); }
+    @Override public boolean containsKey(Object key) { return elements.containsKey(key); }
+    @Override public boolean containsValue(Object value) { return elements.containsValue(value); }
+    @Override public JSONElement get(Object key) { return elements.get(key); }
+    @Override public JSONElement put(String key, JSONElement value) { return elements.put(key, value); }
+    @Override public JSONElement remove(Object key) { return elements.remove(key); }
+    @Override public void putAll(Map<? extends String, ? extends JSONElement> m) { elements.putAll(m); }
 
-    @Override
-    public void clear() { elements.clear(); }
+    @Override public void clear() { elements.clear(); }
 
-    @Override
-    public Set<String> keySet() { return elements.keySet(); }
-    @Override
-    public Collection<JSONElement> values() { return elements.values(); }
-    @Override
-    public Set<Entry<String, JSONElement>> entrySet() { return elements.entrySet(); }
+    @Override public Set<String> keySet() { return elements.keySet(); }
+    @Override public Collection<JSONElement> values() { return elements.values(); }
+    @Override public Set<Entry<String, JSONElement>> entrySet() { return elements.entrySet(); }
 
     public JSONMap() { }
     public JSONMap(Map<String, JSONElement> els) {

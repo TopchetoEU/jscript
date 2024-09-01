@@ -7,13 +7,22 @@ import me.topchetoeu.jscript.common.parsing.Parsing;
 import me.topchetoeu.jscript.common.parsing.Source;
 import me.topchetoeu.jscript.compilation.CompileResult;
 import me.topchetoeu.jscript.compilation.JavaScript;
+import me.topchetoeu.jscript.compilation.LabelContext;
 import me.topchetoeu.jscript.compilation.Node;
+import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 
 public class BreakNode extends Node {
     public final String label;
 
     @Override public void compile(CompileResult target, boolean pollute) {
-        target.add(Instruction.nop("break", label));
+        var res = LabelContext.getBreak(target.env).getJump(target.size());
+        if (res == null) {
+            if (label != null) throw new SyntaxException(loc(), String.format("Undefined label '%s'", label));
+            else throw new SyntaxException(loc(), "Illegal break statement");
+        }
+        target.add(res);
+
+        // target.add(Instruction.nop("break", label));
         if (pollute) target.add(Instruction.pushUndefined());
     }
 

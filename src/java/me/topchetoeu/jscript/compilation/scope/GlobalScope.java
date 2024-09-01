@@ -19,5 +19,15 @@ public final class GlobalScope extends Scope {
         return false;
     }
 
+    @Override public int localsCount() {
+        return 0;
+    }
+    @Override public int capturesCount() {
+        return 0;
+    }
+    @Override public int allocCount() {
+        return 0;
+    }
+
     public GlobalScope() { super(); }
 }

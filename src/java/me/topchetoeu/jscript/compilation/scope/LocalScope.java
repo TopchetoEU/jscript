@@ -2,7 +2,7 @@ package me.topchetoeu.jscript.compilation.scope;
 
 import me.topchetoeu.jscript.common.parsing.Location;
 
-public class LocalScope extends Scope {
+public final class LocalScope extends Scope {
     private final VariableList locals = new VariableList();
 
     @Override public int offset() {
@@ -41,6 +41,18 @@ public class LocalScope extends Scope {
 
         this.locals.freeze();
         return true;
+    }
+
+    @Override public int localsCount() {
+        if (parent == null) return 0;
+        else return parent.localsCount();
+    }
+    @Override public int capturesCount() {
+        if (parent == null) return 0;
+        else return parent.capturesCount();
+    }
+    @Override public int allocCount() {
+        return locals.size();
     }
 
     public Iterable<VariableDescriptor> all() {

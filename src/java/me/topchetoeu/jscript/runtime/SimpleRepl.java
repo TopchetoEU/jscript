@@ -6,7 +6,6 @@ import java.nio.file.Path;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 
-import me.topchetoeu.jscript.common.Compiler;
 import me.topchetoeu.jscript.common.Metadata;
 import me.topchetoeu.jscript.common.Reading;
 import me.topchetoeu.jscript.common.environment.Environment;
@@ -16,7 +15,6 @@ import me.topchetoeu.jscript.runtime.debug.DebugContext;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
 import me.topchetoeu.jscript.runtime.exceptions.InterruptException;
 import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
-import me.topchetoeu.jscript.runtime.scope.GlobalScope;
 import me.topchetoeu.jscript.runtime.values.Member.FieldMember;
 import me.topchetoeu.jscript.runtime.values.Member.PropertyMember;
 import me.topchetoeu.jscript.runtime.values.Value;
@@ -324,18 +322,17 @@ public class SimpleRepl {
         // environment.add(ModuleRepo.KEY, ModuleRepo.ofFilesystem(fs));
         // environment.add(Compiler.KEY, new JSCompiler(environment));
         environment.add(EventLoop.KEY, engine);
-        environment.add(GlobalScope.KEY, new GlobalScope());
         environment.add(DebugContext.KEY, new DebugContext());
         // environment.add(EventLoop.KEY, engine);
         environment.add(Compiler.KEY, Compiler.DEFAULT);
 
-        var glob = GlobalScope.get(environment);
+        var glob = Value.global(environment);
 
-        glob.define(null, false, new NativeFunction("exit", args -> {
+        glob.defineOwnMember(null, "exit", new NativeFunction("exit", args -> {
             Thread.currentThread().interrupt();
             throw new InterruptException();
         }));
-        glob.define(null, false, new NativeFunction("log", args -> {
+        glob.defineOwnMember(null, "print", new NativeFunction("print", args -> {
             for (var el : args.args) {
                 if (el instanceof StringValue) System.out.print(((StringValue)el).value);
                 else System.out.print(el.toReadable(args.env));
@@ -356,7 +353,7 @@ public class SimpleRepl {
         EventLoop.get(environment).pushMsg(
             false, environment,
             Filename.parse("jscript://init.js"), Reading.resourceToString("lib/index.js"),
-            Value.UNDEFINED, GlobalScope.get(environment).object, primordials(environment)
+            Value.UNDEFINED, Value.global(environment), primordials(environment)
         ).get();
     }
 

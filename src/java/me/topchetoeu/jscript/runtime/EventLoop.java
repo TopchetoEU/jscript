@@ -3,7 +3,6 @@ package me.topchetoeu.jscript.runtime;
 import java.util.concurrent.Future;
 import java.util.function.Supplier;
 
-import me.topchetoeu.jscript.common.Compiler;
 import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.common.environment.Key;
 import me.topchetoeu.jscript.common.parsing.Filename;

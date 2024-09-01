@@ -4,10 +4,9 @@ import me.topchetoeu.jscript.common.Instruction.BreakpointType;
 import me.topchetoeu.jscript.common.parsing.Location;
 
 public abstract class Node {
-    private Location _loc;
+    private Location loc;
 
-    public boolean pure() { return false; }
-    public void declare(CompileResult target) { }
+    public void resolve(CompileResult target) {}
 
     public void compile(CompileResult target, boolean pollute, BreakpointType type) {
         int start = target.size();
@@ -18,10 +17,10 @@ public abstract class Node {
         compile(target, pollute, BreakpointType.NONE);
     }
 
-    public Location loc() { return _loc; }
-    public void setLoc(Location loc) { _loc = loc; }
+    public Location loc() { return loc; }
+    public void setLoc(Location loc) { this.loc = loc; }
 
     protected Node(Location loc) {
-        this._loc = loc;
+        this.loc = loc;
     }
 }

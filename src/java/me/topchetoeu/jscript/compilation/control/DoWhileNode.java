@@ -7,28 +7,35 @@ import me.topchetoeu.jscript.common.parsing.ParseRes;
 import me.topchetoeu.jscript.common.parsing.Parsing;
 import me.topchetoeu.jscript.common.parsing.Source;
 import me.topchetoeu.jscript.compilation.CompileResult;
+import me.topchetoeu.jscript.compilation.DeferredIntSupplier;
 import me.topchetoeu.jscript.compilation.JavaScript;
+import me.topchetoeu.jscript.compilation.LabelContext;
 import me.topchetoeu.jscript.compilation.Node;
 
 public class DoWhileNode extends Node {
     public final Node condition, body;
     public final String label;
 
-    @Override
-    public void declare(CompileResult target) {
-        body.declare(target);
+    @Override public void resolve(CompileResult target) {
+        body.resolve(target);
     }
 
-    @Override
-    public void compile(CompileResult target, boolean pollute) {
+    @Override public void compile(CompileResult target, boolean pollute) {
         int start = target.size();
-        body.compile(target, false, BreakpointType.STEP_OVER);
-        int mid = target.size();
-        condition.compile(target, true, BreakpointType.STEP_OVER);
-        int end = target.size();
+        var end = new DeferredIntSupplier();
+        var mid = new DeferredIntSupplier();
 
-        WhileNode.replaceBreaks(target, label, start, mid - 1, mid, end + 1);
-        target.add(Instruction.jmpIf(start - end));
+        LabelContext.pushLoop(target.env, loc(), label, end, start);
+        body.compile(target, false, BreakpointType.STEP_OVER);
+        LabelContext.popLoop(target.env, label);
+
+        mid.set(target.size());
+        condition.compile(target, true, BreakpointType.STEP_OVER);
+        int endI = target.size();
+        end.set(endI + 1);
+
+        // WhileNode.replaceBreaks(target, label, start, mid - 1, mid, end + 1);
+        target.add(Instruction.jmpIf(start - endI));
     }
 
     public DoWhileNode(Location loc, String label, Node condition, Node body) {
@@ -42,7 +49,7 @@ public class DoWhileNode extends Node {
         var n = Parsing.skipEmpty(src, i);
         var loc = src.loc(i + n);
 
-        var labelRes = WhileNode.parseLabel(src, i + n);
+        var labelRes = JavaScript.parseLabel(src, i + n);
         n += labelRes.n;
 
         if (!Parsing.isIdentifier(src, i + n, "do")) return ParseRes.failed();

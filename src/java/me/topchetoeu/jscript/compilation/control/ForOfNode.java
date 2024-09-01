@@ -17,17 +17,15 @@ public class ForOfNode extends Node {
     public final String label;
     public final Location varLocation;
 
-    @Override
-    public void declare(CompileResult target) {
-        body.declare(target);
-        if (isDeclaration) target.scope.define(varName);
+    @Override public void resolve(CompileResult target) {
+        body.resolve(target);
+        if (isDeclaration) target.scope.resolve(varName);
     }
 
-    @Override
-    public void compile(CompileResult target, boolean pollute) {
+    @Override public void compile(CompileResult target, boolean pollute) {
         var key = target.scope.getKey(varName);
 
-        if (key instanceof String) target.add(Instruction.makeVar((String)key));
+        if (key instanceof String) target.add(Instruction.globDef((String)key));
 
         iterable.compile(target, true, BreakpointType.STEP_OVER);
         target.add(Instruction.dup());
@@ -79,7 +77,7 @@ public class ForOfNode extends Node {
         var n = Parsing.skipEmpty(src, i);
         var loc = src.loc(i + n);
 
-        var label = WhileNode.parseLabel(src, i + n);
+        var label = JavaScript.parseLabel(src, i + n);
         n += label.n;
         n += Parsing.skipEmpty(src, i + n);
 

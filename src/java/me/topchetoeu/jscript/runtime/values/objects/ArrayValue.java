@@ -201,12 +201,10 @@ public class ArrayValue extends ObjectValue implements Iterable<Value> {
         return new Iterator<>() {
             private int i = 0;
 
-            @Override
-            public boolean hasNext() {
+            @Override public boolean hasNext() {
                 return i < size();
             }
-            @Override
-            public Value next() {
+            @Override public Value next() {
                 if (!hasNext()) return null;
                 return get(i++);
             }

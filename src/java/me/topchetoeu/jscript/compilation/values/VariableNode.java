@@ -1,5 +1,7 @@
 package me.topchetoeu.jscript.compilation.values;
 
+import java.util.function.Supplier;
+
 import me.topchetoeu.jscript.common.Instruction;
 import me.topchetoeu.jscript.common.Operation;
 import me.topchetoeu.jscript.common.parsing.Location;
@@ -11,22 +13,61 @@ import me.topchetoeu.jscript.compilation.CompileResult;
 import me.topchetoeu.jscript.compilation.JavaScript;
 import me.topchetoeu.jscript.compilation.Node;
 import me.topchetoeu.jscript.compilation.values.operations.VariableAssignNode;
+import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 
 public class VariableNode extends Node implements AssignableNode {
     public final String name;
 
-    @Override public boolean pure() { return false; }
+    // @Override public EvalResult evaluate(CompileResult target) {
+    //     var i = target.scope.getKey(name);
 
-    @Override
-    public Node toAssign(Node val, Operation operation) {
+    //     if (i instanceof String) return EvalResult.NONE;
+    //     else return EvalResult.UNKNOWN;
+    // }
+
+    @Override public Node toAssign(Node val, Operation operation) {
         return new VariableAssignNode(loc(), name, val, operation);
     }
 
-    @Override
-    public void compile(CompileResult target, boolean pollute) {
-        var i = target.scope.getKey(name);
-        target.add(Instruction.loadVar(i));
-        if (!pollute) target.add(Instruction.discard());
+    @Override public void compile(CompileResult target, boolean pollute) {
+        var i = target.scope.get(name, true);
+
+        if (i == null) {
+            target.add((Supplier<Instruction>)() -> {
+                if (target.scope.has(name)) throw new SyntaxException(loc(), String.format("Cannot access '%s' before initialization", name));
+                return Instruction.globGet(name);
+            });
+
+            if (!pollute) target.add(Instruction.discard());
+        }
+        else if (pollute) {
+            target.add(Instruction.loadVar(i.index()));
+        }
+    }
+
+    public static Supplier<Instruction> toGet(CompileResult target, Location loc, String name, Supplier<Instruction> onGlobal) {
+        var i = target.scope.get(name, true);
+
+        if (i == null) return () -> {
+            if (target.scope.has(name)) throw new SyntaxException(loc, String.format("Cannot access '%s' before initialization", name));
+            else return onGlobal.get();
+        };
+        else return () -> Instruction.loadVar(i.index());
+    }
+    public static Supplier<Instruction> toGet(CompileResult target, Location loc, String name) {
+        return toGet(target, loc, name, () -> Instruction.globGet(name));
+    }
+
+
+    public static Supplier<Instruction> toSet(CompileResult target, Location loc, String name, boolean keep, boolean define) {
+        var i = target.scope.get(name, true);
+
+        if (i == null) return () -> {
+            if (target.scope.has(name)) throw new SyntaxException(loc, String.format("Cannot access '%s' before initialization", name));
+            else return Instruction.globSet(name, keep, define);
+        };
+        else return () -> Instruction.storeVar(i.index(), keep);
+
     }
 
     public VariableNode(Location loc, String name) {

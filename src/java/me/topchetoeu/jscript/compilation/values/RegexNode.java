@@ -11,11 +11,7 @@ import me.topchetoeu.jscript.compilation.Node;
 public class RegexNode extends Node {
     public final String pattern, flags;
 
-    // Not really pure, since a function is called, but can be ignored.
-    @Override public boolean pure() { return true; }
-
-    @Override
-    public void compile(CompileResult target, boolean pollute) {
+    @Override public void compile(CompileResult target, boolean pollute) {
         target.add(Instruction.loadRegex(pattern, flags));
         if (!pollute) target.add(Instruction.discard());
     }

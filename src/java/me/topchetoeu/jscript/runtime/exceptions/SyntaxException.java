@@ -7,7 +7,7 @@ public class SyntaxException extends RuntimeException {
     public final String msg;
 
     public SyntaxException(Location loc, String msg) {
-        super(String.format("Syntax error (at %s): %s", loc, msg));
+        super(String.format("Syntax error %s: %s", loc, msg));
         this.loc = loc;
         this.msg = msg;
     }

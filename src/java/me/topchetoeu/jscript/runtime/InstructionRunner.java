@@ -7,8 +7,6 @@ import me.topchetoeu.jscript.common.Instruction;
 import me.topchetoeu.jscript.common.Operation;
 import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
-import me.topchetoeu.jscript.runtime.scope.GlobalScope;
-import me.topchetoeu.jscript.runtime.scope.ValueVariable;
 import me.topchetoeu.jscript.runtime.values.Member.FieldMember;
 import me.topchetoeu.jscript.runtime.values.Member.PropertyMember;
 import me.topchetoeu.jscript.runtime.values.Value;
@@ -60,12 +58,6 @@ public class InstructionRunner {
         return null;
     }
 
-    private static Value execMakeVar(Environment env, Instruction instr, Frame frame) {
-        var name = (String)instr.get(0);
-        GlobalScope.get(env).define(env, false, name);
-        frame.codePtr++;
-        return null;
-    }
     private static Value execDefProp(Environment env, Instruction instr, Frame frame) {
         var setterVal = frame.pop();
         var getterVal = frame.pop();
@@ -146,12 +138,11 @@ public class InstructionRunner {
         return null;
     }
     private static Value execLoadVar(Environment env, Instruction instr, Frame frame) {
-        var i = instr.get(0);
+        int i = instr.get(0);
 
-        if (i instanceof String) frame.push(GlobalScope.get(env).get(env, (String)i));
-        else frame.push(frame.scope.get((int)i).get(env));
-
+        frame.push(frame.getVar(i)[0]);
         frame.codePtr++;
+
         return null;
     }
     private static Value execLoadObj(Environment env, Instruction instr, Frame frame) {
@@ -162,7 +153,7 @@ public class InstructionRunner {
         return null;
     }
     private static Value execLoadGlob(Environment env, Instruction instr, Frame frame) {
-        frame.push(GlobalScope.get(env).object);
+        frame.push(Value.global(env));
         frame.codePtr++;
         return null;
     }
@@ -176,10 +167,10 @@ public class InstructionRunner {
     private static Value execLoadFunc(Environment env, Instruction instr, Frame frame) {
         int id = instr.get(0);
         String name = instr.get(1);
-        var captures = new ValueVariable[instr.params.length - 2];
+        var captures = new Value[instr.params.length - 2][];
 
         for (var i = 2; i < instr.params.length; i++) {
-            captures[i - 2] = frame.scope.get(instr.get(i));
+            captures[i - 2] = frame.getVar(instr.get(i));
         }
 
         var func = new CodeFunction(env, name, frame.function.body.children[id], captures);
@@ -231,20 +222,14 @@ public class InstructionRunner {
     }
     private static Value execStoreVar(Environment env, Instruction instr, Frame frame) {
         var val = (boolean)instr.get(1) ? frame.peek() : frame.pop();
-        var i = instr.get(0);
+        int i = instr.get(0);
 
-        if (i instanceof String) GlobalScope.get(env).set(env, (String)i, val);
-        else frame.scope.get((int)i).set(env, val);
-
+        frame.getVar(i)[0] = val;
         frame.codePtr++;
+
         return null;
     }
-    private static Value execStoreSelfFunc(Environment env, Instruction instr, Frame frame) {
-        frame.scope.locals[(int)instr.get(0)].set(env, frame.function);
-        frame.codePtr++;
-        return null;
-    }
-    
+
     private static Value execJmp(Environment env, Instruction instr, Frame frame) {
         frame.codePtr += (int)instr.get(0);
         frame.jumpFlag = true;
@@ -271,12 +256,7 @@ public class InstructionRunner {
         String name = instr.get(0);
         Value obj;
 
-        if (name != null) {
-            if (GlobalScope.get(env).has(env, name)) {
-                obj = GlobalScope.get(env).get(env, name);
-            }
-            else obj = null;
-        }
+        if (name != null) obj = Value.global(env).getMember(env, name);
         else obj = frame.pop();
 
         frame.push(obj.type());
@@ -309,6 +289,73 @@ public class InstructionRunner {
         return null;
     }
 
+    private static Value exexGlobDef(Environment env, Instruction instr, Frame frame) {
+        var name = (String)instr.get(0);
+
+        if (!Value.global(env).hasMember(env, name, false)) {
+            if (!Value.global(env).defineOwnMember(env, name, Value.UNDEFINED)) throw EngineException.ofError("Couldn't define variable " + name);
+        }
+
+        frame.codePtr++;
+        return null;
+    }
+    private static Value exexGlobGet(Environment env, Instruction instr, Frame frame) {
+        var name = (String)instr.get(0);
+        var res = Value.global(env).getMemberOrNull(env, name);
+
+        if (res == null) throw EngineException.ofSyntax(name + " is not defined");
+        else frame.push(res);
+
+        frame.codePtr++;
+        return null;
+    }
+    private static Value exexGlobSet(Environment env, Instruction instr, Frame frame) {
+        var name = (String)instr.get(0);
+        var keep = (boolean)instr.get(1);
+        var define = (boolean)instr.get(2);
+
+        var val = keep ? frame.peek() : frame.pop();
+        var res = false;
+
+        if (define) res = Value.global(env).setMember(env, name, val);
+        else res = Value.global(env).setMemberIfExists(env, name, val);
+
+        if (!res) throw EngineException.ofError("Couldn't set variable " + name);
+
+        frame.codePtr++;
+        return null;
+    }
+
+    private static Value execLoadArgs(Environment env, Instruction instr, Frame frame) {
+        frame.push(frame.argsVal);
+        frame.codePtr++;
+        return null;
+    }
+    private static Value execLoadThis(Environment env, Instruction instr, Frame frame) {
+        frame.push(frame.self);
+        frame.codePtr++;
+        return null;
+    }
+
+    private static Value execStackAlloc(Environment env, Instruction instr, Frame frame) {
+        int n = instr.get(0);
+
+        for (var i = 0; i < n; i++) frame.locals.add(new Value[] { Value.UNDEFINED });
+        
+        frame.codePtr++;
+        return null;
+    }
+    private static Value execStackFree(Environment env, Instruction instr, Frame frame) {
+        int n = instr.get(0);
+
+        for (var i = 0; i < n; i++) {
+            frame.locals.remove(frame.locals.size() - 1);
+        }
+
+        frame.codePtr++;
+        return null;
+    }
+
     public static Value exec(Environment env, Instruction instr, Frame frame) {
         switch (instr.type) {
             case NOP: return execNop(env, instr, frame);
@@ -335,12 +382,12 @@ public class InstructionRunner {
             case LOAD_MEMBER: return execLoadMember(env, instr, frame);
             case LOAD_REGEX: return execLoadRegEx(env, instr, frame);
             case LOAD_GLOB: return execLoadGlob(env, instr, frame);
+            case LOAD_ARGS: return execLoadArgs(env, instr, frame);
+            case LOAD_THIS: return execLoadThis(env, instr, frame);
 
             case DISCARD: return execDiscard(env, instr, frame);
             case STORE_MEMBER: return execStoreMember(env, instr, frame);
             case STORE_VAR: return execStoreVar(env, instr, frame);
-            case STORE_SELF_FUNC: return execStoreSelfFunc(env, instr, frame);
-            case MAKE_VAR: return execMakeVar(env, instr, frame);
 
             case KEYS: return execKeys(env, instr, frame);
             case DEF_PROP: return execDefProp(env, instr, frame);
@@ -352,6 +399,13 @@ public class InstructionRunner {
             case JMP_IFN: return execJmpIfNot(env, instr, frame);
 
             case OPERATION: return execOperation(env, instr, frame);
+
+            case GLOB_DEF: return exexGlobDef(env, instr, frame);
+            case GLOB_GET: return exexGlobGet(env, instr, frame);
+            case GLOB_SET: return exexGlobSet(env, instr, frame);
+
+            case STACK_ALLOC: return execStackAlloc(env, instr, frame);
+            case STACK_FREE: return execStackFree(env, instr, frame);
 
             default: throw EngineException.ofSyntax("Invalid instruction " + instr.type.name() + ".");
         }

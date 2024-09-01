@@ -19,9 +19,48 @@ public class Parsing {
     }
 
     public static int skipEmpty(Source src, int i) {
+        return skipEmpty(src, i, true);
+    }
+
+    public static int skipEmpty(Source src, int i, boolean noComments) {
         int n = 0;
 
-        while (n < src.size() && src.is(i + n, Character::isWhitespace)) n++;
+        if (i == 0 && src.is(0, "#!")) {
+            while (!src.is(n, '\n')) n++;
+            n++;
+        }
+
+        var isSingle = false;
+        var isMulti = false;
+
+        while (i + n < src.size()) {
+            if (isSingle) {
+                if (src.is(i + n, '\n')) {
+                    n++;
+                    isSingle = false;
+                }
+                else n++;
+            }
+            else if (isMulti) {
+                if (src.is(i + n, "*/")) {
+                    n += 2;
+                    isMulti = false;
+                }
+                else n++;
+            }
+            else if (src.is(i + n, "//")) {
+                n += 2;
+                isSingle = true;
+            }
+            else if (src.is(i + n, "/*")) {
+                n += 2;
+                isMulti = true;
+            }
+            else if (src.is(i + n, Character::isWhitespace)) {
+                n++;
+            }
+            else break;
+        }
 
         return n;
     }
