@@ -17,6 +17,7 @@ import me.topchetoeu.jscript.compilation.control.DeleteNode;
 import me.topchetoeu.jscript.compilation.control.DoWhileNode;
 import me.topchetoeu.jscript.compilation.control.ForInNode;
 import me.topchetoeu.jscript.compilation.control.ForNode;
+import me.topchetoeu.jscript.compilation.control.ForOfNode;
 import me.topchetoeu.jscript.compilation.control.IfNode;
 import me.topchetoeu.jscript.compilation.control.ReturnNode;
 import me.topchetoeu.jscript.compilation.control.SwitchNode;
@@ -187,7 +188,7 @@ public class JavaScript {
             SwitchNode::parse,
             ForNode::parse,
             ForInNode::parse,
-            // ForOfNode::parse,
+            ForOfNode::parse,
             DoWhileNode::parse,
             TryNode::parse,
             CompoundNode::parse,
