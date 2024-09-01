@@ -21,7 +21,7 @@ import me.topchetoeu.jscript.runtime.values.functions.CodeFunction;
 import me.topchetoeu.jscript.runtime.values.objects.ObjectValue;
 import me.topchetoeu.jscript.runtime.values.objects.ScopeValue;
 
-public class Frame {
+public final class Frame {
     public static final Key<Frame> KEY = Key.of();
 
     public static enum TryState {

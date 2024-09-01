@@ -4,7 +4,7 @@ import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.runtime.values.Value;
 import me.topchetoeu.jscript.runtime.values.Member.FieldMember;
 
-public class ScopeValue extends ObjectValue {
+public final class ScopeValue extends ObjectValue {
     private class VariableField extends FieldMember {
         private int i;
 

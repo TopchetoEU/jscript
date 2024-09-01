@@ -7,7 +7,7 @@ import java.util.function.Supplier;
 
 import me.topchetoeu.jscript.runtime.exceptions.InterruptException;
 
-public class Engine implements EventLoop {
+public final class Engine implements EventLoop {
     private static class Task<T> implements Comparable<Task<?>> {
         public final Supplier<?> runnable;
         public final CompletableFuture<T> notifier = new CompletableFuture<T>();
@@ -73,8 +73,5 @@ public class Engine implements EventLoop {
     }
     public boolean isRunning() {
         return this.thread != null;
-    }
-
-    public Engine() {
     }
 }
