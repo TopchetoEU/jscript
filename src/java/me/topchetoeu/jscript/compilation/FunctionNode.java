@@ -47,10 +47,18 @@ public abstract class FunctionNode extends Node {
             }
         }
 
-        var funcScope = new FunctionScope(storeSelf ? name : null, args, target.scope);
-        var subtarget = new CompileResult(target.env, new LocalScope(funcScope));
+        var env = target.env.child()
+            .remove(LabelContext.BREAK_CTX)
+            .remove(LabelContext.CONTINUE_CTX);
 
-        // compileStoreSelf(subtarget, pollute, bp);
+        var funcScope = new FunctionScope(target.scope);
+        var subtarget = new CompileResult(env, new LocalScope(funcScope));
+
+        for (var arg : args) {
+            // TODO: Implement default values
+            // TODO: Implement argument location
+            funcScope.defineArg(arg, loc());
+        }
 
         body.resolve(subtarget);
         body.compile(subtarget, false);
