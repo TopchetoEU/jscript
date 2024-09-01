@@ -12,8 +12,8 @@ public class FunctionValueNode extends FunctionNode {
         compile(target, pollute, true, name, bp);
     }
 
-    public FunctionValueNode(Location loc, Location end, String[] args, CompoundNode body, String name) {
-        super(loc, end, args, body);
+    public FunctionValueNode(Location loc, Location end, Parameters params, CompoundNode body, String name) {
+        super(loc, end, params, body);
         this.name = name;
     }
 }

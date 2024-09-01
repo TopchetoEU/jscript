@@ -44,7 +44,7 @@ public class SwitchNode extends Node {
         value.compile(target, true, BreakpointType.STEP_OVER);
 
         var subtarget = target.subtarget();
-        subtarget.add(() -> Instruction.stackAlloc(subtarget.scope.allocCount()));
+        subtarget.add(_i -> Instruction.stackAlloc(subtarget.scope.allocCount()));
 
         // TODO: create a jump map
         for (var ccase : cases) {

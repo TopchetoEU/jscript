@@ -97,7 +97,7 @@ public class ObjectNode extends Node {
         if (!name.isSuccess()) return name.chainError(src.loc(i + n), "Expected a property name after '" + access + "'");
         n += name.n;
 
-        var params = JavaScript.parseParamList(src, i + n);
+        var params = JavaScript.parseParameters(src, i + n);
         if (!params.isSuccess()) return params.chainError(src.loc(i + n), "Expected an argument list");
         n += params.n;
 
@@ -109,7 +109,7 @@ public class ObjectNode extends Node {
 
         return ParseRes.res(new ObjProp(
             name.result, access.result,
-            new FunctionValueNode(loc, end, params.result.toArray(String[]::new), body.result, access + " " + name.result.toString())
+            new FunctionValueNode(loc, end, params.result, body.result, access + " " + name.result.toString())
         ), n);
     }
 

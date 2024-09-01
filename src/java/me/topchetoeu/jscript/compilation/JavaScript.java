@@ -1,10 +1,10 @@
 package me.topchetoeu.jscript.compilation;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
 
 import me.topchetoeu.jscript.common.Instruction;
+import me.topchetoeu.jscript.common.Instruction.BreakpointType;
 import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.common.parsing.Filename;
 import me.topchetoeu.jscript.common.parsing.ParseRes;
@@ -212,40 +212,53 @@ public class JavaScript {
         return ParseRes.failed();
     }
 
-    public static ParseRes<List<String>> parseParamList(Source src, int i) {
+    public static ParseRes<Parameters> parseParameters(Source src, int i) {
         var n = Parsing.skipEmpty(src, i);
 
         var openParen = Parsing.parseOperator(src, i + n, "(");
-        if (!openParen.isSuccess()) return openParen.chainError(src.loc(i + n), "Expected a parameter list.");
+        if (!openParen.isSuccess()) return openParen.chainError(src.loc(i + n), "Expected a parameter list");
         n += openParen.n;
 
-        var args = new ArrayList<String>();
+        var params = new ArrayList<Parameter>();
 
         var closeParen = Parsing.parseOperator(src, i + n, ")");
         n += closeParen.n;
 
         if (!closeParen.isSuccess()) {
             while (true) {
-                var argRes = Parsing.parseIdentifier(src, i + n);
-                if (argRes.isSuccess()) {
-                    args.add(argRes.result);
-                    n += argRes.n;
-                    n += Parsing.skipEmpty(src, i);
+                n += Parsing.skipEmpty(src, i + n);
 
-                    if (src.is(i + n, ",")) {
-                        n++;
-                        n += Parsing.skipEmpty(src, i + n);
-                    }
-                    if (src.is(i + n, ")")) {
-                        n++;
-                        break;
-                    }
+                var paramLoc = src.loc(i);
+
+                var name = Parsing.parseIdentifier(src, i + n);
+                if (!name.isSuccess()) return ParseRes.error(src.loc(i + n), "Expected an argument or a closing brace");
+                n += name.n;
+                n += Parsing.skipEmpty(src, i + n);
+
+                if (src.is(i + n, "=")) {
+                    n++;
+
+                    var val = parseExpression(src, i + n, 2);
+                    if (!val.isSuccess()) return openParen.chainError(src.loc(i + n), "Expected a default value");
+                    n += val.n;
+                    n += Parsing.skipEmpty(src, i + n);
+
+                    params.add(new Parameter(paramLoc, name.result, val.result));
                 }
-                else return ParseRes.error(src.loc(i + n), "Expected an argument, or a closing brace.");
+                else params.add(new Parameter(paramLoc, name.result, null));
+
+                if (src.is(i + n, ",")) {
+                    n++;
+                    n += Parsing.skipEmpty(src, i + n);
+                }
+                if (src.is(i + n, ")")) {
+                    n++;
+                    break;
+                }
             }
         }
 
-        return ParseRes.res(args, n);
+        return ParseRes.res(new Parameters(params), n);
     }
 
     public static Node[] parse(Environment env, Filename filename, String raw) {
@@ -279,7 +292,7 @@ public class JavaScript {
 
         try {
             stm.resolve(target);
-            stm.compile(target, true);
+            stm.compile(target, true, false, BreakpointType.NONE);
             // FunctionNode.checkBreakAndCont(target, 0);
         }
         catch (SyntaxException e) {

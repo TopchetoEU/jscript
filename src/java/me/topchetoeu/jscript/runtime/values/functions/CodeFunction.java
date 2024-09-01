@@ -30,7 +30,7 @@ public final class CodeFunction extends FunctionValue {
     }
 
     public CodeFunction(Environment env, String name, FunctionBody body, Value[][] captures) {
-        super(name, body.argsN);
+        super(name, body.length);
         this.captures = captures;
         this.env = env;
         this.body = body;
