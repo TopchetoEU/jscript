@@ -46,7 +46,7 @@ public class IfNode extends Node {
 
             int mid = target.temp();
 
-            body.compile(target, false, BreakpointType.STEP_OVER);
+            elseBody.compile(target, false, BreakpointType.STEP_OVER);
             LabelContext.getBreak(target.env).pop(label);
 
             int endI = target.size();
