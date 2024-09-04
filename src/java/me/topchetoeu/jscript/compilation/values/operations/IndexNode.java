@@ -11,6 +11,7 @@ import me.topchetoeu.jscript.compilation.AssignableNode;
 import me.topchetoeu.jscript.compilation.CompileResult;
 import me.topchetoeu.jscript.compilation.JavaScript;
 import me.topchetoeu.jscript.compilation.Node;
+import me.topchetoeu.jscript.compilation.values.constants.NumberNode;
 import me.topchetoeu.jscript.compilation.values.constants.StringNode;
 
 public class IndexNode extends Node implements AssignableNode {
@@ -24,8 +25,19 @@ public class IndexNode extends Node implements AssignableNode {
         object.compile(target, true);
         if (dupObj) target.add(Instruction.dup());
 
-        index.compile(target, true);
-        target.add(Instruction.loadMember()).setLocationAndDebug(loc(), BreakpointType.STEP_IN);
+        if (index instanceof NumberNode num && (int)num.value == num.value) {
+            target.add(Instruction.loadMember((int)num.value));
+        }
+        else if (index instanceof StringNode str) {
+            target.add(Instruction.loadMember(str.value));
+        }
+        else {
+            index.compile(target, true);
+            target.add(Instruction.loadMember());
+        }
+
+        target.setLocationAndDebug(loc(), BreakpointType.STEP_IN);
+
         if (!pollute) target.add(Instruction.discard());
     }
     @Override public void compile(CompileResult target, boolean pollute) {
