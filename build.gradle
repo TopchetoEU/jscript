@@ -1,46 +1,14 @@
-<<<<<<< HEAD
-
-plugins {
-    id "application"
-    // these idiots don't optimize in the compile-time, but in the runtime
-    // who let these knuckleheads make a language
-=======
 import java.text.SimpleDateFormat
 
 plugins {
     id 'application'
     id 'net.nemerosa.versioning' version '2.15.0'
     id 'org.ajoberstar.grgit' version '5.0.0-rc.3' // required by gradle
->>>>>>> master
 
     // TODO: figure out how to integrate proguard
     // id "com.github.xaverkapeller.proguard-annotations"
 }
 
-<<<<<<< HEAD
-repositories {
-    mavenCentral()
-    gradlePluginPortal()
-}
-
-dependencies {
-    // Genuinely fuck Java
-    annotationProcessor 'com.github.bsideup.jabel:jabel-javac-plugin:0.4.2'
-    compileOnly 'com.github.bsideup.jabel:jabel-javac-plugin:0.4.2'
-}
-
-java {
-    toolchain.languageVersion = JavaLanguageVersion.of(17)
-}
-
-configure([tasks.compileJava]) {
-    sourceCompatibility = 17 // for the IDE support
-    options.release = 11
-
-    javaCompiler = javaToolchains.compilerFor {
-        languageVersion = JavaLanguageVersion.of(17)
-    }
-=======
 base.archivesName = project.project_name
 version = project.project_version
 group = project.project_group
@@ -68,7 +36,6 @@ java {
 
 configure([tasks.compileJava]) {
     options.release = 11
->>>>>>> master
 }
 
 jar {
