@@ -13,7 +13,6 @@ import me.topchetoeu.jscript.common.parsing.Source;
 import me.topchetoeu.jscript.compilation.CompileResult;
 import me.topchetoeu.jscript.compilation.JavaScript;
 import me.topchetoeu.jscript.compilation.Node;
-import me.topchetoeu.jscript.compilation.values.ArgumentsNode;
 import me.topchetoeu.jscript.compilation.values.ArrayNode;
 import me.topchetoeu.jscript.compilation.values.ObjectNode;
 import me.topchetoeu.jscript.compilation.values.ThisNode;
@@ -56,15 +55,6 @@ public class CallNode extends Node {
         else if (func instanceof ThisNode) {
             res = "this";
         }
-        else if (func instanceof ArgumentsNode) {
-            res = "arguments";
-        }
-        // else if (func instanceof VariableIndexNode) {
-        //     var i = ((VariableIndexNode)func).index;
-
-        //     if (i == 0) res = "this";
-        //     else if (i == 1) res = "arguments";
-        // }
         else if (func instanceof ArrayNode) {
             var els = new ArrayList<String>();
 
