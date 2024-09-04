@@ -19,7 +19,6 @@ import me.topchetoeu.jscript.runtime.debug.DebugContext;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
 import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 import me.topchetoeu.jscript.runtime.values.Member.FieldMember;
-import me.topchetoeu.jscript.runtime.values.functions.CodeFunction;
 import me.topchetoeu.jscript.runtime.values.functions.FunctionValue;
 import me.topchetoeu.jscript.runtime.values.functions.NativeFunction;
 import me.topchetoeu.jscript.runtime.values.objects.ArrayValue;
@@ -427,32 +426,26 @@ public abstract class Value {
         }
     }
 
-    private final boolean isEmptyFunc(Environment env, ObjectValue val) {
-        if (!(val instanceof FunctionValue)) return false;
-        if (val.members.size() + val.symbolMembers.size() > 1) return false;
-
-        var proto = ((FunctionValue)val).prototype;
-        if (!(proto instanceof ObjectValue)) return false;
-        var protoObj = (ObjectValue)proto;
-
-        if (protoObj.getMember(env, new StringValue("constructor")) != val) return false;
-        if (protoObj.getOwnMembers(env).size() + protoObj.getOwnSymbolMembers(env).size() != 1) return false;
-
-        return true;
-    }
     private final String toReadable(Environment env, HashSet<Object> passed, int tab) {
         if (passed.contains(this)) return "[circular]";
 
-        if (this instanceof ObjectValue) {
+        if (this instanceof ObjectValue obj) {
             var res = new StringBuilder();
             var dbg = DebugContext.get(env);
             var printed = true;
+            var keys = this.getMembers(env, true, false);
 
-            if (this instanceof FunctionValue) {
+            if (this instanceof FunctionValue func) {
                 res.append(this.toString());
-                var loc = this instanceof CodeFunction ? dbg.getMapOrEmpty((CodeFunction)this).start() : null;
+                var loc = dbg.getMapOrEmpty(func).start();
 
                 if (loc != null) res.append(" @ " + loc);
+
+                if (
+                    func.prototype instanceof ObjectValue objProto &&
+                    objProto.getMember(env, "constructor") == func && 
+                    objProto.getOwnMembers(env).size() + objProto.getOwnSymbolMembers(env).size() == 1
+                ) { keys.remove("constructor"); }
             }
             else if (this instanceof ArrayValue) {
                 res.append("[");
@@ -461,7 +454,11 @@ public abstract class Value {
                 for (int i = 0; i < arr.size(); i++) {
                     if (i != 0) res.append(", ");
                     else res.append(" ");
-                    if (arr.has(i)) res.append(arr.get(i).toReadable(env, passed, tab));
+
+                    if (arr.hasMember(env, i, true)) {
+                        res.append(arr.getMember(env, i).toReadable(env, passed, tab));
+                        keys.remove(i + "");
+                    }
                     else res.append("<empty>");
                 }
 
@@ -469,15 +466,14 @@ public abstract class Value {
             }
             else printed = false;
 
-            if (tab > 3) return "{...}";
 
             passed.add(this);
 
-            var obj = (ObjectValue)this;
-            if (obj.getOwnSymbolMembers(env).size() + obj.getOwnMembers(env).size() == 0 || isEmptyFunc(env, obj)) {
+            if (keys.size() + obj.getOwnSymbolMembers(env).size() == 0) {
                 if (!printed) res.append("{}\n");
             }
-            else {
+            else if (!printed) {
+                if (tab > 3) return "{...}";
                 res.append("{\n");
 
                 for (var entry : obj.getOwnSymbolMembers(env).entrySet()) {
