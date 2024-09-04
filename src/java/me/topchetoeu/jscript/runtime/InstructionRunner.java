@@ -118,7 +118,7 @@ public class InstructionRunner {
         int count = instr.get(0);
 
         for (var i = 0; i < count; i++) {
-            frame.push(frame.peek(count - 1));
+            frame.push(frame.peek());
         }
 
         frame.codePtr++;
@@ -172,14 +172,20 @@ public class InstructionRunner {
     private static Value execLoadFunc(Environment env, Instruction instr, Frame frame) {
         int id = instr.get(0);
         String name = instr.get(1);
-        var captures = new Value[instr.params.length - 2][];
+        boolean callable = instr.get(2);
+        boolean constructible = instr.get(3);
+        boolean captureThis = instr.get(4);
+    
+        var captures = new Value[instr.params.length - 5][];
 
-        for (var i = 2; i < instr.params.length; i++) {
-            captures[i - 2] = frame.getVar(instr.get(i));
+        for (var i = 5; i < instr.params.length; i++) {
+            captures[i - 5] = frame.getVar(instr.get(i));
         }
 
         var func = new CodeFunction(env, name, frame.function.body.children[id], captures);
-
+        if (!callable) func.enableCall = false;
+        if (!constructible) func.enableNew = false;
+        if (captureThis) func.self = frame.self;
         frame.push(func);
 
         frame.codePtr++;
@@ -187,10 +193,32 @@ public class InstructionRunner {
     }
     private static Value execLoadMember(Environment env, Instruction instr, Frame frame) {
         var key = frame.pop();
-        var obj = frame.pop();
 
         try {
-            frame.push(obj.getMember(env, key));
+            var top = frame.stackPtr - 1;
+            frame.stack[top] = frame.stack[top].getMember(env, key);
+        }
+        catch (IllegalArgumentException e) {
+            throw EngineException.ofType(e.getMessage());
+        }
+        frame.codePtr++;
+        return null;
+    }
+    private static Value execLoadMemberInt(Environment env, Instruction instr, Frame frame) {
+        try {
+            var top = frame.stackPtr - 1;
+            frame.stack[top] = frame.stack[top].getMember(env, (int)instr.get(0));
+        }
+        catch (IllegalArgumentException e) {
+            throw EngineException.ofType(e.getMessage());
+        }
+        frame.codePtr++;
+        return null;
+    }
+    private static Value execLoadMemberStr(Environment env, Instruction instr, Frame frame) {
+        try {
+            var top = frame.stackPtr - 1;
+            frame.stack[top] = frame.stack[top].getMember(env, (String)instr.get(0));
         }
         catch (IllegalArgumentException e) {
             throw EngineException.ofType(e.getMessage());
@@ -222,6 +250,24 @@ public class InstructionRunner {
 
         if (!obj.setMember(env, key, val)) throw EngineException.ofSyntax("Can't set member '" + key.toReadable(env) + "'.");
         if ((boolean)instr.get(0)) frame.push(val);
+        frame.codePtr++;
+        return null;
+    }
+    private static Value execStoreMemberStr(Environment env, Instruction instr, Frame frame) {
+        var val = frame.pop();
+        var obj = frame.pop();
+
+        if (!obj.setMember(env, (String)instr.get(0), val)) throw EngineException.ofSyntax("Can't set member '" + instr.get(0) + "'.");
+        if ((boolean)instr.get(1)) frame.push(val);
+        frame.codePtr++;
+        return null;
+    }
+    private static Value execStoreMemberInt(Environment env, Instruction instr, Frame frame) {
+        var val = frame.pop();
+        var obj = frame.pop();
+
+        if (!obj.setMember(env, (int)instr.get(0), val)) throw EngineException.ofSyntax("Can't set member '" + instr.get(0) + "'.");
+        if ((boolean)instr.get(1)) frame.push(val);
         frame.codePtr++;
         return null;
     }
@@ -430,6 +476,21 @@ public class InstructionRunner {
         frame.codePtr++;
         return null;
     }
+    private static Value execLoadRestArgs(Environment env, Instruction instr, Frame frame) {
+        int offset = instr.get(0);
+        var res = new ArrayValue();
+
+        if (offset < frame.args.length) res.copyFrom(frame.args, instr.get(0), 0, frame.args.length - offset);
+
+        frame.push(res);
+        frame.codePtr++;
+        return null;
+    }
+    private static Value execLoadCallee(Environment env, Instruction instr, Frame frame) {
+        frame.push(frame.function);
+        frame.codePtr++;
+        return null;
+    }
     private static Value execLoadThis(Environment env, Instruction instr, Frame frame) {
         frame.push(frame.self);
         frame.codePtr++;
@@ -479,14 +540,20 @@ public class InstructionRunner {
             case LOAD_ARR: return execLoadArr(env, instr, frame);
             case LOAD_FUNC: return execLoadFunc(env, instr, frame);
             case LOAD_MEMBER: return execLoadMember(env, instr, frame);
+            case LOAD_MEMBER_INT: return execLoadMemberInt(env, instr, frame);
+            case LOAD_MEMBER_STR: return execLoadMemberStr(env, instr, frame);
             case LOAD_REGEX: return execLoadRegEx(env, instr, frame);
             case LOAD_GLOB: return execLoadGlob(env, instr, frame);
             case LOAD_INTRINSICS: return execLoadIntrinsics(env, instr, frame);
             case LOAD_ARGS: return execLoadArgs(env, instr, frame);
+            case LOAD_REST_ARGS: return execLoadRestArgs(env, instr, frame);
+            case LOAD_CALLEE: return execLoadCallee(env, instr, frame);
             case LOAD_THIS: return execLoadThis(env, instr, frame);
 
             case DISCARD: return execDiscard(env, instr, frame);
             case STORE_MEMBER: return execStoreMember(env, instr, frame);
+            case STORE_MEMBER_STR: return execStoreMemberStr(env, instr, frame);
+            case STORE_MEMBER_INT: return execStoreMemberInt(env, instr, frame);
             case STORE_VAR: return execStoreVar(env, instr, frame);
 
             case KEYS: return execKeys(env, instr, frame);
