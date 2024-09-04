@@ -422,20 +422,8 @@ public final class Frame {
 
         var i = 0;
 
-        for (; i < func.body.argsN && i < args.length; i++) {
-            this.locals.add(new Value[] { args[i] });
-        }
-        for (; i < args.length; i++) {
-            this.locals.add(new Value[] { Value.UNDEFINED });
-        }
-
         for (i = 0; i < func.body.localsN; i++) {
             this.locals.add(new Value[] { Value.UNDEFINED });
         }
-
-        // this.locals = new LocalScope(func.body.localsN, func.captures);
-        // this.locals.get(0).set(thisArg);
-        // this.locals.get(1).value = new ArgumentsValue(this, args);
-
     }
 }
