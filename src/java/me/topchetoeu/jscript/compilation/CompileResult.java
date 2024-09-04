@@ -20,7 +20,7 @@ public final class CompileResult {
     public final List<CompileResult> children;
     public final FunctionMapBuilder map;
     public final Environment env;
-    public int length, assignN;
+    public int length;
     public final Scope scope;
 
     public int temp() {
@@ -101,8 +101,7 @@ public final class CompileResult {
 
         return new FunctionBody(
             scope.localsCount() + scope.allocCount(), scope.capturesCount(),
-            length, assignN,
-            instrRes, builtChildren
+            length, instrRes, builtChildren
         );
     }
 
