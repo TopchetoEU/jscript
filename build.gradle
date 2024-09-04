@@ -1,13 +1,23 @@
+<<<<<<< HEAD
 
 plugins {
     id "application"
     // these idiots don't optimize in the compile-time, but in the runtime
     // who let these knuckleheads make a language
+=======
+import java.text.SimpleDateFormat
+
+plugins {
+    id 'application'
+    id 'net.nemerosa.versioning' version '2.15.0'
+    id 'org.ajoberstar.grgit' version '5.0.0-rc.3' // required by gradle
+>>>>>>> master
 
     // TODO: figure out how to integrate proguard
     // id "com.github.xaverkapeller.proguard-annotations"
 }
 
+<<<<<<< HEAD
 repositories {
     mavenCentral()
     gradlePluginPortal()
@@ -30,15 +40,69 @@ configure([tasks.compileJava]) {
     javaCompiler = javaToolchains.compilerFor {
         languageVersion = JavaLanguageVersion.of(17)
     }
+=======
+base.archivesName = project.project_name
+version = project.project_version
+group = project.project_group
+description = 'ES5-compliant JavaScript interpreter'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    annotationProcessor 'com.github.bsideup.jabel:jabel-javac-plugin:0.4.2'
+    compileOnly 'com.github.bsideup.jabel:jabel-javac-plugin:0.4.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.9.2'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+configure([tasks.compileJava]) {
+    options.release = 11
+>>>>>>> master
 }
 
 jar {
-    manifest.attributes["Main-class"] = project.main_class
+    manifest {
+        attributes(
+            'Main-Class': project.main_class,
+            'Build-Timestamp': new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").format(new Date()),
+            'Build-Branch': versioning.info.branch,
+            'Build-Revision': versioning.info.commit,
+            'Build-Jdk': "${System.properties['java.version']} (${System.properties['java.vendor']} ${System.properties['java.vm.version']})",
+            'Build-Author': 'TopchetoEU'
+        )
+    }
 }
 
-sourceSets {
-    main.java.srcDirs = [ "src/java" ]
-    main.resources.srcDirs = [ "src/assets" ]
+application {
+    mainClass = project.main_class
+    applicationDefaultJvmArgs = ['-Xmx2G', '-Xms2G', '-server', '-Dfile.encoding=UTF-8']
+}
+
+distZip {
+    eachFile { file ->
+        if (file.path.contains('bin')) {
+            file.exclude()
+        }
+    }
+}
+
+distTar {
+    eachFile { file ->
+        if (file.path.contains('bin')) {
+            file.exclude()
+        }
+    }
 }
 
 processResources {
@@ -50,6 +114,10 @@ processResources {
     }
 }
 
-base.archivesName = project.project_name
-version = project.project_version
-group = project.project_group
+test {
+    useJUnitPlatform()
+}
+
+wrapper {
+    gradleVersion = '8.10'
+}
