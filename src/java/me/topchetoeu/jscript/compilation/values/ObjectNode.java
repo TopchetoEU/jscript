@@ -39,10 +39,9 @@ public class ObjectNode extends Node {
 
         for (var el : map.entrySet()) {
             target.add(Instruction.dup());
-            target.add(Instruction.pushValue(el.getKey()));
             var val = el.getValue();
             FunctionNode.compileWithName(val, target, true, el.getKey().toString());
-            target.add(Instruction.storeMember());
+            target.add(Instruction.storeMember(el.getKey()));
         }
 
         var keys = new ArrayList<Object>();
