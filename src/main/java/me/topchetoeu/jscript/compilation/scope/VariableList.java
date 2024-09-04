@@ -5,15 +5,17 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.function.IntSupplier;
 import java.util.function.IntUnaryOperator;
+import java.util.stream.StreamSupport;
 
-public final class VariableList implements Iterable<VariableDescriptor> {
-    private class ListVar extends VariableDescriptor {
-        private ListVar next;
-        private ListVar prev;
-        private boolean frozen;
-        private int index;
+public final class VariableList {
+    private final class Node implements IntSupplier {
+        public Variable var;
+        public Node next;
+        public Node prev;
+        public boolean frozen;
+        public int index;
 
-        @Override public int index() {
+        @Override public int getAsInt() {
             if (frozen) {
                 if (offset == null) {
                     return indexConverter == null ? index : indexConverter.applyAsInt(index);
@@ -35,41 +37,38 @@ public final class VariableList implements Iterable<VariableDescriptor> {
             return indexConverter == null ? res : indexConverter.applyAsInt(res);
         }
 
-        public ListVar freeze() {
-            if (frozen) return this;
+        public void freeze() {
+            if (frozen) return;
             this.frozen = true;
             this.next = null;
-            if (prev == null) return this;
+            this.var.freeze();
+            if (prev == null) return;
 
             this.index = prev.index + 1;
             this.next = null;
 
-            return this;
+            return;
         }
 
-        public ListVar(String name, boolean readonly, ListVar next, ListVar prev) {
-            super(name, readonly);
-
+        public Node(Variable var, Node next, Node prev) {
+            this.var = var;
             this.next = next;
             this.prev = prev;
         }
     }
 
-    private ListVar first, last;
+    private Node first, last;
 
-    private HashMap<String, ListVar> map = new HashMap<>();
-
-    private HashMap<String, VariableDescriptor> frozenMap = null;
-    private ArrayList<VariableDescriptor> frozenList = null;
+    private final HashMap<String, Node> map = new HashMap<>();
+    private ArrayList<Node> frozenList = null;
 
     private final IntSupplier offset;
     private IntUnaryOperator indexConverter = null;
 
     public boolean frozen() {
-        if (frozenMap != null) {
+        if (frozenList != null) {
             assert frozenList != null;
-            assert frozenMap != null;
-            assert map == null;
+            assert map != null;
             assert first == null;
             assert last == null;
 
@@ -77,95 +76,87 @@ public final class VariableList implements Iterable<VariableDescriptor> {
         }
         else {
             assert frozenList == null;
-            assert frozenMap == null;
             assert map != null;
 
             return false;
         }
     }
 
-    public VariableDescriptor add(VariableDescriptor val) {
-        return add(val.name, val.readonly);
-            }
-            public VariableDescriptor add(String name, boolean readonly) {
-                if (frozen()) throw new RuntimeException("The scope has been frozen");
-                if (map.containsKey(name)) return map.get(name);
-
-                var res = new ListVar(name, readonly, null, last);
-
-                if (last != null) {
-                    assert first != null;
-
-                    last.next = res;
-                    res.prev = last;
-
-                    last = res;
-                }
-                else {
-                    first = last = res;
-                }
-
-                map.put(name, res);
-
-                return res;
-            }
-    public VariableDescriptor remove(String name) {
+    private Variable add(Variable val, boolean overlay) {
         if (frozen()) throw new RuntimeException("The scope has been frozen");
+        if (!overlay && map.containsKey(val.name)) {
+            var node = this.map.get(val.name);
+            val.setIndexSupplier(node);
+            return node.var;
+        }
 
-        var el = map.get(name);
-        if (el == null) return null;
+        var node = new Node(val, null, last);
 
-        if (el.prev != null) {
-            assert el != first;
-            el.prev.next = el.next;
+        if (last != null) {
+            assert first != null;
+
+            last.next = node;
+            node.prev = last;
+
+            last = node;
         }
         else {
-            assert el == first;
+            first = last = node;
+        }
+
+        map.put(val.name, node);
+        val.setIndexSupplier(node);
+
+        return val;
+    }
+
+    public Variable add(Variable val) {
+        return this.add(val, false);
+    }
+    public Variable overlay(Variable val) {
+        return this.add(val, true);
+    }
+    public Variable remove(String key) {
+        if (frozen()) throw new RuntimeException("The scope has been frozen");
+
+        var node = map.get(key);
+        if (node == null) return null;
+
+        if (node.prev != null) {
+            assert node != first;
+            node.prev.next = node.next;
+        }
+        else {
+            assert node == first;
             first = first.next;
         }
 
-        if (el.next != null) {
-            assert el != last;
-            el.next.prev = el.prev;
+        if (node.next != null) {
+            assert node != last;
+            node.next.prev = node.prev;
         }
         else {
-            assert el == last;
+            assert node == last;
             last = last.prev;
         }
 
-        el.next = null;
-        el.prev = null;
+        node.next = null;
+        node.prev = null;
 
-        return el;
+        return node.var;
     }
 
-    public VariableDescriptor get(String name) {
-        if (frozen()) return frozenMap.get(name);
-        else return map.get(name);
+    public Variable get(String name) {
+        var res = map.get(name);
+        if (res != null) return res.var;
+        else return null;
     }
-    public VariableDescriptor get(int i) {
-        if (frozen()) {
-            if (i < 0 || i >= frozenList.size()) return null;
-            return frozenList.get(i);
-        }
-        else {
-            if (i < 0 || i >= map.size()) return null;
-
-            if (i < map.size() / 2) {
-                var it = first;
-                for (var j = 0; j < i; it = it.next, j++);
-                return it;
-            }
-            else {
-                var it = last;
-                for (var j = map.size() - 1; j >= i; it = it.prev, j--);
-                return it;
-            }
-        }
+    public int indexOfKey(String name) {
+        return map.get(name).getAsInt();
     }
 
     public boolean has(String name) {
-        return this.get(name) != null;
+        return this.map.containsKey(name);
     }
 
     public int size() {
@@ -176,47 +167,38 @@ public final class VariableList implements Iterable<VariableDescriptor> {
     public void freeze() {
         if (frozen()) return;
 
-        frozenMap = new HashMap<>();
         frozenList = new ArrayList<>();
 
-        for (var it = first; it != null; ) {
-            frozenMap.put(it.name, it);
-            frozenList.add(it);
+        for (var node = first; node != null; ) {
+            frozenList.add(node);
 
-            var tmp = it;
-            it = it.next;
+            var tmp = node;
+            node = node.next;
             tmp.freeze();
         }
 
-        map = null;
         first = last = null;
     }
 
-    @Override public Iterator<VariableDescriptor> iterator() {
-        if (frozen()) return frozenList.iterator();
-        else return new Iterator<VariableDescriptor>() {
-            private ListVar curr = first;
+    public Iterable<Variable> all() {
+        if (frozen()) return () -> frozenList.stream().map(v -> v.var).iterator();
+        else return () -> new Iterator<Variable>() {
+            private Node curr = first;
 
             @Override public boolean hasNext() {
                 return curr != null;
             }
-            @Override public VariableDescriptor next() {
+            @Override public Variable next() {
                 if (curr == null) return null;
 
                 var res = curr;
                 curr = curr.next;
-                return res;
+                return res.var;
             }
         };
     }
-
-    public VariableDescriptor[] toArray() {
-        var res = new VariableDescriptor[size()];
-        var i = 0;
-
-        for (var el : this) res[i++] = el;
-
-        return res;
+    public Iterable<String> keys() {
+        return () -> StreamSupport.stream(all().spliterator(), false).map(v -> v.name).iterator();
     }
 
     public VariableList setIndexMap(IntUnaryOperator map) {

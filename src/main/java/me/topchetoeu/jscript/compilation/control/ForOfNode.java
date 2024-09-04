@@ -12,6 +12,7 @@ import me.topchetoeu.jscript.compilation.JavaScript;
 import me.topchetoeu.jscript.compilation.LabelContext;
 import me.topchetoeu.jscript.compilation.Node;
 import me.topchetoeu.jscript.compilation.JavaScript.DeclarationType;
+import me.topchetoeu.jscript.compilation.scope.Variable;
 import me.topchetoeu.jscript.compilation.values.VariableNode;
 
 public class ForOfNode extends Node {
@@ -23,11 +24,11 @@ public class ForOfNode extends Node {
 
     @Override public void resolve(CompileResult target) {
         body.resolve(target);
-        if (declType != null && !declType.strict) target.scope.define(varName, false, varLocation);
+        if (declType != null && !declType.strict) target.scope.define(new Variable(varName, false), varLocation);
     }
 
     @Override public void compile(CompileResult target, boolean pollute) {
-        if (declType != null && declType.strict) target.scope.defineStrict(varName, declType.readonly, varLocation);
+        if (declType != null && declType.strict) target.scope.defineStrict(new Variable(varName, declType.readonly), varLocation);
 
         iterable.compile(target, true, BreakpointType.STEP_OVER);
         target.add(Instruction.dup());

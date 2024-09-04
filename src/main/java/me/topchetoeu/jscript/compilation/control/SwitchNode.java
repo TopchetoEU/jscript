@@ -65,7 +65,7 @@ public class SwitchNode extends Node {
         LabelContext.getBreak(target.env).pop(label);
 
         subtarget.scope.end();
-        subtarget.add(Instruction.stackFree(subtarget.scope.allocCount()));
+        subtarget.add(_i -> Instruction.stackFree(subtarget.scope.allocCount()));
 
         int endI = subtarget.size();
         end.set(endI);

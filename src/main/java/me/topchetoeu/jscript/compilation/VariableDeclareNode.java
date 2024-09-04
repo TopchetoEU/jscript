@@ -10,6 +10,7 @@ import me.topchetoeu.jscript.common.parsing.ParseRes;
 import me.topchetoeu.jscript.common.parsing.Parsing;
 import me.topchetoeu.jscript.common.parsing.Source;
 import me.topchetoeu.jscript.compilation.JavaScript.DeclarationType;
+import me.topchetoeu.jscript.compilation.scope.Variable;
 import me.topchetoeu.jscript.compilation.values.VariableNode;
 
 public class VariableDeclareNode extends Node {
@@ -31,7 +32,7 @@ public class VariableDeclareNode extends Node {
     @Override public void resolve(CompileResult target) {
         if (!declType.strict) {
             for (var entry : values) {
-                target.scope.define(entry.name, false, entry.location);
+                target.scope.define(new Variable(entry.name, false), entry.location);
             }
         }
     }
@@ -39,7 +40,7 @@ public class VariableDeclareNode extends Node {
     @Override public void compile(CompileResult target, boolean pollute) {
         for (var entry : values) {
             if (entry.name == null) continue;
-            if (declType.strict) target.scope.defineStrict(entry.name, declType.readonly, entry.location);
+            if (declType.strict) target.scope.defineStrict(new Variable(entry.name, declType.readonly), entry.location);
 
             if (entry.value != null) {
                 FunctionNode.compileWithName(entry.value, target, true, entry.name, BreakpointType.STEP_OVER);

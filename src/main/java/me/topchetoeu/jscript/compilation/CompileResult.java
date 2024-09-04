@@ -3,6 +3,7 @@ package me.topchetoeu.jscript.compilation;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.function.Consumer;
 import java.util.function.IntFunction;
 
 import me.topchetoeu.jscript.common.FunctionBody;
@@ -12,15 +13,28 @@ import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.common.mapping.FunctionMap;
 import me.topchetoeu.jscript.common.mapping.FunctionMap.FunctionMapBuilder;
 import me.topchetoeu.jscript.common.parsing.Location;
-import me.topchetoeu.jscript.compilation.scope.LocalScope;
 import me.topchetoeu.jscript.compilation.scope.Scope;
 
 public final class CompileResult {
+    public static final class ChildData {
+        public final int id;
+        public final CompileResult result;
+
+        public ChildData(int id, CompileResult result) {
+            this.result = result;
+            this.id = id;
+        }
+    }
+
     public final List<IntFunction<Instruction>> instructions;
+    // public final List<Supplier<CompileResult>> childrenTasks;
     public final List<CompileResult> children;
     public final FunctionMapBuilder map;
     public final Environment env;
     public int length;
+    public Runnable buildTask = () -> {
+        throw new IllegalStateException("Compile result is not ready to be built");
+    };
     public final Scope scope;
 
     public int temp() {
@@ -68,10 +82,15 @@ public final class CompileResult {
         setLocationAndDebug(instructions.size() - 1, loc, type);
     }
 
-    public CompileResult addChild(CompileResult child) {
-        this.children.add(child);
-        return child;
+    public int addChild(CompileResult res) {
+        this.children.add(res);
+        return this.children.size() - 1;
     }
+
+    // public int addChild(Supplier<CompileResult> supplier) {
+    //     this.childrenTasks.add(() -> supplier.get());
+    //     return childrenTasks.size() - 1;
+    // }
 
     public Instruction[] instructions() {
         var res = new Instruction[instructions.size()];
@@ -106,15 +125,17 @@ public final class CompileResult {
     }
 
     public CompileResult subtarget() {
-        return new CompileResult(new LocalScope(scope), this);
+        return new CompileResult(new Scope(scope), this);
     }
 
-    public CompileResult(Environment env, Scope scope) {
+    public CompileResult(Environment env, Scope scope, int length, Consumer<CompileResult> task) {
         this.scope = scope;
-        instructions = new ArrayList<>();
-        children = new LinkedList<>();
-        map = FunctionMap.builder();
+        this.instructions = new ArrayList<>();
+        this.children = new LinkedList<>();
+        this.map = FunctionMap.builder();
         this.env = env;
+        this.length = length;
+        this.buildTask = () -> task.accept(this);
     }
     private CompileResult(Scope scope, CompileResult parent) {
         this.scope = scope;

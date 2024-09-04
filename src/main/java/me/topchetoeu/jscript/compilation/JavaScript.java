@@ -1,10 +1,9 @@
 package me.topchetoeu.jscript.compilation;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
-import me.topchetoeu.jscript.common.Instruction;
-import me.topchetoeu.jscript.common.Instruction.BreakpointType;
 import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.common.parsing.Filename;
 import me.topchetoeu.jscript.common.parsing.ParseRes;
@@ -24,8 +23,7 @@ import me.topchetoeu.jscript.compilation.control.SwitchNode;
 import me.topchetoeu.jscript.compilation.control.ThrowNode;
 import me.topchetoeu.jscript.compilation.control.TryNode;
 import me.topchetoeu.jscript.compilation.control.WhileNode;
-import me.topchetoeu.jscript.compilation.scope.GlobalScope;
-import me.topchetoeu.jscript.compilation.scope.LocalScope;
+import me.topchetoeu.jscript.compilation.scope.FunctionScope;
 import me.topchetoeu.jscript.compilation.values.ArrayNode;
 import me.topchetoeu.jscript.compilation.values.ObjectNode;
 import me.topchetoeu.jscript.compilation.values.RegexNode;
@@ -326,24 +324,32 @@ public final class JavaScript {
     }
 
     public static CompileResult compile(Environment env, Node ...statements) {
-        var target = new CompileResult(env, new LocalScope(new GlobalScope()));
-        var stm = new CompoundNode(null, statements);
-        var argsI = target.scope.defineStrict("arguments", true, null);
-        target.add(Instruction.loadArgs());
-        target.add(_i -> Instruction.storeVar(argsI.index()));
+        var func = new FunctionValueNode(null, null, new Parameters(List.of()), new CompoundNode(null, statements), null);
+        var res = func.compileBody(env, new FunctionScope(true), true, true, null, null);
+        res.buildTask.run();
+        return res;
 
-        // try {
-            stm.resolve(target);
-            stm.compile(target, true, false, BreakpointType.NONE);
-            // FunctionNode.checkBreakAndCont(target, 0);
-        // }
-        // catch (SyntaxException e) {
-        //     target = new CompileResult(env, new LocalScope(new GlobalScope()));
+        // var target = new CompileResult(env, new FunctionScope(true));
+        // var stm = ;
+        // var argsI = target.scope.defineStrict(new Variable("arguments", true), null);
+        // target.add(Instruction.loadArgs());
+        // target.add(_i -> Instruction.storeVar(argsI.index()));
 
-        //     target.add(Instruction.throwSyntax(e)).setLocation(stm.loc());
-        // }
+        // // try {
+        //     stm.resolve(target);
+        //     stm.compile(target, true, false, BreakpointType.NONE);
+        //     // FunctionNode.checkBreakAndCont(target, 0);
+        // // }
+        // // catch (SyntaxException e) {
+        // //     target = new CompileResult(env, new LocalScope(new GlobalScope()));
 
-        return target;
+        // //     target.add(Instruction.throwSyntax(e)).setLocation(stm.loc());
+        // // }
+
+        // target.scope.end();
+        // target.scope.finish();
+
+        // return target;
     }
 
     public static CompileResult compile(Environment env, Filename filename, String raw) {

@@ -43,7 +43,7 @@ public class CompoundNode extends Node {
 
         if (alloc) {
             subtarget.scope.end();
-            subtarget.add(Instruction.stackFree(subtarget.scope.allocCount()));
+            subtarget.add(_i -> Instruction.stackFree(subtarget.scope.allocCount()));
         }
 
         if (!polluted && pollute) {

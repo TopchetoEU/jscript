@@ -12,6 +12,7 @@ import me.topchetoeu.jscript.compilation.DeferredIntSupplier;
 import me.topchetoeu.jscript.compilation.JavaScript;
 import me.topchetoeu.jscript.compilation.LabelContext;
 import me.topchetoeu.jscript.compilation.Node;
+import me.topchetoeu.jscript.compilation.scope.Variable;
 
 public class TryNode extends Node {
     public final CompoundNode tryBody;
@@ -42,7 +43,7 @@ public class TryNode extends Node {
 
             if (captureName != null) {
                 var subtarget = target.subtarget();
-                subtarget.scope.defineStrict(captureName, false, catchBody.loc());
+                subtarget.scope.defineStrict(new Variable(captureName, false), catchBody.loc());
                 catchBody.compile(subtarget, false);
                 subtarget.scope.end();
             }

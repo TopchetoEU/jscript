@@ -13,6 +13,7 @@ import me.topchetoeu.jscript.compilation.JavaScript;
 import me.topchetoeu.jscript.compilation.LabelContext;
 import me.topchetoeu.jscript.compilation.Node;
 import me.topchetoeu.jscript.compilation.JavaScript.DeclarationType;
+import me.topchetoeu.jscript.compilation.scope.Variable;
 import me.topchetoeu.jscript.compilation.values.VariableNode;
 
 public class ForInNode extends Node {
@@ -24,11 +25,11 @@ public class ForInNode extends Node {
 
     @Override public void resolve(CompileResult target) {
         body.resolve(target);
-        if (declType != null && !declType.strict) target.scope.define(varName, false, loc());
+        if (declType != null && !declType.strict) target.scope.define(new Variable(varName, false), loc());
     }
 
     @Override public void compile(CompileResult target, boolean pollute) {
-        if (declType != null && declType.strict) target.scope.defineStrict(varName, declType.readonly, varLocation);
+        if (declType != null && declType.strict) target.scope.defineStrict(new Variable(varName, declType.readonly), varLocation);
 
         object.compile(target, true, BreakpointType.STEP_OVER);
         target.add(Instruction.keys(true));

@@ -47,7 +47,7 @@ public class ForNode extends Node {
         if (pollute) subtarget.add(Instruction.pushUndefined());
 
         subtarget.scope.end();
-        subtarget.add(Instruction.stackFree(subtarget.scope.allocCount()));
+        subtarget.add(_i -> Instruction.stackFree(subtarget.scope.allocCount()));
     }
 
     public ForNode(Location loc, String label, Node declaration, Node condition, Node assignment, Node body) {

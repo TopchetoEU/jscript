@@ -45,7 +45,7 @@ const unwrapThis = (self, type, constr, name, arg, defaultVal) => {
     if (typeof self === type) return self;
     if (self instanceof constr && valueKey in self) self = self[valueKey];
     if (typeof self === type) return self;
-    if (arguments.length > 5) return defaultVal;
+    if (defaultVal !== undefined) return defaultVal;
 
     throw new TypeError(name + " requires that '" + arg + "' be a " + constr.name);
 }

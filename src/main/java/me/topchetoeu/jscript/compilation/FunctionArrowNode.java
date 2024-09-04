@@ -13,12 +13,9 @@ import me.topchetoeu.jscript.compilation.control.ReturnNode;
 public class FunctionArrowNode extends FunctionNode {
     @Override public String name() { return null; }
 
-    @Override protected void compileLoadFunc(CompileResult target, int id, int[] captures, String name) {
-        target.add(Instruction.loadFunc(id, true, false, true, null, captures));
-    }
-
     @Override public void compile(CompileResult target, boolean pollute, String name, BreakpointType bp) {
-        compile(target, pollute, false, name, null, bp);
+        var id = target.addChild(compileBody(target, false, name, null));
+        target.add(_i -> Instruction.loadFunc(id, true, false, true, null, captures(id, target)));
     }
 
     public FunctionArrowNode(Location loc, Location end, Parameters params, Node body) {
