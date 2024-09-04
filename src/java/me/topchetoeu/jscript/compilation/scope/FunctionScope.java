@@ -27,19 +27,17 @@ public class FunctionScope extends Scope {
         else if (parent == null) throw new RuntimeException("Strict variables may be defined only in local scopes");
         else return parent.defineStrict(name, readonly, loc);
     }
-    public VariableDescriptor defineParam(String name, Location loc) {
-        return specials.add(name, false);
+    public VariableDescriptor defineParam(String name, boolean readonly, Location loc) {
+        return specials.add(name, readonly);
     }
     public boolean hasArg(String name) {
         return specials.has(name);
     }
 
-    public VariableDescriptor get(String name, boolean capture, boolean skipSelf) {
-        if (!skipSelf) {
-            if (specials.has(name)) return specials.get(name);
-            if (locals.has(name)) return locals.get(name);
-            if (captures.has(name)) return captures.get(name);
-        }
+    @Override public VariableDescriptor get(String name, boolean capture) {
+        if (specials.has(name)) return specials.get(name);
+        if (locals.has(name)) return locals.get(name);
+        if (captures.has(name)) return captures.get(name);
 
         var parentVar = parent.get(name, true);
         if (parentVar == null) return null;
@@ -49,10 +47,6 @@ public class FunctionScope extends Scope {
         childToParent.put(childVar, parentVar);
 
         return childVar;
-    }
-
-    @Override public VariableDescriptor get(String name, boolean capture) {
-        return get(name, capture, false);
     }
 
     @Override public boolean has(String name) {
@@ -83,7 +77,7 @@ public class FunctionScope extends Scope {
     }
 
     public int offset() {
-        return captures.size() + locals.size();
+        return specials.size() + locals.size();
     }
 
     public int[] getCaptureIndices() {
@@ -93,6 +87,7 @@ public class FunctionScope extends Scope {
         for (var el : captures) {
             assert childToParent.containsKey(el);
             res[i] = childToParent.get(el).index();
+            i++;
         }
 
         return res;

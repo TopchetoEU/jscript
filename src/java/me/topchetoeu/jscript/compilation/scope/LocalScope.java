@@ -3,7 +3,10 @@ package me.topchetoeu.jscript.compilation.scope;
 import me.topchetoeu.jscript.common.parsing.Location;
 
 public final class LocalScope extends Scope {
-    private final VariableList locals = new VariableList();
+    private final VariableList locals = new VariableList(() -> {
+        if (parent != null) return parent.offset();
+        else return 0;
+    });
 
     @Override public int offset() {
         if (parent != null) return parent.offset() + locals.size();

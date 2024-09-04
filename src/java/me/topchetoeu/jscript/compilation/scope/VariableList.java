@@ -38,13 +38,11 @@ public final class VariableList implements Iterable<VariableDescriptor> {
         public ListVar freeze() {
             if (frozen) return this;
             this.frozen = true;
-
+            this.next = null;
             if (prev == null) return this;
-            assert prev.frozen;
 
             this.index = prev.index + 1;
             this.next = null;
-            this.prev = null;
 
             return this;
         }
