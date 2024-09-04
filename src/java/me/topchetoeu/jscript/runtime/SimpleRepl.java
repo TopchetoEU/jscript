@@ -337,8 +337,9 @@ public class SimpleRepl {
                 if (el instanceof StringValue) System.out.print(((StringValue)el).value);
                 else System.out.print(el.toReadable(args.env));
             }
+            System.out.println();
 
-            return null;
+            return Value.UNDEFINED;
         }));
     }
     private static void initEngine() {
