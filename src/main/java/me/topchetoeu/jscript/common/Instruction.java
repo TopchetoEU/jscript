@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.function.IntFunction;
 import java.util.function.IntSupplier;
 
+import me.topchetoeu.jscript.common.parsing.Location;
 import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 
 public class Instruction {
@@ -260,6 +261,9 @@ public class Instruction {
     }
     public static Instruction throwSyntax(String err) {
         return new Instruction(Type.THROW_SYNTAX, err);
+    }
+    public static Instruction throwSyntax(Location loc, String err) {
+        return new Instruction(Type.THROW_SYNTAX, new SyntaxException(loc, err).getMessage());
     }
     public static Instruction delete() {
         return new Instruction(Type.DELETE);

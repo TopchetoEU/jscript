@@ -35,7 +35,7 @@ public class VariableNode extends Node implements AssignableNode {
 
         if (i == null) {
             target.add(_i -> {
-                if (target.scope.has(name, false)) throw new SyntaxException(loc(), String.format("Cannot access '%s' before initialization", name));
+                if (target.scope.has(name, false)) return Instruction.throwSyntax(loc(), String.format("Cannot access '%s' before initialization", name));
                 return Instruction.globGet(name);
             });
 
@@ -50,7 +50,7 @@ public class VariableNode extends Node implements AssignableNode {
         var i = target.scope.get(name, true);
 
         if (i == null) return _i -> {
-            if (target.scope.has(name, false)) throw new SyntaxException(loc, String.format("Cannot access '%s' before initialization", name));
+            if (target.scope.has(name, false)) return Instruction.throwSyntax(loc, String.format("Cannot access '%s' before initialization", name));
             else return onGlobal.get();
         };
         else return _i -> Instruction.loadVar(i.index());
@@ -64,7 +64,7 @@ public class VariableNode extends Node implements AssignableNode {
         var i = target.scope.get(name, true);
 
         if (i == null) return _i -> {
-            if (target.scope.has(name, false)) throw new SyntaxException(loc, String.format("Cannot access '%s' before initialization", name));
+            if (target.scope.has(name, false)) return Instruction.throwSyntax(loc, String.format("Cannot access '%s' before initialization", name));
             else return Instruction.globSet(name, keep, define);
         };
         else if (!define && i.readonly) return _i -> Instruction.throwSyntax(new SyntaxException(loc, "Assignment to constant variable"));
