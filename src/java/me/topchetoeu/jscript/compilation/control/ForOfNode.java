@@ -11,42 +11,41 @@ import me.topchetoeu.jscript.compilation.DeferredIntSupplier;
 import me.topchetoeu.jscript.compilation.JavaScript;
 import me.topchetoeu.jscript.compilation.LabelContext;
 import me.topchetoeu.jscript.compilation.Node;
+import me.topchetoeu.jscript.compilation.JavaScript.DeclarationType;
 import me.topchetoeu.jscript.compilation.values.VariableNode;
 
 public class ForOfNode extends Node {
     public final String varName;
-    public final boolean isDeclaration;
+    public final DeclarationType declType;
     public final Node iterable, body;
     public final String label;
     public final Location varLocation;
 
     @Override public void resolve(CompileResult target) {
         body.resolve(target);
-        if (isDeclaration) target.scope.define(varName, false, varLocation);
+        if (declType != null && !declType.strict) target.scope.define(varName, false, varLocation);
     }
 
     @Override public void compile(CompileResult target, boolean pollute) {
+        if (declType != null && declType.strict) target.scope.defineStrict(varName, declType.readonly, varLocation);
+
         iterable.compile(target, true, BreakpointType.STEP_OVER);
         target.add(Instruction.dup());
         target.add(Instruction.loadIntrinsics("it_key"));
-        target.add(Instruction.loadMember()).setLocation(iterable.loc());
         target.add(Instruction.loadMember()).setLocation(iterable.loc());
         target.add(Instruction.call(0)).setLocation(iterable.loc());
 
         int start = target.size();
         target.add(Instruction.dup());
         target.add(Instruction.dup());
-        target.add(Instruction.pushValue("next"));
-        target.add(Instruction.loadMember()).setLocation(iterable.loc());
+        target.add(Instruction.loadMember("next")).setLocation(iterable.loc());
         target.add(Instruction.call(0)).setLocation(iterable.loc());
         target.add(Instruction.dup());
-        target.add(Instruction.pushValue("done"));
-        target.add(Instruction.loadMember()).setLocation(iterable.loc());
+        target.add(Instruction.loadMember("done")).setLocation(iterable.loc());
         int mid = target.temp();
 
-        target.add(Instruction.pushValue("value"));
-        target.add(Instruction.loadMember()).setLocation(varLocation);
-        target.add(VariableNode.toSet(target, varLocation, varName, false, isDeclaration));
+        target.add(Instruction.loadMember("value")).setLocation(varLocation);
+        target.add(VariableNode.toSet(target, varLocation, varName, false, declType != null && declType.strict));
 
         var end = new DeferredIntSupplier();
 
@@ -57,8 +56,6 @@ public class ForOfNode extends Node {
         int endI = target.size();
         end.set(endI);
 
-        // WhileNode.replaceBreaks(target, label, mid + 1, end, start, end + 1);
-
         target.add(Instruction.jmp(start - endI));
         target.add(Instruction.discard());
         target.add(Instruction.discard());
@@ -66,11 +63,11 @@ public class ForOfNode extends Node {
         if (pollute) target.add(Instruction.pushUndefined());
     }
 
-    public ForOfNode(Location loc, Location varLocation, String label, boolean isDecl, String varName, Node object, Node body) {
+    public ForOfNode(Location loc, Location varLocation, String label, DeclarationType declType, String varName, Node object, Node body) {
         super(loc);
         this.varLocation = varLocation;
         this.label = label;
-        this.isDeclaration = isDecl;
+        this.declType = declType;
         this.varName = varName;
         this.iterable = object;
         this.body = body;
@@ -92,12 +89,8 @@ public class ForOfNode extends Node {
         n++;
         n += Parsing.skipEmpty(src, i + n);
 
-        var isDecl = false;
-
-        if (Parsing.isIdentifier(src, i + n, "var")) {
-            isDecl = true;
-            n += 3;
-        }
+        var declType = JavaScript.parseDeclarationType(src, i + n);
+        n += declType.n;
 
         var name = Parsing.parseIdentifier(src, i + n);
         if (!name.isSuccess()) return ParseRes.error(src.loc(i + n), "Expected a variable name for for-of loop");
@@ -120,6 +113,6 @@ public class ForOfNode extends Node {
         if (!bodyRes.isSuccess()) return bodyRes.chainError(src.loc(i + n), "Expected a for-of body");
         n += bodyRes.n;
 
-        return ParseRes.res(new ForOfNode(loc, nameLoc, label.result, isDecl, name.result, obj.result, bodyRes.result), n);
+        return ParseRes.res(new ForOfNode(loc, nameLoc, label.result, declType.result, name.result, obj.result, bodyRes.result), n);
     }
 }

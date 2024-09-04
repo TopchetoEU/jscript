@@ -23,28 +23,31 @@ public class ForNode extends Node {
         body.resolve(target);
     }
     @Override public void compile(CompileResult target, boolean pollute) {
-        declaration.compile(target, false, BreakpointType.STEP_OVER);
+        var subtarget = target.subtarget();
+        subtarget.add(i -> Instruction.stackAlloc(subtarget.scope.allocCount()));
 
-        int start = target.size();
-        condition.compile(target, true, BreakpointType.STEP_OVER);
-        int mid = target.temp();
+        declaration.compile(subtarget, false, BreakpointType.STEP_OVER);
+
+        int start = subtarget.size();
+        condition.compile(subtarget, true, BreakpointType.STEP_OVER);
+        int mid = subtarget.temp();
 
         var end = new DeferredIntSupplier();
 
-        LabelContext.pushLoop(target.env, loc(), label, end, start);
-        body.compile(target, false, BreakpointType.STEP_OVER);
-        LabelContext.popLoop(target.env, label);
+        LabelContext.pushLoop(subtarget.env, loc(), label, end, start);
+        body.compile(subtarget, false, BreakpointType.STEP_OVER);
+        LabelContext.popLoop(subtarget.env, label);
 
-        // int beforeAssign = target.size();
-        assignment.compile(target, false, BreakpointType.STEP_OVER);
-        int endI = target.size();
+        assignment.compile(subtarget, false, BreakpointType.STEP_OVER);
+        int endI = subtarget.size();
         end.set(endI);
 
-        // WhileNode.replaceBreaks(target, label, mid + 1, end, beforeAssign, end + 1);
+        subtarget.add(Instruction.jmp(start - endI));
+        subtarget.set(mid, Instruction.jmpIfNot(endI - mid + 1));
+        if (pollute) subtarget.add(Instruction.pushUndefined());
 
-        target.add(Instruction.jmp(start - endI));
-        target.set(mid, Instruction.jmpIfNot(endI - mid + 1));
-        if (pollute) target.add(Instruction.pushUndefined());
+        subtarget.scope.end();
+        subtarget.add(Instruction.stackFree(subtarget.scope.allocCount()));
     }
 
     public ForNode(Location loc, String label, Node declaration, Node condition, Node assignment, Node body) {

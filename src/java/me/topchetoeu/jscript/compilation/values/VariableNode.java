@@ -42,7 +42,7 @@ public class VariableNode extends Node implements AssignableNode {
             if (!pollute) target.add(Instruction.discard());
         }
         else if (pollute) {
-            target.add(Instruction.loadVar(i.index()));
+            target.add(_i -> Instruction.loadVar(i.index()));
         }
     }
 
@@ -67,8 +67,8 @@ public class VariableNode extends Node implements AssignableNode {
             if (target.scope.has(name)) throw new SyntaxException(loc, String.format("Cannot access '%s' before initialization", name));
             else return Instruction.globSet(name, keep, define);
         };
+        else if (!define && i.readonly) return _i -> Instruction.throwSyntax(new SyntaxException(loc, "Assignment to constant variable"));
         else return _i -> Instruction.storeVar(i.index(), keep);
-
     }
 
     public VariableNode(Location loc, String name) {

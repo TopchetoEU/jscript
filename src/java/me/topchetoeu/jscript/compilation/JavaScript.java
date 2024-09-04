@@ -26,9 +26,7 @@ import me.topchetoeu.jscript.compilation.control.TryNode;
 import me.topchetoeu.jscript.compilation.control.WhileNode;
 import me.topchetoeu.jscript.compilation.scope.GlobalScope;
 import me.topchetoeu.jscript.compilation.scope.LocalScope;
-import me.topchetoeu.jscript.compilation.values.ArgumentsNode;
 import me.topchetoeu.jscript.compilation.values.ArrayNode;
-import me.topchetoeu.jscript.compilation.values.GlobalThisNode;
 import me.topchetoeu.jscript.compilation.values.ObjectNode;
 import me.topchetoeu.jscript.compilation.values.RegexNode;
 import me.topchetoeu.jscript.compilation.values.ThisNode;
@@ -45,7 +43,20 @@ import me.topchetoeu.jscript.compilation.values.operations.OperationNode;
 import me.topchetoeu.jscript.compilation.values.operations.TypeofNode;
 import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 
-public class JavaScript {
+public final class JavaScript {
+    public static enum DeclarationType {
+        VAR(false, false),
+        CONST(true, true),
+        LET(true, false);
+
+        public final boolean strict, readonly;
+
+        private DeclarationType(boolean strict, boolean readonly) {
+            this.strict = strict;
+            this.readonly = readonly;
+        }
+    }
+
     static final Set<String> reserved = Set.of(
         "true", "false", "void", "null", "this", "if", "else", "try", "catch",
         "finally", "for", "do", "while", "switch", "case", "default", "new",
@@ -84,6 +95,7 @@ public class JavaScript {
             ChangeNode::parsePrefixIncrease,
             OperationNode::parsePrefix,
             ArrayNode::parse,
+            FunctionArrowNode::parse,
             JavaScript::parseParens,
             CallNode::parseNew,
             TypeofNode::parse,
@@ -103,11 +115,11 @@ public class JavaScript {
 
         if (id.result.equals("true")) return ParseRes.res(new BoolNode(loc, true), n);
         if (id.result.equals("false")) return ParseRes.res(new BoolNode(loc, false), n);
-        if (id.result.equals("undefined")) return ParseRes.res(new DiscardNode(loc, null), n);
+        // if (id.result.equals("undefined")) return ParseRes.res(new DiscardNode(loc, null), n);
         if (id.result.equals("null")) return ParseRes.res(new NullNode(loc), n);
         if (id.result.equals("this")) return ParseRes.res(new ThisNode(loc), n);
-        if (id.result.equals("arguments")) return ParseRes.res(new ArgumentsNode(loc), n);
-        if (id.result.equals("globalThis")) return ParseRes.res(new GlobalThisNode(loc), n);
+        // if (id.result.equals("arguments")) return ParseRes.res(new ArgumentsNode(loc), n);
+        // if (id.result.equals("globalThis")) return ParseRes.res(new GlobalThisNode(loc), n);
 
         return ParseRes.failed();
     }
@@ -228,10 +240,25 @@ public class JavaScript {
             while (true) {
                 n += Parsing.skipEmpty(src, i + n);
 
+                if (src.is(i + n, "...")) {
+                    n += 3;
+                    var restLoc = src.loc(i);
+
+                    var restName = Parsing.parseIdentifier(src, i + n);
+                    if (!restName.isSuccess()) return ParseRes.error(src.loc(i + n), "Expected a rest parameter");
+                    n += restName.n;
+                    n += Parsing.skipEmpty(src, i + n);
+
+                    if (!src.is(i + n, ")")) return ParseRes.error(src.loc(i + n),  "Expected an end of parameters list after rest parameter");
+                    n++;
+
+                    return ParseRes.res(new Parameters(params, restName.result, restLoc), n);
+                }
+
                 var paramLoc = src.loc(i);
 
                 var name = Parsing.parseIdentifier(src, i + n);
-                if (!name.isSuccess()) return ParseRes.error(src.loc(i + n), "Expected an argument or a closing brace");
+                if (!name.isSuccess()) return ParseRes.error(src.loc(i + n), "Expected a parameter or a closing brace");
                 n += name.n;
                 n += Parsing.skipEmpty(src, i + n);
 
@@ -239,7 +266,7 @@ public class JavaScript {
                     n++;
 
                     var val = parseExpression(src, i + n, 2);
-                    if (!val.isSuccess()) return openParen.chainError(src.loc(i + n), "Expected a default value");
+                    if (!val.isSuccess()) return openParen.chainError(src.loc(i + n), "Expected a parameter default value");
                     n += val.n;
                     n += Parsing.skipEmpty(src, i + n);
 
@@ -251,6 +278,7 @@ public class JavaScript {
                     n++;
                     n += Parsing.skipEmpty(src, i + n);
                 }
+
                 if (src.is(i + n, ")")) {
                     n++;
                     break;
@@ -259,6 +287,17 @@ public class JavaScript {
         }
 
         return ParseRes.res(new Parameters(params), n);
+    }
+
+    public static ParseRes<DeclarationType> parseDeclarationType(Source src, int i) {
+        var res = Parsing.parseIdentifier(src, i);
+        if (!res.isSuccess()) return res.chainError();
+
+        if (res.result.equals("var")) return ParseRes.res(DeclarationType.VAR, res.n);
+        if (res.result.equals("let")) return ParseRes.res(DeclarationType.LET, res.n);
+        if (res.result.equals("const")) return ParseRes.res(DeclarationType.CONST, res.n);
+
+        return ParseRes.failed();
     }
 
     public static Node[] parse(Environment env, Filename filename, String raw) {
@@ -289,17 +328,20 @@ public class JavaScript {
     public static CompileResult compile(Environment env, Node ...statements) {
         var target = new CompileResult(env, new LocalScope(new GlobalScope()));
         var stm = new CompoundNode(null, statements);
+        var argsI = target.scope.defineStrict("arguments", true, null);
+        target.add(Instruction.loadArgs());
+        target.add(_i -> Instruction.storeVar(argsI.index()));
 
-        try {
+        // try {
             stm.resolve(target);
             stm.compile(target, true, false, BreakpointType.NONE);
             // FunctionNode.checkBreakAndCont(target, 0);
-        }
-        catch (SyntaxException e) {
-            target = new CompileResult(env, new LocalScope(new GlobalScope()));
+        // }
+        // catch (SyntaxException e) {
+        //     target = new CompileResult(env, new LocalScope(new GlobalScope()));
 
-            target.add(Instruction.throwSyntax(e)).setLocation(stm.loc());
-        }
+        //     target.add(Instruction.throwSyntax(e)).setLocation(stm.loc());
+        // }
 
         return target;
     }

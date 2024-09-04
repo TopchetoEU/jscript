@@ -12,21 +12,24 @@ import me.topchetoeu.jscript.compilation.DeferredIntSupplier;
 import me.topchetoeu.jscript.compilation.JavaScript;
 import me.topchetoeu.jscript.compilation.LabelContext;
 import me.topchetoeu.jscript.compilation.Node;
+import me.topchetoeu.jscript.compilation.JavaScript.DeclarationType;
 import me.topchetoeu.jscript.compilation.values.VariableNode;
 
 public class ForInNode extends Node {
     public final String varName;
-    public final boolean isDeclaration;
+    public final DeclarationType declType;
     public final Node object, body;
     public final String label;
     public final Location varLocation;
 
     @Override public void resolve(CompileResult target) {
         body.resolve(target);
-        if (isDeclaration) target.scope.define(varName, false, loc());
+        if (declType != null && !declType.strict) target.scope.define(varName, false, loc());
     }
 
     @Override public void compile(CompileResult target, boolean pollute) {
+        if (declType != null && declType.strict) target.scope.defineStrict(varName, declType.readonly, varLocation);
+
         object.compile(target, true, BreakpointType.STEP_OVER);
         target.add(Instruction.keys(true));
 
@@ -36,9 +39,8 @@ public class ForInNode extends Node {
         target.add(Instruction.operation(Operation.EQUALS));
         int mid = target.temp();
 
-        target.add(Instruction.pushValue("value")).setLocation(varLocation);
-        target.add(Instruction.loadMember()).setLocation(varLocation);
-        target.add(VariableNode.toSet(target, loc(), varName, pollute, isDeclaration));
+        target.add(Instruction.loadMember("value")).setLocation(varLocation);
+        target.add(VariableNode.toSet(target, loc(), varName, pollute, declType != null && declType.strict));
         target.setLocationAndDebug(object.loc(), BreakpointType.STEP_OVER);
 
         var end = new DeferredIntSupplier();
@@ -49,19 +51,17 @@ public class ForInNode extends Node {
 
         int endI = target.size();
 
-        // WhileNode.replaceBreaks(target, label, mid + 1, end, start, end + 1);
-
         target.add(Instruction.jmp(start - endI));
         target.add(Instruction.discard());
         target.set(mid, Instruction.jmpIf(endI - mid + 1));
         if (pollute) target.add(Instruction.pushUndefined());
     }
 
-    public ForInNode(Location loc, Location varLocation, String label, boolean isDecl, String varName, Node object, Node body) {
+    public ForInNode(Location loc, Location varLocation, String label, DeclarationType declType, String varName, Node object, Node body) {
         super(loc);
         this.varLocation = varLocation;
         this.label = label;
-        this.isDeclaration = isDecl;
+        this.declType = declType;
         this.varName = varName;
         this.object = object;
         this.body = body;
@@ -83,12 +83,8 @@ public class ForInNode extends Node {
         n++;
         n += Parsing.skipEmpty(src, i + n);
 
-        var isDecl = false;
-
-        if (Parsing.isIdentifier(src, i + n, "var")) {
-            isDecl = true;
-            n += 3;
-        }
+        var declType = JavaScript.parseDeclarationType(src, i + n);
+        n += declType.n;
 
         var name = Parsing.parseIdentifier(src, i + n);
         if (!name.isSuccess()) return ParseRes.error(src.loc(i + n), "Expected a variable name for for-in loop");
@@ -111,6 +107,6 @@ public class ForInNode extends Node {
         if (!bodyRes.isSuccess()) return bodyRes.chainError(src.loc(i + n), "Expected a for-in body");
         n += bodyRes.n;
 
-        return ParseRes.res(new ForInNode(loc, nameLoc, label.result, isDecl, name.result, obj.result, bodyRes.result), n);
+        return ParseRes.res(new ForInNode(loc, nameLoc, label.result, declType.result, name.result, obj.result, bodyRes.result), n);
     }
 }

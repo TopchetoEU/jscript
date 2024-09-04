@@ -9,7 +9,7 @@ public class FunctionValueNode extends FunctionNode {
     @Override public String name() { return name; }
 
     @Override public void compile(CompileResult target, boolean pollute, String name, BreakpointType bp) {
-        compile(target, pollute, true, name, bp);
+        compile(target, pollute, true, name, null, bp);
     }
 
     public FunctionValueNode(Location loc, Location end, Parameters params, CompoundNode body, String name) {

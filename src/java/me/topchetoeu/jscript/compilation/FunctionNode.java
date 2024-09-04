@@ -35,11 +35,11 @@ public abstract class FunctionNode extends Node {
     //     }
     // }
 
-    protected void compileLoadFunc(CompileResult target, int[] captures, String name) {
-        target.add(Instruction.loadFunc(target.children.size(), name, captures));
+    protected void compileLoadFunc(CompileResult target, int id, int[] captures, String name) {
+        target.add(Instruction.loadFunc(id, true, true, false, name, captures));
     }
 
-    private CompileResult compileBody(CompileResult target, String name, boolean storeSelf, boolean pollute, BreakpointType bp) {
+    private CompileResult compileBody(CompileResult target, boolean hasArgs, String name, String selfName, boolean pollute, BreakpointType bp) {
         var env = target.env.child()
             .remove(LabelContext.BREAK_CTX)
             .remove(LabelContext.CONTINUE_CTX);
@@ -47,43 +47,74 @@ public abstract class FunctionNode extends Node {
         var funcScope = new FunctionScope(target.scope);
         var subtarget = new CompileResult(env, new LocalScope(funcScope));
 
-        for (var param : params.params) {
-            // TODO: Implement default values
-            // TODO: Implement argument location
-            if (funcScope.hasArg(param.name)) throw new SyntaxException(param.loc, "Duplicate parameter name not allowed");
-            var i = funcScope.defineParam(param.name, param.loc);
+        subtarget.length = params.params.size();
 
-            if (param.node != null) {
-                var end = new DeferredIntSupplier();
+        if (hasArgs || params.params.size() > 0) subtarget.add(Instruction.loadArgs());
 
-                subtarget.add(_i -> Instruction.loadVar(i.index()));
-                subtarget.add(Instruction.pushUndefined());
-                subtarget.add(Instruction.operation(Operation.EQUALS));
-                subtarget.add(_i -> Instruction.jmpIfNot(end.getAsInt() - _i));
-                param.node.compile(subtarget, pollute);
-                subtarget.add(_i -> Instruction.storeVar(i.index()));
+        if (hasArgs) {
+            var argsVar = funcScope.defineParam("arguments", true, loc());
+            subtarget.add(_i -> Instruction.storeVar(argsVar.index(), params.params.size() > 0));
+        }
 
-                end.set(subtarget.size());
+        if (params.params.size() > 0) {
+            if (params.params.size() > 1) subtarget.add(Instruction.dup(params.params.size() - 1));
+            var i = 0;
+
+            for (var param : params.params) {
+                if (funcScope.hasArg(param.name)) throw new SyntaxException(param.loc, "Duplicate parameter name not allowed");
+                if (!JavaScript.checkVarName(param.name)) {
+                    throw new SyntaxException(param.loc, String.format("Unexpected identifier '%s'", param.name));
+                }
+                var varI = funcScope.defineParam(param.name, false, param.loc);
+
+                subtarget.add(Instruction.loadMember(i++));
+
+                if (param.node != null) {
+                    var end = new DeferredIntSupplier();
+
+                    subtarget.add(Instruction.dup());
+                    subtarget.add(Instruction.pushUndefined());
+                    subtarget.add(Instruction.operation(Operation.EQUALS));
+                    subtarget.add(Instruction.jmpIfNot(end));
+                    subtarget.add(Instruction.discard());
+                    param.node.compile(subtarget, pollute);
+
+                    end.set(subtarget.size());
+                }
+
+                subtarget.add(Instruction.storeVar(varI.index()));
             }
+        }
+
+        if (params.restName != null) {
+            if (funcScope.hasArg(params.restName)) throw new SyntaxException(params.restLocation, "Duplicate parameter name not allowed");
+            var restVar = funcScope.defineParam(params.restName, true, params.restLocation);
+            subtarget.add(Instruction.loadRestArgs(params.params.size()));
+            subtarget.add(_i -> Instruction.storeVar(restVar.index()));
+        }
+
+        if (selfName != null && !funcScope.hasArg(name)) {
+            var i = funcScope.defineParam(selfName, true, end);
+
+            subtarget.add(Instruction.loadCallee());
+            subtarget.add(_i -> Instruction.storeVar(i.index(), false));
         }
 
         body.resolve(subtarget);
         body.compile(subtarget, false, false, BreakpointType.NONE);
 
-        subtarget.length = params.length;
-        subtarget.assignN = params.params.size();
         subtarget.scope.end();
         funcScope.end();
 
-        if (pollute) compileLoadFunc(target, funcScope.getCaptureIndices(), name);
+        if (pollute) compileLoadFunc(target, target.children.size(), funcScope.getCaptureIndices(), name);
 
         return target.addChild(subtarget);
     }
 
-    public void compile(CompileResult target, boolean pollute, boolean storeSelf, String name, BreakpointType bp) {
+    public void compile(CompileResult target, boolean pollute, boolean hasArgs, String name, String selfName, BreakpointType bp) {
         if (this.name() != null) name = this.name();
 
-        compileBody(target, name, storeSelf, pollute, bp);
+        compileBody(target, hasArgs, name, selfName, pollute, bp);
     }
     public abstract void compile(CompileResult target, boolean pollute, String name, BreakpointType bp);
     public void compile(CompileResult target, boolean pollute, String name) {

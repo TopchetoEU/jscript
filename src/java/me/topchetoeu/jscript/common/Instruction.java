@@ -1,16 +1,15 @@
 package me.topchetoeu.jscript.common;
 
-// import java.io.DataInputStream;
-// import java.io.DataOutputStream;
-// import java.io.IOException;
 import java.util.HashMap;
+import java.util.function.IntFunction;
+import java.util.function.IntSupplier;
 
 import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 
 public class Instruction {
     public static enum Type {
-        NOP(0x00),
-        RETURN(0x01),
+        RETURN(0x00),
+        NOP(0x01),
         THROW(0x02),
         THROW_SYNTAX(0x03),
         DELETE(0x04),
@@ -41,10 +40,18 @@ public class Instruction {
 
         LOAD_VAR(0x40),
         LOAD_MEMBER(0x41),
-        LOAD_ARGS(0x42),
-        LOAD_THIS(0x43),
+        LOAD_MEMBER_INT(0x42),
+        LOAD_MEMBER_STR(0x43),
+
+        LOAD_ARGS(0x44),
+        LOAD_REST_ARGS(0x45),
+        LOAD_CALLEE(0x46),
+        LOAD_THIS(0x47),
+
         STORE_VAR(0x48),
         STORE_MEMBER(0x49),
+        STORE_MEMBER_INT(0x4A),
+        STORE_MEMBER_STR(0x4B),
 
         DEF_PROP(0x50),
         KEYS(0x51),
@@ -286,6 +293,7 @@ public class Instruction {
     public static Instruction callNew(int argn) {
         return new Instruction(Type.CALL_NEW, argn, "");
     }
+
     public static Instruction jmp(int offset) {
         return new Instruction(Type.JMP, offset);
     }
@@ -295,6 +303,17 @@ public class Instruction {
     public static Instruction jmpIfNot(int offset) {
         return new Instruction(Type.JMP_IFN, offset);
     }
+
+    public static IntFunction<Instruction> jmp(IntSupplier pos) {
+        return i -> new Instruction(Type.JMP, pos.getAsInt() - i);
+    }
+    public static IntFunction<Instruction> jmpIf(IntSupplier pos) {
+        return i -> new Instruction(Type.JMP_IF, pos.getAsInt() - i);
+    }
+    public static IntFunction<Instruction> jmpIfNot(IntSupplier pos) {
+        return i -> new Instruction(Type.JMP_IFN, pos.getAsInt() - i);
+    }
+
 
     public static Instruction pushUndefined() {
         return new Instruction(Type.PUSH_UNDEFINED);
@@ -313,7 +332,7 @@ public class Instruction {
     }
 
     public static Instruction globDef(String name) {
-        return new Instruction(Type.GLOB_GET, name);
+        return new Instruction(Type.GLOB_DEF, name);
     }
     
     public static Instruction globGet(String name) {
@@ -332,6 +351,12 @@ public class Instruction {
     public static Instruction loadArgs() {
         return new Instruction(Type.LOAD_ARGS);
     }
+    public static Instruction loadRestArgs(int offset) {
+        return new Instruction(Type.LOAD_REST_ARGS, offset);
+    }
+    public static Instruction loadCallee() {
+        return new Instruction(Type.LOAD_CALLEE);
+    }
     public static Instruction loadGlob() {
         return new Instruction(Type.LOAD_GLOB);
     }
@@ -341,17 +366,26 @@ public class Instruction {
     public static Instruction loadMember() {
         return new Instruction(Type.LOAD_MEMBER);
     }
+    public static Instruction loadMember(int member) {
+        return new Instruction(Type.LOAD_MEMBER_INT, member);
+    }
+    public static Instruction loadMember(String member) {
+        return new Instruction(Type.LOAD_MEMBER_STR, member);
+    }
 
     public static Instruction loadRegex(String pattern, String flags) {
         return new Instruction(Type.LOAD_REGEX, pattern, flags);
     }
-    public static Instruction loadFunc(int id, String name, int[] captures) {
+    public static Instruction loadFunc(int id, boolean callable, boolean constructible, boolean captureThis, String name, int[] captures) {
         if (name == null) name = "";
 
-        var args = new Object[2 + captures.length];
+        var args = new Object[5 + captures.length];
         args[0] = id;
         args[1] = name;
-        for (var i = 0; i < captures.length; i++) args[i + 2] = captures[i];
+        args[2] = callable;
+        args[3] = constructible;
+        args[4] = captureThis;
+        for (var i = 0; i < captures.length; i++) args[i + 5] = captures[i];
         return new Instruction(Type.LOAD_FUNC, args);
     }
     public static Instruction loadObj() {
@@ -373,12 +407,28 @@ public class Instruction {
     public static Instruction storeVar(int i, boolean keep) {
         return new Instruction(Type.STORE_VAR, i, keep);
     }
+
     public static Instruction storeMember() {
         return new Instruction(Type.STORE_MEMBER, false);
     }
     public static Instruction storeMember(boolean keep) {
         return new Instruction(Type.STORE_MEMBER, keep);
     }
+
+    public static Instruction storeMember(String key) {
+        return new Instruction(Type.STORE_MEMBER_STR, key, false);
+    }
+    public static Instruction storeMember(String key, boolean keep) {
+        return new Instruction(Type.STORE_MEMBER_STR, key, keep);
+    }
+
+    public static Instruction storeMember(int key) {
+        return new Instruction(Type.STORE_MEMBER_INT, key, false);
+    }
+    public static Instruction storeMember(int key, boolean keep) {
+        return new Instruction(Type.STORE_MEMBER_STR, key, keep);
+    }
+
     public static Instruction discard() {
         return new Instruction(Type.DISCARD);
     }

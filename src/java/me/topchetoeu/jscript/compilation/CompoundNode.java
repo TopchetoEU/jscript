@@ -22,7 +22,7 @@ public class CompoundNode extends Node {
     public void compile(CompileResult target, boolean pollute, boolean alloc, BreakpointType type) {
         List<Node> statements = new ArrayList<Node>();
 
-        var subtarget = target.subtarget();
+        var subtarget = alloc ? target.subtarget() : target;
         if (alloc) subtarget.add(i -> Instruction.stackAlloc(subtarget.scope.allocCount()));
 
         for (var stm : this.statements) {
@@ -41,8 +41,10 @@ public class CompoundNode extends Node {
             else stm.compile(subtarget, polluted = pollute, BreakpointType.STEP_OVER);
         }
 
-        subtarget.scope.end();
-        if (alloc) subtarget.add(Instruction.stackFree(subtarget.scope.allocCount()));
+        if (alloc) {
+            subtarget.scope.end();
+            subtarget.add(Instruction.stackFree(subtarget.scope.allocCount()));
+        }
 
         if (!polluted && pollute) {
             target.add(Instruction.pushUndefined());

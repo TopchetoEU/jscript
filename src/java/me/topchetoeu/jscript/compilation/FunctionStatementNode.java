@@ -14,7 +14,7 @@ public class FunctionStatementNode extends FunctionNode {
     }
 
     @Override public void compile(CompileResult target, boolean pollute, String name, BreakpointType bp) {
-        compile(target, true, false, this.name, bp);
+        compile(target, true, true, name, this.name, bp);
         target.add(VariableNode.toSet(target, end, this.name, pollute, true));
     }
 
