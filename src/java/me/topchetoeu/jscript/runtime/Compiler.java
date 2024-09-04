@@ -8,17 +8,22 @@ import me.topchetoeu.jscript.compilation.CompileResult;
 import me.topchetoeu.jscript.compilation.JavaScript;
 import me.topchetoeu.jscript.runtime.debug.DebugContext;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
+import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 import me.topchetoeu.jscript.runtime.values.Value;
 import me.topchetoeu.jscript.runtime.values.functions.CodeFunction;
 
 public interface Compiler {
     public static final Compiler DEFAULT = (env, filename, raw) -> {
-        var res = JavaScript.compile(env, filename, raw);
-        var body = res.body();
-        DebugContext.get(env).onSource(filename, raw);
-        registerFunc(env, body, res);
-
-        return body;
+        try {
+            var res = JavaScript.compile(env, filename, raw);
+            var body = res.body();
+            DebugContext.get(env).onSource(filename, raw);
+            registerFunc(env, body, res);
+            return body;
+        }
+        catch (SyntaxException e) {
+            throw EngineException.ofSyntax(e.loc + ": " + e.msg);
+        }
     };
 
     public Key<Compiler> KEY = Key.of();
