@@ -1,104 +1,91 @@
 package me.topchetoeu.jscript.runtime;
 
-import java.util.ArrayList;
 import java.util.Collections;
 
 import me.topchetoeu.jscript.common.Instruction;
 import me.topchetoeu.jscript.common.Operation;
-import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
-import me.topchetoeu.jscript.runtime.values.Member.FieldMember;
-import me.topchetoeu.jscript.runtime.values.Member.PropertyMember;
-import me.topchetoeu.jscript.runtime.values.Value;
-import me.topchetoeu.jscript.runtime.values.functions.CodeFunction;
-import me.topchetoeu.jscript.runtime.values.functions.FunctionValue;
-import me.topchetoeu.jscript.runtime.values.objects.ArrayValue;
-import me.topchetoeu.jscript.runtime.values.objects.ObjectValue;
-import me.topchetoeu.jscript.runtime.values.primitives.BoolValue;
-import me.topchetoeu.jscript.runtime.values.primitives.NumberValue;
-import me.topchetoeu.jscript.runtime.values.primitives.StringValue;
+import me.topchetoeu.jscript.runtime.scope.GlobalScope;
+import me.topchetoeu.jscript.runtime.scope.ValueVariable;
+import me.topchetoeu.jscript.runtime.values.ArrayValue;
+import me.topchetoeu.jscript.runtime.values.CodeFunction;
+import me.topchetoeu.jscript.runtime.values.FunctionValue;
+import me.topchetoeu.jscript.runtime.values.ObjectValue;
+import me.topchetoeu.jscript.runtime.values.Symbol;
+import me.topchetoeu.jscript.runtime.values.Values;
 
 public class InstructionRunner {
-    private static Value execReturn(Environment env, Instruction instr, Frame frame) {
+    private static Object execReturn(Extensions ext, Instruction instr, Frame frame) {
         return frame.pop();
     }
-    private static Value execThrow(Environment env, Instruction instr, Frame frame) {
+    private static Object execThrow(Extensions ext, Instruction instr, Frame frame) {
         throw new EngineException(frame.pop());
     }
-    private static Value execThrowSyntax(Environment env, Instruction instr, Frame frame) {
+    private static Object execThrowSyntax(Extensions ext, Instruction instr, Frame frame) {
         throw EngineException.ofSyntax((String)instr.get(0));
     }
 
-    private static Value execCall(Environment env, Instruction instr, Frame frame) {
+    private static Object execCall(Extensions ext, Instruction instr, Frame frame) {
         var callArgs = frame.take(instr.get(0));
         var func = frame.pop();
+        var thisArg = frame.pop();
 
-        frame.push(func.call(env, false, instr.get(1), Value.UNDEFINED, callArgs));
-
-        frame.codePtr++;
-        return null;
-    }
-    private static Value execCallMember(Environment env, Instruction instr, Frame frame) {
-        var callArgs = frame.take(instr.get(0));
-        var index = frame.pop();
-        var obj = frame.pop();
-
-        frame.push(obj.getMember(env, index).call(env, false, instr.get(1), obj, callArgs));
+        frame.push(Values.call(ext, func, thisArg, callArgs));
 
         frame.codePtr++;
-        return null;
+        return Values.NO_RETURN;
     }
-    private static Value execCallNew(Environment env, Instruction instr, Frame frame) {
+    private static Object execCallNew(Extensions ext, Instruction instr, Frame frame) {
         var callArgs = frame.take(instr.get(0));
         var funcObj = frame.pop();
 
-        frame.push(funcObj.callNew(env, instr.get(1), callArgs));
+        frame.push(Values.callNew(ext, funcObj, callArgs));
 
         frame.codePtr++;
-        return null;
+        return Values.NO_RETURN;
     }
 
-    private static Value execDefProp(Environment env, Instruction instr, Frame frame) {
-        var setterVal = frame.pop();
-        var getterVal = frame.pop();
-        var key = frame.pop();
+    private static Object execMakeVar(Extensions ext, Instruction instr, Frame frame) {
+        var name = (String)instr.get(0);
+        GlobalScope.get(ext).define(ext, name);
+        frame.codePtr++;
+        return Values.NO_RETURN;
+    }
+    private static Object execDefProp(Extensions ext, Instruction instr, Frame frame) {
+        var setter = frame.pop();
+        var getter = frame.pop();
+        var name = frame.pop();
         var obj = frame.pop();
 
-        FunctionValue getter, setter;
-
-        if (getterVal == Value.UNDEFINED) getter = null;
-        else if (getterVal instanceof FunctionValue) getter = (FunctionValue)getterVal;
-        else throw EngineException.ofType("Getter must be a function or undefined.");
-
-        if (setterVal == Value.UNDEFINED) setter = null;
-        else if (setterVal instanceof FunctionValue) setter = (FunctionValue)setterVal;
-        else throw EngineException.ofType("Setter must be a function or undefined.");
-
-        obj.defineOwnMember(env, key, new PropertyMember(getter, setter, true, true));
+        if (getter != null && !(getter instanceof FunctionValue)) throw EngineException.ofType("Getter must be a function or undefined.");
+        if (setter != null && !(setter instanceof FunctionValue)) throw EngineException.ofType("Setter must be a function or undefined.");
+        if (!(obj instanceof ObjectValue)) throw EngineException.ofType("Property apply target must be an object.");
+        ((ObjectValue)obj).defineProperty(ext, name, (FunctionValue)getter, (FunctionValue)setter, false, false);
 
         frame.push(obj);
         frame.codePtr++;
-        return null;
+        return Values.NO_RETURN;
     }
-    private static Value execKeys(Environment env, Instruction instr, Frame frame) {
+    private static Object execKeys(Extensions ext, Instruction instr, Frame frame) {
         var val = frame.pop();
 
-        var members = new ArrayList<>(val.getMembers(env, false, true).keySet());
+        var members = Values.getMembers(ext, val, false, false);
         Collections.reverse(members);
 
         frame.push(null);
 
         for (var el : members) {
+            if (el instanceof Symbol) continue;
             var obj = new ObjectValue();
-            obj.defineOwnMember(env, "value", FieldMember.of(new StringValue(el)));
+            obj.defineProperty(ext, "value", el);
             frame.push(obj);
         }
 
         frame.codePtr++;
-        return null;
+        return Values.NO_RETURN;
     }
 
-    private static Value execTryStart(Environment env, Instruction instr, Frame frame) {
+    private static Object execTryStart(Extensions ext, Instruction instr, Frame frame) {
         int start = frame.codePtr + 1;
         int catchStart = (int)instr.get(0);
         int finallyStart = (int)instr.get(1);
@@ -107,14 +94,14 @@ public class InstructionRunner {
         int end = (int)instr.get(2) + start;
         frame.addTry(start, end, catchStart, finallyStart);
         frame.codePtr++;
-        return null;
+        return Values.NO_RETURN;
     }
-    private static Value execTryEnd(Environment env, Instruction instr, Frame frame) {
+    private static Object execTryEnd(Extensions ext, Instruction instr, Frame frame) {
         frame.popTryFlag = true;
-        return null;
+        return Values.NO_RETURN;
     }
 
-    private static Value execDup(Environment env, Instruction instr, Frame frame) {
+    private static Object execDup(Extensions ext, Instruction instr, Frame frame) {
         int count = instr.get(0);
 
         for (var i = 0; i < count; i++) {
@@ -122,390 +109,220 @@ public class InstructionRunner {
         }
 
         frame.codePtr++;
-        return null;
+        return Values.NO_RETURN;
     }
-    private static Value execLoadValue(Environment env, Instruction instr, Frame frame) {
+    private static Object execLoadValue(Extensions ext, Instruction instr, Frame frame) {
         switch (instr.type) {
-            case PUSH_UNDEFINED: frame.push(Value.UNDEFINED); break;
-            case PUSH_NULL: frame.push(Value.NULL); break;
-            case PUSH_BOOL: frame.push(BoolValue.of(instr.get(0))); break;
-            case PUSH_NUMBER: frame.push(new NumberValue(instr.get(0))); break;
-            case PUSH_STRING: frame.push(new StringValue(instr.get(0))); break;
-            default:
+            case PUSH_UNDEFINED: frame.push(null); break;
+            case PUSH_NULL: frame.push(Values.NULL); break;
+            default: frame.push(instr.get(0)); break;
         }
 
         frame.codePtr++;
-        return null;
+        return Values.NO_RETURN;
     }
-    private static Value execLoadVar(Environment env, Instruction instr, Frame frame) {
-        int i = instr.get(0);
+    private static Object execLoadVar(Extensions ext, Instruction instr, Frame frame) {
+        var i = instr.get(0);
 
-        frame.push(frame.getVar(i)[0]);
-        frame.codePtr++;
+        if (i instanceof String) frame.push(GlobalScope.get(ext).get(ext, (String)i));
+        else frame.push(frame.scope.get((int)i).get(ext));
 
-        return null;
-    }
-    private static Value execLoadObj(Environment env, Instruction instr, Frame frame) {
-        var obj = new ObjectValue();
-        obj.setPrototype(Value.OBJECT_PROTO);
-        frame.push(obj);
         frame.codePtr++;
-        return null;
+        return Values.NO_RETURN;
     }
-    private static Value execLoadGlob(Environment env, Instruction instr, Frame frame) {
-        frame.push(Value.global(env));
+    private static Object execLoadObj(Extensions ext, Instruction instr, Frame frame) {
+        frame.push(new ObjectValue());
         frame.codePtr++;
-        return null;
+        return Values.NO_RETURN;
     }
-    private static Value execLoadIntrinsics(Environment env, Instruction instr, Frame frame) {
-        frame.push(Value.intrinsics(env).get((String)instr.get(0)));
+    private static Object execLoadGlob(Extensions ext, Instruction instr, Frame frame) {
+        frame.push(GlobalScope.get(ext).obj);
         frame.codePtr++;
-        return null;
+        return Values.NO_RETURN;
     }
-    private static Value execLoadArr(Environment env, Instruction instr, Frame frame) {
+    private static Object execLoadArr(Extensions ext, Instruction instr, Frame frame) {
         var res = new ArrayValue();
         res.setSize(instr.get(0));
         frame.push(res);
         frame.codePtr++;
-        return null;
+        return Values.NO_RETURN;
     }
-    private static Value execLoadFunc(Environment env, Instruction instr, Frame frame) {
+    private static Object execLoadFunc(Extensions ext, Instruction instr, Frame frame) {
         int id = instr.get(0);
-        String name = instr.get(1);
-        var captures = new Value[instr.params.length - 2][];
+        var captures = new ValueVariable[instr.params.length - 1];
 
-        for (var i = 2; i < instr.params.length; i++) {
-            captures[i - 2] = frame.getVar(instr.get(i));
+        for (var i = 1; i < instr.params.length; i++) {
+            captures[i - 1] = frame.scope.get(instr.get(i));
         }
 
-        var func = new CodeFunction(env, name, frame.function.body.children[id], captures);
+        var func = new CodeFunction(ext, "", frame.function.body.children[id], captures);
 
         frame.push(func);
 
         frame.codePtr++;
-        return null;
+        return Values.NO_RETURN;
     }
-    private static Value execLoadMember(Environment env, Instruction instr, Frame frame) {
+    private static Object execLoadMember(Extensions ext, Instruction instr, Frame frame) {
         var key = frame.pop();
         var obj = frame.pop();
 
         try {
-            frame.push(obj.getMember(env, key));
+            frame.push(Values.getMember(ext, obj, key));
         }
         catch (IllegalArgumentException e) {
             throw EngineException.ofType(e.getMessage());
         }
         frame.codePtr++;
-        return null;
+        return Values.NO_RETURN;
     }
-    private static Value execLoadRegEx(Environment env, Instruction instr, Frame frame) {
-        if (env.hasNotNull(Value.REGEX_CONSTR)) {
-            frame.push(env.get(Value.REGEX_CONSTR).callNew(env, instr.get(0), instr.get(1)));
+    private static Object execLoadRegEx(Extensions ext, Instruction instr, Frame frame) {
+        if (ext.hasNotNull(Environment.REGEX_CONSTR)) {
+            frame.push(Values.callNew(ext, ext.get(Environment.REGEX_CONSTR), instr.get(0), instr.get(1)));
         }
         else {
             throw EngineException.ofSyntax("Regex is not supported.");
         }
-
         frame.codePtr++;
-        return null;
+        return Values.NO_RETURN;
     }
 
-    private static Value execDiscard(Environment env, Instruction instr, Frame frame) {
+    private static Object execDiscard(Extensions ext, Instruction instr, Frame frame) {
         frame.pop();
         frame.codePtr++;
-        return null;
+        return Values.NO_RETURN;
     }
-    private static Value execStoreMember(Environment env, Instruction instr, Frame frame) {
+    private static Object execStoreMember(Extensions ext, Instruction instr, Frame frame) {
         var val = frame.pop();
         var key = frame.pop();
         var obj = frame.pop();
 
-        if (!obj.setMember(env, key, val)) throw EngineException.ofSyntax("Can't set member '" + key.toReadable(env) + "'.");
+        if (!Values.setMember(ext, obj, key, val)) throw EngineException.ofSyntax("Can't set member '" + key + "'.");
         if ((boolean)instr.get(0)) frame.push(val);
         frame.codePtr++;
-        return null;
+        return Values.NO_RETURN;
     }
-    private static Value execStoreVar(Environment env, Instruction instr, Frame frame) {
+    private static Object execStoreVar(Extensions ext, Instruction instr, Frame frame) {
         var val = (boolean)instr.get(1) ? frame.peek() : frame.pop();
-        int i = instr.get(0);
+        var i = instr.get(0);
 
-        frame.getVar(i)[0] = val;
+        if (i instanceof String) GlobalScope.get(ext).set(ext, (String)i, val);
+        else frame.scope.get((int)i).set(ext, val);
+
         frame.codePtr++;
-
-        return null;
+        return Values.NO_RETURN;
     }
-
-    private static Value execJmp(Environment env, Instruction instr, Frame frame) {
+    private static Object execStoreSelfFunc(Extensions ext, Instruction instr, Frame frame) {
+        frame.scope.locals[(int)instr.get(0)].set(ext, frame.function);
+        frame.codePtr++;
+        return Values.NO_RETURN;
+    }
+    
+    private static Object execJmp(Extensions ext, Instruction instr, Frame frame) {
         frame.codePtr += (int)instr.get(0);
         frame.jumpFlag = true;
-        return null;
+        return Values.NO_RETURN;
     }
-    private static Value execJmpIf(Environment env, Instruction instr, Frame frame) {
-        if (frame.pop().toBoolean()) {
+    private static Object execJmpIf(Extensions ext, Instruction instr, Frame frame) {
+        if (Values.toBoolean(frame.pop())) {
             frame.codePtr += (int)instr.get(0);
             frame.jumpFlag = true;
         }
         else frame.codePtr ++;
-        return null;
+        return Values.NO_RETURN;
     }
-    private static Value execJmpIfNot(Environment env, Instruction instr, Frame frame) {
-        if (!frame.pop().toBoolean()) {
+    private static Object execJmpIfNot(Extensions ext, Instruction instr, Frame frame) {
+        if (Values.not(frame.pop())) {
             frame.codePtr += (int)instr.get(0);
             frame.jumpFlag = true;
         }
         else frame.codePtr ++;
-        return null;
+        return Values.NO_RETURN;
     }
 
-    private static Value execTypeof(Environment env, Instruction instr, Frame frame) {
+    private static Object execTypeof(Extensions ext, Instruction instr, Frame frame) {
         String name = instr.get(0);
-        Value obj;
+        Object obj;
 
-        if (name != null) obj = Value.global(env).getMember(env, name);
+        if (name != null) {
+            if (GlobalScope.get(ext).has(ext, name)) {
+                obj = GlobalScope.get(ext).get(ext, name);
+            }
+            else obj = null;
+        }
         else obj = frame.pop();
 
-        frame.push(obj.type());
+        frame.push(Values.type(obj));
 
         frame.codePtr++;
-        return null;
+        return Values.NO_RETURN;
     }
-    private static Value execNop(Environment env, Instruction instr, Frame frame) {
+    private static Object execNop(Extensions ext, Instruction instr, Frame frame) {
         frame.codePtr++;
-        return null;
+        return Values.NO_RETURN;
     }
 
-    private static Value execDelete(Environment env, Instruction instr, Frame frame) {
+    private static Object execDelete(Extensions ext, Instruction instr, Frame frame) {
         var key = frame.pop();
         var val = frame.pop();
 
-        if (!val.deleteMember(env, key)) throw EngineException.ofSyntax("Can't delete member '" + key.toReadable(env) + "'.");
+        if (!Values.deleteMember(ext, val, key)) throw EngineException.ofSyntax("Can't delete member '" + key + "'.");
         frame.codePtr++;
-        return null;
+        return Values.NO_RETURN;
     }
 
-    private static Value execOperation(Environment env, Instruction instr, Frame frame) {
+    private static Object execOperation(Extensions ext, Instruction instr, Frame frame) {
         Operation op = instr.get(0);
-        Value res;
-        var stack = frame.stack;
+        var args = new Object[op.operands];
 
-        frame.stackPtr -= 1;
-        var ptr = frame.stackPtr;
+        for (var i = op.operands - 1; i >= 0; i--) args[i] = frame.pop();
 
-        // for (var i = op.operands - 1; i >= 0; i--) args[i] = frame.pop();
-
-        switch (op) {
-            case ADD:
-                res = Value.add(env, stack[ptr - 1], stack[ptr]);
-                break;
-            case SUBTRACT:
-                res = Value.subtract(env, stack[ptr - 1], stack[ptr]);
-                break;
-            case DIVIDE:
-                res = Value.divide(env, stack[ptr - 1], stack[ptr]);
-                break;
-            case MULTIPLY:
-                res = Value.multiply(env, stack[ptr - 1], stack[ptr]);
-                break;
-            case MODULO:
-                res = Value.modulo(env, stack[ptr - 1], stack[ptr]);
-                break;
-
-            case AND:
-                res = Value.and(env, stack[ptr - 1], stack[ptr]);
-                break;
-            case OR:
-                res = Value.or(env, stack[ptr - 1], stack[ptr]);
-                break;
-            case XOR:
-                res = Value.xor(env, stack[ptr - 1], stack[ptr]);
-                break;
-
-            case EQUALS:
-                res = BoolValue.of(stack[ptr - 1].equals(stack[ptr]));
-                break;
-            case NOT_EQUALS:
-                res = BoolValue.of(!stack[ptr - 1].equals(stack[ptr]));
-                break;
-            case LOOSE_EQUALS:
-                res = BoolValue.of(Value.looseEqual(env, stack[ptr - 1], stack[ptr]));
-                break;
-            case LOOSE_NOT_EQUALS:
-                res = BoolValue.of(!Value.looseEqual(env, stack[ptr - 1], stack[ptr]));
-                break;
-
-            case GREATER:
-                res = BoolValue.of(Value.greater(env, stack[ptr - 1], stack[ptr]));
-                break;
-            case GREATER_EQUALS:
-                res = BoolValue.of(Value.greaterOrEqual(env, stack[ptr - 1], stack[ptr]));
-                break;
-            case LESS:
-                res = BoolValue.of(Value.less(env, stack[ptr - 1], stack[ptr]));
-                break;
-            case LESS_EQUALS:
-                res = BoolValue.of(Value.lessOrEqual(env, stack[ptr - 1], stack[ptr]));
-                break;
-
-            case INVERSE:
-                res = Value.bitwiseNot(env, stack[ptr++]);
-                frame.stackPtr++;
-                break;
-            case NOT:
-                res = BoolValue.of(!stack[ptr++].toBoolean());
-                frame.stackPtr++;
-                break;
-            case POS:
-                res = stack[ptr++].toNumber(env);
-                frame.stackPtr++;
-                break;
-            case NEG:
-                res = Value.negative(env, stack[ptr++]);
-                frame.stackPtr++;
-                break;
-
-            case SHIFT_LEFT:
-                res = Value.shiftLeft(env, stack[ptr], stack[ptr]);
-                break;
-            case SHIFT_RIGHT:
-                res = Value.shiftRight(env, stack[ptr], stack[ptr]);
-                break;
-            case USHIFT_RIGHT:
-                res = Value.unsignedShiftRight(env, stack[ptr], stack[ptr]);
-                break;
-
-            case IN:
-                res = BoolValue.of(stack[ptr - 1].hasMember(env, stack[ptr], false));
-                break;
-            case INSTANCEOF:
-                res = BoolValue.of(stack[ptr - 1].isInstanceOf(env, stack[ptr].getMember(env, new StringValue("prototype"))));
-                break;
-
-            default: return null;
-        }
-
-        stack[ptr - 1] = res;
+        frame.push(Values.operation(ext, op, args));
         frame.codePtr++;
-        return null;
+        return Values.NO_RETURN;
     }
 
-    private static Value exexGlobDef(Environment env, Instruction instr, Frame frame) {
-        var name = (String)instr.get(0);
-
-        if (!Value.global(env).hasMember(env, name, false)) {
-            if (!Value.global(env).defineOwnMember(env, name, Value.UNDEFINED)) throw EngineException.ofError("Couldn't define variable " + name);
-        }
-
-        frame.codePtr++;
-        return null;
-    }
-    private static Value exexGlobGet(Environment env, Instruction instr, Frame frame) {
-        var name = (String)instr.get(0);
-        var res = Value.global(env).getMemberOrNull(env, name);
-
-        if (res == null) throw EngineException.ofSyntax(name + " is not defined");
-        else frame.push(res);
-
-        frame.codePtr++;
-        return null;
-    }
-    private static Value exexGlobSet(Environment env, Instruction instr, Frame frame) {
-        var name = (String)instr.get(0);
-        var keep = (boolean)instr.get(1);
-        var define = (boolean)instr.get(2);
-
-        var val = keep ? frame.peek() : frame.pop();
-        var res = false;
-
-        if (define) res = Value.global(env).setMember(env, name, val);
-        else res = Value.global(env).setMemberIfExists(env, name, val);
-
-        if (!res) throw EngineException.ofError("Couldn't set variable " + name);
-
-        frame.codePtr++;
-        return null;
-    }
-
-    private static Value execLoadArgs(Environment env, Instruction instr, Frame frame) {
-        frame.push(frame.argsVal);
-        frame.codePtr++;
-        return null;
-    }
-    private static Value execLoadThis(Environment env, Instruction instr, Frame frame) {
-        frame.push(frame.self);
-        frame.codePtr++;
-        return null;
-    }
-
-    private static Value execStackAlloc(Environment env, Instruction instr, Frame frame) {
-        int n = instr.get(0);
-
-        for (var i = 0; i < n; i++) frame.locals.add(new Value[] { Value.UNDEFINED });
-        
-        frame.codePtr++;
-        return null;
-    }
-    private static Value execStackFree(Environment env, Instruction instr, Frame frame) {
-        int n = instr.get(0);
-
-        for (var i = 0; i < n; i++) {
-            frame.locals.remove(frame.locals.size() - 1);
-        }
-
-        frame.codePtr++;
-        return null;
-    }
-
-    public static Value exec(Environment env, Instruction instr, Frame frame) {
+    public static Object exec(Extensions ext, Instruction instr, Frame frame) {
         switch (instr.type) {
-            case NOP: return execNop(env, instr, frame);
-            case RETURN: return execReturn(env, instr, frame);
-            case THROW: return execThrow(env, instr, frame);
-            case THROW_SYNTAX: return execThrowSyntax(env, instr, frame);
-            case CALL: return execCall(env, instr, frame);
-            case CALL_NEW: return execCallNew(env, instr, frame);
-            case CALL_MEMBER: return execCallMember(env, instr, frame);
-            case TRY_START: return execTryStart(env, instr, frame);
-            case TRY_END: return execTryEnd(env, instr, frame);
+            case NOP: return execNop(ext, instr, frame);
+            case RETURN: return execReturn(ext, instr, frame);
+            case THROW: return execThrow(ext, instr, frame);
+            case THROW_SYNTAX: return execThrowSyntax(ext, instr, frame);
+            case CALL: return execCall(ext, instr, frame);
+            case CALL_NEW: return execCallNew(ext, instr, frame);
+            case TRY_START: return execTryStart(ext, instr, frame);
+            case TRY_END: return execTryEnd(ext, instr, frame);
 
-            case DUP: return execDup(env, instr, frame);
+            case DUP: return execDup(ext, instr, frame);
             case PUSH_UNDEFINED:
             case PUSH_NULL:
             case PUSH_STRING:
             case PUSH_NUMBER:
             case PUSH_BOOL:
-                return execLoadValue(env, instr, frame);
-            case LOAD_VAR: return execLoadVar(env, instr, frame);
-            case LOAD_OBJ: return execLoadObj(env, instr, frame);
-            case LOAD_ARR: return execLoadArr(env, instr, frame);
-            case LOAD_FUNC: return execLoadFunc(env, instr, frame);
-            case LOAD_MEMBER: return execLoadMember(env, instr, frame);
-            case LOAD_REGEX: return execLoadRegEx(env, instr, frame);
-            case LOAD_GLOB: return execLoadGlob(env, instr, frame);
-            case LOAD_INTRINSICS: return execLoadIntrinsics(env, instr, frame);
-            case LOAD_ARGS: return execLoadArgs(env, instr, frame);
-            case LOAD_THIS: return execLoadThis(env, instr, frame);
+                return execLoadValue(ext, instr, frame);
+            case LOAD_VAR: return execLoadVar(ext, instr, frame);
+            case LOAD_OBJ: return execLoadObj(ext, instr, frame);
+            case LOAD_ARR: return execLoadArr(ext, instr, frame);
+            case LOAD_FUNC: return execLoadFunc(ext, instr, frame);
+            case LOAD_MEMBER: return execLoadMember(ext, instr, frame);
+            case LOAD_REGEX: return execLoadRegEx(ext, instr, frame);
+            case LOAD_GLOB: return execLoadGlob(ext, instr, frame);
 
-            case DISCARD: return execDiscard(env, instr, frame);
-            case STORE_MEMBER: return execStoreMember(env, instr, frame);
-            case STORE_VAR: return execStoreVar(env, instr, frame);
+            case DISCARD: return execDiscard(ext, instr, frame);
+            case STORE_MEMBER: return execStoreMember(ext, instr, frame);
+            case STORE_VAR: return execStoreVar(ext, instr, frame);
+            case STORE_SELF_FUNC: return execStoreSelfFunc(ext, instr, frame);
+            case MAKE_VAR: return execMakeVar(ext, instr, frame);
 
-            case KEYS: return execKeys(env, instr, frame);
-            case DEF_PROP: return execDefProp(env, instr, frame);
-            case TYPEOF: return execTypeof(env, instr, frame);
-            case DELETE: return execDelete(env, instr, frame);
+            case KEYS: return execKeys(ext, instr, frame);
+            case DEF_PROP: return execDefProp(ext, instr, frame);
+            case TYPEOF: return execTypeof(ext, instr, frame);
+            case DELETE: return execDelete(ext, instr, frame);
 
-            case JMP: return execJmp(env, instr, frame);
-            case JMP_IF: return execJmpIf(env, instr, frame);
-            case JMP_IFN: return execJmpIfNot(env, instr, frame);
+            case JMP: return execJmp(ext, instr, frame);
+            case JMP_IF: return execJmpIf(ext, instr, frame);
+            case JMP_IFN: return execJmpIfNot(ext, instr, frame);
 
-            case OPERATION: return execOperation(env, instr, frame);
-
-            case GLOB_DEF: return exexGlobDef(env, instr, frame);
-            case GLOB_GET: return exexGlobGet(env, instr, frame);
-            case GLOB_SET: return exexGlobSet(env, instr, frame);
-
-            case STACK_ALLOC: return execStackAlloc(env, instr, frame);
-            case STACK_FREE: return execStackFree(env, instr, frame);
+            case OPERATION: return execOperation(ext, instr, frame);
 
             default: throw EngineException.ofSyntax("Invalid instruction " + instr.type.name() + ".");
         }

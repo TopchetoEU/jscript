@@ -1,24 +1,24 @@
 package me.topchetoeu.jscript.runtime;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Future;
 import java.util.concurrent.PriorityBlockingQueue;
-import java.util.function.Supplier;
 
+import me.topchetoeu.jscript.common.ResultRunnable;
+import me.topchetoeu.jscript.common.events.DataNotifier;
 import me.topchetoeu.jscript.runtime.exceptions.InterruptException;
 
-public final class Engine implements EventLoop {
+public class Engine implements EventLoop {
     private static class Task<T> implements Comparable<Task<?>> {
-        public final Supplier<?> runnable;
-        public final CompletableFuture<T> notifier = new CompletableFuture<T>();
+        public final ResultRunnable<?> runnable;
+        public final DataNotifier<T> notifier = new DataNotifier<>();
         public final boolean micro;
 
-        public Task(Supplier<T> runnable, boolean micro) {
+        public Task(ResultRunnable<T> runnable, boolean micro) {
             this.runnable = runnable;
             this.micro = micro;
         }
 
-        @Override public int compareTo(Task<?> other) {
+        @Override
+        public int compareTo(Task<?> other) {
             return Integer.compare(this.micro ? 0 : 1, other.micro ? 0 : 1);
         }
     }
@@ -26,7 +26,8 @@ public final class Engine implements EventLoop {
     private PriorityBlockingQueue<Task<?>> tasks = new PriorityBlockingQueue<>();
     private Thread thread;
 
-    @Override public <T> Future<T> pushMsg(Supplier<T> runnable, boolean micro) {
+    @Override
+    public <T> DataNotifier<T> pushMsg(ResultRunnable<T> runnable, boolean micro) {
         var msg = new Task<T>(runnable, micro);
         tasks.add(msg);
         return msg.notifier;
@@ -39,15 +40,15 @@ public final class Engine implements EventLoop {
                 var task = tasks.take();
 
                 try {
-                    ((Task<Object>)task).notifier.complete(task.runnable.get());
+                    ((Task<Object>)task).notifier.next(task.runnable.run());
                 }
                 catch (RuntimeException e) {
                     if (e instanceof InterruptException) throw e;
-                    task.notifier.completeExceptionally(e);
+                    task.notifier.error(e);
                 }
             }
             catch (InterruptedException | InterruptException e) {
-                for (var msg : tasks) msg.notifier.cancel(false);
+                for (var msg : tasks) msg.notifier.error(new InterruptException(e));
                 break;
             }
         }
@@ -73,5 +74,8 @@ public final class Engine implements EventLoop {
     }
     public boolean isRunning() {
         return this.thread != null;
+    }
+
+    public Engine() {
     }
 }
