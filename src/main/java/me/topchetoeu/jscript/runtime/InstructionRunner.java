@@ -505,7 +505,15 @@ public class InstructionRunner {
         int n = instr.get(0);
 
         for (var i = 0; i < n; i++) frame.locals.add(new Value[] { Value.UNDEFINED });
-        
+
+        frame.codePtr++;
+        return null;
+    }
+    private static Value execStackRealloc(Environment env, Instruction instr, Frame frame) {
+        int n = instr.get(0);
+
+        for (var i = frame.locals.size() - n; i < frame.locals.size(); i++) frame.locals.set(i, new Value[] { frame.locals.get(i)[0] });
+
         frame.codePtr++;
         return null;
     }
@@ -576,6 +584,7 @@ public class InstructionRunner {
             case GLOB_SET: return exexGlobSet(env, instr, frame);
 
             case STACK_ALLOC: return execStackAlloc(env, instr, frame);
+            case STACK_REALLOC: return execStackRealloc(env, instr, frame);
             case STACK_FREE: return execStackFree(env, instr, frame);
 
             default: throw EngineException.ofSyntax("Invalid instruction " + instr.type.name() + ".");
