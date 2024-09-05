@@ -101,8 +101,9 @@ public final class Frame {
      */
     public final Value[][] captures;
     public final List<Value[]> locals = new ArrayList<>();
-    public final Value self;
     public final Value argsVal;
+    public Value self;
+    public Value fakeArgs;
     public final Value[] args;
     public final boolean isNew;
     public final Stack<TryCtx> tryStack = new Stack<>();

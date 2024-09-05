@@ -185,7 +185,10 @@ public class InstructionRunner {
         var func = new CodeFunction(env, name, frame.function.body.children[id], captures);
         if (!callable) func.enableCall = false;
         if (!constructible) func.enableNew = false;
-        if (captureThis) func.self = frame.self;
+        if (captureThis) {
+            func.self = frame.self;
+            func.argsVal = frame.argsVal;
+        }
         frame.push(func);
 
         frame.codePtr++;
@@ -472,7 +475,8 @@ public class InstructionRunner {
     }
 
     private static Value execLoadArgs(Environment env, Instruction instr, Frame frame) {
-        frame.push(frame.argsVal);
+        if ((boolean)instr.get(0) || frame.fakeArgs == null) frame.push(frame.argsVal);
+        else frame.push(frame.fakeArgs);
         frame.codePtr++;
         return null;
     }

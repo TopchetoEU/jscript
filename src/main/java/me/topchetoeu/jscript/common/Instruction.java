@@ -352,8 +352,8 @@ public class Instruction {
     public static Instruction loadThis() {
         return new Instruction(Type.LOAD_THIS);
     }
-    public static Instruction loadArgs() {
-        return new Instruction(Type.LOAD_ARGS);
+    public static Instruction loadArgs(boolean real) {
+        return new Instruction(Type.LOAD_ARGS, real);
     }
     public static Instruction loadRestArgs(int offset) {
         return new Instruction(Type.LOAD_REST_ARGS, offset);

@@ -24,6 +24,7 @@ import me.topchetoeu.jscript.compilation.control.ThrowNode;
 import me.topchetoeu.jscript.compilation.control.TryNode;
 import me.topchetoeu.jscript.compilation.control.WhileNode;
 import me.topchetoeu.jscript.compilation.scope.FunctionScope;
+import me.topchetoeu.jscript.compilation.values.ArgumentsNode;
 import me.topchetoeu.jscript.compilation.values.ArrayNode;
 import me.topchetoeu.jscript.compilation.values.ObjectNode;
 import me.topchetoeu.jscript.compilation.values.RegexNode;
@@ -60,7 +61,7 @@ public final class JavaScript {
         "finally", "for", "do", "while", "switch", "case", "default", "new",
         "function", "var", "return", "throw", "typeof", "delete", "break",
         "continue", "debugger", "implements", "interface", "package", "private",
-        "protected", "public", "static"
+        "protected", "public", "static", "arguments"
     );
 
     public static ParseRes<? extends Node> parseParens(Source src, int i) {
@@ -115,7 +116,7 @@ public final class JavaScript {
         if (id.result.equals("false")) return ParseRes.res(new BoolNode(loc, false), n);
         if (id.result.equals("null")) return ParseRes.res(new NullNode(loc), n);
         if (id.result.equals("this")) return ParseRes.res(new ThisNode(loc), n);
-        // if (id.result.equals("arguments")) return ParseRes.res(new ArgumentsNode(loc), n);
+        if (id.result.equals("arguments")) return ParseRes.res(new ArgumentsNode(loc), n);
 
         return ParseRes.failed();
     }

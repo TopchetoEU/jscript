@@ -54,17 +54,21 @@ public class FunctionArrowNode extends FunctionNode {
 
         if (!src.is(i + n, "=>")) return ParseRes.failed();
         n += 2;
+        n += Parsing.skipEmpty(src, i + n);
 
-        ParseRes<Node> body = ParseRes.first(src, i + n,
-            (s, j) -> JavaScript.parseExpression(s, j, 2),
-            CompoundNode::parse
-        );
-        if (!body.isSuccess()) return body.chainError(src.loc(i + n), "Expected an expression or a compount statement after '=>'");
-        n += body.n;
+        if (src.is(i + n, "{")) {
+            var body = CompoundNode.parse(src, i + n);
+            if (!body.isSuccess()) return body.chainError(src.loc(i + n), "Expected a compount statement after '=>'");
+            n += body.n;
 
-        return ParseRes.res(new FunctionArrowNode(
-            loc, src.loc(i + n - 1),
-            params, body.result
-        ), n);
+            return ParseRes.res(new FunctionArrowNode(loc, src.loc(i + n - 1), params, body.result), n);
+        }
+        else {
+            var body = JavaScript.parseExpression(src, i + n, 2);
+            if (!body.isSuccess()) return body.chainError(src.loc(i + n), "Expected a compount statement after '=>'");
+            n += body.n;
+
+            return ParseRes.res(new FunctionArrowNode(loc, src.loc(i + n - 1), params, body.result), n);
+        }
     }
 }

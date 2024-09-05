@@ -9,6 +9,7 @@ public final class CodeFunction extends FunctionValue {
     public final FunctionBody body;
     public final Value[][] captures;
     public Value self;
+    public Value argsVal;
     public Environment env;
 
     private Value onCall(Frame frame) {
@@ -26,8 +27,11 @@ public final class CodeFunction extends FunctionValue {
     }
 
     @Override public Value onCall(Environment env, boolean isNew, String name, Value thisArg, Value ...args) {
-        if (self != null) return onCall(new Frame(env, isNew, self, args, this));
-        else return onCall(new Frame(env, isNew, thisArg, args, this));
+        var frame = new Frame(env, isNew, thisArg, args, this);
+        if (argsVal != null) frame.fakeArgs = argsVal;
+        if (self != null) frame.self = self;
+
+        return onCall(frame);
     }
 
     public CodeFunction(Environment env, String name, FunctionBody body, Value[][] captures) {

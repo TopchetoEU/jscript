@@ -31,12 +31,12 @@ public abstract class FunctionNode extends Node {
             .remove(LabelContext.CONTINUE_CTX);
 
         return new CompileResult(env, scope, params.params.size(), target -> {
-            if (hasArgs || params.params.size() > 0) target.add(Instruction.loadArgs());
+            if (hasArgs || params.params.size() > 0) target.add(Instruction.loadArgs(true));
 
-            if (hasArgs) {
-                var argsVar = scope.defineStrict(new Variable("arguments", true), loc());
-                target.add(_i -> Instruction.storeVar(argsVar.index(), params.params.size() > 0));
-            }
+            // if (hasArgs) {
+            //     var argsVar = scope.defineStrict(new Variable("arguments", true), loc());
+            //     target.add(_i -> Instruction.storeVar(argsVar.index(), params.params.size() > 0));
+            // }
 
             if (params.params.size() > 0) {
                 if (params.params.size() > 1) target.add(Instruction.dup(params.params.size() - 1));
