@@ -1,27 +1,23 @@
 package me.topchetoeu.jscript.compilation.scope;
 
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.List;
 
 import me.topchetoeu.jscript.common.parsing.Location;
 import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 
 public class Scope {
-    protected final VariableList variables = new VariableList(this::parentOffset);
+    protected final HashMap<String, Variable> strictVarMap = new HashMap<>();
+
+    protected final VariableList variables = new VariableList(VariableIndex.IndexType.LOCALS, this::variableOffset);
+    protected final VariableList captured = new VariableList(VariableIndex.IndexType.CAPTURABLES, this::capturablesOffset);
 
     private boolean ended = false;
     private boolean finished = false;
     private Scope child;
-    private List<Scope> prevChildren = new LinkedList<>();
+    private LinkedList<Scope> children = new LinkedList<>();
 
     public final Scope parent;
-    public final HashSet<Variable> captured = new HashSet<>();
-
-    protected final Variable addCaptured(Variable var, boolean captured) {
-        if (captured) this.captured.add(var);
-        return var;
-    }
 
     /**
      * Wether or not the scope is going to be entered multiple times.
@@ -29,10 +25,30 @@ public class Scope {
      */
     public boolean singleEntry = true;
 
-    private final int parentOffset() {
-        if (parent != null) return parent.offset();
-        else return 0;
+
+    protected void transferCaptured(Variable var) {
+        if (!singleEntry) {
+            this.captured.add(var);
+        }
+        else if (parent != null) {
+            parent.transferCaptured(var);
+        }
+        else throw new IllegalStateException("Couldn't transfer captured variable");
     }
+
+    protected final Variable addCaptured(Variable var, boolean captured) {
+        if (captured) transferCaptured(var);
+        return var;
+    }
+
+    // private final int parentVarOffset() {
+    //     if (parent != null) return parent.variableOffset();
+    //     else return 0;
+    // }
+    // private final int parentCapOffset() {
+    //     if (parent != null) return parent.capturedOffset();
+    //     else return localsCount();
+    // }
 
     protected final SyntaxException alreadyDefinedErr(Location loc, String name) {
         return new SyntaxException(loc, String.format("Identifier '%s' has already been declared", name));
@@ -54,7 +70,7 @@ public class Scope {
      */
     public Variable define(Variable var, Location loc) {
         checkNotEnded();
-        if (variables.has(var.name)) throw alreadyDefinedErr(loc, var.name);
+        if (strictVarMap.containsKey(var.name)) throw alreadyDefinedErr(loc, var.name);
         if (parent != null) return parent.define(var, loc);
 
         return null;
@@ -69,10 +85,10 @@ public class Scope {
      */
     public Variable defineStrict(Variable var, Location loc) {
         checkNotEnded();
-        if (variables.has(var.name)) throw alreadyDefinedErr(loc, var.name);
+        if (strictVarMap.containsKey(var.name)) throw alreadyDefinedErr(loc, var.name);
 
-        variables.add(var);
-        return var.setIndexSupplier(() -> variables.indexOfKey(var.name));
+        strictVarMap.put(var.name, var);
+        return variables.add(var);
     }
     /**
      * Gets the index supplier of the given variable name, or null if it is a global
@@ -80,7 +96,8 @@ public class Scope {
      * @param capture If true, the variable is being captured by a function
      */
     public Variable get(String name, boolean capture) {
-        var res = variables.get(name);
+        var res = strictVarMap.get(name);
+
         if (res != null) return addCaptured(res, capture);
         if (parent != null) return parent.get(name, capture);
 
@@ -92,7 +109,7 @@ public class Scope {
      * @param capture If true, will check beyond this function's scope
      */
     public boolean has(String name, boolean capture) {
-        if (variables.has(name)) return true;
+        if (strictVarMap.containsKey(name)) return true;
         if (parent != null) return parent.has(name, capture);
 
         return false;
@@ -100,31 +117,50 @@ public class Scope {
     /**
      * Gets the index offset from this scope to its children
      */
-    public int offset() {
-        if (parent != null) return parent.offset() + variables.size();
-        else return variables.size();
+    public final int variableOffset() {
+        var res = 0;
+
+        for (var curr = parent; curr != null; curr = curr.parent) {
+            res += parent.variables.size();
+        }
+
+        return res;
+
+        // if (parent != null) return parent.variableOffset() + variables.size();
+        // else return variables.size();
+    }
+    public final int capturablesOffset() {
+        var res = 0;
+
+        for (var curr = this; curr != null; curr = curr.parent) {
+            if (curr != this) res += parent.captured.size();
+            if (curr.parent == null) res += curr.localsCount();
+        }
+
+        return res;
+        // if (parent != null) return parent.capturedOffset() + captured.size();
+        // else return localsCount() + captured.size();
     }
 
-    /**
-     * Adds this variable to the current function's locals record. Capturable indicates whether or not the variable
-     * should still be capturable, or be put in an array (still not implemented)
-     * 
-     * @return Whether or not the request was actually fuliflled
-     */
-    public boolean flattenVariable(Variable variable, boolean capturable) {
-        if (singleEntry || !capturable) {
-            if (parent == null) return false;
-            return parent.flattenVariable(variable, capturable);
+    public int localsCount() {
+        var res = 0;
+        for (var child : children) {
+            var childN = child.localsCount();
+            if (res < childN) res = childN;
         }
-        else {
-            variables.overlay(variable);
-            return true;
-        }
-    }
 
-    public int localsCount() { return 0; }
+        return res + variables.size();
+    }
     public int capturesCount() { return 0; }
-    public int allocCount() { return variables.size(); }
+    public int allocCount() {
+        var res = captured.size();
+        return res;
+    }
+    public int capturablesCount() {
+        var res = captured.size();
+        for (var child : children) res += child.capturablesCount();
+        return res;
+    }
 
     /**
      * Ends this scope. This will make it possible for another child to take its place
@@ -142,34 +178,23 @@ public class Scope {
         return true;
     }
 
+    protected void onFinish() {
+        this.variables.freeze();
+        this.captured.freeze();
+    }
+
     /**
      * Finalizes this scope. The scope will become immutable after this call
      * @return
      */
-    public boolean finish() {
+    public final boolean finish() {
         if (finished) return false;
+
         if (parent != null && parent.finished) throw new IllegalStateException("Tried to finish a child after the parent was finished");
+        this.onFinish();
 
-        for (var child : prevChildren) child.finish();
+        for (var child : children) child.finish();
 
-        var captured = new HashSet<Variable>();
-        var normal = new HashSet<Variable>();
-
-        for (var v : variables.all()) {
-            if (this.captured.contains(v)) {
-                if (singleEntry) captured.add(v);
-            }
-            else normal.add(v);
-        }
-
-        for (var v : captured) variables.remove(v);
-        for (var v : normal) variables.remove(v);
-
-        for (var v : captured) flattenVariable(v, true);
-        for (var v : normal) flattenVariable(v, false);
-
-
-        this.variables.freeze();
         this.finished = true;
 
         return true;
@@ -190,7 +215,7 @@ public class Scope {
 
             this.parent = parent;
             this.parent.child = this;
-            this.parent.prevChildren.add(this);
+            this.parent.children.add(this);
         }
         else this.parent = null;
     }

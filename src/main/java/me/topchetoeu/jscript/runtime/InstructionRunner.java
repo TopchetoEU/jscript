@@ -140,7 +140,7 @@ public class InstructionRunner {
     private static Value execLoadVar(Environment env, Instruction instr, Frame frame) {
         int i = instr.get(0);
 
-        frame.push(frame.getVar(i)[0]);
+        frame.push(frame.getVar(i));
         frame.codePtr++;
 
         return null;
@@ -179,7 +179,7 @@ public class InstructionRunner {
         var captures = new Value[instr.params.length - 5][];
 
         for (var i = 5; i < instr.params.length; i++) {
-            captures[i - 5] = frame.getVar(instr.get(i));
+            captures[i - 5] = frame.captureVar(instr.get(i));
         }
 
         var func = new CodeFunction(env, name, frame.function.body.children[id], captures);
@@ -278,7 +278,7 @@ public class InstructionRunner {
         var val = (boolean)instr.get(1) ? frame.peek() : frame.pop();
         int i = instr.get(0);
 
-        frame.getVar(i)[0] = val;
+        frame.setVar(i, val);
         frame.codePtr++;
 
         return null;
@@ -339,8 +339,6 @@ public class InstructionRunner {
 
         frame.stackPtr -= 1;
         var ptr = frame.stackPtr;
-
-        // for (var i = op.operands - 1; i >= 0; i--) args[i] = frame.pop();
 
         switch (op) {
             case ADD:
@@ -500,29 +498,34 @@ public class InstructionRunner {
         frame.codePtr++;
         return null;
     }
+    private static Value execLoadError(Environment env, Instruction instr, Frame frame) {
+        frame.push(frame.tryStack.peek().error.value);
+        frame.codePtr++;
+        return null;
+    }
 
     private static Value execStackAlloc(Environment env, Instruction instr, Frame frame) {
-        int n = instr.get(0);
+        int offset = instr.get(0);
+        int n = instr.get(1);
 
-        for (var i = 0; i < n; i++) frame.locals.add(new Value[] { Value.UNDEFINED });
+        for (var i = offset; i < n; i++) frame.capturables[i] = new Value[] { Value.UNDEFINED };
 
         frame.codePtr++;
         return null;
     }
     private static Value execStackRealloc(Environment env, Instruction instr, Frame frame) {
-        int n = instr.get(0);
+        int offset = instr.get(0);
+        int n = instr.get(1);
 
-        for (var i = frame.locals.size() - n; i < frame.locals.size(); i++) frame.locals.set(i, new Value[] { frame.locals.get(i)[0] });
+        for (var i = offset; i < n; i++) frame.capturables[i] = new Value[] { frame.capturables[i][0] };
 
         frame.codePtr++;
         return null;
     }
     private static Value execStackFree(Environment env, Instruction instr, Frame frame) {
-        int n = instr.get(0);
+        // int n = instr.get(0);
 
-        for (var i = 0; i < n; i++) {
-            frame.locals.remove(frame.locals.size() - 1);
-        }
+        // TODO: Remove if safe to do so
 
         frame.codePtr++;
         return null;
@@ -561,6 +564,7 @@ public class InstructionRunner {
             case LOAD_REST_ARGS: return execLoadRestArgs(env, instr, frame);
             case LOAD_CALLEE: return execLoadCallee(env, instr, frame);
             case LOAD_THIS: return execLoadThis(env, instr, frame);
+            case LOAD_ERROR: return execLoadError(env, instr, frame);
 
             case DISCARD: return execDiscard(env, instr, frame);
             case STORE_MEMBER: return execStoreMember(env, instr, frame);

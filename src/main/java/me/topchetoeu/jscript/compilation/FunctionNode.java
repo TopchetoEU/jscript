@@ -31,13 +31,6 @@ public abstract class FunctionNode extends Node {
             .remove(LabelContext.CONTINUE_CTX);
 
         return new CompileResult(env, scope, params.params.size(), target -> {
-            // if (params.params.size() > 0) target.add(Instruction.loadArgs(true));
-
-            // if (hasArgs) {
-            //     var argsVar = scope.defineStrict(new Variable("arguments", true), loc());
-            //     target.add(_i -> Instruction.storeVar(argsVar.index(), params.params.size() > 0));
-            // }
-
             if (params.params.size() > 0) {
                 target.add(Instruction.loadArgs(true));
                 if (params.params.size() > 1) target.add(Instruction.dup(params.params.size() - 1));
@@ -65,7 +58,7 @@ public abstract class FunctionNode extends Node {
                         end.set(target.size());
                     }
 
-                    target.add(_i -> Instruction.storeVar(varI.index()));
+                    target.add(_i -> varI.index().toSet(false));
                 }
             }
 
@@ -73,14 +66,14 @@ public abstract class FunctionNode extends Node {
                 if (scope.has(params.restName, false)) throw new SyntaxException(params.restLocation, "Duplicate parameter name not allowed");
                 var restVar = scope.define(new Variable(params.restName, false), params.restLocation);
                 target.add(Instruction.loadRestArgs(params.params.size()));
-                target.add(_i -> Instruction.storeVar(restVar.index()));
+                target.add(_i -> restVar.index().toSet(false));
             }
 
             if (selfName != null && !scope.has(name, false)) {
                 var i = scope.defineSpecial(new Variable(selfName, true), end);
 
                 target.add(Instruction.loadCallee());
-                target.add(_i -> Instruction.storeVar(i.index(), false));
+                target.add(_i -> i.index().toSet(false));
             }
 
             body.resolve(target);

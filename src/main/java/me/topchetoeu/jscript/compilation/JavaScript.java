@@ -311,6 +311,7 @@ public final class JavaScript {
             else if (res.isFailed()) throw new SyntaxException(src.loc(i), "Unexpected syntax");
 
             i += res.n;
+            i += Parsing.skipEmpty(src, i);
 
             list.add(res.result);
         }

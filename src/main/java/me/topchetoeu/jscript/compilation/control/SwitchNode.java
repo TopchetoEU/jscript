@@ -44,7 +44,7 @@ public class SwitchNode extends Node {
         value.compile(target, true, BreakpointType.STEP_OVER);
 
         var subtarget = target.subtarget();
-        subtarget.add(_i -> Instruction.stackAlloc(subtarget.scope.allocCount()));
+        subtarget.add(_i -> Instruction.stackAlloc(subtarget.scope.capturablesOffset(), subtarget.scope.allocCount()));
 
         // TODO: create a jump map
         for (var ccase : cases) {
@@ -65,7 +65,6 @@ public class SwitchNode extends Node {
         LabelContext.getBreak(target.env).pop(label);
 
         subtarget.scope.end();
-        subtarget.add(_i -> Instruction.stackFree(subtarget.scope.allocCount()));
 
         int endI = subtarget.size();
         end.set(endI);

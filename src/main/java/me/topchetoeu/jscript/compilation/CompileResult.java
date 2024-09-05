@@ -106,11 +106,12 @@ public final class CompileResult {
 
         for (var suppl : instructions) {
             instrRes[i] = suppl.apply(i);
+            // System.out.println(instrRes[i]);
             i++;
         }
 
         return new FunctionBody(
-            scope.localsCount() + scope.allocCount(), scope.capturesCount(),
+            scope.localsCount(), scope.capturablesCount(), scope.capturesCount(),
             length, instrRes, builtChildren
         );
     }

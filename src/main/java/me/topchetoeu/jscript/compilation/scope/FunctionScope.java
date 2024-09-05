@@ -4,65 +4,56 @@ import java.util.HashMap;
 import java.util.HashSet;
 
 import me.topchetoeu.jscript.common.parsing.Location;
-import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 
 public class FunctionScope extends Scope {
-    private final VariableList captures = new VariableList().setIndexMap(v -> ~v);
-    private final VariableList specials = new VariableList();
-    private final VariableList locals = new VariableList(specials);
-    private final HashMap<Variable, Variable> childToParent = new HashMap<>();
+    private final VariableList captures = new VariableList(VariableIndex.IndexType.CAPTURES);
+
+    private final HashMap<String, Variable> specialVarMap = new HashMap<>();
+    private final HashMap<String, Variable> functionVarMap = new HashMap<>();
+    private final HashMap<String, Variable> capturesMap = new HashMap<>();
     private final HashSet<String> blacklistNames = new HashSet<>();
+
+    private final HashMap<Variable, Variable> childToParent = new HashMap<>();
 
     private final Scope captureParent;
 
     public final boolean passtrough;
 
-    private void removeCapture(String name) {
-        var res = captures.remove(name);
-        if (res != null) {
-            childToParent.remove(res);
-            res.setIndexSupplier(() -> { throw new SyntaxException(null, res.name + " has been shadowed"); });
-        }
-    }
-
     @Override public Variable define(Variable var, Location loc) {
         checkNotEnded();
-        if (variables.has(var.name)) throw alreadyDefinedErr(loc, var.name);
+        if (strictVarMap.containsKey(var.name)) throw alreadyDefinedErr(loc, var.name);
 
         if (passtrough) {
             blacklistNames.add(var.name);
             return null;
         }
-
-        removeCapture(var.name);
-        return locals.add(var);
+        else {
+            functionVarMap.put(var.name, var);
+            return variables.add(var);
+        }
     }
     @Override public Variable defineStrict(Variable var, Location loc) {
         checkNotEnded();
-        if (locals.has(var.name)) throw alreadyDefinedErr(loc, var.name);
+        if (functionVarMap.containsKey(var.name)) throw alreadyDefinedErr(loc, var.name);
         if (blacklistNames.contains(var.name)) throw alreadyDefinedErr(loc, var.name);
 
-        var res = super.defineStrict(var, loc);
-        removeCapture(var.name);
-        return res;
+        return super.defineStrict(var, loc);
     }
     public Variable defineSpecial(Variable var, Location loc) {
-        return specials.add(var);
-    }
+        checkNotEnded();
+        if (strictVarMap.containsKey(var.name)) throw alreadyDefinedErr(loc, var.name);
 
-    @Override public boolean flattenVariable(Variable variable, boolean capturable) {
-        // if (!ended()) throw new IllegalStateException("Tried to flatten a variable before the scope has ended");
-        this.locals.overlay(variable);
-        return true;
+        specialVarMap.put(var.name, var);
+        return variables.add(var);
     }
 
     @Override public Variable get(String name, boolean capture) {
         var superRes = super.get(name, capture);
         if (superRes != null) return superRes;
 
-        if (specials.has(name)) return addCaptured(specials.get(name), capture);
-        if (locals.has(name)) return addCaptured(locals.get(name), capture);
-        if (captures.has(name)) return addCaptured(captures.get(name), capture);
+        if (specialVarMap.containsKey(name)) return addCaptured(specialVarMap.get(name), capture);
+        if (functionVarMap.containsKey(name)) return addCaptured(functionVarMap.get(name), capture);
+        if (capturesMap.containsKey(name)) return addCaptured(capturesMap.get(name), capture);
 
         if (captureParent == null) return null;
 
@@ -70,46 +61,31 @@ public class FunctionScope extends Scope {
         if (parentVar == null) return null;
 
         var childVar = captures.add(parentVar.clone());
-
+        capturesMap.put(childVar.name, childVar);
         childToParent.put(childVar, parentVar);
 
         return childVar;
     }
 
     @Override public boolean has(String name, boolean capture) {
-        if (specials.has(name)) return true;
-        if (locals.has(name)) return true;
+        if (functionVarMap.containsKey(name)) return true;
+        if (specialVarMap.containsKey(name)) return true;
 
         if (capture) {
-            if (captures.has(name)) return true;
+            if (capturesMap.containsKey(name)) return true;
             if (captureParent != null) return captureParent.has(name, true);
         }
 
         return false;
     }
 
-    @Override public boolean finish() {
-        if (!super.finish()) return false;
-
+    @Override protected void onFinish() {
         captures.freeze();
-        locals.freeze();
-        specials.freeze();
-
-        return true;
+        super.onFinish();
     }
 
-    @Override public int allocCount() {
-        return 0;
-    }
     @Override public int capturesCount() {
         return captures.size();
-    }
-    @Override public int localsCount() {
-        return locals.size() + specials.size() + super.allocCount();
-    }
-
-    public int offset() {
-        return specials.size() + locals.size();
     }
 
     public int[] getCaptureIndices() {
@@ -118,7 +94,7 @@ public class FunctionScope extends Scope {
 
         for (var el : captures.all()) {
             assert childToParent.containsKey(el);
-            res[i] = childToParent.get(el).index();
+            res[i] = childToParent.get(el).index().toCaptureIndex();
             i++;
         }
 
@@ -130,10 +106,12 @@ public class FunctionScope extends Scope {
         if (parent.finished()) throw new RuntimeException("Parent is finished");
         this.captureParent = parent;
         this.passtrough = false;
+        this.singleEntry = false;
     }
     public FunctionScope(boolean passtrough) {
         super();
         this.captureParent = null;
         this.passtrough = passtrough;
+        this.singleEntry = false;
     }
 }

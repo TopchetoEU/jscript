@@ -35,19 +35,20 @@ public class Instruction {
         LOAD_FUNC(0x30),
         LOAD_ARR(0x31),
         LOAD_OBJ(0x32),
-        LOAD_GLOB(0x33),
-        LOAD_INTRINSICS(0x34),
-        LOAD_REGEX(0x35),
+        LOAD_REGEX(0x33),
+
+        LOAD_GLOB(0x38),
+        LOAD_INTRINSICS(0x39),
+        LOAD_ARGS(0x3A),
+        LOAD_REST_ARGS(0x3B),
+        LOAD_CALLEE(0x3C),
+        LOAD_THIS(0x3D),
+        LOAD_ERROR(0x3E),
 
         LOAD_VAR(0x40),
         LOAD_MEMBER(0x41),
         LOAD_MEMBER_INT(0x42),
         LOAD_MEMBER_STR(0x43),
-
-        LOAD_ARGS(0x44),
-        LOAD_REST_ARGS(0x45),
-        LOAD_CALLEE(0x46),
-        LOAD_THIS(0x47),
 
         STORE_VAR(0x48),
         STORE_MEMBER(0x49),
@@ -368,6 +369,9 @@ public class Instruction {
     public static Instruction loadIntrinsics(String key) {
         return new Instruction(Type.LOAD_INTRINSICS, key);
     }
+    public static Instruction loadError() {
+        return new Instruction(Type.LOAD_ERROR);
+    }
     public static Instruction loadMember() {
         return new Instruction(Type.LOAD_MEMBER);
     }
@@ -457,12 +461,15 @@ public class Instruction {
         return new Instruction(Type.OPERATION, op);
     }
 
-    public static Instruction stackAlloc(int n) {
-        return new Instruction(Type.STACK_ALLOC, n);
+    public static Instruction stackAlloc(int start, int n) {
+        return new Instruction(Type.STACK_ALLOC, start, start + n);
     }
-    public static Instruction stackRealloc(int n) {
-        return new Instruction(Type.STACK_REALLOC, n);
+    public static Instruction stackRealloc(int start, int n) {
+        return new Instruction(Type.STACK_REALLOC, start, start + n);
     }
+    /**
+     * @deprecated
+     */
     public static Instruction stackFree(int n) {
         return new Instruction(Type.STACK_FREE, n);
     }

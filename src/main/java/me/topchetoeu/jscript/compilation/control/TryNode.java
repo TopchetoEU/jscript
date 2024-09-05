@@ -23,8 +23,8 @@ public class TryNode extends Node {
 
     @Override public void resolve(CompileResult target) {
         tryBody.resolve(target);
-        catchBody.resolve(target);
-        finallyBody.resolve(target);
+        if (catchBody != null) catchBody.resolve(target);
+        if (finallyBody != null) finallyBody.resolve(target);
     }
 
     @Override public void compile(CompileResult target, boolean pollute, BreakpointType bpt) {
@@ -43,8 +43,14 @@ public class TryNode extends Node {
 
             if (captureName != null) {
                 var subtarget = target.subtarget();
-                subtarget.scope.defineStrict(new Variable(captureName, false), catchBody.loc());
+                subtarget.add(i -> Instruction.stackAlloc(subtarget.scope.capturablesOffset(), subtarget.scope.allocCount()));
+                subtarget.scope.singleEntry = true;
+
+                var catchVar = subtarget.scope.defineStrict(new Variable(captureName, false), catchBody.loc());
+                subtarget.add(Instruction.loadError());
+                subtarget.add(_i -> catchVar.index().toSet(false));
                 catchBody.compile(subtarget, false);
+
                 subtarget.scope.end();
             }
             else catchBody.compile(target, false);

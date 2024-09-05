@@ -1,8 +1,7 @@
 package me.topchetoeu.jscript.runtime;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 
@@ -18,7 +17,6 @@ import me.topchetoeu.jscript.runtime.values.Value;
 import me.topchetoeu.jscript.runtime.values.Member.FieldMember;
 import me.topchetoeu.jscript.runtime.values.functions.CodeFunction;
 import me.topchetoeu.jscript.runtime.values.objects.ObjectValue;
-import me.topchetoeu.jscript.runtime.values.objects.ScopeValue;
 
 public final class Frame {
     public static final Key<Frame> KEY = Key.of();
@@ -100,7 +98,8 @@ public final class Frame {
      * A list of one-element arrays of values. This is so that we can pass captures to other functions
      */
     public final Value[][] captures;
-    public final List<Value[]> locals = new ArrayList<>();
+    public final Value[] locals;
+    public final Value[][] capturables;
     public final Value argsVal;
     public Value self;
     public Value fakeArgs;
@@ -111,9 +110,20 @@ public final class Frame {
     public final Environment env;
     private final DebugContext dbg;
 
-    public Value[] getVar(int i) {
+    public Value getVar(int i) {
+        if (i < 0) return captures[~i][0];
+        else if (i < locals.length) return locals[i];
+        else return capturables[i - locals.length][0];
+    }
+    public Value setVar(int i, Value val) {
+        if (i < 0) return captures[~i][0] = val;
+        else if (i < locals.length) return locals[i] = val;
+        else return capturables[i - locals.length][0] = val;
+    }
+    public Value[] captureVar(int i) {
         if (i < 0) return captures[~i];
-        else return locals.get(i);
+        if (i >= locals.length) return capturables[i - locals.length];
+        else throw new RuntimeException("Illegal capture");
     }
 
     public Value[] stack = new Value[32];
@@ -216,12 +226,13 @@ public final class Frame {
                 if (newCtx != tryCtx) {
                     switch (newCtx.state) {
                         case CATCH:
-                            if (tryCtx.state != TryState.CATCH) locals.add(new Value[] { error.value });
+                            // TODO: may cause problems
+                            // if (tryCtx.state != TryState.CATCH) locals.add(new Value[] { error.value });
                             codePtr = tryCtx.catchStart;
                             stackPtr = tryCtx.restoreStackPtr;
                             break;
                         case FINALLY:
-                            if (tryCtx.state == TryState.CATCH) locals.remove(locals.size() - 1);
+                            // if (tryCtx.state == TryState.CATCH) locals.remove(locals.size() - 1);
                             codePtr = tryCtx.finallyStart;
                             stackPtr = tryCtx.restoreStackPtr;
                         default:
@@ -237,7 +248,7 @@ public final class Frame {
             }
             else {
                 popTryFlag = false;
-                if (tryCtx.state == TryState.CATCH) locals.remove(locals.size() - 1);
+                // if (tryCtx.state == TryState.CATCH) locals.remove(locals.size() - 1);
 
                 if (tryCtx.state != TryState.FINALLY && tryCtx.hasFinally()) {
                     codePtr = tryCtx.finallyStart;
@@ -357,18 +368,18 @@ public final class Frame {
      * Gets an object proxy of the capture locals
      */
     public ObjectValue getCaptureScope() {
-        // throw new RuntimeException("Not supported");
+        throw new RuntimeException("Not supported");
 
-        var names = new String[captures.length];
-        var map = DebugContext.get(env).getMapOrEmpty(function);
+        // var names = new String[captures.length];
+        // var map = DebugContext.get(env).getMapOrEmpty(function);
 
-        for (int i = 0; i < captures.length; i++) {
-            var name = "capture_" + (i - 2);
-            if (i < map.captureNames.length) name = map.captureNames[i];
-            names[i] = name;
-        }
+        // for (int i = 0; i < captures.length; i++) {
+        //     var name = "capture_" + (i - 2);
+        //     if (i < map.captureNames.length) name = map.captureNames[i];
+        //     names[i] = name;
+        // }
 
-        return new ScopeValue(captures, names);
+        // return new ScopeValue(captures, names);
     }
     /**
      * Gets an array proxy of the local locals
@@ -423,8 +434,13 @@ public final class Frame {
 
         var i = 0;
 
-        for (i = 0; i < func.body.localsN; i++) {
-            this.locals.add(new Value[] { Value.UNDEFINED });
+        this.locals = new Value[func.body.localsN];
+        Arrays.fill(locals, Value.UNDEFINED);
+
+        this.capturables = new Value[func.body.capturablesN][1];
+
+        for (i = 0; i < func.body.capturablesN; i++) {
+            this.capturables[i][0] = Value.UNDEFINED;
         }
     }
 }
