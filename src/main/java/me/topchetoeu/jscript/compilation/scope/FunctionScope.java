@@ -40,14 +40,13 @@ public class FunctionScope extends Scope {
     @Override public Variable defineStrict(Variable var, Location loc) {
         checkNotEnded();
         if (locals.has(var.name)) throw alreadyDefinedErr(loc, var.name);
-        if (specials.has(var.name)) throw alreadyDefinedErr(loc, var.name);
         if (blacklistNames.contains(var.name)) throw alreadyDefinedErr(loc, var.name);
 
         var res = super.defineStrict(var, loc);
         removeCapture(var.name);
         return res;
     }
-    public Variable defineParam(Variable var, Location loc) {
+    public Variable defineSpecial(Variable var, Location loc) {
         return specials.add(var);
     }
 
