@@ -27,7 +27,7 @@ public class FunctionScope extends Scope {
 
     @Override public Variable define(Variable var, Location loc) {
         checkNotEnded();
-        if (locals.has(var.name)) throw alreadyDefinedErr(loc, var.name);
+        if (variables.has(var.name)) throw alreadyDefinedErr(loc, var.name);
 
         if (passtrough) {
             blacklistNames.add(var.name);
