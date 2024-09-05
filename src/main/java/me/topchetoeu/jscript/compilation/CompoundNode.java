@@ -25,7 +25,7 @@ public class CompoundNode extends Node {
 
         var subtarget = hasScope ? target.subtarget() : target;
         if (hasScope) {
-            subtarget.add(i -> Instruction.stackAlloc(subtarget.scope.allocCount()));
+            subtarget.add(i -> Instruction.stackAlloc(subtarget.scope.capturablesOffset(), subtarget.scope.allocCount()));
             subtarget.scope.singleEntry = singleEntry;
         }
 
@@ -45,10 +45,7 @@ public class CompoundNode extends Node {
             else stm.compile(subtarget, polluted = pollute, BreakpointType.STEP_OVER);
         }
 
-        if (hasScope) {
-            subtarget.scope.end();
-            subtarget.add(_i -> Instruction.stackFree(subtarget.scope.allocCount()));
-        }
+        if (hasScope) subtarget.scope.end();
 
         if (!polluted && pollute) {
             target.add(Instruction.pushUndefined());

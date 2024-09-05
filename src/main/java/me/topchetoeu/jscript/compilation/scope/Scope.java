@@ -9,8 +9,8 @@ import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 public class Scope {
     protected final HashMap<String, Variable> strictVarMap = new HashMap<>();
 
-    protected final VariableList variables = new VariableList(VariableIndex.IndexType.LOCALS, this::parentVarOffset);
-    protected final VariableList captured = new VariableList(VariableIndex.IndexType.CAPTURABLES, this::parentCapOffset);
+    protected final VariableList variables = new VariableList(VariableIndex.IndexType.LOCALS, this::variableOffset);
+    protected final VariableList captured = new VariableList(VariableIndex.IndexType.CAPTURABLES, this::capturablesOffset);
 
     private boolean ended = false;
     private boolean finished = false;
@@ -41,14 +41,14 @@ public class Scope {
         return var;
     }
 
-    private final int parentVarOffset() {
-        if (parent != null) return parent.variableOffset();
-        else return 0;
-    }
-    private final int parentCapOffset() {
-        if (parent != null) return parent.capturedOffset();
-        else return localsCount();
-    }
+    // private final int parentVarOffset() {
+    //     if (parent != null) return parent.variableOffset();
+    //     else return 0;
+    // }
+    // private final int parentCapOffset() {
+    //     if (parent != null) return parent.capturedOffset();
+    //     else return localsCount();
+    // }
 
     protected final SyntaxException alreadyDefinedErr(Location loc, String name) {
         return new SyntaxException(loc, String.format("Identifier '%s' has already been declared", name));
@@ -118,12 +118,28 @@ public class Scope {
      * Gets the index offset from this scope to its children
      */
     public final int variableOffset() {
-        if (parent != null) return parent.variableOffset() + variables.size();
-        else return variables.size();
+        var res = 0;
+
+        for (var curr = parent; curr != null; curr = curr.parent) {
+            res += parent.variables.size();
+        }
+
+        return res;
+
+        // if (parent != null) return parent.variableOffset() + variables.size();
+        // else return variables.size();
     }
-    public final int capturedOffset() {
-        if (parent != null) return parent.capturedOffset() + captured.size();
-        else return localsCount() + captured.size();
+    public final int capturablesOffset() {
+        var res = 0;
+
+        for (var curr = this; curr != null; curr = curr.parent) {
+            if (curr != this) res += parent.captured.size();
+            if (curr.parent == null) res += curr.localsCount();
+        }
+
+        return res;
+        // if (parent != null) return parent.capturedOffset() + captured.size();
+        // else return localsCount() + captured.size();
     }
 
     public int localsCount() {
@@ -142,7 +158,7 @@ public class Scope {
     }
     public int capturablesCount() {
         var res = captured.size();
-        for (var child : children) res += child.allocCount();
+        for (var child : children) res += child.capturablesCount();
         return res;
     }
 

@@ -111,7 +111,7 @@ public final class CompileResult {
         }
 
         return new FunctionBody(
-            scope.localsCount() + scope.allocCount(), scope.capturesCount(),
+            scope.localsCount(), scope.capturablesCount(), scope.capturesCount(),
             length, instrRes, builtChildren
         );
     }
