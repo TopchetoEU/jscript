@@ -24,7 +24,7 @@ public class FunctionArrowNode extends FunctionNode {
 
     private static final CompoundNode expToBody(Node node) {
         if (node instanceof CompoundNode res) return res;
-        else return new CompoundNode(node.loc(), new ReturnNode(node.loc(), node));
+        else return new CompoundNode(node.loc(), false, new ReturnNode(node.loc(), node));
     }
 
     public static ParseRes<FunctionArrowNode> parse(Source src, int i) {

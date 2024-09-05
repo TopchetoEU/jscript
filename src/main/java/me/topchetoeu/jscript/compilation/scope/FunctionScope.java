@@ -60,9 +60,10 @@ public class FunctionScope extends Scope {
         var superRes = super.get(name, capture);
         if (superRes != null) return superRes;
 
-        if (specials.has(name)) return specials.get(name);
-        if (locals.has(name)) return locals.get(name);
-        if (captures.has(name)) return captures.get(name);
+        if (specials.has(name)) return addCaptured(specials.get(name), capture);
+        if (locals.has(name)) return addCaptured(locals.get(name), capture);
+        if (captures.has(name)) return addCaptured(captures.get(name), capture);
+
         if (captureParent == null) return null;
 
         var parentVar = captureParent.get(name, true);

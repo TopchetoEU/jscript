@@ -7,6 +7,7 @@ import me.topchetoeu.jscript.common.parsing.ParseRes;
 import me.topchetoeu.jscript.common.parsing.Parsing;
 import me.topchetoeu.jscript.common.parsing.Source;
 import me.topchetoeu.jscript.compilation.CompileResult;
+import me.topchetoeu.jscript.compilation.CompoundNode;
 import me.topchetoeu.jscript.compilation.DeferredIntSupplier;
 import me.topchetoeu.jscript.compilation.JavaScript;
 import me.topchetoeu.jscript.compilation.LabelContext;
@@ -29,16 +30,16 @@ public class ForNode extends Node {
         declaration.compile(subtarget, false, BreakpointType.STEP_OVER);
 
         int start = subtarget.size();
-        condition.compile(subtarget, true, BreakpointType.STEP_OVER);
+        CompoundNode.compileMultiEntry(condition, subtarget, true, BreakpointType.STEP_OVER);
         int mid = subtarget.temp();
 
         var end = new DeferredIntSupplier();
 
         LabelContext.pushLoop(subtarget.env, loc(), label, end, start);
-        body.compile(subtarget, false, BreakpointType.STEP_OVER);
+        CompoundNode.compileMultiEntry(body, subtarget, false, BreakpointType.STEP_OVER);
         LabelContext.popLoop(subtarget.env, label);
 
-        assignment.compile(subtarget, false, BreakpointType.STEP_OVER);
+        CompoundNode.compileMultiEntry(assignment, subtarget, false, BreakpointType.STEP_OVER);
         int endI = subtarget.size();
         end.set(endI);
 

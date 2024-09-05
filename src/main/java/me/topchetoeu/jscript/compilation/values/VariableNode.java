@@ -24,7 +24,7 @@ public class VariableNode extends Node implements AssignableNode {
     }
 
     @Override public void compile(CompileResult target, boolean pollute) {
-        var i = target.scope.get(name, true);
+        var i = target.scope.get(name, false);
 
         if (i == null) {
             target.add(_i -> {
@@ -40,7 +40,7 @@ public class VariableNode extends Node implements AssignableNode {
     }
 
     public static IntFunction<Instruction> toGet(CompileResult target, Location loc, String name, Supplier<Instruction> onGlobal) {
-        var i = target.scope.get(name, true);
+        var i = target.scope.get(name, false);
 
         if (i == null) return _i -> {
             if (target.scope.has(name, false)) return Instruction.throwSyntax(loc, String.format("Cannot access '%s' before initialization", name));
@@ -54,7 +54,7 @@ public class VariableNode extends Node implements AssignableNode {
 
 
     public static IntFunction<Instruction> toSet(CompileResult target, Location loc, String name, boolean keep, boolean define) {
-        var i = target.scope.get(name, true);
+        var i = target.scope.get(name, false);
 
         if (i == null) return _i -> {
             if (target.scope.has(name, false)) return Instruction.throwSyntax(loc, String.format("Cannot access '%s' before initialization", name));

@@ -323,7 +323,7 @@ public final class JavaScript {
     }
 
     public static CompileResult compile(Environment env, Node ...statements) {
-        var func = new FunctionValueNode(null, null, new Parameters(List.of()), new CompoundNode(null, statements), null);
+        var func = new FunctionValueNode(null, null, new Parameters(List.of()), new CompoundNode(null, true, statements), null);
         var res = func.compileBody(env, new FunctionScope(true), true, null, null);
         res.buildTask.run();
         return res;

@@ -84,7 +84,7 @@ public abstract class FunctionNode extends Node {
             }
 
             body.resolve(target);
-            body.compile(target, lastReturn, false, BreakpointType.NONE);
+            body.compile(target, lastReturn, BreakpointType.NONE);
 
             scope.end();
 

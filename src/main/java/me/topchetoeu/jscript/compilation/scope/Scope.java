@@ -18,6 +18,11 @@ public class Scope {
     public final Scope parent;
     public final HashSet<Variable> captured = new HashSet<>();
 
+    protected final Variable addCaptured(Variable var, boolean captured) {
+        if (captured) this.captured.add(var);
+        return var;
+    }
+
     /**
      * Wether or not the scope is going to be entered multiple times.
      * If set to true, captured variables will be kept as allocations, otherwise will be converted to locals
@@ -76,7 +81,7 @@ public class Scope {
      */
     public Variable get(String name, boolean capture) {
         var res = variables.get(name);
-        if (res != null) return res;
+        if (res != null) return addCaptured(res, capture);
         if (parent != null) return parent.get(name, capture);
 
         return null;
@@ -107,8 +112,14 @@ public class Scope {
      * @return Whether or not the request was actually fuliflled
      */
     public boolean flattenVariable(Variable variable, boolean capturable) {
-        if (parent == null) return false;
-        return parent.flattenVariable(variable, capturable);
+        if (singleEntry || !capturable) {
+            if (parent == null) return false;
+            return parent.flattenVariable(variable, capturable);
+        }
+        else {
+            variables.overlay(variable);
+            return true;
+        }
     }
 
     public int localsCount() { return 0; }
@@ -122,15 +133,6 @@ public class Scope {
         if (ended) return false;
 
         this.ended = true;
-
-        for (var v : variables.all()) {
-            if (captured.contains(v)) {
-                if (singleEntry) this.flattenVariable(v, true);
-            }
-            else {
-                this.flattenVariable(v, false);
-            }
-        }
 
         if (this.parent != null) {
             assert this.parent.child == this;
@@ -146,12 +148,29 @@ public class Scope {
      */
     public boolean finish() {
         if (finished) return false;
-        if (parent != null && !parent.finished) throw new IllegalStateException("Tried to finish a child before the parent was finished");
+        if (parent != null && parent.finished) throw new IllegalStateException("Tried to finish a child after the parent was finished");
+
+        for (var child : prevChildren) child.finish();
+
+        var captured = new HashSet<Variable>();
+        var normal = new HashSet<Variable>();
+
+        for (var v : variables.all()) {
+            if (this.captured.contains(v)) {
+                if (singleEntry) captured.add(v);
+            }
+            else normal.add(v);
+        }
+
+        for (var v : captured) variables.remove(v);
+        for (var v : normal) variables.remove(v);
+
+        for (var v : captured) flattenVariable(v, true);
+        for (var v : normal) flattenVariable(v, false);
+
 
         this.variables.freeze();
         this.finished = true;
-
-        for (var child : prevChildren) child.finish();
 
         return true;
     }

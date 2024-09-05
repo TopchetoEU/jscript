@@ -13,17 +13,21 @@ import me.topchetoeu.jscript.common.parsing.Source;
 
 public class CompoundNode extends Node {
     public final Node[] statements;
+    public final boolean hasScope;
     public Location end;
 
     @Override public void resolve(CompileResult target) {
         for (var stm : statements) stm.resolve(target);
     }
 
-    public void compile(CompileResult target, boolean pollute, boolean alloc, BreakpointType type) {
+    public void compile(CompileResult target, boolean pollute, boolean singleEntry, BreakpointType type) {
         List<Node> statements = new ArrayList<Node>();
 
-        var subtarget = alloc ? target.subtarget() : target;
-        if (alloc) subtarget.add(i -> Instruction.stackAlloc(subtarget.scope.allocCount()));
+        var subtarget = hasScope ? target.subtarget() : target;
+        if (hasScope) {
+            subtarget.add(i -> Instruction.stackAlloc(subtarget.scope.allocCount()));
+            subtarget.scope.singleEntry = singleEntry;
+        }
 
         for (var stm : this.statements) {
             if (stm instanceof FunctionStatementNode func) {
@@ -41,7 +45,7 @@ public class CompoundNode extends Node {
             else stm.compile(subtarget, polluted = pollute, BreakpointType.STEP_OVER);
         }
 
-        if (alloc) {
+        if (hasScope) {
             subtarget.scope.end();
             subtarget.add(_i -> Instruction.stackFree(subtarget.scope.allocCount()));
         }
@@ -60,9 +64,19 @@ public class CompoundNode extends Node {
         return this;
     }
 
-    public CompoundNode(Location loc, Node ...statements) {
+    public CompoundNode(Location loc, boolean hasScope, Node ...statements) {
         super(loc);
+        this.hasScope = hasScope;
         this.statements = statements;
+    }
+
+    public static void compileMultiEntry(Node node, CompileResult target, boolean pollute, BreakpointType type) {
+        if (node instanceof CompoundNode comp) {
+            comp.compile(target, pollute, false, type);
+        }
+        else {
+            node.compile(target, pollute, type);
+        }
     }
 
     public static ParseRes<CompoundNode> parseComma(Source src, int i, Node prev, int precedence) {
@@ -78,14 +92,14 @@ public class CompoundNode extends Node {
         if (!curr.isSuccess()) return curr.chainError(src.loc(i + n), "Expected a value after the comma");
         n += curr.n;
 
-        if (prev instanceof CompoundNode) {
+        if (prev instanceof CompoundNode comp) {
             var children = new ArrayList<Node>();
-            children.addAll(List.of(((CompoundNode)prev).statements));
+            children.addAll(List.of(comp.statements));
             children.add(curr.result);
 
-            return ParseRes.res(new CompoundNode(loc, children.toArray(Node[]::new)), n);
+            return ParseRes.res(new CompoundNode(loc, comp.hasScope, children.toArray(Node[]::new)), n);
         }
-        else return ParseRes.res(new CompoundNode(loc, prev, curr.result), n);
+        else return ParseRes.res(new CompoundNode(loc, false, prev, curr.result), n);
     }
     public static ParseRes<CompoundNode> parse(Source src, int i) {
         var n = Parsing.skipEmpty(src, i);
@@ -115,6 +129,6 @@ public class CompoundNode extends Node {
             statements.add(res.result);
         }
 
-        return ParseRes.res(new CompoundNode(loc, statements.toArray(Node[]::new)).setEnd(src.loc(i + n - 1)), n);
+        return ParseRes.res(new CompoundNode(loc, true, statements.toArray(Node[]::new)).setEnd(src.loc(i + n - 1)), n);
     }
 }

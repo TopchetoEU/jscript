@@ -7,6 +7,7 @@ import me.topchetoeu.jscript.common.parsing.ParseRes;
 import me.topchetoeu.jscript.common.parsing.Parsing;
 import me.topchetoeu.jscript.common.parsing.Source;
 import me.topchetoeu.jscript.compilation.CompileResult;
+import me.topchetoeu.jscript.compilation.CompoundNode;
 import me.topchetoeu.jscript.compilation.DeferredIntSupplier;
 import me.topchetoeu.jscript.compilation.JavaScript;
 import me.topchetoeu.jscript.compilation.LabelContext;
@@ -51,7 +52,7 @@ public class ForOfNode extends Node {
         var end = new DeferredIntSupplier();
 
         LabelContext.pushLoop(target.env, loc(), label, end, start);
-        body.compile(target, false, BreakpointType.STEP_OVER);
+        CompoundNode.compileMultiEntry(body, target, false, BreakpointType.STEP_OVER);
         LabelContext.popLoop(target.env, label);
 
         int endI = target.size();

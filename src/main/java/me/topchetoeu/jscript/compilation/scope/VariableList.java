@@ -61,6 +61,7 @@ public final class VariableList {
 
     private final HashMap<String, Node> map = new HashMap<>();
     private ArrayList<Node> frozenList = null;
+    private HashMap<Variable, Node> varMap = new HashMap<>();
 
     private final IntSupplier offset;
     private IntUnaryOperator indexConverter = null;
@@ -105,6 +106,7 @@ public final class VariableList {
         }
 
         map.put(val.name, node);
+        varMap.put(val, node);
         val.setIndexSupplier(node);
 
         return val;
@@ -117,9 +119,15 @@ public final class VariableList {
         return this.add(val, true);
     }
     public Variable remove(String key) {
+        var res = map.get(key);
+        if (res != null) return remove(res.var);
+        else return null;
+    }
+    public Variable remove(Variable var) {
+        if (var == null) return null;
         if (frozen()) throw new RuntimeException("The scope has been frozen");
 
-        var node = map.get(key);
+        var node = varMap.get(var);
         if (node == null) return null;
 
         if (node.prev != null) {
@@ -142,6 +150,9 @@ public final class VariableList {
 
         node.next = null;
         node.prev = null;
+
+        map.remove(node.var.name);
+        varMap.remove(node.var);
 
         return node.var;
     }
@@ -178,6 +189,7 @@ public final class VariableList {
         }
 
         first = last = null;
+        varMap = null;
     }
 
     public Iterable<Variable> all() {
