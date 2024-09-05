@@ -14,7 +14,7 @@ public class FunctionArrowNode extends FunctionNode {
     @Override public String name() { return null; }
 
     @Override public void compile(CompileResult target, boolean pollute, String name, BreakpointType bp) {
-        var id = target.addChild(compileBody(target, false, name, null));
+        var id = target.addChild(compileBody(target, name, null));
         target.add(_i -> Instruction.loadFunc(id, true, false, true, null, captures(id, target)));
     }
 

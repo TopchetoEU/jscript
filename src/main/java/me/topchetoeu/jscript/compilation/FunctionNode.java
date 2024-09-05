@@ -23,7 +23,7 @@ public abstract class FunctionNode extends Node {
         return ((FunctionScope)target.children.get(id).scope).getCaptureIndices();
     }
 
-    public final CompileResult compileBody(Environment env, FunctionScope scope, boolean lastReturn, boolean hasArgs, String _name, String selfName) {
+    public final CompileResult compileBody(Environment env, FunctionScope scope, boolean lastReturn, String _name, String selfName) {
         var name = this.name() != null ? this.name() : _name;
 
         env = env.child()
@@ -31,7 +31,7 @@ public abstract class FunctionNode extends Node {
             .remove(LabelContext.CONTINUE_CTX);
 
         return new CompileResult(env, scope, params.params.size(), target -> {
-            if (hasArgs || params.params.size() > 0) target.add(Instruction.loadArgs(true));
+            // if (params.params.size() > 0) target.add(Instruction.loadArgs(true));
 
             // if (hasArgs) {
             //     var argsVar = scope.defineStrict(new Variable("arguments", true), loc());
@@ -39,6 +39,7 @@ public abstract class FunctionNode extends Node {
             // }
 
             if (params.params.size() > 0) {
+                target.add(Instruction.loadArgs(true));
                 if (params.params.size() > 1) target.add(Instruction.dup(params.params.size() - 1));
                 var i = 0;
 
@@ -70,13 +71,13 @@ public abstract class FunctionNode extends Node {
 
             if (params.restName != null) {
                 if (scope.has(params.restName, false)) throw new SyntaxException(params.restLocation, "Duplicate parameter name not allowed");
-                var restVar = scope.defineParam(new Variable(params.restName, false), params.restLocation);
+                var restVar = scope.define(new Variable(params.restName, false), params.restLocation);
                 target.add(Instruction.loadRestArgs(params.params.size()));
                 target.add(_i -> Instruction.storeVar(restVar.index()));
             }
 
             if (selfName != null && !scope.has(name, false)) {
-                var i = scope.defineParam(new Variable(selfName, true), end);
+                var i = scope.defineSpecial(new Variable(selfName, true), end);
 
                 target.add(Instruction.loadCallee());
                 target.add(_i -> Instruction.storeVar(i.index(), false));
@@ -92,8 +93,8 @@ public abstract class FunctionNode extends Node {
             scope.finish();
         });
     }
-    public final CompileResult compileBody(CompileResult parent, boolean hasArgs, String name, String selfName) {
-        return compileBody(parent.env, new FunctionScope(parent.scope), false, hasArgs, name, selfName);
+    public final CompileResult compileBody(CompileResult parent, String name, String selfName) {
+        return compileBody(parent.env, new FunctionScope(parent.scope), false, name, selfName);
     }
 
     public abstract void compile(CompileResult target, boolean pollute, String name, BreakpointType bp);

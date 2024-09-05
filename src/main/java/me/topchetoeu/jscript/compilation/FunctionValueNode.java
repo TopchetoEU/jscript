@@ -10,7 +10,7 @@ public class FunctionValueNode extends FunctionNode {
     @Override public String name() { return name; }
 
     @Override public void compile(CompileResult target, boolean pollute, String name, BreakpointType bp) {
-        var id = target.addChild(compileBody(target, true, name, null));
+        var id = target.addChild(compileBody(target, name, null));
         target.add(_i -> Instruction.loadFunc(id, true, true, false, name, captures(id, target)));
     }
 
