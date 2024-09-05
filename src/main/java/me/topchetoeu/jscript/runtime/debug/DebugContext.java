@@ -5,22 +5,21 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.WeakHashMap;
 
-import me.topchetoeu.jscript.common.Filename;
 import me.topchetoeu.jscript.common.FunctionBody;
 import me.topchetoeu.jscript.common.Instruction;
-import me.topchetoeu.jscript.common.Location;
+import me.topchetoeu.jscript.common.environment.Environment;
+import me.topchetoeu.jscript.common.environment.Key;
 import me.topchetoeu.jscript.common.mapping.FunctionMap;
-import me.topchetoeu.jscript.runtime.Context;
-import me.topchetoeu.jscript.runtime.Extensions;
+import me.topchetoeu.jscript.common.parsing.Filename;
+import me.topchetoeu.jscript.common.parsing.Location;
 import me.topchetoeu.jscript.runtime.Frame;
-import me.topchetoeu.jscript.runtime.Key;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
-import me.topchetoeu.jscript.runtime.values.CodeFunction;
-import me.topchetoeu.jscript.runtime.values.FunctionValue;
+import me.topchetoeu.jscript.runtime.values.functions.CodeFunction;
+import me.topchetoeu.jscript.runtime.values.functions.FunctionValue;
 
 public class DebugContext {
-    public static final Key<DebugContext> KEY = new Key<>();
-    public static final Key<Void> IGNORE = new Key<>();
+    public static final Key<DebugContext> KEY = Key.of();
+    public static final Key<Void> IGNORE = Key.of();
 
     private HashMap<Filename, String> sources;
     private WeakHashMap<FunctionBody, FunctionMap> maps;
@@ -71,15 +70,24 @@ public class DebugContext {
         if (maps == null || !(func instanceof CodeFunction)) return FunctionMap.EMPTY;
         return getMapOrEmpty(((CodeFunction)func).body);
     }
+    public List<Frame> getStackFrames() {
+        if (debugger == null) return List.of();
+        return this.debugger.getStackFrame();
+    }
 
-    public void onFramePop(Context ctx, Frame frame) {
-        if (debugger != null) debugger.onFramePop(ctx, frame);
+    public void onFramePop(Environment env, Frame frame) {
+        if (debugger != null) debugger.onFramePop(env, frame);
     }
-    public void onFramePush(Context ctx, Frame frame) {
-        if (debugger != null) debugger.onFramePush(ctx, frame);
+    public void onFramePush(Environment env, Frame frame) {
+        if (debugger != null) debugger.onFramePush(env, frame);
     }
-    public boolean onInstruction(Context ctx, Frame frame, Instruction instruction, Object returnVal, EngineException error, boolean caught) {
-        if (debugger != null) return debugger.onInstruction(ctx, frame, instruction, returnVal, error, caught);
+
+    public boolean onInstruction(Environment env, Frame frame, Instruction instruction, Object returnVal, EngineException error, boolean caught) {
+        if (debugger != null) return debugger.onInstruction(env, frame, instruction, returnVal, error, caught);
+        else return false;
+    }
+    public boolean onInstruction(Environment env, Frame frame, Instruction instruction) {
+        if (debugger != null) return debugger.onInstruction(env, frame, instruction, null, null, false);
         else return false;
     }
     public void onSource(Filename filename, String source) {
@@ -102,26 +110,26 @@ public class DebugContext {
         this(true);
     }
 
-    public static boolean enabled(Extensions exts) {
+    public static boolean enabled(Environment exts) {
         return exts != null && exts.hasNotNull(KEY) && !exts.has(IGNORE);
     }
-    public static DebugContext get(Extensions exts) {
+    public static DebugContext get(Environment exts) {
         if (enabled(exts)) return exts.get(KEY);
         else return new DebugContext(false);
     }
 
-    public static List<String> stackTrace(Context ctx) {
+    public static List<String> stackTrace(Environment env) {
         var res = new ArrayList<String>();
-        var dbgCtx = get(ctx);
+        var dbgCtx = get(env);
 
-        for (var el : ctx.frames()) {
-            var name = el.function.name;
+        for (var frame : dbgCtx.getStackFrames()) {
+            var name = frame.function.name;
 
-            var map = dbgCtx.getMapOrEmpty(el.function);
+            var map = dbgCtx.getMapOrEmpty(frame.function);
             Location loc = null;
 
             if (map != null) {
-                loc = map.toLocation(el.codePtr, true);
+                loc = map.toLocation(frame.codePtr, true);
                 if (loc == null) loc = map.start();
             }
 

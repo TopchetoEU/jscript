@@ -1,10 +1,12 @@
 package me.topchetoeu.jscript.runtime.debug;
 
-import me.topchetoeu.jscript.common.Filename;
+import java.util.List;
+
 import me.topchetoeu.jscript.common.FunctionBody;
 import me.topchetoeu.jscript.common.Instruction;
+import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.common.mapping.FunctionMap;
-import me.topchetoeu.jscript.runtime.Context;
+import me.topchetoeu.jscript.common.parsing.Filename;
 import me.topchetoeu.jscript.runtime.Frame;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
 
@@ -35,7 +37,7 @@ public interface DebugHandler {
     /**
      * Called immediatly before an instruction is executed, as well as after an instruction, if it has threw or returned.
      * This function might pause in order to await debugging commands.
-     * @param ctx The context of execution
+     * @param env The context of execution
      * @param frame The frame in which execution is occuring
      * @param instruction The instruction which was or will be executed
      * @param returnVal The return value of the instruction, Values.NO_RETURN if none
@@ -43,32 +45,35 @@ public interface DebugHandler {
      * @param caught Whether or not the error has been caught
      * @return Whether or not the frame should restart (currently does nothing)
      */
-    boolean onInstruction(Context ctx, Frame frame, Instruction instruction, Object returnVal, EngineException error, boolean caught);
+    boolean onInstruction(Environment env, Frame frame, Instruction instruction, Object returnVal, EngineException error, boolean caught);
 
     /**
      * Called immediatly before a frame has been pushed on the frame stack.
      * This function might pause in order to await debugging commands.
-     * @param ctx The context of execution
+     * @param env The context of execution
      * @param frame The code frame which was pushed
      */
-    void onFramePush(Context ctx, Frame frame);
+    void onFramePush(Environment env, Frame frame);
     /**
      * Called immediatly after a frame has been popped out of the frame stack.
      * This function might pause in order to await debugging commands.
-     * @param ctx The context of execution
+     * @param env The context of execution
      * @param frame The code frame which was popped out
      */
-    void onFramePop(Context ctx, Frame frame);
+    void onFramePop(Environment env, Frame frame);
+
+    List<Frame> getStackFrame();
 
     public static DebugHandler empty() {
         return new DebugHandler () {
-            @Override public void onFramePop(Context ctx, Frame frame) { }
-            @Override public void onFramePush(Context ctx, Frame frame) { }
-            @Override public boolean onInstruction(Context ctx, Frame frame, Instruction instruction, Object returnVal, EngineException error, boolean caught) {
+            @Override public void onFramePop(Environment env, Frame frame) { }
+            @Override public void onFramePush(Environment env, Frame frame) { }
+            @Override public boolean onInstruction(Environment env, Frame frame, Instruction instruction, Object returnVal, EngineException error, boolean caught) {
                 return false;
             }
             @Override public void onSourceLoad(Filename filename, String source) { }
             @Override public void onFunctionLoad(FunctionBody body, FunctionMap map) { }
+            @Override public List<Frame> getStackFrame() { return List.of(); }
         };
     }
 }

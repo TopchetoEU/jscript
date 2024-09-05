@@ -69,8 +69,7 @@ public class JSONElement {
         return (boolean)value;
     }
 
-    @Override
-    public String toString() {
+    @Override public String toString() {
         if (isMap()) return "{...}";
         if (isList()) return "[...]";
         if (isString()) return (String)value;
