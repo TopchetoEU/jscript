@@ -257,8 +257,6 @@ const Function = function() {
     parts[parts.length] = String(arguments[arguments.length - 1]);
     parts[parts.length] = "\n}";
 
-    print(parts);
-
     const res = compile(stringBuild(parts))();
     return res;
 };

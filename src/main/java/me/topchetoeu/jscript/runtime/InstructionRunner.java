@@ -340,8 +340,6 @@ public class InstructionRunner {
         frame.stackPtr -= 1;
         var ptr = frame.stackPtr;
 
-        // for (var i = op.operands - 1; i >= 0; i--) args[i] = frame.pop();
-
         switch (op) {
             case ADD:
                 res = Value.add(env, stack[ptr - 1], stack[ptr]);

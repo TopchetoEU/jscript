@@ -18,7 +18,6 @@ import me.topchetoeu.jscript.runtime.values.Value;
 import me.topchetoeu.jscript.runtime.values.Member.FieldMember;
 import me.topchetoeu.jscript.runtime.values.functions.CodeFunction;
 import me.topchetoeu.jscript.runtime.values.objects.ObjectValue;
-import me.topchetoeu.jscript.runtime.values.objects.ScopeValue;
 
 public final class Frame {
     public static final Key<Frame> KEY = Key.of();
@@ -357,18 +356,18 @@ public final class Frame {
      * Gets an object proxy of the capture locals
      */
     public ObjectValue getCaptureScope() {
-        // throw new RuntimeException("Not supported");
+        throw new RuntimeException("Not supported");
 
-        var names = new String[captures.length];
-        var map = DebugContext.get(env).getMapOrEmpty(function);
+        // var names = new String[captures.length];
+        // var map = DebugContext.get(env).getMapOrEmpty(function);
 
-        for (int i = 0; i < captures.length; i++) {
-            var name = "capture_" + (i - 2);
-            if (i < map.captureNames.length) name = map.captureNames[i];
-            names[i] = name;
-        }
+        // for (int i = 0; i < captures.length; i++) {
+        //     var name = "capture_" + (i - 2);
+        //     if (i < map.captureNames.length) name = map.captureNames[i];
+        //     names[i] = name;
+        // }
 
-        return new ScopeValue(captures, names);
+        // return new ScopeValue(captures, names);
     }
     /**
      * Gets an array proxy of the local locals

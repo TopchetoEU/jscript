@@ -34,9 +34,7 @@ public class VariableNode extends Node implements AssignableNode {
 
             if (!pollute) target.add(Instruction.discard());
         }
-        else if (pollute) {
-            target.add(_i -> Instruction.loadVar(i.index()));
-        }
+        else if (pollute) target.add(_i -> i.index().toGet());
     }
 
     public static IntFunction<Instruction> toGet(CompileResult target, Location loc, String name, Supplier<Instruction> onGlobal) {
@@ -46,7 +44,7 @@ public class VariableNode extends Node implements AssignableNode {
             if (target.scope.has(name, false)) return Instruction.throwSyntax(loc, String.format("Cannot access '%s' before initialization", name));
             else return onGlobal.get();
         };
-        else return _i -> Instruction.loadVar(i.index());
+        else return _i -> i.index().toGet();
     }
     public static IntFunction<Instruction> toGet(CompileResult target, Location loc, String name) {
         return toGet(target, loc, name, () -> Instruction.globGet(name));
@@ -61,7 +59,7 @@ public class VariableNode extends Node implements AssignableNode {
             else return Instruction.globSet(name, keep, define);
         };
         else if (!define && i.readonly) return _i -> Instruction.throwSyntax(new SyntaxException(loc, "Assignment to constant variable"));
-        else return _i -> Instruction.storeVar(i.index(), keep);
+        else return _i -> i.index().toSet(keep);
     }
 
     public VariableNode(Location loc, String name) {

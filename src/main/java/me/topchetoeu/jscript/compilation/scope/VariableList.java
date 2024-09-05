@@ -4,27 +4,22 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.function.IntSupplier;
-import java.util.function.IntUnaryOperator;
-import java.util.stream.StreamSupport;
+import java.util.function.Supplier;
 
 public final class VariableList {
-    private final class Node implements IntSupplier {
+    private final class VariableNode implements Supplier<VariableIndex> {
         public Variable var;
-        public Node next;
-        public Node prev;
+        public VariableNode next;
+        public VariableNode prev;
         public boolean frozen;
         public int index;
 
-        @Override public int getAsInt() {
+        public VariableList list() { return VariableList.this; }
+
+        @Override public VariableIndex get() {
             if (frozen) {
-                if (offset == null) {
-                    return indexConverter == null ? index : indexConverter.applyAsInt(index);
-                }
-                else {
-                    return indexConverter == null ?
-                        index + offset.getAsInt() :
-                        indexConverter.applyAsInt(index + offset.getAsInt());
-                }
+                if (offset == null) return new VariableIndex(indexType, index);
+                else new VariableIndex(indexType, index + offset.getAsInt());
             }
 
             var res = 0;
@@ -34,7 +29,7 @@ public final class VariableList {
                 res++;
             }
 
-            return indexConverter == null ? res : indexConverter.applyAsInt(res);
+            return new VariableIndex(indexType, res);
         }
 
         public void freeze() {
@@ -50,26 +45,26 @@ public final class VariableList {
             return;
         }
 
-        public Node(Variable var, Node next, Node prev) {
+        public VariableNode(Variable var, VariableNode next, VariableNode prev) {
             this.var = var;
             this.next = next;
             this.prev = prev;
         }
     }
 
-    private Node first, last;
+    private VariableNode first, last;
 
-    private final HashMap<String, Node> map = new HashMap<>();
-    private ArrayList<Node> frozenList = null;
-    private HashMap<Variable, Node> varMap = new HashMap<>();
+    private ArrayList<VariableNode> frozenList = null;
+    private HashMap<Variable, VariableNode> varMap = new HashMap<>();
 
     private final IntSupplier offset;
-    private IntUnaryOperator indexConverter = null;
+
+    public final VariableIndex.IndexType indexType;
 
     public boolean frozen() {
         if (frozenList != null) {
             assert frozenList != null;
-            assert map != null;
+            assert varMap == null;
             assert first == null;
             assert last == null;
 
@@ -77,21 +72,20 @@ public final class VariableList {
         }
         else {
             assert frozenList == null;
-            assert map != null;
+            assert varMap != null;
 
             return false;
         }
     }
 
-    private Variable add(Variable val, boolean overlay) {
+    public Variable add(Variable val) {
         if (frozen()) throw new RuntimeException("The scope has been frozen");
-        if (!overlay && map.containsKey(val.name)) {
-            var node = this.map.get(val.name);
-            val.setIndexSupplier(node);
-            return node.var;
+
+        if (val.indexSupplier() instanceof VariableNode prevNode) {
+            prevNode.list().remove(val);
         }
 
-        var node = new Node(val, null, last);
+        var node = new VariableNode(val, null, last);
 
         if (last != null) {
             assert first != null;
@@ -105,27 +99,16 @@ public final class VariableList {
             first = last = node;
         }
 
-        map.put(val.name, node);
         varMap.put(val, node);
         val.setIndexSupplier(node);
 
         return val;
     }
 
-    public Variable add(Variable val) {
-        return this.add(val, false);
-    }
-    public Variable overlay(Variable val) {
-        return this.add(val, true);
-    }
-    public Variable remove(String key) {
-        var res = map.get(key);
-        if (res != null) return remove(res.var);
-        else return null;
-    }
     public Variable remove(Variable var) {
-        if (var == null) return null;
         if (frozen()) throw new RuntimeException("The scope has been frozen");
+
+        if (var == null) return null;
 
         var node = varMap.get(var);
         if (node == null) return null;
@@ -151,28 +134,18 @@ public final class VariableList {
         node.next = null;
         node.prev = null;
 
-        map.remove(node.var.name);
         varMap.remove(node.var);
 
         return node.var;
     }
 
-    public Variable get(String name) {
-        var res = map.get(name);
-        if (res != null) return res.var;
-        else return null;
-    }
-    public int indexOfKey(String name) {
-        return map.get(name).getAsInt();
-    }
-
-    public boolean has(String name) {
-        return this.map.containsKey(name);
+    public Supplier<VariableIndex> indexer(Variable var) {
+        return varMap.get(var);
     }
 
     public int size() {
         if (frozen()) return frozenList.size();
-        else return map.size();
+        else return varMap.size();
     }
 
     public void freeze() {
@@ -195,7 +168,7 @@ public final class VariableList {
     public Iterable<Variable> all() {
         if (frozen()) return () -> frozenList.stream().map(v -> v.var).iterator();
         else return () -> new Iterator<Variable>() {
-            private Node curr = first;
+            private VariableNode curr = first;
 
             @Override public boolean hasNext() {
                 return curr != null;
@@ -209,25 +182,21 @@ public final class VariableList {
             }
         };
     }
-    public Iterable<String> keys() {
-        return () -> StreamSupport.stream(all().spliterator(), false).map(v -> v.name).iterator();
-    }
 
-    public VariableList setIndexMap(IntUnaryOperator map) {
-        indexConverter = map;
-        return this;
-    }
-
-    public VariableList(IntSupplier offset) {
+    public VariableList(VariableIndex.IndexType type, IntSupplier offset) {
+        this.indexType = type;
         this.offset = offset;
     }
-    public VariableList(int offset) {
+    public VariableList(VariableIndex.IndexType type, int offset) {
+        this.indexType = type;
         this.offset = () -> offset;
     }
-    public VariableList(VariableList prev) {
+    public VariableList(VariableIndex.IndexType type, VariableList prev) {
+        this.indexType = type;
         this.offset = prev::size;
     }
-    public VariableList() {
+    public VariableList(VariableIndex.IndexType type) {
+        this.indexType = type;
         this.offset = null;
     }
 }
