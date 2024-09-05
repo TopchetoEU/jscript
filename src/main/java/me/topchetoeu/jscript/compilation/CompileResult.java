@@ -27,7 +27,6 @@ public final class CompileResult {
     }
 
     public final List<IntFunction<Instruction>> instructions;
-    // public final List<Supplier<CompileResult>> childrenTasks;
     public final List<CompileResult> children;
     public final FunctionMapBuilder map;
     public final Environment env;
@@ -58,9 +57,6 @@ public final class CompileResult {
         instructions.set(i, instr);
         return this;
     }
-    // public Instruction get(int i) {
-    //     return instructions.get(i);
-    // }
     public int size() { return instructions.size(); }
 
     public void setDebug(Location loc, BreakpointType type) {
@@ -86,11 +82,6 @@ public final class CompileResult {
         this.children.add(res);
         return this.children.size() - 1;
     }
-
-    // public int addChild(Supplier<CompileResult> supplier) {
-    //     this.childrenTasks.add(() -> supplier.get());
-    //     return childrenTasks.size() - 1;
-    // }
 
     public Instruction[] instructions() {
         var res = new Instruction[instructions.size()];

@@ -113,11 +113,9 @@ public final class JavaScript {
 
         if (id.result.equals("true")) return ParseRes.res(new BoolNode(loc, true), n);
         if (id.result.equals("false")) return ParseRes.res(new BoolNode(loc, false), n);
-        // if (id.result.equals("undefined")) return ParseRes.res(new DiscardNode(loc, null), n);
         if (id.result.equals("null")) return ParseRes.res(new NullNode(loc), n);
         if (id.result.equals("this")) return ParseRes.res(new ThisNode(loc), n);
         // if (id.result.equals("arguments")) return ParseRes.res(new ArgumentsNode(loc), n);
-        // if (id.result.equals("globalThis")) return ParseRes.res(new GlobalThisNode(loc), n);
 
         return ParseRes.failed();
     }
@@ -328,28 +326,6 @@ public final class JavaScript {
         var res = func.compileBody(env, new FunctionScope(true), true, true, null, null);
         res.buildTask.run();
         return res;
-
-        // var target = new CompileResult(env, new FunctionScope(true));
-        // var stm = ;
-        // var argsI = target.scope.defineStrict(new Variable("arguments", true), null);
-        // target.add(Instruction.loadArgs());
-        // target.add(_i -> Instruction.storeVar(argsI.index()));
-
-        // // try {
-        //     stm.resolve(target);
-        //     stm.compile(target, true, false, BreakpointType.NONE);
-        //     // FunctionNode.checkBreakAndCont(target, 0);
-        // // }
-        // // catch (SyntaxException e) {
-        // //     target = new CompileResult(env, new LocalScope(new GlobalScope()));
-
-        // //     target.add(Instruction.throwSyntax(e)).setLocation(stm.loc());
-        // // }
-
-        // target.scope.end();
-        // target.scope.finish();
-
-        // return target;
     }
 
     public static CompileResult compile(Environment env, Filename filename, String raw) {

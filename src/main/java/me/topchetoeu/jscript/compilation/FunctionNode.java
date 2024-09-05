@@ -19,27 +19,6 @@ public abstract class FunctionNode extends Node {
 
     public abstract String name();
 
-    // @Override public void declare(CompileResult target) {
-    //     if (varName != null && statement) target.scope.define(varName);
-    // }
-
-    // public static void checkBreakAndCont(CompileResult target, int start) {
-    //     for (int i = start; i < target.size(); i++) {
-    //         if (target.get(i).type == Type.NOP) {
-    //             if (target.get(i).is(0, "break") ) {
-    //                 throw new SyntaxException(target.map.toLocation(i), "Break was placed outside a loop.");
-    //             }
-    //             if (target.get(i).is(0, "cont")) {
-    //                 throw new SyntaxException(target.map.toLocation(i), "Continue was placed outside a loop.");
-    //             }
-    //         }
-    //     }
-    // }
-
-    // protected void compileLoadFunc(CompileResult target, int id, int[] captures, String name) {
-    //     target.add(Instruction.loadFunc(id, true, true, false, name, captures));
-    // }
-
     protected final int[] captures(int id, CompileResult target) {
         return ((FunctionScope)target.children.get(id).scope).getCaptureIndices();
     }
@@ -112,9 +91,6 @@ public abstract class FunctionNode extends Node {
 
             scope.finish();
         });
-
-        // if (pollute) compileLoadFunc(target, target.children.size(), subscope.getCaptureIndices(), name);
-        // return target.addChild(subtarget);
     }
     public final CompileResult compileBody(CompileResult parent, boolean hasArgs, String name, String selfName) {
         return compileBody(parent.env, new FunctionScope(parent.scope), false, hasArgs, name, selfName);

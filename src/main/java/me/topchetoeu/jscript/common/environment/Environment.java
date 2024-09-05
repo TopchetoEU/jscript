@@ -123,18 +123,6 @@ public class Environment {
     public Environment addAll(Map<Key<?>, ?> map) {
         return addAll(map, true);
     }
-    // public Environment addAll(Environment env) {
-    //     this.map.putAll(env.map);
-    //     this.hidden.removeAll(env.map.keySet());
-
-    //     for (var el : env.multi.entrySet()) {
-    //         for (var val : el.getValue()) {
-    //             add(el.getKey(), val);
-    //         }
-    //     }
-
-    //     return this;
-    // }
 
     @SuppressWarnings("unchecked")
     public Environment remove(Key<?> key) {

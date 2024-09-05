@@ -75,12 +75,6 @@ public class SwitchNode extends Node {
         if (defaultI < 0 || defaultI >= body.length) subtarget.set(start, Instruction.jmp(endI - start));
         else subtarget.set(start, Instruction.jmp(statementToIndex.get(defaultI) - start));
 
-        // for (int i = start; i < end; i++) {
-        //     var instr = target.get(i);
-        //     if (instr.type == Type.NOP && instr.is(0, "break") && instr.get(1) == null) {
-        //         target.set(i, Instruction.jmp(end - i));
-        //     }
-        // }
         for (var el : caseToStatement.entrySet()) {
             var i = statementToIndex.get(el.getValue());
             if (i == null) i = endI;

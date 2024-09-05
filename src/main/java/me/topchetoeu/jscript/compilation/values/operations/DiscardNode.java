@@ -13,15 +13,6 @@ import me.topchetoeu.jscript.compilation.Node;
 public class DiscardNode extends Node {
     public final Node value;
 
-    // @Override public EvalResult evaluate(CompileResult target) {
-    //     if (value == null) return EvalResult.FALSY;
-    //     var res = value.evaluate(target);
-
-    //     if (res.isPure) return EvalResult.FALSY;
-    //     else if (res.never) return EvalResult.NEVER;
-    //     else return EvalResult.FALSY_IMPURE;
-    // }
-
     @Override public void compile(CompileResult target, boolean pollute) {
         if (value != null) value.compile(target, false);
         if (pollute) target.add(Instruction.pushUndefined());

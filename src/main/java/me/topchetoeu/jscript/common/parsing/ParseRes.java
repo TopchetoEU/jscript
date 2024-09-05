@@ -59,7 +59,6 @@ public class ParseRes<T> {
 
     @SafeVarargs
     @SuppressWarnings("all")
-    // to hell with all of java's bullshit generics that do jack shit nothing
     public static <T> ParseRes<T> first(Source src, int i, Parser ...parsers) {
         int n = Parsing.skipEmpty(src, i);
         ParseRes<T> error = ParseRes.failed();

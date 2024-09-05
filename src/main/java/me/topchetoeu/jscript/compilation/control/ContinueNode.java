@@ -22,7 +22,6 @@ public class ContinueNode extends Node {
         }
         target.add(res);
 
-        // () -> Instruction.nop("cont", label));
         if (pollute) target.add(Instruction.pushUndefined());
     }
 

@@ -19,13 +19,6 @@ import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 public class VariableNode extends Node implements AssignableNode {
     public final String name;
 
-    // @Override public EvalResult evaluate(CompileResult target) {
-    //     var i = target.scope.getKey(name);
-
-    //     if (i instanceof String) return EvalResult.NONE;
-    //     else return EvalResult.UNKNOWN;
-    // }
-
     @Override public Node toAssign(Node val, Operation operation) {
         return new VariableAssignNode(loc(), name, val, operation);
     }
@@ -57,7 +50,7 @@ public class VariableNode extends Node implements AssignableNode {
     }
     public static IntFunction<Instruction> toGet(CompileResult target, Location loc, String name) {
         return toGet(target, loc, name, () -> Instruction.globGet(name));
-    }
+    }   
 
 
     public static IntFunction<Instruction> toSet(CompileResult target, Location loc, String name, boolean keep, boolean define) {

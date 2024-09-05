@@ -36,7 +36,6 @@ public class VariableDeclareNode extends Node {
             }
         }
     }
-    // let a = 10, b = "test"; var c = () => a + b
     @Override public void compile(CompileResult target, boolean pollute) {
         for (var entry : values) {
             if (entry.name == null) continue;

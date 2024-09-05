@@ -14,15 +14,6 @@ import me.topchetoeu.jscript.compilation.values.VariableNode;
 public class TypeofNode extends Node {
     public final Node value;
 
-    // @Override public EvalResult evaluate(CompileResult target) {
-    //     if (value instanceof VariableNode) {
-    //         var i = target.scope.getKey(((VariableNode)value).name);
-    //         if (i instanceof String) return EvalResult.NONE;
-    //     }
-
-    //     return EvalResult.UNKNOWN;
-    // }
-
     @Override public void compile(CompileResult target, boolean pollute) {
         if (value instanceof VariableNode varNode) {
             target.add(VariableNode.toGet(target, varNode.loc(), varNode.name, () -> Instruction.typeof(varNode.name)));

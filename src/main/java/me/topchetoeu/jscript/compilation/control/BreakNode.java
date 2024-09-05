@@ -22,7 +22,6 @@ public class BreakNode extends Node {
         }
         target.add(res);
 
-        // target.add(Instruction.nop("break", label));
         if (pollute) target.add(Instruction.pushUndefined());
     }
 

@@ -34,7 +34,6 @@ public class DoWhileNode extends Node {
         int endI = target.size();
         end.set(endI + 1);
 
-        // WhileNode.replaceBreaks(target, label, start, mid - 1, mid, end + 1);
         target.add(Instruction.jmpIf(start - endI));
     }
 
