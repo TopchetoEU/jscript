@@ -1,7 +1,6 @@
 package me.topchetoeu.jscript.compilation.values.operations;
 
 import me.topchetoeu.jscript.common.Instruction;
-import me.topchetoeu.jscript.common.Operation;
 import me.topchetoeu.jscript.common.Instruction.BreakpointType;
 import me.topchetoeu.jscript.common.parsing.Location;
 import me.topchetoeu.jscript.common.parsing.ParseRes;
@@ -18,9 +17,46 @@ public class IndexNode extends Node implements AssignableNode {
     public final Node object;
     public final Node index;
 
-    @Override public Node toAssign(Node val, Operation operation) {
-        return new IndexAssignNode(loc(), object, index, val, operation);
+    @Override public void compileBeforeAssign(CompileResult target, boolean op) {
+        object.compile(target, true);
+
+        if (index instanceof NumberNode num && (int)num.value == num.value) {
+            if (op) {
+                target.add(Instruction.dup());
+                target.add(Instruction.loadMember((int)num.value));
+            }
+        }
+        else if (index instanceof StringNode str) {
+            if (op) {
+                target.add(Instruction.dup());
+                target.add(Instruction.loadMember(str.value));
+            }
+        }
+        else {
+            index.compile(target, true);
+
+            if (op) {
+                target.add(Instruction.dup(1, 1));
+                target.add(Instruction.dup(1, 1));
+                target.add(Instruction.loadMember());
+            }
+        }
     }
+    @Override public void compileAfterAssign(CompileResult target, boolean op, boolean pollute) {
+        if (index instanceof NumberNode num && (int)num.value == num.value) {
+            target.add(Instruction.storeMember((int)num.value, pollute));
+        }
+        else if (index instanceof StringNode str) {
+            target.add(Instruction.storeMember(str.value, pollute));
+        }
+        else {
+            target.add(Instruction.storeMember(pollute));
+        }
+    }
+
+    // @Override public Node toAssign(Node val, Operation operation) {
+    //     return new IndexAssignNode(loc(), object, index, val, operation);
+    // }
     public void compile(CompileResult target, boolean dupObj, boolean pollute) {
         object.compile(target, true);
         if (dupObj) target.add(Instruction.dup());

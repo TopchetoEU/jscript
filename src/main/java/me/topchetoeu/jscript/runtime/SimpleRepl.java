@@ -229,12 +229,21 @@ public class SimpleRepl {
             if (((ArgumentsValue)args.get(0)).frame.isNew) return new StringValue("new");
             else return new StringValue("call");
         }));
+
         res.defineOwnMember(env, "invoke", new NativeFunction(args -> {
             var func = (FunctionValue)args.get(0);
             var self = args.get(1);
             var funcArgs = (ArrayValue)args.get(2);
+            var name = args.get(3).toString(env).value;
 
-            return func.call(env, self, funcArgs.toArray());
+            return func.invoke(env, name, self, funcArgs.toArray());
+        }));
+        res.defineOwnMember(env, "construct", new NativeFunction(args -> {
+            var func = (FunctionValue)args.get(0);
+            var funcArgs = (ArrayValue)args.get(1);
+            var name = args.get(2).toString(env).value;
+
+            return func.construct(env, name, funcArgs.toArray());
         }));
 
         return res;
@@ -264,7 +273,7 @@ public class SimpleRepl {
             var self = args.get(1);
             var funcArgs = (ArrayValue)args.get(2);
 
-            return func.call(env, self, funcArgs.toArray());
+            return func.invoke(env, self, funcArgs.toArray());
         }));
 
         return res;
@@ -302,6 +311,12 @@ public class SimpleRepl {
                     break;
                 case "object":
                     args.env.add(Value.OBJECT_PROTO, obj);
+                    break;
+                case "function":
+                    args.env.add(Value.FUNCTION_PROTO, obj);
+                    break;
+                case "array":
+                    args.env.add(Value.ARRAY_PROTO, obj);
                     break;
             }
 

@@ -13,24 +13,22 @@ import me.topchetoeu.jscript.compilation.Node;
 import me.topchetoeu.jscript.compilation.values.constants.NumberNode;
 
 public class ChangeNode extends Node {
-    public final AssignableNode value;
-    public final double addAmount;
-    public final boolean postfix;
+    public final AssignableNode assignable;
+    public final Node value;
+    public final Operation op;
 
     @Override public void compile(CompileResult target, boolean pollute) {
-        value.toAssign(new NumberNode(loc(), -addAmount), Operation.SUBTRACT).compile(target, true);
-        if (!pollute) target.add(Instruction.discard());
-        else if (postfix) {
-            target.add(Instruction.pushValue(addAmount));
-            target.add(Instruction.operation(Operation.SUBTRACT));
-        }
+        assignable.compileBeforeAssign(target, true);
+        value.compile(target, true);
+        target.add(Instruction.operation(op));
+        assignable.compileAfterAssign(target, true, pollute);
     }
 
-    public ChangeNode(Location loc, AssignableNode value, double addAmount, boolean postfix) {
+    public ChangeNode(Location loc, AssignableNode assignable, Node value, Operation op) {
         super(loc);
+        this.assignable = assignable;
         this.value = value;
-        this.addAmount = addAmount;
-        this.postfix = postfix;
+        this.op = op;
     }
 
     public static ParseRes<ChangeNode> parsePrefixIncrease(Source src, int i) {
@@ -44,7 +42,7 @@ public class ChangeNode extends Node {
         if (!res.isSuccess()) return res.chainError(src.loc(i + n), "Expected assignable value after prefix operator.");
         else if (!(res.result instanceof AssignableNode)) return ParseRes.error(src.loc(i + n), "Expected assignable value after prefix operator.");
 
-        return ParseRes.res(new ChangeNode(loc, (AssignableNode)res.result, 1, false), n + res.n);
+        return ParseRes.res(new ChangeNode(loc, (AssignableNode)res.result, new NumberNode(loc, -1), Operation.SUBTRACT), n + res.n);
     }
     public static ParseRes<ChangeNode> parsePrefixDecrease(Source src, int i) {
         var n = Parsing.skipEmpty(src, i);
@@ -57,31 +55,6 @@ public class ChangeNode extends Node {
         if (!res.isSuccess()) return res.chainError(src.loc(i + n), "Expected assignable value after prefix operator.");
         else if (!(res.result instanceof AssignableNode)) return ParseRes.error(src.loc(i + n), "Expected assignable value after prefix operator.");
 
-        return ParseRes.res(new ChangeNode(loc, (AssignableNode)res.result, -1, false), n + res.n);
-    }
-
-    public static ParseRes<ChangeNode> parsePostfixIncrease(Source src, int i, Node prev, int precedence) {
-        if (precedence > 15) return ParseRes.failed();
-
-        var n = Parsing.skipEmpty(src, i);
-        var loc = src.loc(i + n);
-
-        if (!src.is(i + n, "++")) return ParseRes.failed();
-        if (!(prev instanceof AssignableNode)) return ParseRes.error(src.loc(i + n), "Expected assignable value before suffix operator.");
-        n += 2;
-
-        return ParseRes.res(new ChangeNode(loc, (AssignableNode)prev, 1, true), n);
-    }
-    public static ParseRes<ChangeNode> parsePostfixDecrease(Source src, int i, Node prev, int precedence) {
-        if (precedence > 15) return ParseRes.failed();
-
-        var n = Parsing.skipEmpty(src, i);
-        var loc = src.loc(i + n);
-
-        if (!src.is(i + n, "--")) return ParseRes.failed();
-        if (!(prev instanceof AssignableNode)) return ParseRes.error(src.loc(i + n), "Expected assignable value before suffix operator.");
-        n += 2;
-
-        return ParseRes.res(new ChangeNode(loc, (AssignableNode)prev, -1, true), n);
+        return ParseRes.res(new ChangeNode(loc, (AssignableNode)res.result, new NumberNode(loc, 1), Operation.SUBTRACT), n + res.n);
     }
 }

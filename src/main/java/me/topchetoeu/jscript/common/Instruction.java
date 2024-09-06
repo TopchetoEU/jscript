@@ -404,10 +404,10 @@ public class Instruction {
         return new Instruction(Type.LOAD_ARR, count);
     }
     public static Instruction dup() {
-        return new Instruction(Type.DUP, 1);
+        return new Instruction(Type.DUP, 1, 0);
     }
-    public static Instruction dup(int count) {
-        return new Instruction(Type.DUP, count);
+    public static Instruction dup(int count, int offset) {
+        return new Instruction(Type.DUP, count, offset);
     }
 
     public static Instruction storeVar(int i) {

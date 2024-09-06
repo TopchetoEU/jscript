@@ -1,7 +1,5 @@
 package me.topchetoeu.jscript.runtime.values.primitives;
 
-import java.util.Set;
-
 import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
 import me.topchetoeu.jscript.runtime.values.KeyCache;
@@ -23,12 +21,6 @@ public final class VoidValue extends PrimitiveValue {
 
     @Override public Member getOwnMember(Environment env, KeyCache key) {
         throw EngineException.ofError(String.format("Cannot read properties of %s (reading '%s')", name, key.toString(env)));
-    }
-    @Override public Set<String> getOwnMembers(Environment env, boolean onlyEnumerable) {
-        throw EngineException.ofError(String.format("Cannot read properties of %s (listing all members)", name));
-    }
-    @Override public Set<SymbolValue> getOwnSymbolMembers(Environment env, boolean onlyEnumerable) {
-        throw EngineException.ofError(String.format("Cannot read properties of %s (listing all symbol members)", name));
     }
 
     public VoidValue(String name, StringValue type) {

@@ -33,7 +33,7 @@ public abstract class FunctionNode extends Node {
         return new CompileResult(env, scope, params.params.size(), target -> {
             if (params.params.size() > 0) {
                 target.add(Instruction.loadArgs(true));
-                if (params.params.size() > 1) target.add(Instruction.dup(params.params.size() - 1));
+                if (params.params.size() > 1) target.add(Instruction.dup(params.params.size() - 1, 0));
                 var i = 0;
 
                 for (var param : params.params) {

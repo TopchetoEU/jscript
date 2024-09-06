@@ -39,6 +39,7 @@ import me.topchetoeu.jscript.compilation.values.operations.ChangeNode;
 import me.topchetoeu.jscript.compilation.values.operations.DiscardNode;
 import me.topchetoeu.jscript.compilation.values.operations.IndexNode;
 import me.topchetoeu.jscript.compilation.values.operations.OperationNode;
+import me.topchetoeu.jscript.compilation.values.operations.PostfixNode;
 import me.topchetoeu.jscript.compilation.values.operations.TypeofNode;
 import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 
@@ -140,8 +141,8 @@ public final class JavaScript {
                 ParseRes<Node> res = ParseRes.first(src, i + n,
                     (s, j) -> OperationNode.parseInstanceof(s, j, _prev, precedence),
                     (s, j) -> OperationNode.parseIn(s, j, _prev, precedence),
-                    (s, j) -> ChangeNode.parsePostfixIncrease(s, j, _prev, precedence),
-                    (s, j) -> ChangeNode.parsePostfixDecrease(s, j, _prev, precedence),
+                    (s, j) -> PostfixNode.parsePostfixIncrease(s, j, _prev, precedence),
+                    (s, j) -> PostfixNode.parsePostfixDecrease(s, j, _prev, precedence),
                     (s, j) -> OperationNode.parseOperator(s, j, _prev, precedence),
                     (s, j) -> IfNode.parseTernary(s, j, _prev, precedence),
                     (s, j) -> IndexNode.parseMember(s, j, _prev, precedence),

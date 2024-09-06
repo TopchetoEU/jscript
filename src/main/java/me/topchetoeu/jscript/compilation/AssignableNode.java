@@ -1,7 +1,9 @@
 package me.topchetoeu.jscript.compilation;
 
-import me.topchetoeu.jscript.common.Operation;
-
 public interface AssignableNode {
-    public abstract Node toAssign(Node val, Operation operation);
+    public void compileBeforeAssign(CompileResult target, boolean operator);
+    public void compileAfterAssign(CompileResult target, boolean operator, boolean pollute);
+    public default String assignName() {
+        return null;
+    }
 }

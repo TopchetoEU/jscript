@@ -29,6 +29,7 @@ const invokeType = primordials.function.invokeType;
 const setConstructable = primordials.function.setConstructable;
 const setCallable = primordials.function.setCallable;
 const invoke = primordials.function.invoke;
+const construct = primordials.function.construct;
 
 const json = primordials.json;
 
@@ -305,9 +306,7 @@ defineField(Function.prototype, "valueOf", true, false, true, function() {
 
 target.Function = Function;
 
-let spread_obj;
-
-setIntrinsic("spread_obj", spread_obj = (target, obj) => {
+setIntrinsic("spread_obj", target.spread_obj = (target, obj) => {
     if (obj === null || obj === undefined) return;
     const members = getOwnMembers(obj, true);
     const symbols = getOwnSymbolMembers(obj, true);
@@ -322,11 +321,16 @@ setIntrinsic("spread_obj", spread_obj = (target, obj) => {
         target[member] = obj[member];
     }
 });
-
-target.spread_obj = spread_obj;
+setIntrinsic("apply", target.spread_call = (func, self, args) => {
+    return invoke(func, self, args);
+});
+setIntrinsic("apply", target.spread_new = (func, args) => {
+    return invoke(func, null, args);
+});
 
 setGlobalPrototype("string", String.prototype);
 setGlobalPrototype("number", Number.prototype);
 setGlobalPrototype("boolean", Boolean.prototype);
 setGlobalPrototype("symbol", Symbol.prototype);
 setGlobalPrototype("object", Object.prototype);
+setGlobalPrototype("function", Function.prototype);

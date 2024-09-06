@@ -58,7 +58,9 @@ public class OperationNode extends Node {
 
             var other = JavaScript.parseExpression(src, i, precedence);
             if (!other.isSuccess()) return other.chainError(src.loc(i + other.n), String.format("Expected a value after '%s'", token));
-            return ParseRes.res(((AssignableNode)prev).toAssign(other.result, operation), other.n);
+
+            if (operation == null) return ParseRes.res(new AssignNode(loc, ((AssignableNode)prev), other.result), other.n);
+            else return ParseRes.res(new ChangeNode(loc, ((AssignableNode)prev), other.result, operation), other.n);
         }
 
         public AssignmentOperatorFactory(String token, int precedence, Operation operation) {

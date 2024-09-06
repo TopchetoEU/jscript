@@ -4,7 +4,6 @@ import java.util.function.IntFunction;
 import java.util.function.Supplier;
 
 import me.topchetoeu.jscript.common.Instruction;
-import me.topchetoeu.jscript.common.Operation;
 import me.topchetoeu.jscript.common.parsing.Location;
 import me.topchetoeu.jscript.common.parsing.ParseRes;
 import me.topchetoeu.jscript.common.parsing.Parsing;
@@ -13,14 +12,20 @@ import me.topchetoeu.jscript.compilation.AssignableNode;
 import me.topchetoeu.jscript.compilation.CompileResult;
 import me.topchetoeu.jscript.compilation.JavaScript;
 import me.topchetoeu.jscript.compilation.Node;
-import me.topchetoeu.jscript.compilation.values.operations.VariableAssignNode;
 import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 
 public class VariableNode extends Node implements AssignableNode {
     public final String name;
 
-    @Override public Node toAssign(Node val, Operation operation) {
-        return new VariableAssignNode(loc(), name, val, operation);
+    @Override public String assignName() { return name; }
+
+    @Override public void compileBeforeAssign(CompileResult target, boolean operator) {
+        if (operator) {
+            target.add(VariableNode.toGet(target, loc(), name));
+        }
+    }
+    @Override public void compileAfterAssign(CompileResult target, boolean operator, boolean pollute) {
+        target.add(VariableNode.toSet(target, loc(), name, pollute, false));
     }
 
     @Override public void compile(CompileResult target, boolean pollute) {
