@@ -52,13 +52,13 @@ public class ObjectValue extends Value {
             var valueOf = getMember(env, new StringValue("valueOf"));
 
             if (valueOf instanceof FunctionValue) {
-                var res = valueOf.call(env, this);
+                var res = valueOf.invoke(env, this);
                 if (res.isPrimitive()) return res;
             }
 
             var toString = getMember(env, new StringValue("toString"));
             if (toString instanceof FunctionValue) {
-                var res = toString.call(env, this);
+                var res = toString.invoke(env, this);
                 if (res.isPrimitive()) return res;
             }
         }

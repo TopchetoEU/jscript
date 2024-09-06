@@ -51,7 +51,7 @@ public class InstructionRunner {
         var callArgs = frame.take(instr.get(0));
         var funcObj = frame.pop();
 
-        frame.push(funcObj.callNew(env, instr.get(1), callArgs));
+        frame.push(funcObj.construct(env, instr.get(1), callArgs));
 
         frame.codePtr++;
         return null;
@@ -82,7 +82,7 @@ public class InstructionRunner {
     private static Value execKeys(Environment env, Instruction instr, Frame frame) {
         var val = frame.pop();
 
-        var members = new ArrayList<>(val.getMembers(env, false, true));
+        var members = new ArrayList<>(val.getMembers(env, instr.get(0), instr.get(1)));
         Collections.reverse(members);
 
         frame.push(null);
@@ -115,9 +115,12 @@ public class InstructionRunner {
 
     private static Value execDup(Environment env, Instruction instr, Frame frame) {
         int count = instr.get(0);
+        int offset = instr.get(1);
+
+        var el = frame.stack[frame.stackPtr - offset - 1];
 
         for (var i = 0; i < count; i++) {
-            frame.push(frame.peek());
+            frame.push(el);
         }
 
         frame.codePtr++;
@@ -230,7 +233,7 @@ public class InstructionRunner {
     }
     private static Value execLoadRegEx(Environment env, Instruction instr, Frame frame) {
         if (env.hasNotNull(Value.REGEX_CONSTR)) {
-            frame.push(env.get(Value.REGEX_CONSTR).callNew(env, instr.get(0), instr.get(1)));
+            frame.push(env.get(Value.REGEX_CONSTR).construct(env, instr.get(0), instr.get(1)));
         }
         else {
             throw EngineException.ofSyntax("Regex is not supported.");

@@ -83,7 +83,11 @@ public abstract class Value {
         if (isNew) throw EngineException.ofType(name + " is not a constructor");
         else throw EngineException.ofType(name + " is not a function");
     }
-    public final Value callNew(Environment env, String name, Value ...args) {
+
+    public final Value invoke(Environment env, String name, Value self, Value ...args) {
+        return call(env, false, name, self, args);
+    }
+    public final Value construct(Environment env, String name, Value ...args) {
         var res = new ObjectValue();
         var proto = getMember(env, new StringValue("prototype"));
 
@@ -96,11 +100,11 @@ public abstract class Value {
         return res;
     }
 
-    public final Value call(Environment env, Value self, Value ...args) {
-        return call(env, false, "", self, args);
+    public final Value invoke(Environment env, Value self, Value ...args) {
+        return invoke(env, "", self, args);
     }
-    public final Value callNew(Environment env, Value ...args) {
-        return callNew(env, "", args);
+    public final Value construct(Environment env, Value ...args) {
+        return construct(env, "", args);
     }
 
     public abstract Value toPrimitive(Environment env);
@@ -378,7 +382,7 @@ public abstract class Value {
                 private void loadNext() {
                     if (supplier == null) value = null;
                     else if (consumed) {
-                        var curr = supplier.call(env, Value.UNDEFINED);
+                        var curr = supplier.invoke(env, Value.UNDEFINED);
 
                         if (curr == null) { supplier = null; value = null; }
                         if (curr.getMember(env, new StringValue("done")).toBoolean()) { supplier = null; value = null; }
@@ -406,12 +410,12 @@ public abstract class Value {
 
     public void callWith(Environment env, Iterable<? extends Value> it) {
         for (var el : it) {
-            this.call(env, Value.UNDEFINED, el);
+            this.invoke(env, Value.UNDEFINED, el);
         }
     }
     public void callWithAsync(Environment env, Iterable<? extends Value> it, boolean async) {
         for (var el : it) {
-            env.get(EventLoop.KEY).pushMsg(() -> this.call(env, Value.UNDEFINED, el), true);
+            env.get(EventLoop.KEY).pushMsg(() -> this.invoke(env, Value.UNDEFINED, el), true);
         }
     }
 
