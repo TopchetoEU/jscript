@@ -1,8 +1,8 @@
 package me.topchetoeu.jscript.runtime;
 
 import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.Stack;
 
 import me.topchetoeu.jscript.common.Instruction;
@@ -402,19 +402,11 @@ public final class Frame {
                     }
                 };
             }
-            @Override public Map<String, Member> getOwnMembers(Environment env) {
-                var res = new LinkedHashMap<String, Member>();
+            @Override public Set<String> getOwnMembers(Environment env, boolean onlyEnumerable) {
+                var res = new LinkedHashSet<String>();
+                res.addAll(super.getOwnMembers(env, onlyEnumerable));
 
-                for (var i = 0; i < stackPtr; i++) {
-                    var _i = i;
-                    res.put(i + "", new FieldMember(false, true, true) {
-                        @Override public Value get(Environment env, Value self) { return stack[_i]; }
-                        @Override public boolean set(Environment env, Value val, Value self) {
-                            stack[_i] = val;
-                            return true;
-                        }
-                    });
-                }
+                for (var i = 0; i < stackPtr; i++) res.add(i + "");
 
                 return res;
             }

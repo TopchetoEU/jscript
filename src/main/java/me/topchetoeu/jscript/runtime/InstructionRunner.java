@@ -7,7 +7,6 @@ import me.topchetoeu.jscript.common.Instruction;
 import me.topchetoeu.jscript.common.Operation;
 import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
-import me.topchetoeu.jscript.runtime.values.Member.FieldMember;
 import me.topchetoeu.jscript.runtime.values.Member.PropertyMember;
 import me.topchetoeu.jscript.runtime.values.Value;
 import me.topchetoeu.jscript.runtime.values.functions.CodeFunction;
@@ -83,14 +82,14 @@ public class InstructionRunner {
     private static Value execKeys(Environment env, Instruction instr, Frame frame) {
         var val = frame.pop();
 
-        var members = new ArrayList<>(val.getMembers(env, false, true).keySet());
+        var members = new ArrayList<>(val.getMembers(env, false, true));
         Collections.reverse(members);
 
         frame.push(null);
 
         for (var el : members) {
             var obj = new ObjectValue();
-            obj.defineOwnMember(env, "value", FieldMember.of(new StringValue(el)));
+            obj.defineOwnMember(env, "value", new StringValue(el));
             frame.push(obj);
         }
 

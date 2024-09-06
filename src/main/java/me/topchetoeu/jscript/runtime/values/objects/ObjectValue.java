@@ -1,8 +1,8 @@
 package me.topchetoeu.jscript.runtime.values.objects;
 
-import java.util.Collections;
 import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.common.environment.Key;
@@ -100,11 +100,29 @@ public class ObjectValue extends Value {
         return true;
     }
 
-    @Override public Map<String, Member> getOwnMembers(Environment env) {
-        return members;
+    @Override public Set<String> getOwnMembers(Environment env, boolean onlyEnumerable) {
+        if (onlyEnumerable) {
+            var res = new LinkedHashSet<String>();
+
+            for (var el : members.entrySet()) {
+                if (el.getValue().enumerable()) res.add(el.getKey());
+            }
+
+            return res;
+        }
+        else  return members.keySet();
     }
-    @Override public Map<SymbolValue, Member> getOwnSymbolMembers(Environment env) {
-        return Collections.unmodifiableMap(symbolMembers);
+    @Override public Set<SymbolValue> getOwnSymbolMembers(Environment env, boolean onlyEnumerable) {
+        if (onlyEnumerable) {
+            var res = new LinkedHashSet<SymbolValue>();
+
+            for (var el : symbolMembers.entrySet()) {
+                if (el.getValue().enumerable()) res.add(el.getKey());
+            }
+
+            return res;
+        }
+        else  return symbolMembers.keySet();
     }
 
     @Override public ObjectValue getPrototype(Environment env) {

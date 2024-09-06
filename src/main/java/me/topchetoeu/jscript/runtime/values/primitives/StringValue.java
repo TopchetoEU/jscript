@@ -1,11 +1,14 @@
 package me.topchetoeu.jscript.runtime.values.primitives;
 
-import java.util.Map;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.common.parsing.Parsing;
 import me.topchetoeu.jscript.common.parsing.Source;
+import me.topchetoeu.jscript.runtime.values.KeyCache;
 import me.topchetoeu.jscript.runtime.values.Member;
+import me.topchetoeu.jscript.runtime.values.Member.FieldMember;
 import me.topchetoeu.jscript.runtime.values.objects.ObjectValue;
 
 public final class StringValue extends PrimitiveValue {
@@ -32,9 +35,29 @@ public final class StringValue extends PrimitiveValue {
 
     @Override public ObjectValue getPrototype(Environment env) { return env.get(STRING_PROTO); }
 
-    @Override public Map<String, Member> getOwnMembers(Environment env) {
-        // TODO Auto-generated method stub
-        return super.getOwnMembers(env);
+    @Override public Member getOwnMember(Environment env, KeyCache key) {
+        var num = key.toNumber(env);
+        var i = key.toInt(env);
+
+        if (i == num && i >= 0 && i < value.length()) {
+            return FieldMember.of(new StringValue(value.charAt(i) + ""), false, true, false);
+        }
+        else if (key.toString(env).equals("length")) {
+            return FieldMember.of(new NumberValue(value.length()), false, false, false);
+        }
+        else return super.getOwnMember(env, key);
+    }
+
+    @Override public Set<String> getOwnMembers(Environment env, boolean onlyEnumerable) {
+        var res = new LinkedHashSet<String>();
+
+        res.addAll(super.getOwnMembers(env, onlyEnumerable));
+
+        for (var i = 0; i < value.length(); i++) res.add(i + "");
+
+        if (!onlyEnumerable) res.add("length");
+
+        return res;
     }
 
     public StringValue(String value) {

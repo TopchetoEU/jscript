@@ -4,8 +4,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.runtime.values.KeyCache;
@@ -183,17 +183,16 @@ public class ArrayValue extends ObjectValue implements Iterable<Value> {
         else return true;
     }
 
-    @Override public Map<String, Member> getOwnMembers(Environment env) {
-        var res = new LinkedHashMap<String, Member>();
+    @Override public Set<String> getOwnMembers(Environment env, boolean onlyEnumerable) {
+        var res = new LinkedHashSet<String>();
+
+        res.addAll(super.getOwnMembers(env, onlyEnumerable));
 
         for (var i = 0; i < size; i++) {
-            var member = getOwnMember(env, i);
-            if (member != null) res.put(i + "", member);
+            if (has(i)) res.add(i + "");
         }
 
-        res.put("length", lengthField);
-
-        res.putAll(super.getOwnMembers(env));
+        if (!onlyEnumerable) res.add("length");
 
         return res;
     }

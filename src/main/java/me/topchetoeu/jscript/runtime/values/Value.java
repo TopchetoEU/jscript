@@ -7,8 +7,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 
 import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.common.environment.Key;
@@ -119,8 +120,8 @@ public abstract class Value {
     }
 
     public abstract Member getOwnMember(Environment env, KeyCache key);
-    public abstract Map<String, Member> getOwnMembers(Environment env);
-    public abstract Map<SymbolValue, Member> getOwnSymbolMembers(Environment env);
+    public abstract Set<String> getOwnMembers(Environment env, boolean onlyEnumerable);
+    public abstract Set<SymbolValue> getOwnSymbolMembers(Environment env, boolean onlyEnumerable);
     public abstract boolean defineOwnMember(Environment env, KeyCache key, Member member);
     public abstract boolean deleteOwnMember(Environment env, KeyCache key);
 
@@ -317,8 +318,8 @@ public abstract class Value {
         return deleteMember(env, new KeyCache(key));
     }
 
-    public final Map<String, Member> getMembers(Environment env, boolean own, boolean onlyEnumerable) {
-        var res = new LinkedHashMap<String, Member>();
+    public final Set<String> getMembers(Environment env, boolean own, boolean onlyEnumerable) {
+        var res = new LinkedHashSet<String>();
         var protos = new ArrayList<Value>();
 
         for (var proto = this; proto != null; proto = proto.getPrototype(env)) {
@@ -329,19 +330,13 @@ public abstract class Value {
         Collections.reverse(protos);
 
         for (var proto : protos) {
-            if (onlyEnumerable) {
-                for (var el : proto.getOwnMembers(env).entrySet()) {
-                    if (!el.getValue().enumerable()) continue;
-                    res.put(el.getKey(), el.getValue());
-                }
-            }
-            else res.putAll(proto.getOwnMembers(env));
+            res.addAll(proto.getOwnMembers(env, onlyEnumerable));
         }
 
         return res;
     }
-    public final Map<SymbolValue, Member> getSymbolMembers(Environment env, boolean own, boolean onlyEnumerable) {
-        var res = new LinkedHashMap<SymbolValue, Member>();
+    public final Set<SymbolValue> getSymbolMembers(Environment env, boolean own, boolean onlyEnumerable) {
+        var res = new LinkedHashSet<SymbolValue>();
         var protos = new ArrayList<Value>();
 
         for (var proto = this; proto != null; proto = proto.getPrototype(env)) {
@@ -352,13 +347,7 @@ public abstract class Value {
         Collections.reverse(protos);
 
         for (var proto : protos) {
-            if (onlyEnumerable) {
-                for (var el : proto.getOwnSymbolMembers(env).entrySet()) {
-                    if (!el.getValue().enumerable()) continue;
-                    res.put(el.getKey(), el.getValue());
-                }
-            }
-            else res.putAll(proto.getOwnSymbolMembers(env));
+            res.addAll(proto.getOwnSymbolMembers(env, onlyEnumerable));
         }
 
         return res;
@@ -444,7 +433,7 @@ public abstract class Value {
                 if (
                     func.prototype instanceof ObjectValue objProto &&
                     objProto.getMember(env, "constructor") == func && 
-                    objProto.getOwnMembers(env).size() + objProto.getOwnSymbolMembers(env).size() == 1
+                    objProto.getOwnMembers(env, true).size() + objProto.getOwnSymbolMembers(env, true).size() == 1
                 ) { keys.remove("constructor"); }
             }
             else if (this instanceof ArrayValue) {
@@ -469,29 +458,29 @@ public abstract class Value {
 
             passed.add(this);
 
-            if (keys.size() + obj.getOwnSymbolMembers(env).size() == 0) {
+            if (keys.size() + obj.getOwnSymbolMembers(env, true).size() == 0) {
                 if (!printed) res.append("{}\n");
             }
             else if (!printed) {
                 if (tab > 3) return "{...}";
                 res.append("{\n");
 
-                for (var entry : obj.getOwnSymbolMembers(env).entrySet()) {
+                for (var entry : obj.getOwnSymbolMembers(env, true)) {
                     for (int i = 0; i < tab + 1; i++) res.append("    ");
-                    res.append("[" + entry.getKey().value + "]" + ": ");
+                    res.append("[" + entry.value + "]" + ": ");
 
-                    var member = entry.getValue();
-                    if (member instanceof FieldMember) res.append(((FieldMember)member).get(env, obj).toReadable(env, passed, tab + 1));
+                    var member = obj.getOwnMember(env, entry);
+                    if (member instanceof FieldMember field) res.append(field.get(env, obj).toReadable(env, passed, tab + 1));
                     else res.append("[property]");
 
                     res.append(",\n");
                 }
-                for (var entry : obj.getOwnMembers(env).entrySet()) {
+                for (var entry : obj.getOwnMembers(env, true)) {
                     for (int i = 0; i < tab + 1; i++) res.append("    ");
-                    res.append(entry.getKey() + ": ");
+                    res.append(entry + ": ");
 
-                    var member = entry.getValue();
-                    if (member instanceof FieldMember) res.append(((FieldMember)member).get(env, obj).toReadable(env, passed, tab + 1));
+                    var member = obj.getOwnMember(env, entry);
+                    if (member instanceof FieldMember field) res.append(field.get(env, obj).toReadable(env, passed, tab + 1));
                     else res.append("[property]");
 
                     res.append(",\n");
