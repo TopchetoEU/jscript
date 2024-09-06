@@ -18,11 +18,10 @@ public class ArrayNode extends Node {
     @Override public void compile(CompileResult target, boolean pollute) {
         target.add(Instruction.loadArr(statements.length));
 
-        if (statements.length > 0) target.add(Instruction.dup(statements.length));
-
         for (var i = 0; i < statements.length; i++) {
             var el = statements[i];
             if (el != null) {
+                target.add(Instruction.dup());
                 el.compile(target, true);
                 target.add(Instruction.storeMember(i));
             }
