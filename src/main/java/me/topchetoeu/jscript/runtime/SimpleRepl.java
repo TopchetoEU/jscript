@@ -195,6 +195,19 @@ public class SimpleRepl {
             args.get(0).setPrototype(env, proto);
             return args.get(0);
         }));
+        res.defineOwnMember(env, "getOwnMembers", new NativeFunction(args -> {
+            var val = new ArrayValue();
+
+            for (var key : args.get(0).getOwnMembers(env, args.get(1).toBoolean())) {
+                val.set(val.size(), new StringValue(key));
+            }
+
+            return val;
+        }));
+        res.defineOwnMember(env, "getOwnSymbolMembers", new NativeFunction(args -> {
+            return ArrayValue.of(args.get(0).getOwnSymbolMembers(env, args.get(1).toBoolean()));
+        }));
+
         return res;
     }
 
@@ -294,9 +307,18 @@ public class SimpleRepl {
 
             return Value.UNDEFINED;
         }));
+        res.defineOwnMember(env, "setIntrinsic", new NativeFunction(args -> {
+            var name = args.get(0).toString(env).value;
+            var val = args.get(1);
+
+            Value.intrinsics(environment).put(name, val);
+
+            return Value.UNDEFINED;
+        }));
         res.defineOwnMember(env, "compile", new NativeFunction(args -> {
             return Compiler.compileFunc(env, new Filename("jscript", "func" + i[0]++ + ".js"), args.get(0).toString(env).value);
         }));
+
         return res;
     }
 
