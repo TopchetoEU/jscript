@@ -10,39 +10,56 @@ import me.topchetoeu.jscript.compilation.AssignableNode;
 import me.topchetoeu.jscript.compilation.CompileResult;
 import me.topchetoeu.jscript.compilation.JavaScript;
 import me.topchetoeu.jscript.compilation.Node;
+import me.topchetoeu.jscript.compilation.JavaScript.DeclarationType;
+import me.topchetoeu.jscript.compilation.destructing.AssignTarget;
+import me.topchetoeu.jscript.compilation.destructing.ChangeTarget;
 import me.topchetoeu.jscript.compilation.values.constants.NumberNode;
 import me.topchetoeu.jscript.compilation.values.constants.StringNode;
+import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 
-public class IndexNode extends Node implements AssignableNode {
+public class IndexNode extends Node implements ChangeTarget {
     public final Node object;
     public final Node index;
 
-    @Override public void compileBeforeAssign(CompileResult target, boolean op) {
+    @Override public void destructDeclResolve(CompileResult target) {
+        throw new SyntaxException(loc(), "Unexpected index in destructor");
+    }
+    @Override public void destructArg(CompileResult target) {
+        throw new SyntaxException(loc(), "Unexpected index in destructor");
+    }
+
+    @Override public void beforeAssign(CompileResult target, DeclarationType decl) {
+        if (decl != null) throw new SyntaxException(loc(), "Unexpected index in destructor");
+        object.compile(target, true);
+
+        if (index instanceof NumberNode num && (int)num.value == num.value)  return;
+        if (index instanceof StringNode) return;
+        index.compile(target, true);
+
+        target.add(Instruction.dup(1, 1));
+        target.add(Instruction.dup(1, 1));
+        target.add(Instruction.loadMember());
+    }
+    @Override public void beforeChange(CompileResult target) {
         object.compile(target, true);
 
         if (index instanceof NumberNode num && (int)num.value == num.value) {
-            if (op) {
-                target.add(Instruction.dup());
-                target.add(Instruction.loadMember((int)num.value));
-            }
+            target.add(Instruction.dup());
+            target.add(Instruction.loadMember((int)num.value));
         }
         else if (index instanceof StringNode str) {
-            if (op) {
-                target.add(Instruction.dup());
-                target.add(Instruction.loadMember(str.value));
-            }
+            target.add(Instruction.dup());
+            target.add(Instruction.loadMember(str.value));
         }
         else {
             index.compile(target, true);
 
-            if (op) {
-                target.add(Instruction.dup(1, 1));
-                target.add(Instruction.dup(1, 1));
-                target.add(Instruction.loadMember());
-            }
+            target.add(Instruction.dup(1, 1));
+            target.add(Instruction.dup(1, 1));
+            target.add(Instruction.loadMember());
         }
     }
-    @Override public void compileAfterAssign(CompileResult target, boolean op, boolean pollute) {
+    @Override public void afterAssign(CompileResult target, boolean op, boolean pollute) {
         if (index instanceof NumberNode num && (int)num.value == num.value) {
             target.add(Instruction.storeMember((int)num.value, pollute));
         }
@@ -52,6 +69,16 @@ public class IndexNode extends Node implements AssignableNode {
         else {
             target.add(Instruction.storeMember(pollute));
         }
+    }
+
+    @Override public void afterAssign(CompileResult target, DeclarationType decl) {
+        throw new SyntaxException(loc(), "Illegal index in declaration destruction context");
+    }
+    @Override public void destructAssign(CompileResult target, boolean pollute) {
+        object.compile(target, true);
+        target.add(Instruction.dup(1, 1));
+        compileAfterAssign(target, false, false);
+        if (!pollute) target.add(Instruction.discard());
     }
 
     // @Override public Node toAssign(Node val, Operation operation) {

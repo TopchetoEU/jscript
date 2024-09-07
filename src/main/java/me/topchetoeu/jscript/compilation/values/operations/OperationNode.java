@@ -54,13 +54,13 @@ public class OperationNode extends Node {
         @Override public ParseRes<Node> construct(Source src, int i, Node prev) {
             var loc = src.loc(i);
 
-            if (!(prev instanceof AssignableNode)) return ParseRes.error(loc, String.format("Expected an assignable expression before '%s'", token));
+            if (!(prev instanceof AssignTarget)) return ParseRes.error(loc, String.format("Expected an assignable expression before '%s'", token));
 
             var other = JavaScript.parseExpression(src, i, precedence);
             if (!other.isSuccess()) return other.chainError(src.loc(i + other.n), String.format("Expected a value after '%s'", token));
 
-            if (operation == null) return ParseRes.res(new AssignNode(loc, ((AssignableNode)prev), other.result), other.n);
-            else return ParseRes.res(new ChangeNode(loc, ((AssignableNode)prev), other.result, operation), other.n);
+            if (operation == null) return ParseRes.res(new AssignNode(loc, ((AssignTarget)prev), other.result), other.n);
+            else return ParseRes.res(new ChangeNode(loc, ((AssignTarget)prev), other.result, operation), other.n);
         }
 
         public AssignmentOperatorFactory(String token, int precedence, Operation operation) {

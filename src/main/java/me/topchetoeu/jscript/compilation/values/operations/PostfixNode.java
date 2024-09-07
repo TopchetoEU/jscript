@@ -21,7 +21,7 @@ public class PostfixNode extends ChangeNode {
         }
     }
 
-    public PostfixNode(Location loc, AssignableNode value, double addAmount) {
+    public PostfixNode(Location loc, AssignTarget value, double addAmount) {
         super(loc, value, new NumberNode(loc, -addAmount), Operation.SUBTRACT);
     }
 
@@ -32,10 +32,10 @@ public class PostfixNode extends ChangeNode {
         var loc = src.loc(i + n);
 
         if (!src.is(i + n, "++")) return ParseRes.failed();
-        if (!(prev instanceof AssignableNode)) return ParseRes.error(src.loc(i + n), "Expected assignable value before suffix operator.");
+        if (!(prev instanceof AssignTarget)) return ParseRes.error(src.loc(i + n), "Expected assignable value before suffix operator.");
         n += 2;
 
-        return ParseRes.res(new PostfixNode(loc, (AssignableNode)prev, 1), n);
+        return ParseRes.res(new PostfixNode(loc, (AssignTarget)prev, 1), n);
     }
     public static ParseRes<ChangeNode> parsePostfixDecrease(Source src, int i, Node prev, int precedence) {
         if (precedence > 15) return ParseRes.failed();
@@ -44,9 +44,9 @@ public class PostfixNode extends ChangeNode {
         var loc = src.loc(i + n);
 
         if (!src.is(i + n, "--")) return ParseRes.failed();
-        if (!(prev instanceof AssignableNode)) return ParseRes.error(src.loc(i + n), "Expected assignable value before suffix operator.");
+        if (!(prev instanceof AssignTarget)) return ParseRes.error(src.loc(i + n), "Expected assignable value before suffix operator.");
         n += 2;
 
-        return ParseRes.res(new PostfixNode(loc, (AssignableNode)prev, -1), n);
+        return ParseRes.res(new PostfixNode(loc, (AssignTarget)prev, -1), n);
     }
 }

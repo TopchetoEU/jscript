@@ -1,7 +1,6 @@
 package me.topchetoeu.jscript.compilation.control;
 
 import me.topchetoeu.jscript.common.Instruction;
-import me.topchetoeu.jscript.common.Operation;
 import me.topchetoeu.jscript.common.Instruction.BreakpointType;
 import me.topchetoeu.jscript.common.parsing.Location;
 import me.topchetoeu.jscript.common.parsing.ParseRes;
@@ -33,12 +32,10 @@ public class ForInNode extends Node {
         if (declType != null && declType.strict) target.scope.defineStrict(new Variable(varName, declType.readonly), varLocation);
 
         object.compile(target, true, BreakpointType.STEP_OVER);
-        target.add(Instruction.keys(true));
+        target.add(Instruction.keys(false, true));
 
         int start = target.size();
         target.add(Instruction.dup());
-        target.add(Instruction.pushUndefined());
-        target.add(Instruction.operation(Operation.EQUALS));
         int mid = target.temp();
 
         target.add(Instruction.loadMember("value")).setLocation(varLocation);
@@ -55,7 +52,7 @@ public class ForInNode extends Node {
 
         target.add(Instruction.jmp(start - endI));
         target.add(Instruction.discard());
-        target.set(mid, Instruction.jmpIf(endI - mid + 1));
+        target.set(mid, Instruction.jmpIfNot(endI - mid + 1));
         if (pollute) target.add(Instruction.pushUndefined());
     }
 

@@ -449,8 +449,8 @@ public class Instruction {
         return new Instruction(Type.TYPEOF, varName);
     }
 
-    public static Instruction keys(boolean forInFormat) {
-        return new Instruction(Type.KEYS, forInFormat);
+    public static Instruction keys(boolean own, boolean onlyEnumerable) {
+        return new Instruction(Type.KEYS, own, onlyEnumerable);
     }
 
     public static Instruction defProp() {

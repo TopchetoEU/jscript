@@ -12,9 +12,11 @@ import me.topchetoeu.jscript.compilation.AssignableNode;
 import me.topchetoeu.jscript.compilation.CompileResult;
 import me.topchetoeu.jscript.compilation.JavaScript;
 import me.topchetoeu.jscript.compilation.Node;
+import me.topchetoeu.jscript.compilation.JavaScript.DeclarationType;
+import me.topchetoeu.jscript.compilation.scope.Variable;
 import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 
-public class VariableNode extends Node implements AssignableNode {
+public class VariableNode extends Node implements AssignTarget {
     public final String name;
 
     @Override public String assignName() { return name; }
@@ -25,6 +27,25 @@ public class VariableNode extends Node implements AssignableNode {
         }
     }
     @Override public void compileAfterAssign(CompileResult target, boolean operator, boolean pollute) {
+        target.add(VariableNode.toSet(target, loc(), name, pollute, false));
+    }
+
+    @Override public void destructArg(CompileResult target) {
+        target.add(_i -> target.scope.define(new Variable(name, false), loc()).index().toSet(false));
+    }
+    @Override public void destructDeclResolve(CompileResult target) {
+        target.scope.define(new Variable(name, false), loc());
+    }
+    @Override public void afterAssign(CompileResult target, DeclarationType decl) {
+        if (decl.strict) {
+            var v = target.scope.defineStrict(new Variable(name, decl.readonly), loc());
+            target.add(_i -> v.index().toSet(false));
+        }
+        else {
+            target.add(VariableNode.toSet(target, loc(), name, false, true));
+        }
+    }
+    @Override public void destructAssign(CompileResult target, boolean pollute) {
         target.add(VariableNode.toSet(target, loc(), name, pollute, false));
     }
 
@@ -81,10 +102,8 @@ public class VariableNode extends Node implements AssignableNode {
         n += literal.n;
 
         if (!JavaScript.checkVarName(literal.result)) {
-            if (literal.result.equals("await")) return ParseRes.error(src.loc(i + n), "'await' expressions are not supported.");
-            if (literal.result.equals("const")) return ParseRes.error(src.loc(i + n), "'const' declarations are not supported.");
-            if (literal.result.equals("let")) return ParseRes.error(src.loc(i + n), "'let' declarations are not supported.");
-            return ParseRes.error(src.loc(i + n), String.format("Unexpected keyword '%s'.", literal.result));
+            if (literal.result.equals("await")) return ParseRes.error(src.loc(i + n), "'await' expressions are not supported");
+            return ParseRes.error(src.loc(i + n), String.format("Unexpected keyword '%s'", literal.result));
         }
 
         return ParseRes.res(new VariableNode(loc, literal.result), n);

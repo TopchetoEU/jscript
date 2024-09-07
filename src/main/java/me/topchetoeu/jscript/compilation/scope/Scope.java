@@ -62,6 +62,16 @@ public class Scope {
     }
 
     /**
+     * Defines a nameless variable for holding intermediate temporary values
+     * 
+     * @throws RuntimeException If the scope is finalized or has an active child
+     */
+    public Variable defineTemp() {
+        checkNotEnded();
+        return this.variables.add(new Variable("<temp>", false));
+    }
+
+    /**
      * Defines an ES5-style variable
      * 
      * @returns The index supplier of the variable if it is a local, or null if it is a global

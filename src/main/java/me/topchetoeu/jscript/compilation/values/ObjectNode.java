@@ -15,9 +15,10 @@ import me.topchetoeu.jscript.compilation.FunctionNode;
 import me.topchetoeu.jscript.compilation.FunctionValueNode;
 import me.topchetoeu.jscript.compilation.JavaScript;
 import me.topchetoeu.jscript.compilation.Node;
+import me.topchetoeu.jscript.compilation.destructing.Destructor;
 
 
-public class ObjectNode extends Node {
+public class ObjectNode extends Node implements Destructor {
     public static class ObjProp {
         public final String name;
         public final String access;
@@ -148,7 +149,7 @@ public class ObjectNode extends Node {
                 n++;
 
                 var valRes = JavaScript.parseExpression(src, i + n, 2);
-                if (!valRes.isSuccess()) return valRes.chainError(src.loc(i + n), "Expected a value in array list");
+                if (!valRes.isSuccess()) return valRes.chainError(src.loc(i + n), "Expected a value after property key");
                 n += valRes.n;
 
                 values.put(name.result, valRes.result);
