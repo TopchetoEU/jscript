@@ -87,6 +87,11 @@ public class Scope {
     }
 
     /**
+     * Checks if this scope's function parent has a non-strict variable of the given name
+     */
+    public boolean hasNonStrict(String name) { return false; }
+
+    /**
      * Defines an ES2015-style variable
      * @param readonly True if const, false if let
      * @return The index supplier of the variable
@@ -96,6 +101,7 @@ public class Scope {
     public Variable defineStrict(Variable var, Location loc) {
         checkNotEnded();
         if (strictVarMap.containsKey(var.name)) throw alreadyDefinedErr(loc, var.name);
+        if (hasNonStrict(var.name)) throw alreadyDefinedErr(loc, var.name);
 
         strictVarMap.put(var.name, var);
         return variables.add(var);

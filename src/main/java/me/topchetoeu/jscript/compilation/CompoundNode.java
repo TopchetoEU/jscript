@@ -13,7 +13,7 @@ import me.topchetoeu.jscript.common.parsing.Source;
 
 public class CompoundNode extends Node {
     public final Node[] statements;
-    public final boolean hasScope;
+    public boolean hasScope;
     public Location end;
 
     @Override public void resolve(CompileResult target) {

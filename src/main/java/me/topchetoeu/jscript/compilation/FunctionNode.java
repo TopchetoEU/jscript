@@ -107,6 +107,7 @@ public abstract class FunctionNode extends Node {
         this.end = end;
         this.params = params;
         this.body = body;
+        this.body.hasScope = false;
     }
 
     public static void compileWithName(Node stm, CompileResult target, boolean pollute, String name) {
