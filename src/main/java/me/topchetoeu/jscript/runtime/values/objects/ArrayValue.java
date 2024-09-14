@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.Iterator;
 
+import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.runtime.values.Value;
 import me.topchetoeu.jscript.runtime.values.primitives.VoidValue;
 
@@ -41,18 +42,20 @@ public class ArrayValue extends ArrayLikeValue implements Iterable<Value> {
         if (res == null) return Value.UNDEFINED;
         else return res;
     }
-    @Override public void set(int i, Value val) {
-        if (i < 0) return;
+    @Override public boolean set(Environment env, int i, Value val) {
+        if (i < 0) return false;
 
         alloc(i)[i] = val;
         if (i >= size) size = i + 1;
+        return true;
     }
     @Override public boolean has(int i) {
         return i >= 0 && i < size && values[i] != null;
     }
-    @Override public void remove(int i) {
-        if (i < 0 || i >= values.length) return;
+    @Override public boolean remove(int i) {
+        if (i < 0 || i >= values.length) return true;
         values[i] = null;
+        return false;
     }
 
     public void shrink(int n) {
@@ -133,7 +136,7 @@ public class ArrayValue extends ArrayLikeValue implements Iterable<Value> {
         this(16);
     }
     public ArrayValue(int cap) {
-        setPrototype(env -> env.get(ARRAY_PROTO));
+        setPrototype(ARRAY_PROTO);
         values = new Value[Math.min(cap, 16)];
         size = 0;
     }
@@ -143,6 +146,6 @@ public class ArrayValue extends ArrayLikeValue implements Iterable<Value> {
     }
 
     public static ArrayValue of(Collection<? extends Value> values) {
-        return new ArrayValue(values.toArray(Value[]::new));
+        return new ArrayValue(values.toArray(new Value[0]));
     }
 }

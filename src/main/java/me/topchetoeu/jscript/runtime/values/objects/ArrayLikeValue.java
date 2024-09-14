@@ -19,8 +19,7 @@ public abstract class ArrayLikeValue extends ObjectValue {
             return arr.get(i);
         }
         @Override public boolean set(Environment env, Value val, Value self) {
-            arr.set(i, val);
-            return true;
+            return arr.set(env, i, val);
         }
         public IndexField(int i, ArrayLikeValue arr) {
             super(arr, true, true, true);
@@ -42,9 +41,9 @@ public abstract class ArrayLikeValue extends ObjectValue {
     public abstract boolean setSize(int val);
 
     public abstract Value get(int i);
-    public abstract void set(int i, Value val);
+    public abstract boolean set(Environment env, int i, Value val);
     public abstract boolean has(int i);
-    public abstract void remove(int i);
+    public abstract boolean remove(int i);
 
     @Override public Member getOwnMember(Environment env, KeyCache key) {
         var res = super.getOwnMember(env, key);
@@ -64,12 +63,12 @@ public abstract class ArrayLikeValue extends ObjectValue {
         var num = key.toNumber(env);
         var i = key.toInt(env);
 
-        if (i == num && i >= 0) {
+        if (i == num) {
             if (!getState().extendable && !has(i)) return false;
-            set(i, ((FieldMember)member).get(env, this));
-            return true;
+            if (set(env, i, ((FieldMember)member).get(env, this))) return true;
         }
-        else return super.defineOwnMember(env, key, member);
+
+        return super.defineOwnMember(env, key, member);
     }
     @Override public boolean deleteOwnMember(Environment env, KeyCache key) {
         if (!super.deleteOwnMember(env, key)) return false;
@@ -77,7 +76,7 @@ public abstract class ArrayLikeValue extends ObjectValue {
         var num = key.toNumber(env);
         var i = key.toInt(env);
 
-        if (i == num && i >= 0 && i < size()) return super.deleteOwnMember(env, key);
+        if (i == num && i >= 0 && i < size()) return remove(i);
         else return true;
     }
 

@@ -54,17 +54,23 @@ public abstract class Value {
 
     public static final Key<Integer> MAX_STACK_COUNT = Key.of();
     public static final Key<Boolean> HIDE_STACK = Key.of();
-    public static final Key<ObjectValue> OBJECT_PROTO = Key.of();
-    public static final Key<ObjectValue> FUNCTION_PROTO = Key.of();
-    public static final Key<ObjectValue> ARRAY_PROTO = Key.of();
+
     public static final Key<ObjectValue> BOOL_PROTO = Key.of();
     public static final Key<ObjectValue> NUMBER_PROTO = Key.of();
     public static final Key<ObjectValue> STRING_PROTO = Key.of();
     public static final Key<ObjectValue> SYMBOL_PROTO = Key.of();
+
+    public static final Key<ObjectValue> OBJECT_PROTO = Key.of();
+    public static final Key<ObjectValue> FUNCTION_PROTO = Key.of();
+
+    public static final Key<ObjectValue> ARRAY_PROTO = Key.of();
+    public static final Key<ObjectValue> BYTE_BUFF_PROTO = Key.of();
+
     public static final Key<ObjectValue> ERROR_PROTO = Key.of();
     public static final Key<ObjectValue> SYNTAX_ERR_PROTO = Key.of();
     public static final Key<ObjectValue> TYPE_ERR_PROTO = Key.of();
     public static final Key<ObjectValue> RANGE_ERR_PROTO = Key.of();
+
     public static final Key<ObjectValue> GLOBAL = Key.of();
     public static final Key<Map<String, Value>> INTRINSICS = Key.of();
 
