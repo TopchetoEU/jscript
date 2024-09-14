@@ -9,6 +9,7 @@ import me.topchetoeu.jscript.common.parsing.ParseRes;
 import me.topchetoeu.jscript.common.parsing.Parsing;
 import me.topchetoeu.jscript.common.parsing.Source;
 import me.topchetoeu.jscript.compilation.control.ReturnNode;
+import me.topchetoeu.jscript.compilation.patterns.Pattern;
 
 public class FunctionArrowNode extends FunctionNode {
     @Override public String name() { return null; }
@@ -34,7 +35,7 @@ public class FunctionArrowNode extends FunctionNode {
         Parameters params;
 
         if (src.is(i + n, "(")) {
-            var paramsRes = JavaScript.parseParameters(src, i + n);
+            var paramsRes = Parameters.parseParameters(src, i + n);
             if (!paramsRes.isSuccess()) return paramsRes.chainError();
             n += paramsRes.n;
             n += Parsing.skipEmpty(src, i + n);
@@ -42,14 +43,12 @@ public class FunctionArrowNode extends FunctionNode {
             params = paramsRes.result;
         }
         else {
-            var singleParam = Parsing.parseIdentifier(src, i + n);
+            var singleParam = Pattern.parse(src, i + n, true);
             if (!singleParam.isSuccess()) return ParseRes.failed();
-
-            var paramLoc = src.loc(i + n);
             n += singleParam.n;
             n += Parsing.skipEmpty(src, i + n);
 
-            params = new Parameters(List.of(new Parameter(paramLoc, singleParam.result, null)));
+            params = new Parameters(List.of(singleParam.result));
         }
 
         if (!src.is(i + n, "=>")) return ParseRes.failed();

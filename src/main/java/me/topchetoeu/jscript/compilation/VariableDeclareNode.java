@@ -4,23 +4,21 @@ import java.util.ArrayList;
 import java.util.List;
 
 import me.topchetoeu.jscript.common.Instruction;
-import me.topchetoeu.jscript.common.Instruction.BreakpointType;
 import me.topchetoeu.jscript.common.parsing.Location;
 import me.topchetoeu.jscript.common.parsing.ParseRes;
 import me.topchetoeu.jscript.common.parsing.Parsing;
 import me.topchetoeu.jscript.common.parsing.Source;
 import me.topchetoeu.jscript.compilation.JavaScript.DeclarationType;
-import me.topchetoeu.jscript.compilation.scope.Variable;
-import me.topchetoeu.jscript.compilation.values.VariableNode;
+import me.topchetoeu.jscript.compilation.patterns.Pattern;
 
 public class VariableDeclareNode extends Node {
     public static class Pair {
-        public final String name;
+        public final Pattern destructor;
         public final Node value;
         public final Location location;
 
-        public Pair(String name, Node value, Location location) {
-            this.name = name;
+        public Pair(Pattern destr, Node value, Location location) {
+            this.destructor = destr;
             this.value = value;
             this.location = location;
         }
@@ -32,25 +30,22 @@ public class VariableDeclareNode extends Node {
     @Override public void resolve(CompileResult target) {
         if (!declType.strict) {
             for (var entry : values) {
-                target.scope.define(new Variable(entry.name, false), entry.location);
+                entry.destructor.destructDeclResolve(target);
             }
         }
     }
     @Override public void compile(CompileResult target, boolean pollute) {
         for (var entry : values) {
-            if (entry.name == null) continue;
-            if (declType.strict) target.scope.defineStrict(new Variable(entry.name, declType.readonly), entry.location);
-
-            if (entry.value != null) {
-                FunctionNode.compileWithName(entry.value, target, true, entry.name, BreakpointType.STEP_OVER);
-                target.add(VariableNode.toSet(target, entry.location, entry.name, false, true));
+            if (entry.value == null) {
+                if (declType == DeclarationType.VAR) entry.destructor.declare(target, null);
+                else entry.destructor.declare(target, declType);
             }
-            else target.add(_i -> {
-                var i = target.scope.get(entry.name, false);
+            else {
+                entry.value.compile(target, true);
 
-                if (i == null) return Instruction.globDef(entry.name);
-                else return Instruction.nop();
-            });
+                if (declType == DeclarationType.VAR) entry.destructor.destruct(target, null, true);
+                else entry.destructor.destruct(target, declType, true);
+            }
         }
 
         if (pollute) target.add(Instruction.pushUndefined());
@@ -80,13 +75,10 @@ public class VariableDeclareNode extends Node {
 
         while (true) {
             var nameLoc = src.loc(i + n);
-            var name = Parsing.parseIdentifier(src, i + n);
-            if (!name.isSuccess()) return name.chainError(nameLoc, "Expected a variable name");
-            n += name.n;
 
-            if (!JavaScript.checkVarName(name.result)) {
-                return ParseRes.error(src.loc(i + n), String.format("Unexpected identifier '%s'", name.result));
-            }
+            var name = Pattern.parse(src, i + n, false);
+            if (!name.isSuccess()) return name.chainError(nameLoc, "Expected a variable name or a destructor");
+            n += name.n;
 
             Node val = null;
             var endN = n;

@@ -38,7 +38,7 @@ public class CallNode extends Node {
 
             shouldParen = true;
 
-            if (obj.getters.size() > 0 || obj.setters.size() > 0 || obj.map.size() > 0) res = "{}";
+            if (obj.members.size() > 0) res = "{}";
             else res = "{(intermediate value)}";
         }
         else if (func instanceof StringNode) {

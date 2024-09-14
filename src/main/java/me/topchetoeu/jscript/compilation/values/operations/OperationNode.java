@@ -11,10 +11,11 @@ import me.topchetoeu.jscript.common.parsing.Location;
 import me.topchetoeu.jscript.common.parsing.ParseRes;
 import me.topchetoeu.jscript.common.parsing.Parsing;
 import me.topchetoeu.jscript.common.parsing.Source;
-import me.topchetoeu.jscript.compilation.AssignableNode;
 import me.topchetoeu.jscript.compilation.CompileResult;
 import me.topchetoeu.jscript.compilation.JavaScript;
 import me.topchetoeu.jscript.compilation.Node;
+import me.topchetoeu.jscript.compilation.patterns.AssignTargetLike;
+import me.topchetoeu.jscript.compilation.patterns.ChangeTarget;
 
 public class OperationNode extends Node {
     private static interface OperatorFactory {
@@ -54,13 +55,22 @@ public class OperationNode extends Node {
         @Override public ParseRes<Node> construct(Source src, int i, Node prev) {
             var loc = src.loc(i);
 
-            if (!(prev instanceof AssignTarget)) return ParseRes.error(loc, String.format("Expected an assignable expression before '%s'", token));
+            if (operation == null) {
+                if (!(prev instanceof AssignTargetLike target)) return ParseRes.error(loc, String.format("Expected an assignable expression before '%s'", token));
 
-            var other = JavaScript.parseExpression(src, i, precedence);
-            if (!other.isSuccess()) return other.chainError(src.loc(i + other.n), String.format("Expected a value after '%s'", token));
+                var other = JavaScript.parseExpression(src, i, precedence);
+                if (!other.isSuccess()) return other.chainError(src.loc(i + other.n), String.format("Expected a value after '%s'", token));
 
-            if (operation == null) return ParseRes.res(new AssignNode(loc, ((AssignTarget)prev), other.result), other.n);
-            else return ParseRes.res(new ChangeNode(loc, ((AssignTarget)prev), other.result, operation), other.n);
+                return ParseRes.res(new AssignNode(loc, target.toAssignTarget(), other.result), other.n);
+            }
+            else {
+                if (!(prev instanceof ChangeTarget target)) return ParseRes.error(loc, String.format("Expected a changeable expression before '%s'", token));
+
+                var other = JavaScript.parseExpression(src, i, precedence);
+                if (!other.isSuccess()) return other.chainError(src.loc(i + other.n), String.format("Expected a value after '%s'", token));
+
+                return ParseRes.res(new ChangeNode(loc, target, other.result, operation), other.n);
+            }
         }
 
         public AssignmentOperatorFactory(String token, int precedence, Operation operation) {
@@ -209,7 +219,7 @@ public class OperationNode extends Node {
             var factory = factories.get(token);
 
             if (!src.is(i + n, token)) continue;
-            if (factory.precedence() < precedence) ParseRes.failed();
+            if (factory.precedence() < precedence) return ParseRes.failed();
 
             n += token.length();
             n += Parsing.skipEmpty(src, i + n);

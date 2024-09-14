@@ -233,6 +233,37 @@ const Object = function(value) {
 
 defineField(Object, "prototype", false, false, false, setPrototype({}, null));
 
+defineField(Object, "defineProperty", true, false, true, (obj, key, desc) => {
+    if (typeof obj !== "object" || obj === null) {
+        print(obj);
+        print(typeof obj);
+        throw new TypeError("Object.defineProperty called on non-object");
+    }
+    if (typeof desc !== "object" || desc === null) throw new TypeError("Property description must be an object: " + desc);
+
+    if ("get" in desc || "set" in desc) {
+        let get = desc.get, set = desc.set;
+
+        print(typeof get);
+
+        if (get !== undefined && typeof get !== "function") throw new TypeError("Getter must be a function: " + get);
+        if (set !== undefined && typeof set !== "function") throw new TypeError("Setter must be a function: " + set);
+
+        if ("value" in desc || "writable" in desc) {
+            throw new TypeError("Invalid property descriptor. Cannot both specify accessors and a value or writable attribute");
+        }
+
+        if (!defineProperty(obj, key, desc.enumerable, desc.configurable, get, set)) {
+            throw new TypeError("Cannot redefine property: " + key);
+        }
+    }
+    else if (!defineField(obj, key, desc.writable, desc.enumerable, desc.configurable, desc.value)) {
+        throw new TypeError("Cannot redefine property: " + key);
+    }
+
+    return obj;
+});
+
 defineField(Object.prototype, "toString", true, false, true, function() {
     if (this !== null && this !== undefined && (Symbol.toStringTag in this)) return "[object " + this[Symbol.toStringTag] + "]";
     else if (typeof this === "number" || this instanceof Number) return "[object Number]";
@@ -246,7 +277,7 @@ defineField(Object.prototype, "valueOf", true, false, true, function() {
     return this;
 });
 
-target.Boolean = Boolean;
+target.Object = Object;
 
 const Function = function() {
     const parts = ["return function annonymous("];

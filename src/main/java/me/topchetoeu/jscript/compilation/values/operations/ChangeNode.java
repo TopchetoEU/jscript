@@ -9,24 +9,24 @@ import me.topchetoeu.jscript.common.parsing.Source;
 import me.topchetoeu.jscript.compilation.CompileResult;
 import me.topchetoeu.jscript.compilation.JavaScript;
 import me.topchetoeu.jscript.compilation.Node;
-import me.topchetoeu.jscript.compilation.destructing.ChangeTarget;
+import me.topchetoeu.jscript.compilation.patterns.ChangeTarget;
 import me.topchetoeu.jscript.compilation.values.constants.NumberNode;
 
 public class ChangeNode extends Node {
-    public final ChangeTarget assignable;
+    public final ChangeTarget changable;
     public final Node value;
     public final Operation op;
 
     @Override public void compile(CompileResult target, boolean pollute) {
-        assignable.beforeChange(target);
+        changable.beforeChange(target);
         value.compile(target, true);
         target.add(Instruction.operation(op));
-        assignable.afterChange(target, pollute);
+        changable.afterAssign(target, pollute);
     }
 
-    public ChangeNode(Location loc, ChangeTarget assignable, Node value, Operation op) {
+    public ChangeNode(Location loc, ChangeTarget changable, Node value, Operation op) {
         super(loc);
-        this.assignable = assignable;
+        this.changable = changable;
         this.value = value;
         this.op = op;
     }

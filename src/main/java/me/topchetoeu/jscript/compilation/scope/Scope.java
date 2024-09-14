@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 
 import me.topchetoeu.jscript.common.parsing.Location;
+import me.topchetoeu.jscript.compilation.JavaScript.DeclarationType;
 import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 
 public class Scope {
@@ -40,15 +41,6 @@ public class Scope {
         if (captured) transferCaptured(var);
         return var;
     }
-
-    // private final int parentVarOffset() {
-    //     if (parent != null) return parent.variableOffset();
-    //     else return 0;
-    // }
-    // private final int parentCapOffset() {
-    //     if (parent != null) return parent.capturedOffset();
-    //     else return localsCount();
-    // }
 
     protected final SyntaxException alreadyDefinedErr(Location loc, String name) {
         return new SyntaxException(loc, String.format("Identifier '%s' has already been declared", name));
@@ -141,9 +133,6 @@ public class Scope {
         }
 
         return res;
-
-        // if (parent != null) return parent.variableOffset() + variables.size();
-        // else return variables.size();
     }
     public final int capturablesOffset() {
         var res = 0;
@@ -154,8 +143,11 @@ public class Scope {
         }
 
         return res;
-        // if (parent != null) return parent.capturedOffset() + captured.size();
-        // else return localsCount() + captured.size();
+    }
+
+    public final Variable define(DeclarationType type, String name, Location loc) {
+        if (type.strict) return defineStrict(new Variable(name, type.readonly), loc);
+        else return define(new Variable(name, type.readonly), loc);
     }
 
     public int localsCount() {

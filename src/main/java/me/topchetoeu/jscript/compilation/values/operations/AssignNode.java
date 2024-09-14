@@ -5,45 +5,26 @@ import me.topchetoeu.jscript.common.Operation;
 import me.topchetoeu.jscript.common.parsing.Location;
 import me.topchetoeu.jscript.compilation.CompileResult;
 import me.topchetoeu.jscript.compilation.Node;
-import me.topchetoeu.jscript.compilation.JavaScript.DeclarationType;
-import me.topchetoeu.jscript.compilation.destructing.AssignTarget;
-import me.topchetoeu.jscript.compilation.destructing.Destructor;
-import me.topchetoeu.jscript.compilation.scope.Variable;
-import me.topchetoeu.jscript.compilation.values.VariableNode;
+import me.topchetoeu.jscript.compilation.patterns.AssignTarget;
 import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 
-public class AssignNode extends Node implements Destructor {
+public class AssignNode extends Node implements AssignTarget {
     public final AssignTarget assignable;
     public final Node value;
 
-    @Override public void destructDeclResolve(CompileResult target) {
-        if (!(assignable instanceof VariableNode var)) {
-            throw new SyntaxException(loc(), "Assign target in declaration destructor must be a variable");
-        }
+    @Override public void compile(CompileResult target, boolean pollute) {
+        if (assignable instanceof AssignNode other) throw new SyntaxException(other.loc(), "Assign deconstructor not allowed here");
 
-        target.scope.define(new Variable(var.name, false), var.loc());
+        assignable.beforeAssign(target);
+        value.compile(target, true);
+        assignable.afterAssign(target, pollute);
     }
 
-    @Override public void destructArg(CompileResult target) {
-        if (!(assignable instanceof VariableNode var)) {
-            throw new SyntaxException(loc(), "Assign target in declaration destructor must be a variable");
-        }
+    @Override public void afterAssign(CompileResult target, boolean pollute) {
+        if (assignable instanceof AssignNode other) throw new SyntaxException(other.loc(), "Double assign deconstructor not allowed");
 
-        var v = target.scope.define(new Variable(var.name, false), var.loc());
-        afterAssign(target, null, false);
-        target.add(_i -> v.index().toSet(false));
-    }
-    @Override public void afterAssign(CompileResult target, DeclarationType decl, boolean pollute) {
-        if (decl != null && decl.strict) {
-            if (!(assignable instanceof VariableNode var)) {
-                throw new SyntaxException(loc(), "Assign target in declaration destructor must be a variable");
-            }
-            target.scope.define(new Variable(var.name, decl.strict), var.loc());
-        }
-
-        assignable.beforeAssign(target, decl);
-
-        target.add(Instruction.dup());
+        if (pollute) target.add(Instruction.dup(2, 0));
+        else target.add(Instruction.dup());
         target.add(Instruction.pushUndefined());
         target.add(Instruction.operation(Operation.EQUALS));
         var start = target.temp();
@@ -51,15 +32,10 @@ public class AssignNode extends Node implements Destructor {
 
         value.compile(target, true);
 
-        target.set(start, Instruction.jmp(target.size() - start));
+        target.set(start, Instruction.jmpIfNot(target.size() - start));
 
-        assignable.afterAssign(target, decl, pollute);
-    }
-
-    @Override public void compile(CompileResult target, boolean pollute) {
-        assignable.beforeAssign(target, null);
-        value.compile(target, true);
-        assignable.afterAssign(target, null, pollute);
+        assignable.assign(target, false);
+        if (!pollute) target.add(Instruction.discard());
     }
 
     public AssignNode(Location loc, AssignTarget assignable, Node value) {
