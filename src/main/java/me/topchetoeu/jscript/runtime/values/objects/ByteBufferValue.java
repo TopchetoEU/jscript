@@ -5,7 +5,7 @@ import java.util.Iterator;
 
 import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.runtime.values.Value;
-import me.topchetoeu.jscript.runtime.values.primitives.NumberValue;
+import me.topchetoeu.jscript.runtime.values.primitives.numbers.NumberValue;
 
 // TODO: Make methods generic
 public class ByteBufferValue extends ArrayLikeValue implements Iterable<Value> {
@@ -26,11 +26,11 @@ public class ByteBufferValue extends ArrayLikeValue implements Iterable<Value> {
 
     @Override public Value get(int i) {
         if (i < 0 || i >= values.length) return null;
-        return new NumberValue(values[i]);
+        return NumberValue.of(values[i]);
     }
     @Override public boolean set(Environment env, int i, Value val) {
         if (i < 0 || i >= values.length) return false;
-        values[i] = (byte)val.toNumber(env).value;
+        values[i] = (byte)val.toNumber(env).getInt();
         return true;
     }
     @Override public boolean has(int i) {

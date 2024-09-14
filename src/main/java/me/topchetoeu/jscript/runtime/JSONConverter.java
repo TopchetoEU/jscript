@@ -12,15 +12,15 @@ import me.topchetoeu.jscript.runtime.values.Value;
 import me.topchetoeu.jscript.runtime.values.objects.ArrayValue;
 import me.topchetoeu.jscript.runtime.values.objects.ObjectValue;
 import me.topchetoeu.jscript.runtime.values.primitives.BoolValue;
-import me.topchetoeu.jscript.runtime.values.primitives.NumberValue;
 import me.topchetoeu.jscript.runtime.values.primitives.StringValue;
 import me.topchetoeu.jscript.runtime.values.primitives.VoidValue;
+import me.topchetoeu.jscript.runtime.values.primitives.numbers.NumberValue;
 
 public class JSONConverter {
     public static Value toJs(JSONElement val) {
         if (val.isBoolean()) return BoolValue.of(val.bool());
         if (val.isString()) return new StringValue(val.string());
-        if (val.isNumber()) return new NumberValue(val.number());
+        if (val.isNumber()) return NumberValue.of(val.number());
         if (val.isList()) return ArrayValue.of(val.list().stream().map(JSONConverter::toJs).collect(Collectors.toList()));
         if (val.isMap()) {
             var res = new ObjectValue();
@@ -43,7 +43,7 @@ public class JSONConverter {
 
     public static JSONElement fromJs(Environment env, Value val, HashSet<Object> prev) {
         if (val instanceof BoolValue) return JSONElement.bool(((BoolValue)val).value);
-        if (val instanceof NumberValue) return JSONElement.number(((NumberValue)val).value);
+        if (val instanceof NumberValue) return JSONElement.number(((NumberValue)val).getDouble());
         if (val instanceof StringValue) return JSONElement.string(((StringValue)val).value);
         if (val == Value.NULL) return JSONElement.NULL;
         if (val instanceof VoidValue) return null;

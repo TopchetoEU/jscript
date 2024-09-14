@@ -6,6 +6,7 @@ import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
 import me.topchetoeu.jscript.runtime.values.Value;
 import me.topchetoeu.jscript.runtime.values.objects.ObjectValue;
+import me.topchetoeu.jscript.runtime.values.primitives.numbers.NumberValue;
 
 public final class SymbolValue extends PrimitiveValue {
     private static final HashMap<String, SymbolValue> registry = new HashMap<>();
@@ -20,7 +21,7 @@ public final class SymbolValue extends PrimitiveValue {
     @Override public StringValue type() { return typeString; }
 
     @Override public boolean toBoolean() { return false; }
-    @Override public StringValue toString(Environment env) {
+    @Override public String toString(Environment env) {
         throw EngineException.ofType("Cannot convert a Symbol value to a string");
     }
     @Override public NumberValue toNumber(Environment env) {

@@ -6,8 +6,8 @@ import me.topchetoeu.jscript.runtime.values.Member;
 import me.topchetoeu.jscript.runtime.values.Value;
 import me.topchetoeu.jscript.runtime.values.Member.FieldMember;
 import me.topchetoeu.jscript.runtime.values.objects.ObjectValue;
-import me.topchetoeu.jscript.runtime.values.primitives.NumberValue;
 import me.topchetoeu.jscript.runtime.values.primitives.StringValue;
+import me.topchetoeu.jscript.runtime.values.primitives.numbers.NumberValue;
 
 public abstract class FunctionValue extends ObjectValue {
     private static final StringValue typeString = new StringValue("function");
@@ -25,13 +25,13 @@ public abstract class FunctionValue extends ObjectValue {
             return new StringValue(name);
         }
         @Override public boolean set(Environment env, Value val, Value self) {
-            name = val.toString(env).value;
+            name = val.toString(env);
             return true;
         }
     };
     private final FieldMember lengthField = new FieldMember(this, true, false, false) {
         @Override public Value get(Environment env, Value self) {
-            return new NumberValue(length);
+            return NumberValue.of(length);
         }
         @Override public boolean set(Environment env, Value val, Value self) {
             return false;

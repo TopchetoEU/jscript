@@ -2,6 +2,7 @@ package me.topchetoeu.jscript.runtime.values.primitives;
 
 import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.runtime.values.objects.ObjectValue;
+import me.topchetoeu.jscript.runtime.values.primitives.numbers.NumberValue;
 
 public final class BoolValue extends PrimitiveValue {
     public static final BoolValue TRUE = new BoolValue(true);
@@ -13,10 +14,8 @@ public final class BoolValue extends PrimitiveValue {
     @Override public StringValue type() { return typeString; }
 
     @Override public boolean toBoolean() { return value; }
-    @Override public NumberValue toNumber(Environment ext) {
-        return value ? new NumberValue(1) : new NumberValue(0);
-    }
-    @Override public StringValue toString(Environment ext) { return new StringValue(value ? "true" : "false"); }
+    @Override public NumberValue toNumber(Environment ext) { return NumberValue.of(value ? 1 : 0); }
+    @Override public String toString(Environment ext) { return value ? "true" : "false"; }
 
     @Override public ObjectValue getPrototype(Environment env) {
         return env.get(BOOL_PROTO);

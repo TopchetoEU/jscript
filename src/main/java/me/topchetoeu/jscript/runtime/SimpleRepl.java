@@ -22,10 +22,10 @@ import me.topchetoeu.jscript.runtime.values.functions.NativeFunction;
 import me.topchetoeu.jscript.runtime.values.objects.ArrayValue;
 import me.topchetoeu.jscript.runtime.values.objects.ObjectValue;
 import me.topchetoeu.jscript.runtime.values.primitives.BoolValue;
-import me.topchetoeu.jscript.runtime.values.primitives.NumberValue;
 import me.topchetoeu.jscript.runtime.values.primitives.StringValue;
 import me.topchetoeu.jscript.runtime.values.primitives.SymbolValue;
 import me.topchetoeu.jscript.runtime.values.primitives.VoidValue;
+import me.topchetoeu.jscript.runtime.values.primitives.numbers.NumberValue;
 
 public class SimpleRepl {
     static Thread engineTask;
@@ -94,8 +94,8 @@ public class SimpleRepl {
         var res = new ObjectValue();
         res.setPrototype(null, null);
 
-        res.defineOwnMember(env, "makeSymbol", new NativeFunction(args -> new SymbolValue(args.get(0).toString(args.env).value)));
-        res.defineOwnMember(env, "getSymbol", new NativeFunction(args -> SymbolValue.get(args.get(0).toString(args.env).value)));
+        res.defineOwnMember(env, "makeSymbol", new NativeFunction(args -> new SymbolValue(args.get(0).toString(args.env))));
+        res.defineOwnMember(env, "getSymbol", new NativeFunction(args -> SymbolValue.get(args.get(0).toString(args.env))));
         res.defineOwnMember(env, "getSymbolKey", new NativeFunction(args -> ((SymbolValue)args.get(0)).key()));
         res.defineOwnMember(env, "getSymbolDescriptor", new NativeFunction(args -> new StringValue(((SymbolValue)args.get(0)).value)));
 
@@ -107,14 +107,14 @@ public class SimpleRepl {
         res.setPrototype(null, null);
 
         res.defineOwnMember(env, "parseInt", new NativeFunction(args -> {
-            var radix = args.get(1).toInt(env);
+            var nradix = args.get(1).toNumber(env);
+            var radix = nradix.isInt() ? nradix.getInt() : 10;
 
-            if (radix != 10 && args.get(0) instanceof NumberValue) {
-                return new NumberValue(args.get(0).toNumber(env).value - args.get(0).toNumber(env).value % 1);
+            if (radix != 10 && args.get(0) instanceof NumberValue num) {
+                if (num.isInt()) return num;
+                else return NumberValue.of(num.getDouble() - num.getDouble() % 1);
             }
-            else {
-                return NumberValue.parseInt(args.get(0).toString(), radix, false);
-            }
+            else return NumberValue.parseInt(args.get(0).toString(), radix, false);
         }));
         res.defineOwnMember(env, "parseFloat", new NativeFunction(args -> {
             if (args.get(0) instanceof NumberValue) {
@@ -123,8 +123,8 @@ public class SimpleRepl {
             else return NumberValue.parseFloat(args.get(0).toString(), false);
         }));
         res.defineOwnMember(env, "isNaN", new NativeFunction(args -> BoolValue.of(args.get(0).isNaN())));
-        res.defineOwnMember(env, "NaN", new NumberValue(Double.NaN));
-        res.defineOwnMember(env, "Infinity", new NumberValue(Double.POSITIVE_INFINITY));
+        res.defineOwnMember(env, "NaN", NumberValue.NAN);
+        res.defineOwnMember(env, "Infinity", NumberValue.of(Double.POSITIVE_INFINITY));
 
         return res;
     }
@@ -229,14 +229,14 @@ public class SimpleRepl {
             var func = (FunctionValue)args.get(0);
             var self = args.get(1);
             var funcArgs = (ArrayValue)args.get(2);
-            var name = args.get(3).toString(env).value;
+            var name = args.get(3).toString(env);
 
             return func.invoke(env, name, self, funcArgs.toArray());
         }));
         res.defineOwnMember(env, "construct", new NativeFunction(args -> {
             var func = (FunctionValue)args.get(0);
             var funcArgs = (ArrayValue)args.get(1);
-            var name = args.get(2).toString(env).value;
+            var name = args.get(2).toString(env);
 
             return func.construct(env, name, funcArgs.toArray());
         }));
@@ -252,7 +252,7 @@ public class SimpleRepl {
             return new StringValue(JSON.stringify(JSONConverter.fromJs(env, args.get(0))));
         }));
         res.defineOwnMember(env, "parse", new NativeFunction(args -> {
-            return JSONConverter.toJs(JSON.parse(null, args.get(0).toString(env).value));
+            return JSONConverter.toJs(JSON.parse(null, args.get(0).toString(env)));
         }));
         res.defineOwnMember(env, "setConstructable", new NativeFunction(args -> {
             var func = (FunctionValue)args.get(0);
@@ -288,7 +288,7 @@ public class SimpleRepl {
         int[] i = new int[1];
 
         res.defineOwnMember(env, "setGlobalPrototype", new NativeFunction(args -> {
-            var type = args.get(0).toString(env).value;
+            var type = args.get(0).toString(env);
             var obj = (ObjectValue)args.get(1);
 
             switch (type) {
@@ -330,7 +330,7 @@ public class SimpleRepl {
             return Value.UNDEFINED;
         }));
         res.defineOwnMember(env, "setIntrinsic", new NativeFunction(args -> {
-            var name = args.get(0).toString(env).value;
+            var name = args.get(0).toString(env);
             var val = args.get(1);
 
             Value.intrinsics(environment).put(name, val);
@@ -338,7 +338,7 @@ public class SimpleRepl {
             return Value.UNDEFINED;
         }));
         res.defineOwnMember(env, "compile", new NativeFunction(args -> {
-            return Compiler.compileFunc(env, new Filename("jscript", "func" + i[0]++ + ".js"), args.get(0).toString(env).value);
+            return Compiler.compileFunc(env, new Filename("jscript", "func" + i[0]++ + ".js"), args.get(0).toString(env));
         }));
 
         return res;

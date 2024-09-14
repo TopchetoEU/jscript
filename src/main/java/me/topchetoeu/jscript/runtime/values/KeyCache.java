@@ -1,28 +1,39 @@
 package me.topchetoeu.jscript.runtime.values;
 
 import me.topchetoeu.jscript.common.environment.Environment;
-import me.topchetoeu.jscript.runtime.values.primitives.NumberValue;
 import me.topchetoeu.jscript.runtime.values.primitives.StringValue;
 import me.topchetoeu.jscript.runtime.values.primitives.SymbolValue;
+import me.topchetoeu.jscript.runtime.values.primitives.numbers.NumberValue;
 
 public final class KeyCache {
     public final Value value;
-    private Integer intCache;
+    private boolean isInt;
+    private int intCache;
     private Double doubleCache;
     private Boolean booleanCache;
     private String stringCache;
 
     public String toString(Environment env) {
         if (stringCache != null) return stringCache;
-        else return stringCache = value.toString(env).value;
+        else return stringCache = value.toString(env);
     }
     public double toNumber(Environment env) {
-        if (doubleCache != null) return doubleCache;
-        else return doubleCache = value.toNumber(env).value;
+        if (doubleCache == null) {
+            var res = value.toNumber(env);
+            isInt = res.isInt();
+            intCache = res.getInt();
+            doubleCache = res.getDouble();
+        }
+
+        return doubleCache;
+    }
+    public boolean isInt(Environment env) {
+        if (doubleCache == null) toNumber(env);
+        return isInt;
     }
     public int toInt(Environment env) {
-        if (intCache != null) return intCache;
-        else return intCache = (int)toNumber(env);
+        if (doubleCache == null) toNumber(env);
+        return intCache;
     }
     public boolean toBoolean() {
         if (booleanCache != null) return booleanCache;
@@ -45,13 +56,13 @@ public final class KeyCache {
         this.booleanCache = !value.equals("");
     }
     public KeyCache(int value) {
-        this.value = new NumberValue(value);
+        this.value = NumberValue.of(value);
         this.intCache = value;
         this.doubleCache = (double)value;
         this.booleanCache = value != 0;
     }
     public KeyCache(double value) {
-        this.value = new NumberValue(value);
+        this.value = NumberValue.of(value);
         this.intCache = (int)value;
         this.doubleCache = value;
         this.booleanCache = value != 0;

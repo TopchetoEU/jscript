@@ -66,7 +66,7 @@ public class EngineException extends RuntimeException {
     public String toString(Environment env) {
         var ss = new StringBuilder();
         try {
-            ss.append(value.toString(env).value).append('\n');
+            ss.append(value.toString(env)).append('\n');
         }
         catch (EngineException e) {
             var name = value.getMember(env, "name");
@@ -74,10 +74,10 @@ public class EngineException extends RuntimeException {
 
             if (name.isPrimitive() && desc.isPrimitive()) {
                 if (name instanceof VoidValue) ss.append("Error: ");
-                else ss.append(name.toString(env).value + ": ");
+                else ss.append(name.toString(env) + ": ");
 
                 if (desc instanceof VoidValue) ss.append("An error occurred");
-                else ss.append(desc.toString(env).value);
+                else ss.append(desc.toString(env));
 
                 ss.append("\n");
             }

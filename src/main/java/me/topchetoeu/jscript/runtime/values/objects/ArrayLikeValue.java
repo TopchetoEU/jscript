@@ -4,11 +4,12 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 import me.topchetoeu.jscript.common.environment.Environment;
+import me.topchetoeu.jscript.runtime.exceptions.EngineException;
 import me.topchetoeu.jscript.runtime.values.KeyCache;
 import me.topchetoeu.jscript.runtime.values.Member;
 import me.topchetoeu.jscript.runtime.values.Member.FieldMember;
+import me.topchetoeu.jscript.runtime.values.primitives.numbers.NumberValue;
 import me.topchetoeu.jscript.runtime.values.Value;
-import me.topchetoeu.jscript.runtime.values.primitives.NumberValue;
 
 public abstract class ArrayLikeValue extends ObjectValue {
     private static class IndexField extends FieldMember {
@@ -30,10 +31,16 @@ public abstract class ArrayLikeValue extends ObjectValue {
 
     private final FieldMember lengthField = new FieldMember(this, false, false, true) {
         @Override public Value get(Environment env, Value self) {
-            return new NumberValue(size());
+            return NumberValue.of(size());
         }
         @Override public boolean set(Environment env, Value val, Value self) {
-            return setSize(val.toInt(env));
+            var num = val.toNumber(env);
+            if (!num.isInt()) throw EngineException.ofRange("Invalid array length");
+
+            var i = num.getInt();
+            if (i < 0) throw EngineException.ofRange("Invalid array length");
+
+            return setSize(i);
         }
     };
 

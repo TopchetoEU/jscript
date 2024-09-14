@@ -26,10 +26,10 @@ import me.topchetoeu.jscript.runtime.values.functions.NativeFunction;
 import me.topchetoeu.jscript.runtime.values.objects.ArrayValue;
 import me.topchetoeu.jscript.runtime.values.objects.ObjectValue;
 import me.topchetoeu.jscript.runtime.values.primitives.BoolValue;
-import me.topchetoeu.jscript.runtime.values.primitives.NumberValue;
 import me.topchetoeu.jscript.runtime.values.primitives.StringValue;
 import me.topchetoeu.jscript.runtime.values.primitives.SymbolValue;
 import me.topchetoeu.jscript.runtime.values.primitives.VoidValue;
+import me.topchetoeu.jscript.runtime.values.primitives.numbers.NumberValue;
 
 public abstract class Value {
     public static enum State {
@@ -81,7 +81,7 @@ public abstract class Value {
     public abstract boolean isPrimitive();
 
     public final boolean isNaN() {
-        return this instanceof NumberValue && Double.isNaN(((NumberValue)this).value);
+        return this == NumberValue.NAN || this instanceof NumberValue num && Double.isNaN(num.getDouble());
     }
 
     public Value call(Environment env, boolean isNew, String name, Value self, Value ...args) {
@@ -116,11 +116,8 @@ public abstract class Value {
 
     public abstract Value toPrimitive(Environment env);
     public abstract NumberValue toNumber(Environment env);
-    public abstract StringValue toString(Environment env);
+    public abstract String toString(Environment env);
     public abstract boolean toBoolean();
-
-    public final int toInt(Environment env) { return (int)toNumber(env).value; }
-    public final long toLong(Environment env) { return (long)toNumber(env).value; }
 
     public final boolean isInstanceOf(Environment env, Value proto) {
         for (var val = getPrototype(env); val != null; val = getPrototype(env)) {
@@ -525,7 +522,7 @@ public abstract class Value {
         else if (this instanceof VoidValue) return ((VoidValue)this).name;
         else if (this instanceof StringValue) return JSON.stringify(JSONElement.string(((StringValue)this).value));
         else if (this instanceof SymbolValue) return this.toString();
-        else return this.toString(env).value;
+        else return this.toString(env);
     }
 
     public final String toReadable(Environment ext) {
@@ -560,7 +557,11 @@ public abstract class Value {
             return aStr.value.compareTo(bStr.value) <= 0;
         }
         else {
-            return a.toNumber(env).value <= b.toNumber(env).value;
+            var na = a.toNumber(env);
+            var nb = b.toNumber(env);
+
+            if (na.isLong() && nb.isLong()) return na.getLong() <= nb.getLong();
+            else return na.getDouble() <= nb.getDouble();
         }
     }
     public static final boolean greaterOrEqual(Environment env, Value a, Value b) {
@@ -571,7 +572,11 @@ public abstract class Value {
             return aStr.value.compareTo(bStr.value) >= 0;
         }
         else {
-            return a.toNumber(env).value >= b.toNumber(env).value;
+            var na = a.toNumber(env);
+            var nb = b.toNumber(env);
+
+            if (na.isLong() && nb.isLong()) return na.getLong() >= nb.getLong();
+            else return na.getDouble() >= nb.getDouble();
         }
     }
     public static final boolean less(Environment env, Value a, Value b) {
@@ -579,10 +584,14 @@ public abstract class Value {
         b = b.toPrimitive(env);
 
         if (a instanceof StringValue aStr && b instanceof StringValue bStr) {
-            return aStr.value.compareTo(bStr.value) >= 0;
+            return aStr.value.compareTo(bStr.value) < 0;
         }
         else {
-            return a.toNumber(env).value < b.toNumber(env).value;
+            var na = a.toNumber(env);
+            var nb = b.toNumber(env);
+
+            if (na.isLong() && nb.isLong()) return na.getLong() < nb.getLong();
+            else return na.getDouble() < nb.getDouble();
         }
     }
     public static final boolean greater(Environment env, Value a, Value b) {
@@ -590,10 +599,14 @@ public abstract class Value {
         b = b.toPrimitive(env);
 
         if (a instanceof StringValue aStr && b instanceof StringValue bStr) {
-            return aStr.value.compareTo(bStr.value) >= 0;
+            return aStr.value.compareTo(bStr.value) > 0;
         }
         else {
-            return a.toNumber(env).value > b.toNumber(env).value;
+            var na = a.toNumber(env);
+            var nb = b.toNumber(env);
+
+            if (na.isLong() && nb.isLong()) return na.getLong() > nb.getLong();
+            else return na.getDouble() > nb.getDouble();
         }
     }
 
@@ -602,56 +615,96 @@ public abstract class Value {
         b = b.toPrimitive(env);
 
         if (a instanceof StringValue || b instanceof StringValue) {
-            return new StringValue(a.toString(env).value + b.toString(env).value);
+            return new StringValue(a.toString(env) + b.toString(env));
         }
         else {
-            return new NumberValue(a.toNumber(env).value + b.toNumber(env).value);
+            var na = a.toNumber(env);
+            var nb = b.toNumber(env);
+
+            if (na.isInt() && nb.isInt()) return NumberValue.of(na.getInt() + nb.getInt());
+            else return NumberValue.of(na.getDouble() + nb.getDouble());
         }
     }
 
     public static final NumberValue subtract(Environment env, Value a, Value b) {
-        return new NumberValue(a.toNumber(env).value - b.toNumber(env).value);
+        var na = a.toNumber(env);
+        var nb = b.toNumber(env);
+
+        if (na.isInt() && nb.isInt()) return NumberValue.of(na.getInt() - nb.getInt());
+        else return NumberValue.of(na.getDouble() - nb.getDouble());
     }
     public static final NumberValue multiply(Environment env, Value a, Value b) {
-        return new NumberValue(a.toNumber(env).value - b.toNumber(env).value);
+        var na = a.toNumber(env);
+        var nb = b.toNumber(env);
+
+        if (na.isInt() && nb.isInt()) return NumberValue.of(na.getInt() - nb.getInt());
+        else return NumberValue.of(na.getDouble() - nb.getDouble());
     }
     public static final NumberValue divide(Environment env, Value a, Value b) {
-        return new NumberValue(a.toNumber(env).value / b.toNumber(env).value);
+        var na = a.toNumber(env);
+        var nb = b.toNumber(env);
+
+        if (na.isInt() && nb.isInt()) {
+            var ia = na.getInt();
+            var ib = nb.getInt();
+
+            if (ib == 0) {
+                if (ia == 0) return NumberValue.NAN;
+                else if (ia > 0) return NumberValue.of(Double.POSITIVE_INFINITY);
+                else return NumberValue.of(Double.NEGATIVE_INFINITY);
+            }
+            else if (ia % ib != 0) return NumberValue.of((double)ia / ib);
+            else return NumberValue.of(ia / ib);
+        }
+        else return NumberValue.of(na.getDouble() / nb.getDouble());
     }
     public static final NumberValue modulo(Environment env, Value a, Value b) {
-        return new NumberValue(a.toNumber(env).value % b.toNumber(env).value);
+        var na = a.toNumber(env);
+        var nb = b.toNumber(env);
+
+        if (na.isInt() && nb.isInt()) {
+            var ia = na.getInt();
+            var ib = nb.getInt();
+
+            if (ib == 0) return NumberValue.NAN;
+            else return NumberValue.of(ia % ib);
+        }
+        else return NumberValue.of(na.getDouble() % nb.getDouble());
     }
     public static final NumberValue negative(Environment env, Value a) {
-        return new NumberValue(-a.toNumber(env).value);
+        var na = a.toNumber(env);
+
+        if (na.isInt()) return NumberValue.of(-na.getInt());
+        else return NumberValue.of(-na.getDouble());
     }
 
     public static final NumberValue and(Environment env, Value a, Value b) {
-        return new NumberValue(a.toInt(env) & b.toInt(env));
+        return NumberValue.of(a.toNumber(env).getInt() & b.toNumber(env).getInt());
     }
     public static final NumberValue or(Environment env, Value a, Value b) {
-        return new NumberValue(a.toInt(env) | b.toInt(env));
+        return NumberValue.of(a.toNumber(env).getInt() | b.toNumber(env).getInt());
     }
     public static final NumberValue xor(Environment env, Value a, Value b) {
-        return new NumberValue(a.toInt(env) ^ b.toInt(env));
+        return NumberValue.of(a.toNumber(env).getInt() ^ b.toNumber(env).getInt());
     }
     public static final NumberValue bitwiseNot(Environment env, Value a) {
-        return new NumberValue(~a.toInt(env));
+        return NumberValue.of(~a.toNumber(env).getInt());
     }
 
     public static final NumberValue shiftLeft(Environment env, Value a, Value b) {
-        return new NumberValue(a.toInt(env) << b.toInt(env));
+        return NumberValue.of(a.toNumber(env).getInt() << b.toNumber(env).getInt());
     }
     public static final NumberValue shiftRight(Environment env, Value a, Value b) {
-        return new NumberValue(a.toInt(env) >> b.toInt(env));
+        return NumberValue.of(a.toNumber(env).getInt() >> b.toNumber(env).getInt());
     }
     public static final NumberValue unsignedShiftRight(Environment env, Value a, Value b) {
-        long _a = a.toInt(env);
-        long _b = b.toInt(env);
+        long _a = a.toNumber(env).getLong() & 0xFFFFFFFF;
+        long _b = b.toNumber(env).getLong() & 0xFFFFFFFF;
 
         if (_a < 0) _a += 0x100000000l;
         if (_b < 0) _b += 0x100000000l;
 
-        return new NumberValue(_a >>> _b);
+        return NumberValue.of(_a >>> _b);
     }
 
     public static final boolean looseEqual(Environment env, Value a, Value b) {

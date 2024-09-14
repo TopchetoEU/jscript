@@ -11,9 +11,9 @@ import me.topchetoeu.jscript.runtime.values.KeyCache;
 import me.topchetoeu.jscript.runtime.values.Member;
 import me.topchetoeu.jscript.runtime.values.Value;
 import me.topchetoeu.jscript.runtime.values.functions.FunctionValue;
-import me.topchetoeu.jscript.runtime.values.primitives.NumberValue;
 import me.topchetoeu.jscript.runtime.values.primitives.StringValue;
 import me.topchetoeu.jscript.runtime.values.primitives.SymbolValue;
+import me.topchetoeu.jscript.runtime.values.primitives.numbers.NumberValue;
 
 public class ObjectValue extends Value {
     public static interface PrototypeProvider {
@@ -56,7 +56,7 @@ public class ObjectValue extends Value {
 
         throw EngineException.ofType("Value couldn't be converted to a primitive.");
     }
-    @Override public StringValue toString(Environment env) { return toPrimitive(env).toString(env); }
+    @Override public String toString(Environment env) { return toPrimitive(env).toString(env); }
     @Override public boolean toBoolean() { return true; }
     @Override public NumberValue toNumber(Environment env) { return toPrimitive(env).toNumber(env);  }
     @Override public StringValue type() { return typeString; }

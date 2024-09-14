@@ -14,8 +14,8 @@ import me.topchetoeu.jscript.runtime.values.functions.FunctionValue;
 import me.topchetoeu.jscript.runtime.values.objects.ArrayValue;
 import me.topchetoeu.jscript.runtime.values.objects.ObjectValue;
 import me.topchetoeu.jscript.runtime.values.primitives.BoolValue;
-import me.topchetoeu.jscript.runtime.values.primitives.NumberValue;
 import me.topchetoeu.jscript.runtime.values.primitives.StringValue;
+import me.topchetoeu.jscript.runtime.values.primitives.numbers.NumberValue;
 
 public class InstructionRunner {
     private static Value execReturn(Environment env, Instruction instr, Frame frame) {
@@ -136,7 +136,7 @@ public class InstructionRunner {
             case PUSH_UNDEFINED: frame.push(Value.UNDEFINED); break;
             case PUSH_NULL: frame.push(Value.NULL); break;
             case PUSH_BOOL: frame.push(BoolValue.of(instr.get(0))); break;
-            case PUSH_NUMBER: frame.push(new NumberValue(instr.get(0))); break;
+            case PUSH_NUMBER: frame.push(NumberValue.of((double)instr.get(0))); break;
             case PUSH_STRING: frame.push(new StringValue(instr.get(0))); break;
             default:
         }
