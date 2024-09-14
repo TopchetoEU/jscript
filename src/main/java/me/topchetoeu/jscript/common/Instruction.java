@@ -471,9 +471,7 @@ public class Instruction {
     public static Instruction stackRealloc(int start, int n) {
         return new Instruction(Type.STACK_REALLOC, start, start + n);
     }
-    /**
-     * @deprecated
-     */
+    @Deprecated
     public static Instruction stackFree(int n) {
         return new Instruction(Type.STACK_FREE, n);
     }
