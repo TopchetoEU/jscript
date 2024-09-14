@@ -4,49 +4,14 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.Set;
 
-import me.topchetoeu.jscript.common.environment.Environment;
-import me.topchetoeu.jscript.runtime.values.KeyCache;
-import me.topchetoeu.jscript.runtime.values.Member;
-import me.topchetoeu.jscript.runtime.values.Member.FieldMember;
 import me.topchetoeu.jscript.runtime.values.Value;
-import me.topchetoeu.jscript.runtime.values.primitives.NumberValue;
 import me.topchetoeu.jscript.runtime.values.primitives.VoidValue;
 
 // TODO: Make methods generic
-public class ArrayValue extends ObjectValue implements Iterable<Value> {
+public class ArrayValue extends ArrayLikeValue implements Iterable<Value> {
     private Value[] values;
     private int size;
-
-    private final FieldMember lengthField = new FieldMember(false, false, true) {
-        @Override public Value get(Environment env, Value self) {
-            return new NumberValue(size);
-        }
-        @Override public boolean set(Environment env, Value val, Value self) {
-            size = val.toInt(env);
-            return true;
-        }
-    };
-
-    private class IndexField extends FieldMember {
-        private int i;
-        private ArrayValue arr;
-
-        @Override public Value get(Environment env, Value self) {
-            return arr.get(i);
-        }
-        @Override public boolean set(Environment env, Value val, Value self) {
-            arr.set(i, val);
-            return true;
-        }
-        public IndexField(int i, ArrayValue arr) {
-            super(true, true, true);
-            this.arr = arr;
-            this.i = i;
-        }
-    }
 
     private Value[] alloc(int index) {
         index++;
@@ -69,26 +34,27 @@ public class ArrayValue extends ObjectValue implements Iterable<Value> {
         return true;
     }
 
-    public Value get(int i) {
+    @Override public Value get(int i) {
         if (i < 0 || i >= size) return null;
         var res = values[i];
 
         if (res == null) return Value.UNDEFINED;
         else return res;
     }
-    public void set(int i, Value val) {
+    @Override public void set(int i, Value val) {
         if (i < 0) return;
 
         alloc(i)[i] = val;
         if (i >= size) size = i + 1;
     }
-    public boolean has(int i) {
+    @Override public boolean has(int i) {
         return i >= 0 && i < size && values[i] != null;
     }
-    public void remove(int i) {
+    @Override public void remove(int i) {
         if (i < 0 || i >= values.length) return;
         values[i] = null;
     }
+
     public void shrink(int n) {
         if (n >= values.length) {
             values = new Value[16];
@@ -149,53 +115,6 @@ public class ArrayValue extends ObjectValue implements Iterable<Value> {
         });
     }
 
-    @Override public Member getOwnMember(Environment env, KeyCache key) {
-        var res = super.getOwnMember(env, key);
-        if (res != null) return res;
-
-        var num = key.toNumber(env);
-        var i = key.toInt(env);
-
-        if (i == num && i >= 0 && i < size && has(i)) return new IndexField(i, this);
-        else if (key.toString(env).equals("length")) return lengthField;
-        else return null;
-    }
-    @Override public boolean defineOwnMember(Environment env, KeyCache key, Member member) {
-        if (!(member instanceof FieldMember) || hasMember(env, key, true)) return super.defineOwnMember(env, key, member);
-        if (!extensible) return false;
-
-        var num = key.toNumber(env);
-        var i = key.toInt(env);
-
-        if (i == num && i >= 0) {
-            set(i, ((FieldMember)member).get(env, this));
-            return true;
-        }
-        else return super.defineOwnMember(env, key, member);
-    }
-    @Override public boolean deleteOwnMember(Environment env, KeyCache key) {
-        if (!super.deleteOwnMember(env, key)) return false;
-
-        var num = key.toNumber(env);
-        var i = key.toInt(env);
-
-        if (i == num && i >= 0 && i < size) return super.deleteOwnMember(env, key);
-        else return true;
-    }
-
-    @Override public Set<String> getOwnMembers(Environment env, boolean onlyEnumerable) {
-        var res = new LinkedHashSet<String>();
-
-        res.addAll(super.getOwnMembers(env, onlyEnumerable));
-
-        for (var i = 0; i < size; i++) {
-            if (has(i)) res.add(i + "");
-        }
-
-        if (!onlyEnumerable) res.add("length");
-
-        return res;
-    }
     @Override public Iterator<Value> iterator() {
         return new Iterator<>() {
             private int i = 0;
