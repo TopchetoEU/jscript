@@ -57,12 +57,14 @@ public final class KeyCache {
     }
     public KeyCache(int value) {
         this.value = NumberValue.of(value);
+        this.isInt = true;
         this.intCache = value;
         this.doubleCache = (double)value;
         this.booleanCache = value != 0;
     }
     public KeyCache(double value) {
         this.value = NumberValue.of(value);
+        this.isInt = (int)value == value;
         this.intCache = (int)value;
         this.doubleCache = value;
         this.booleanCache = value != 0;

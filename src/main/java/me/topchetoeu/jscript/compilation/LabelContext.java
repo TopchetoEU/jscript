@@ -6,10 +6,10 @@ import java.util.function.IntFunction;
 import java.util.function.IntSupplier;
 
 import me.topchetoeu.jscript.common.Instruction;
+import me.topchetoeu.jscript.common.SyntaxException;
 import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.common.environment.Key;
 import me.topchetoeu.jscript.common.parsing.Location;
-import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 
 public class LabelContext {
     public static final Key<LabelContext> BREAK_CTX = Key.of();

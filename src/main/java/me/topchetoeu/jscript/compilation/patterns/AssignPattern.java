@@ -2,6 +2,7 @@ package me.topchetoeu.jscript.compilation.patterns;
 
 import me.topchetoeu.jscript.common.Instruction;
 import me.topchetoeu.jscript.common.Operation;
+import me.topchetoeu.jscript.common.SyntaxException;
 import me.topchetoeu.jscript.common.parsing.Location;
 import me.topchetoeu.jscript.common.parsing.ParseRes;
 import me.topchetoeu.jscript.common.parsing.Parsing;
@@ -10,7 +11,6 @@ import me.topchetoeu.jscript.compilation.CompileResult;
 import me.topchetoeu.jscript.compilation.JavaScript;
 import me.topchetoeu.jscript.compilation.Node;
 import me.topchetoeu.jscript.compilation.JavaScript.DeclarationType;
-import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 
 public class AssignPattern implements Pattern {
     public final Location loc;

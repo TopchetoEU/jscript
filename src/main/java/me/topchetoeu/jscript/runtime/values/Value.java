@@ -11,6 +11,7 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
+import me.topchetoeu.jscript.common.SyntaxException;
 import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.common.environment.Key;
 import me.topchetoeu.jscript.common.json.JSON;
@@ -18,7 +19,6 @@ import me.topchetoeu.jscript.common.json.JSONElement;
 import me.topchetoeu.jscript.runtime.EventLoop;
 import me.topchetoeu.jscript.runtime.debug.DebugContext;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
-import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 import me.topchetoeu.jscript.runtime.values.Member.FieldMember;
 import me.topchetoeu.jscript.runtime.values.Member.PropertyMember;
 import me.topchetoeu.jscript.runtime.values.functions.FunctionValue;
@@ -239,8 +239,8 @@ public abstract class Value {
     public final boolean setMember(Environment env, KeyCache key, Value val) {
         for (Value obj = this; obj != null; obj = obj.getPrototype(env)) {
             var member = obj.getOwnMember(env, key);
-            if (member instanceof PropertyMember prop) {
-                if (prop.set(env, val, obj)) {
+            if (member != null && (member instanceof PropertyMember || obj == this)) {
+                if (member.set(env, val, obj)) {
                     if (val instanceof FunctionValue) ((FunctionValue)val).setName(key.toString(env));
                     return true;
                 }

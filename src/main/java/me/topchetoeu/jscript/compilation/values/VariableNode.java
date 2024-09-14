@@ -3,6 +3,7 @@ package me.topchetoeu.jscript.compilation.values;
 import java.util.function.IntFunction;
 
 import me.topchetoeu.jscript.common.Instruction;
+import me.topchetoeu.jscript.common.SyntaxException;
 import me.topchetoeu.jscript.common.parsing.Location;
 import me.topchetoeu.jscript.common.parsing.ParseRes;
 import me.topchetoeu.jscript.common.parsing.Parsing;
@@ -14,7 +15,6 @@ import me.topchetoeu.jscript.compilation.JavaScript.DeclarationType;
 import me.topchetoeu.jscript.compilation.patterns.ChangeTarget;
 import me.topchetoeu.jscript.compilation.patterns.Pattern;
 import me.topchetoeu.jscript.compilation.scope.Variable;
-import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 
 public class VariableNode extends Node implements Pattern, ChangeTarget {
     public final String name;

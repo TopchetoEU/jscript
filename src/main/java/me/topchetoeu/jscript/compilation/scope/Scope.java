@@ -3,9 +3,9 @@ package me.topchetoeu.jscript.compilation.scope;
 import java.util.HashMap;
 import java.util.LinkedList;
 
+import me.topchetoeu.jscript.common.SyntaxException;
 import me.topchetoeu.jscript.common.parsing.Location;
 import me.topchetoeu.jscript.compilation.JavaScript.DeclarationType;
-import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 
 public class Scope {
     protected final HashMap<String, Variable> strictVarMap = new HashMap<>();

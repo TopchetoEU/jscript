@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
+import me.topchetoeu.jscript.common.SyntaxException;
 import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.common.parsing.Filename;
 import me.topchetoeu.jscript.common.parsing.ParseRes;
@@ -42,7 +43,6 @@ import me.topchetoeu.jscript.compilation.values.operations.IndexNode;
 import me.topchetoeu.jscript.compilation.values.operations.OperationNode;
 import me.topchetoeu.jscript.compilation.values.operations.PostfixNode;
 import me.topchetoeu.jscript.compilation.values.operations.TypeofNode;
-import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 
 public final class JavaScript {
     public static enum DeclarationType {

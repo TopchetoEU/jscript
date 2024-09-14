@@ -1,6 +1,5 @@
 package me.topchetoeu.jscript.runtime.debug;
 
-import java.util.Arrays;
 import java.util.List;
 
 import me.topchetoeu.jscript.common.FunctionBody;
@@ -27,13 +26,6 @@ public interface DebugHandler {
      * @param map The map of the function
      */
     void onFunctionLoad(FunctionBody body, FunctionMap map);
-
-    // /**
-    //  * Called when a function body has been loaded
-    //  * @param body The body loaded
-    //  * @param map The map of the function
-    //  */
-    // void onFunctionUnload(FunctionBody body, FunctionMap map);
 
     /**
      * Called immediatly before an instruction is executed, as well as after an instruction, if it has threw or returned.
@@ -64,17 +56,4 @@ public interface DebugHandler {
     void onFramePop(Environment env, Frame frame);
 
     List<Frame> getStackFrame();
-
-    public static DebugHandler empty() {
-        return new DebugHandler () {
-            @Override public void onFramePop(Environment env, Frame frame) { }
-            @Override public void onFramePush(Environment env, Frame frame) { }
-            @Override public boolean onInstruction(Environment env, Frame frame, Instruction instruction, Object returnVal, EngineException error, boolean caught) {
-                return false;
-            }
-            @Override public void onSourceLoad(Filename filename, String source) { }
-            @Override public void onFunctionLoad(FunctionBody body, FunctionMap map) { }
-            @Override public List<Frame> getStackFrame() { return Arrays.asList(); }
-        };
-    }
 }

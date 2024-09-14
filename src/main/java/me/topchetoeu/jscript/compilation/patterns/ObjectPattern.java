@@ -3,6 +3,7 @@ package me.topchetoeu.jscript.compilation.patterns;
 import java.util.LinkedList;
 import java.util.List;
 
+import me.topchetoeu.jscript.common.SyntaxException;
 import me.topchetoeu.jscript.common.parsing.Location;
 import me.topchetoeu.jscript.common.parsing.ParseRes;
 import me.topchetoeu.jscript.common.parsing.Parsing;
@@ -12,7 +13,6 @@ import me.topchetoeu.jscript.compilation.JavaScript.DeclarationType;
 import me.topchetoeu.jscript.compilation.values.ObjectNode;
 import me.topchetoeu.jscript.compilation.values.VariableNode;
 import me.topchetoeu.jscript.compilation.values.constants.StringNode;
-import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 
 public class ObjectPattern extends ObjectDestructor<Pattern> implements Pattern {
     @Override public void destructDeclResolve(CompileResult target) {

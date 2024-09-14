@@ -4,11 +4,11 @@ import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.stream.Collectors;
 
+import me.topchetoeu.jscript.common.SyntaxException;
 import me.topchetoeu.jscript.common.parsing.Filename;
 import me.topchetoeu.jscript.common.parsing.ParseRes;
 import me.topchetoeu.jscript.common.parsing.Parsing;
 import me.topchetoeu.jscript.common.parsing.Source;
-import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 
 public class JSON {
     public static ParseRes<JSONElement> parseString(Source src, int i) {

@@ -1,7 +1,7 @@
 package me.topchetoeu.jscript.common.parsing;
 
+import me.topchetoeu.jscript.common.SyntaxException;
 import me.topchetoeu.jscript.compilation.values.constants.NumberNode;
-import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 
 public class Parsing {
     public static boolean isDigit(Character c) {

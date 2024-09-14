@@ -5,6 +5,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import me.topchetoeu.jscript.common.Instruction;
+import me.topchetoeu.jscript.common.SyntaxException;
 import me.topchetoeu.jscript.common.Instruction.BreakpointType;
 import me.topchetoeu.jscript.common.parsing.Location;
 import me.topchetoeu.jscript.common.parsing.ParseRes;
@@ -24,7 +25,6 @@ import me.topchetoeu.jscript.compilation.patterns.ObjectDestructor.Member;
 import me.topchetoeu.jscript.compilation.values.constants.NumberNode;
 import me.topchetoeu.jscript.compilation.values.constants.StringNode;
 import me.topchetoeu.jscript.compilation.values.operations.AssignNode;
-import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 
 public class ObjectNode extends Node implements AssignTargetLike {
     public static class PropertyMemberNode extends FunctionNode {

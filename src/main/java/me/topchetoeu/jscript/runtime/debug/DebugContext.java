@@ -1,6 +1,5 @@
 package me.topchetoeu.jscript.runtime.debug;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -12,7 +11,6 @@ import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.common.environment.Key;
 import me.topchetoeu.jscript.common.mapping.FunctionMap;
 import me.topchetoeu.jscript.common.parsing.Filename;
-import me.topchetoeu.jscript.common.parsing.Location;
 import me.topchetoeu.jscript.runtime.Frame;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
 import me.topchetoeu.jscript.runtime.values.functions.CodeFunction;
@@ -49,8 +47,7 @@ public class DebugContext {
     }
 
     public DebugHandler debugger() {
-        if (debugger == null) return DebugHandler.empty();
-        else return debugger;
+        return debugger;
     }
 
     public FunctionMap getMap(FunctionBody func) {
@@ -117,33 +114,5 @@ public class DebugContext {
     public static DebugContext get(Environment exts) {
         if (enabled(exts)) return exts.get(KEY);
         else return new DebugContext(false);
-    }
-
-    public static List<String> stackTrace(Environment env) {
-        var res = new ArrayList<String>();
-        var dbgCtx = get(env);
-
-        for (var frame : dbgCtx.getStackFrames()) {
-            var name = frame.function.name;
-
-            var map = dbgCtx.getMapOrEmpty(frame.function);
-            Location loc = null;
-
-            if (map != null) {
-                loc = map.toLocation(frame.codePtr, true);
-                if (loc == null) loc = map.start();
-            }
-
-            var trace = "";
-
-            if (loc != null) trace += "at " + loc.toString() + " ";
-            if (name != null && !name.equals("")) trace += "in " + name + " ";
-
-            trace = trace.trim();
-
-            if (!trace.equals("")) res.add(trace);
-        }
-
-        return res;
     }
 }

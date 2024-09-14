@@ -72,8 +72,9 @@ public class ObjectValue extends Value {
     @Override public final void freeze() { state = State.FROZEN; }
 
     @Override public Member getOwnMember(Environment env, KeyCache key) {
-        if (key.isSymbol()) return symbolMembers.get(key.toSymbol());
-        else return members.get(key.toString(env));
+        if (symbolMembers.size() > 0 && key.isSymbol()) return symbolMembers.get(key.toSymbol());
+        else if (members.size() > 0) return members.get(key.toString(env));
+        else return null;
     }
     @Override public boolean defineOwnMember(Environment env, KeyCache key, Member member) {
         var old = getOwnMember(env, key);

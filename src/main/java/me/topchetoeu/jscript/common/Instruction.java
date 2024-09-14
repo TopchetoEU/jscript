@@ -5,7 +5,6 @@ import java.util.function.IntFunction;
 import java.util.function.IntSupplier;
 
 import me.topchetoeu.jscript.common.parsing.Location;
-import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 
 public class Instruction {
     public static enum Type {

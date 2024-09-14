@@ -1,4 +1,4 @@
-package me.topchetoeu.jscript.runtime.exceptions;
+package me.topchetoeu.jscript.common;
 
 import me.topchetoeu.jscript.common.parsing.Location;
 

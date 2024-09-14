@@ -2,11 +2,11 @@ package me.topchetoeu.jscript.compilation.values.operations;
 
 import me.topchetoeu.jscript.common.Instruction;
 import me.topchetoeu.jscript.common.Operation;
+import me.topchetoeu.jscript.common.SyntaxException;
 import me.topchetoeu.jscript.common.parsing.Location;
 import me.topchetoeu.jscript.compilation.CompileResult;
 import me.topchetoeu.jscript.compilation.Node;
 import me.topchetoeu.jscript.compilation.patterns.AssignTarget;
-import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 
 public class AssignNode extends Node implements AssignTarget {
     public final AssignTarget assignable;
