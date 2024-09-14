@@ -1,16 +1,32 @@
 const target = arguments[0];
 const primordials = arguments[1];
 
-const makeSymbol = primordials.symbol.makeSymbol;
-const getSymbol = primordials.symbol.getSymbol;
-const getSymbolKey = primordials.symbol.getSymbolKey;
-const getSymbolDescription = primordials.symbol.getSymbolDescription;
+const symbol = primordials.symbol || (() => {
+    const repo = {};
 
-const parseInt = primordials.number.parseInt;
-const parseFloat = primordials.number.parseFloat;
-const isNaN = primordials.number.isNaN;
-const NaN = primordials.number.NaN;
-const Infinity = primordials.number.Infinity;
+    return {
+        makeSymbol: (name) => { name },
+        getSymbol(name) {
+            if (name in repo) return repo[name];
+            else return repo[name] = { name };
+        },
+        getSymbolKey(symbol) {
+            if (symbol.name in repo && repo[symbol.name] === symbol) return symbol.name;
+            else return undefined;
+        },
+        getSymbolDescription: ({ name }) => name,
+    };
+});
+
+const number = primordials.number || (() => {
+    return {
+        parseInt() { throw new Error("parseInt not supported"); },
+        parseFloat() { throw new Error("parseFloat not supported"); },
+        isNaN: (val) => val !== val,
+        NaN: 0 / 0,
+        Infinity: 1 / 0,
+    };
+});
 
 const fromCharCode = primordials.string.fromCharCode;
 const fromCodePoint = primordials.string.fromCodePoint;
@@ -37,7 +53,7 @@ const setGlobalPrototype = primordials.setGlobalPrototype;
 const compile = primordials.compile;
 const setIntrinsic = primordials.setIntrinsic;
 
-const valueKey = makeSymbol("Primitive.value");
+const valueKey = symbol.makeSymbol("Primitive.value");
 const undefined = ({}).definitelyDefined;
 
 target.undefined = undefined;
@@ -54,13 +70,13 @@ const unwrapThis = (self, type, constr, name, arg, defaultVal) => {
 
 const wrapIndex = (i, len) => {};
 
-const Symbol = (name = "") => makeSymbol(name);
+const Symbol = (name = "") => symbol.makeSymbol(name);
 
 defineField(Symbol, "for", true, false, true, function(name) {
-    return getSymbol(name + "");
+    return symbol.getSymbol(name + "");
 });
-defineField(Symbol, "keyFor", true, false, true, function(symbol) {
-    return getSymbolKey(unwrapThis(symbol, "symbol", Symbol, "Symbol.keyFor"));
+defineField(Symbol, "keyFor", true, false, true, function(value) {
+    return symbol.getSymbolKey(unwrapThis(value, "symbol", Symbol, "Symbol.keyFor"));
 });
 
 defineField(Symbol, "asyncIterator", false, false, false, Symbol("Symbol.asyncIterator"));
@@ -74,7 +90,7 @@ defineField(Symbol, "toStringTag", false, false, false, Symbol("Symbol.toStringT
 defineField(Symbol, "prototype", false, false, false, {});
 
 defineProperty(Symbol.prototype, "description", false, true, function () {
-    return getSymbolDescription(unwrapThis(this, "symbol", Symbol, "Symbol.prototype.description"));
+    return symbol.getSymbolDescription(unwrapThis(this, "symbol", Symbol, "Symbol.prototype.description"));
 }, undefined);
 defineField(Symbol.prototype, "toString", true, false, true, function() {
     return "Symbol(" + unwrapThis(this, "symbol", Symbol, "Symbol.prototype.toString").description + ")";
@@ -97,7 +113,7 @@ const Number = function(value) {
 defineField(Number, "isFinite", true, false, true, function(value) {
     value = unwrapThis(value, "number", Number, "Number.isFinite", "value", undefined);
 
-    if (value === undefined || isNaN(value)) return false;
+    if (value === undefined || value !== value) return false;
     if (value === Infinity || value === -Infinity) return false;
 
     return true;
@@ -105,34 +121,34 @@ defineField(Number, "isFinite", true, false, true, function(value) {
 defineField(Number, "isInteger", true, false, true, function(value) {
     value = unwrapThis(value, "number", Number, "Number.isInteger", "value", undefined);
     if (value === undefined) return false;
-    return parseInt(value) === value;
+    return number.parseInt(value) === value;
 });
 defineField(Number, "isNaN", true, false, true, function(value) {
-    return isNaN(value);
+    return number.isNaN(value);
 });
 defineField(Number, "isSafeInteger", true, false, true, function(value) {
     value = unwrapThis(value, "number", Number, "Number.isSafeInteger", "value", undefined);
-    if (value === undefined || parseInt(value) !== value) return false;
+    if (value === undefined || number.parseInt(value) !== value) return false;
     return value >= -9007199254740991 && value <= 9007199254740991;
 });
 defineField(Number, "parseFloat", true, false, true, function(value) {
     value = 0 + value;
-    return parseFloat(value);
+    return number.parseFloat(value);
 });
 defineField(Number, "parseInt", true, false, true, function(value, radix) {
     value = 0 + value;
     radix = +radix;
-    if (isNaN(radix)) radix = 10;
+    if (number.isNaN(radix)) radix = 10;
 
-    return parseInt(value, radix);
+    return number.parseInt(value, radix);
 });
 
 defineField(Number, "EPSILON", false, false, false, 2.220446049250313e-16);
 defineField(Number, "MIN_SAFE_INTEGER", false, false, false, -9007199254740991);
 defineField(Number, "MAX_SAFE_INTEGER", false, false, false, 9007199254740991);
-defineField(Number, "POSITIVE_INFINITY", false, false, false, +Infinity);
-defineField(Number, "NEGATIVE_INFINITY", false, false, false, -Infinity);
-defineField(Number, "NaN", false, false, false, NaN);
+defineField(Number, "POSITIVE_INFINITY", false, false, false, +number.Infinity);
+defineField(Number, "NEGATIVE_INFINITY", false, false, false, -number.Infinity);
+defineField(Number, "NaN", false, false, false, number.NaN);
 defineField(Number, "MAX_VALUE", false, false, false, 1.7976931348623157e+308);
 defineField(Number, "MIN_VALUE", false, false, false, 5e-324);
 defineField(Number, "prototype", false, false, false, {});
@@ -146,6 +162,10 @@ defineField(Number.prototype, "valueOf", true, false, true, function() {
 });
 
 target.Number = Number;
+target.parseInt = Number.parseInt;
+target.parseFloat = Number.parseFloat;
+target.NaN = Number.NaN;
+target.Infinity = Number.POSITIVE_INFINITY;
 
 const String = function(value) {
     if (invokeType(arguments) === "call") {
@@ -337,27 +357,55 @@ defineField(Function.prototype, "valueOf", true, false, true, function() {
 
 target.Function = Function;
 
-setIntrinsic("spread_obj", target.spread_obj = (target, obj) => {
-    if (obj === null || obj === undefined) return;
-    const members = getOwnMembers(obj, true);
-    const symbols = getOwnSymbolMembers(obj, true);
+// setIntrinsic("spread_obj", target.spread_obj = (target, obj) => {
+//     if (obj === null || obj === undefined) return;
+//     const members = getOwnMembers(obj, true);
+//     const symbols = getOwnSymbolMembers(obj, true);
 
-    for (let i = 0; i < members.length; i++) {
-        const member = members[i];
-        target[member] = obj[member];
-    }
+//     for (let i = 0; i < members.length; i++) {
+//         const member = members[i];
+//         target[member] = obj[member];
+//     }
 
-    for (let i = 0; i < symbols.length; i++) {
-        const member = symbols[i];
-        target[member] = obj[member];
-    }
+//     for (let i = 0; i < symbols.length; i++) {
+//         const member = symbols[i];
+//         target[member] = obj[member];
+//     }
+// });
+// setIntrinsic("apply", target.spread_call = (func, self, args) => {
+//     return invoke(func, self, args);
+// });
+// setIntrinsic("apply", target.spread_new = (func, args) => {
+//     return invoke(func, null, args);
+// });
+
+const Error = function(msg = "") {
+    if (invokeType(arguments) === "call") return new Error(msg);
+    this.message = msg + "";
+};
+defineField(Error.prototype, "name", true, false, true, "Error");
+defineField(Error.prototype, "message", true, false, true, "");
+defineField(Error.prototype, "toString", true, false, true, function toString() {
+    let res = this.name || "Error";
+
+    const msg = this.message;
+    if (msg) res += ": " + msg;
+
+    return res;
 });
-setIntrinsic("apply", target.spread_call = (func, self, args) => {
-    return invoke(func, self, args);
-});
-setIntrinsic("apply", target.spread_new = (func, args) => {
-    return invoke(func, null, args);
-});
+
+target.Error = Error;
+
+const SyntaxError = function(msg = "") {
+    if (invokeType(arguments) === "call") return new SyntaxError(msg);
+    this.message = msg + "";
+};
+defineField(SyntaxError.prototype, "name", true, false, true, "SyntaxError");
+
+setPrototype(SyntaxError, Error);
+setPrototype(SyntaxError.prototype, Error.prototype);
+
+target.SyntaxError = SyntaxError;
 
 setGlobalPrototype("string", String.prototype);
 setGlobalPrototype("number", Number.prototype);
@@ -365,3 +413,5 @@ setGlobalPrototype("boolean", Boolean.prototype);
 setGlobalPrototype("symbol", Symbol.prototype);
 setGlobalPrototype("object", Object.prototype);
 setGlobalPrototype("function", Function.prototype);
+setGlobalPrototype("error", Error.prototype);
+setGlobalPrototype("syntax", SyntaxError.prototype);

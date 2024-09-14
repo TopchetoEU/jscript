@@ -41,7 +41,7 @@ public class SimpleRepl {
             try {
                 try { initGlobals(); } catch (ExecutionException e) { throw e.getCause(); }
             }
-            catch (EngineException | SyntaxException e) { System.err.println(Value.errorToReadable(e, null)); }
+            catch (EngineException | SyntaxException e) { System.err.println(Value.errorToReadable(environment, e, null)); }
 
             for (var arg : args) {
                 try {
@@ -58,7 +58,7 @@ public class SimpleRepl {
                     }
                     catch (ExecutionException e) { throw e.getCause(); }
                 }
-                catch (EngineException | SyntaxException e) { System.err.println(Value.errorToReadable(e, null)); }
+                catch (EngineException | SyntaxException e) { System.err.println(Value.errorToReadable(environment, e, null)); }
             }
 
             for (var i = 0; ; i++) {
@@ -77,7 +77,7 @@ public class SimpleRepl {
                     }
                     catch (ExecutionException e) { throw e.getCause(); }
                 }
-                catch (EngineException | SyntaxException e) { System.err.println(Value.errorToReadable(e, null)); }
+                catch (EngineException | SyntaxException e) { System.err.println(Value.errorToReadable(environment, e, null)); }
             }
         }
         catch (IOException e) {
@@ -293,18 +293,6 @@ public class SimpleRepl {
             var obj = (ObjectValue)args.get(1);
 
             switch (type) {
-                case "string":
-                    args.env.add(Value.STRING_PROTO, obj);
-                    break;
-                case "number":
-                    args.env.add(Value.NUMBER_PROTO, obj);
-                    break;
-                case "boolean":
-                    args.env.add(Value.BOOL_PROTO, obj);
-                    break;
-                case "symbol":
-                    args.env.add(Value.SYMBOL_PROTO, obj);
-                    break;
                 case "object":
                     args.env.add(Value.OBJECT_PROTO, obj);
                     break;
@@ -313,6 +301,30 @@ public class SimpleRepl {
                     break;
                 case "array":
                     args.env.add(Value.ARRAY_PROTO, obj);
+                    break;
+                case "boolean":
+                    args.env.add(Value.BOOL_PROTO, obj);
+                    break;
+                case "number":
+                    args.env.add(Value.NUMBER_PROTO, obj);
+                    break;
+                case "string":
+                    args.env.add(Value.STRING_PROTO, obj);
+                    break;
+                case "symbol":
+                    args.env.add(Value.SYMBOL_PROTO, obj);
+                    break;
+                case "error":
+                    args.env.add(Value.ERROR_PROTO, obj);
+                    break;
+                case "syntax":
+                    args.env.add(Value.SYNTAX_ERR_PROTO, obj);
+                    break;
+                case "type":
+                    args.env.add(Value.TYPE_ERR_PROTO, obj);
+                    break;
+                case "range":
+                    args.env.add(Value.RANGE_ERR_PROTO, obj);
                     break;
             }
 

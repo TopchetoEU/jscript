@@ -66,7 +66,7 @@ public class EngineException extends RuntimeException {
     public String toString(Environment env) {
         var ss = new StringBuilder();
         try {
-            ss.append(value.toString(env)).append('\n');
+            ss.append(value.toString(env).value).append('\n');
         }
         catch (EngineException e) {
             var name = value.getMember(env, "name");

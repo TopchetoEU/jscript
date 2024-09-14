@@ -236,8 +236,8 @@ public abstract class Value {
     public final boolean setMember(Environment env, KeyCache key, Value val) {
         for (Value obj = this; obj != null; obj = obj.getPrototype(env)) {
             var member = obj.getOwnMember(env, key);
-            if (member != null) {
-                if (member.set(env, val, obj)) {
+            if (member instanceof PropertyMember prop) {
+                if (prop.set(env, val, obj)) {
                     if (val instanceof FunctionValue) ((FunctionValue)val).setName(key.toString(env));
                     return true;
                 }
@@ -670,22 +670,22 @@ public abstract class Value {
         return a.toString(env).equals(b.toString(env));
     }
 
-    // public static Value operation(Environment env, Operation op, Value ...args) {
-    // }
-
-    public static final String errorToReadable(RuntimeException err, String prefix) {
+    public static final String errorToReadable(Environment env, RuntimeException err, String prefix) {
         prefix = prefix == null ? "Uncaught" : "Uncaught " + prefix;
-        if (err instanceof EngineException) {
-            var ee = ((EngineException)err);
+        if (err instanceof EngineException ee) {
+            if (env == null) env = ee.env;
+
             try {
-                return prefix + " " + ee.toString(ee.env);
+                return prefix + " " + ee.toString(env);
             }
             catch (EngineException ex) {
-                return prefix + " " + ee.value.toReadable(ee.env);
+                return prefix + " " + ee.value.toReadable(env);
             }
         }
-        else if (err instanceof SyntaxException) {
-            return prefix + " SyntaxError " + ((SyntaxException)err).msg;
+        else if (err instanceof SyntaxException syntax) {
+            var newErr = EngineException.ofSyntax(syntax.msg);
+            newErr.add(null, syntax.loc.filename() + "", syntax.loc);
+            return errorToReadable(env, newErr, prefix);
         }
         else if (err.getCause() instanceof InterruptedException) return "";
         else {
