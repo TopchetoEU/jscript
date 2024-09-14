@@ -226,11 +226,6 @@ public class OperationNode extends Node {
 
             var res = factory.construct(src, i + n, prev);
             return res.addN(n);
-            // var res = Parsing.parseValue(src, i + n, prec + 1);
-            // if (!res.isSuccess()) return res.chainError(src.loc(i + n), String.format("Expected a value after the '%s' operator.", token));
-            // n += res.n;
-
-            // return ParseRes.res(new OperationStatement(loc, factories.get(token), prev, res.result), n);
         }
 
         return ParseRes.failed();

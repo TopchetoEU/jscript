@@ -286,11 +286,6 @@ public class ObjectNode extends Node implements AssignTargetLike {
     //     target.scope.end();
     // }
 
-    // @Override public void destruct(CompileResult target, DeclarationType decl) {
-    //     if (getters.size() > 0) throw new SyntaxException(getters.values().iterator().next().loc(), "Unexpected getter in destructor");
-    //     if (setters.size() > 0) throw new SyntaxException(setters.values().iterator().next().loc(), "Unexpected setter in destructor");
-    // }
-
     @Override public void compile(CompileResult target, boolean pollute) {
         target.add(Instruction.loadObj());
 

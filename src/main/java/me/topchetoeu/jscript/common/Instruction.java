@@ -65,8 +65,7 @@ public class Instruction {
         GLOB_DEF(0x62),
 
         STACK_ALLOC(0x70),
-        STACK_REALLOC(0x71),
-        STACK_FREE(0x72);
+        STACK_REALLOC(0x71);
 
         private static final HashMap<Integer, Type> types = new HashMap<>();
         public final int numeric;
@@ -469,10 +468,6 @@ public class Instruction {
     }
     public static Instruction stackRealloc(int start, int n) {
         return new Instruction(Type.STACK_REALLOC, start, start + n);
-    }
-    @Deprecated
-    public static Instruction stackFree(int n) {
-        return new Instruction(Type.STACK_FREE, n);
     }
 
     @Override public String toString() {

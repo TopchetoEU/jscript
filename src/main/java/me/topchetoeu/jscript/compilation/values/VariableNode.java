@@ -21,22 +21,10 @@ public class VariableNode extends Node implements Pattern, ChangeTarget {
 
     public String assignName() { return name; }
 
-    // @Override public void compileBeforeAssign(CompileResult target, boolean operator) {
-    //     if (operator) {
-    //         target.add(VariableNode.toGet(target, loc(), name));
-    //     }
-    // }
-    // @Override public void compileAfterAssign(CompileResult target, boolean operator, boolean pollute) {
-    //     target.add(VariableNode.toSet(target, loc(), name, pollute, false));
-    // }
-
     @Override public void beforeChange(CompileResult target) {
         target.add(VariableNode.toGet(target, loc(), name));
     }
 
-    // @Override public void destructArg(CompileResult target) {
-    //     target.add(_i -> target.scope.define(new Variable(name, false), loc()).index().toSet(false));
-    // }
     @Override public void destructDeclResolve(CompileResult target) {
         target.scope.define(new Variable(name, false), loc());
     }

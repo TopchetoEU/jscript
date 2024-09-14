@@ -53,9 +53,6 @@ public class IndexNode extends Node implements ChangeTarget {
         indexStore(target, index, pollute);
     }
 
-    // @Override public Node toAssign(Node val, Operation operation) {
-    //     return new IndexAssignNode(loc(), object, index, val, operation);
-    // }
     public void compile(CompileResult target, boolean dupObj, boolean pollute) {
         object.compile(target, true);
         if (dupObj) target.add(Instruction.dup());

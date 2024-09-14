@@ -1,25 +1,14 @@
 package me.topchetoeu.jscript.runtime.values.objects;
 
-import java.util.Comparator;
+import java.util.Arrays;
 import java.util.Iterator;
 
 import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.runtime.values.Value;
 import me.topchetoeu.jscript.runtime.values.primitives.numbers.NumberValue;
 
-// TODO: Make methods generic
 public class ByteBufferValue extends ArrayLikeValue implements Iterable<Value> {
     public final byte[] values;
-
-    // private Value[] alloc(int index) {
-    //     index++;
-    //     if (index < values.length) return values;
-    //     if (index < values.length * 2) index = values.length * 2;
-
-    //     var arr = new Value[index];
-    //     System.arraycopy(values, 0, arr, 0, values.length);
-    //     return values = arr;
-    // }
 
     public int size() { return values.length; }
     public boolean setSize(int val) { return false; }
@@ -54,22 +43,18 @@ public class ByteBufferValue extends ArrayLikeValue implements Iterable<Value> {
         System.arraycopy(values, srcI, values, dstI, n);
     }
 
-    public void sort(Comparator<Value> comparator) {
-        throw new RuntimeException("not supported");
-        // Arrays.sort(values, 0, values.length, (a, b) -> {
-        //     var _a = 0;
-        //     var _b = 0;
+    public void sort() {
+        var buckets = new int[256];
 
-        //     if (a == null) _a = 2;
-        //     if (a instanceof VoidValue) _a = 1;
+        for (var i = 0; i < values.length; i++) {
+            buckets[values[i] + 128]++;
+        }
 
-        //     if (b == null) _b = 2;
-        //     if (b instanceof VoidValue) _b = 1;
+        var offset = 0;
 
-        //     if (_a != 0 || _b != 0) return Integer.compare(_a, _b);
-
-        //     return comparator.compare(a, b);
-        // });
+        for (var i = 0; i < values.length; i++) {
+            Arrays.fill(values, offset, offset += buckets[i], (byte)(i - 128));
+        }
     }
 
     @Override public Iterator<Value> iterator() {

@@ -38,35 +38,12 @@ public abstract class FunctionNode extends Node {
                 for (var param : params.params) {
                     target.add(Instruction.loadMember(i++));
                     param.destruct(target, DeclarationType.VAR, true);
-                    // if (scope.has(param.name, false)) throw new SyntaxException(param.loc, "Duplicate parameter name not allowed");
-                    // if (!JavaScript.checkVarName(param.name)) {
-                    //     throw new SyntaxException(param.loc, String.format("Unexpected identifier '%s'", param.name));
-                    // }
-                    // var varI = scope.define(new Variable(param.name, false), param.loc);
-
-                    // if (param.node != null) {
-                    //     var end = new DeferredIntSupplier();
-
-                    //     target.add(Instruction.dup());
-                    //     target.add(Instruction.pushUndefined());
-                    //     target.add(Instruction.operation(Operation.EQUALS));
-                    //     target.add(Instruction.jmpIfNot(end));
-                    //     target.add(Instruction.discard());
-                    //     param.node.compile(target, true);
-
-                    //     end.set(target.size());
-                    // }
-
-                    // target.add(_i -> varI.index().toSet(false));
                 }
             }
 
             if (params.rest != null) {
                 target.add(Instruction.loadRestArgs(params.params.size()));
                 params.rest.destruct(target, DeclarationType.VAR, true);
-                // if (scope.has(params.restName, false)) throw new SyntaxException(params.restLocation, "Duplicate parameter name not allowed");
-                // var restVar = scope.define(new Variable(params.restName, false), params.restLocation);
-                // target.add(_i -> restVar.index().toSet(false));
             }
 
             if (selfName != null && !scope.has(name, false)) {

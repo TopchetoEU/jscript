@@ -27,8 +27,6 @@ public class AssignPattern implements Pattern {
         throw new SyntaxException(loc(), "Expected an assignment value for destructor declaration");
     }
     @Override public void destruct(CompileResult target, DeclarationType decl, boolean shouldDeclare) {
-        // if (assignable instanceof AssignPattern other) throw new SyntaxException(other.loc(), "Unexpected destruction target");
-
         target.add(Instruction.dup());
         target.add(Instruction.pushUndefined());
         target.add(Instruction.operation(Operation.EQUALS));

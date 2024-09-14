@@ -167,8 +167,6 @@ public class SwitchNode extends Node {
                 SwitchNode::parseSwitchCase
             );
 
-            // Parsing::parseStatement
-
             if (caseRes.isSuccess()) {
                 n += caseRes.n;
 

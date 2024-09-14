@@ -9,7 +9,6 @@ import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.runtime.values.Value;
 import me.topchetoeu.jscript.runtime.values.primitives.VoidValue;
 
-// TODO: Make methods generic
 public class ArrayValue extends ArrayLikeValue implements Iterable<Value> {
     private Value[] values;
     private int size;

@@ -534,14 +534,6 @@ public class InstructionRunner {
         frame.codePtr++;
         return null;
     }
-    private static Value execStackFree(Environment env, Instruction instr, Frame frame) {
-        // int n = instr.get(0);
-
-        // TODO: Remove if safe to do so
-
-        frame.codePtr++;
-        return null;
-    }
 
     public static Value exec(Environment env, Instruction instr, Frame frame) {
         switch (instr.type) {
@@ -602,7 +594,6 @@ public class InstructionRunner {
 
             case STACK_ALLOC: return execStackAlloc(env, instr, frame);
             case STACK_REALLOC: return execStackRealloc(env, instr, frame);
-            case STACK_FREE: return execStackFree(env, instr, frame);
 
             default: throw EngineException.ofSyntax("Invalid instruction " + instr.type.name() + ".");
         }

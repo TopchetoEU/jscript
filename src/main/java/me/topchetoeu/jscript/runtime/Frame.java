@@ -222,13 +222,10 @@ public final class Frame {
                 if (newCtx != tryCtx) {
                     switch (newCtx.state) {
                         case CATCH:
-                            // TODO: may cause problems
-                            // if (tryCtx.state != TryState.CATCH) locals.add(new Value[] { error.value });
                             codePtr = tryCtx.catchStart;
                             stackPtr = tryCtx.restoreStackPtr;
                             break;
                         case FINALLY:
-                            // if (tryCtx.state == TryState.CATCH) locals.remove(locals.size() - 1);
                             codePtr = tryCtx.finallyStart;
                             stackPtr = tryCtx.restoreStackPtr;
                         default:
@@ -244,7 +241,6 @@ public final class Frame {
             }
             else {
                 popTryFlag = false;
-                // if (tryCtx.state == TryState.CATCH) locals.remove(locals.size() - 1);
 
                 if (tryCtx.state != TryState.FINALLY && tryCtx.hasFinally()) {
                     codePtr = tryCtx.finallyStart;
@@ -340,44 +336,6 @@ public final class Frame {
     }
 
     /**
-     * Gets an object proxy of the local locals
-     */
-    public ObjectValue getLocalScope() {
-        throw new RuntimeException("Not supported");
-
-        // var names = new String[locals.locals.length];
-        // var map = DebugContext.get(env).getMapOrEmpty(function);
-
-        // for (int i = 0; i < locals.locals.length; i++) {
-        //     var name = "local_" + (i - 2);
-
-        //     if (i == 0) name = "this";
-        //     else if (i == 1) name = "arguments";
-        //     else if (i < map.localNames.length) name = map.localNames[i];
-
-        //     names[i] = name;
-        // }
-
-        // return new ScopeValue(locals, names);
-    }
-    /**
-     * Gets an object proxy of the capture locals
-     */
-    public ObjectValue getCaptureScope() {
-        throw new RuntimeException("Not supported");
-
-        // var names = new String[captures.length];
-        // var map = DebugContext.get(env).getMapOrEmpty(function);
-
-        // for (int i = 0; i < captures.length; i++) {
-        //     var name = "capture_" + (i - 2);
-        //     if (i < map.captureNames.length) name = map.captureNames[i];
-        //     names[i] = name;
-        // }
-
-        // return new ScopeValue(captures, names);
-    }
-    /**
      * Gets an array proxy of the local locals
      */
     public ObjectValue getValStackScope() {
@@ -389,31 +347,6 @@ public final class Frame {
 
             @Override public int size() { return stackPtr; }
             @Override public boolean setSize(int val) { return false; }
-
-            // @Override public Member getOwnMember(Environment env, KeyCache key) {
-            //     var res = super.getOwnMember(env, key);
-            //     if (res != null) return res;
-
-            //     var num = key.toNumber(env);
-            //     var i = key.toInt(env);
-
-            //     if (num != i || i < 0 || i >= stackPtr) return null;
-            //     else return new FieldMember(this, false, true, true) {
-            //         @Override public Value get(Environment env, Value self) { return stack[i]; }
-            //         @Override public boolean set(Environment env, Value val, Value self) {
-            //             stack[i] = val;
-            //             return true;
-            //         }
-            //     };
-            // }
-            // @Override public Set<String> getOwnMembers(Environment env, boolean onlyEnumerable) {
-            //     var res = new LinkedHashSet<String>();
-            //     res.addAll(super.getOwnMembers(env, onlyEnumerable));
-
-            //     for (var i = 0; i < stackPtr; i++) res.add(i + "");
-
-            //     return res;
-            // }
         };
     }
 

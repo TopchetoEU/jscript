@@ -345,29 +345,8 @@ public class SimpleRepl {
     }
 
     private static void initEnv() {
-        // glob.define(null, false, new NativeFunction("go", args -> {
-        //     try {
-        //         var f = Path.of("do.js");
-        //         var func = Compiler.compile(args.env, new Filename("do", "do/" + j++ + ".js"), new String(Files.readAllBytes(f)));
-        //         return func.call(args.env);
-        //     }
-        //     catch (IOException e) {
-        //         throw new EngineException("Couldn't open do.js");
-        //     }
-        // }));
-
-        // var fs = new RootFilesystem(PermissionsProvider.get(environment));
-        // fs.protocols.put("temp", new MemoryFilesystem(Mode.READ_WRITE));
-        // fs.protocols.put("file", new PhysicalFilesystem("."));
-        // fs.protocols.put("std", new STDFilesystem(System.in, System.out, System.err));
-
-        // environment.add(PermissionsProvider.KEY, PermissionsManager.ALL_PERMS);
-        // environment.add(Filesystem.KEY, fs);
-        // environment.add(ModuleRepo.KEY, ModuleRepo.ofFilesystem(fs));
-        // environment.add(Compiler.KEY, new JSCompiler(environment));
         environment.add(EventLoop.KEY, engine);
         environment.add(DebugContext.KEY, new DebugContext());
-        // environment.add(EventLoop.KEY, engine);
         environment.add(Compiler.KEY, Compiler.DEFAULT);
 
         var glob = Value.global(environment);
