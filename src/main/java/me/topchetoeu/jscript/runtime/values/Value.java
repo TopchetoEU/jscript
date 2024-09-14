@@ -522,6 +522,7 @@ public abstract class Value {
         else if (this instanceof VoidValue) return ((VoidValue)this).name;
         else if (this instanceof StringValue) return JSON.stringify(JSONElement.string(((StringValue)this).value));
         else if (this instanceof SymbolValue) return this.toString();
+        else if (this instanceof NumberValue num && num.isLong()) return num.getLong() + "i";
         else return this.toString(env);
     }
 

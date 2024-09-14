@@ -4,7 +4,7 @@ public final class IntValue extends NumberValue {
     public final long value;
 
     @Override public boolean isInt() {
-        return (value & 0xFFFFFFFF00000000l) == 0;
+        return (int)value == value;
     }
     @Override public boolean isLong() {
         return true;

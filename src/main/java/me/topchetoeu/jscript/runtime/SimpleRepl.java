@@ -385,6 +385,15 @@ public class SimpleRepl {
 
             return Value.UNDEFINED;
         }));
+        glob.defineOwnMember(null, "measure", new NativeFunction("measure", args -> {
+            var start = System.nanoTime();
+
+            ((FunctionValue)args.get(0)).invoke(args.env, Value.UNDEFINED);
+
+            System.out.println(String.format("Finished in %sns", System.nanoTime() - start));
+
+            return Value.UNDEFINED;
+        }));
     }
     private static void initEngine() {
         // var ctx = new DebugContext();
