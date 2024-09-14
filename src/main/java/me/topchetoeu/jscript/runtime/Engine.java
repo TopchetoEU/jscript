@@ -1,11 +1,10 @@
 package me.topchetoeu.jscript.runtime;
 
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.function.Supplier;
-
-import me.topchetoeu.jscript.runtime.exceptions.InterruptException;
 
 public final class Engine implements EventLoop {
     private static class Task<T> implements Comparable<Task<?>> {
@@ -41,10 +40,10 @@ public final class Engine implements EventLoop {
                 try {
                     ((Task<Object>)task).notifier.complete(task.runnable.get());
                 }
-                catch (InterruptException e) { throw e; }
+                catch (CancellationException e) { throw e; }
                 catch (RuntimeException e) { task.notifier.completeExceptionally(e); }
             }
-            catch (InterruptedException | InterruptException e) {
+            catch (InterruptedException | CancellationException e) {
                 for (var msg : tasks) msg.notifier.cancel(false);
                 break;
             }

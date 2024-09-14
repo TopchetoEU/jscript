@@ -1,8 +1,8 @@
 package me.topchetoeu.jscript.runtime;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 
@@ -13,7 +13,6 @@ import me.topchetoeu.jscript.common.json.JSON;
 import me.topchetoeu.jscript.common.parsing.Filename;
 import me.topchetoeu.jscript.runtime.debug.DebugContext;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
-import me.topchetoeu.jscript.runtime.exceptions.InterruptException;
 import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 import me.topchetoeu.jscript.runtime.values.Member.FieldMember;
 import me.topchetoeu.jscript.runtime.values.Member.PropertyMember;
@@ -45,13 +44,13 @@ public class SimpleRepl {
 
             for (var arg : args) {
                 try {
-                    var file = Path.of(arg);
-                    var raw = Files.readString(file);
+                    var file = new File(arg);
+                    var raw = Reading.streamToString(new FileInputStream(file));
 
                     try {
                         var res = engine.pushMsg(
                             false, environment,
-                            Filename.fromFile(file.toFile()), raw, null
+                            Filename.fromFile(file), raw, null
                         ).get();
 
                         System.err.println(res.toReadable(environment));
@@ -195,7 +194,7 @@ public class SimpleRepl {
             var val = new ArrayValue();
 
             for (var key : args.get(0).getOwnMembers(env, args.get(1).toBoolean())) {
-                val.set(val.size(), new StringValue(key));
+                val.set(args.env, val.size(), new StringValue(key));
             }
 
             return val;
@@ -375,7 +374,7 @@ public class SimpleRepl {
 
         glob.defineOwnMember(null, "exit", new NativeFunction("exit", args -> {
             Thread.currentThread().interrupt();
-            throw new InterruptException();
+            throw new CancellationException();
         }));
         glob.defineOwnMember(null, "print", new NativeFunction("print", args -> {
             for (var el : args.args) {

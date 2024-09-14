@@ -2,13 +2,13 @@ package me.topchetoeu.jscript.runtime;
 
 import java.util.Arrays;
 import java.util.Stack;
+import java.util.concurrent.CancellationException;
 
 import me.topchetoeu.jscript.common.Instruction;
 import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.common.environment.Key;
 import me.topchetoeu.jscript.runtime.debug.DebugContext;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
-import me.topchetoeu.jscript.runtime.exceptions.InterruptException;
 import me.topchetoeu.jscript.runtime.values.Value;
 import me.topchetoeu.jscript.runtime.values.functions.CodeFunction;
 import me.topchetoeu.jscript.runtime.values.objects.ArrayLikeValue;
@@ -176,7 +176,7 @@ public final class Frame {
 
         if (returnValue == null && error == null) {
             try {
-                if (Thread.interrupted()) throw new InterruptException();
+                if (Thread.interrupted()) throw new CancellationException();
 
                 if (instr == null) {
                     if (stackPtr > 0) returnValue = stack[stackPtr - 1];
@@ -383,9 +383,9 @@ public final class Frame {
     public ObjectValue getValStackScope() {
         return new ArrayLikeValue() {
             @Override public Value get(int i) { return stack[i]; }
-            @Override public void set(int i, Value val) { stack[i] = val; }
+            @Override public boolean set(Environment env, int i, Value val) { return false; }
             @Override public boolean has(int i) { return i >= 0 && i < size(); }
-            @Override public void remove(int i) { }
+            @Override public boolean remove(int i) { return false; }
 
             @Override public int size() { return stackPtr; }
             @Override public boolean setSize(int val) { return false; }
