@@ -87,7 +87,7 @@ public final class NodeChildren implements Iterable<Node> {
         }
 
         public final NodeChildren build() {
-            return new NodeChildren(slots.toArray(Slot[]::new));
+            return new NodeChildren(slots.toArray(new Slot[0]));
         }
     }
 }

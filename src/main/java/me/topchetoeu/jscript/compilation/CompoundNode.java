@@ -1,6 +1,7 @@
 package me.topchetoeu.jscript.compilation;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import me.topchetoeu.jscript.common.Instruction;
@@ -91,10 +92,10 @@ public class CompoundNode extends Node {
 
         if (prev instanceof CompoundNode comp) {
             var children = new ArrayList<Node>();
-            children.addAll(List.of(comp.statements));
+            children.addAll(Arrays.asList(comp.statements));
             children.add(curr.result);
 
-            return ParseRes.res(new CompoundNode(loc, comp.hasScope, children.toArray(Node[]::new)), n);
+            return ParseRes.res(new CompoundNode(loc, comp.hasScope, children.toArray(new Node[0])), n);
         }
         else return ParseRes.res(new CompoundNode(loc, false, prev, curr.result), n);
     }
@@ -126,6 +127,6 @@ public class CompoundNode extends Node {
             statements.add(res.result);
         }
 
-        return ParseRes.res(new CompoundNode(loc, true, statements.toArray(Node[]::new)).setEnd(src.loc(i + n - 1)), n);
+        return ParseRes.res(new CompoundNode(loc, true, statements.toArray(new Node[0])).setEnd(src.loc(i + n - 1)), n);
     }
 }

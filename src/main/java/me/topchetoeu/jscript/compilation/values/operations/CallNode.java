@@ -159,7 +159,7 @@ public class CallNode extends Node {
             else return ParseRes.error(src.loc(i + n), "Expected an expression or a closing paren");
         }
 
-        return ParseRes.res(new CallNode(loc, false, prev, args.toArray(Node[]::new)), n);
+        return ParseRes.res(new CallNode(loc, false, prev, args.toArray(new Node[0])), n);
     }
     public static ParseRes<CallNode> parseNew(Source src, int i) {
         var n = Parsing.skipEmpty(src, i);

@@ -1,8 +1,8 @@
 package me.topchetoeu.jscript.compilation.values.operations;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import me.topchetoeu.jscript.common.Instruction;
@@ -120,7 +120,7 @@ public class OperationNode extends Node {
         this.args = args;
     }
 
-    private static final Map<String, OperatorFactory> factories = Set.of(
+    private static final Map<String, OperatorFactory> factories = Arrays.asList(
         new NormalOperatorFactory("*", 13, Operation.MULTIPLY),
         new NormalOperatorFactory("/", 12, Operation.DIVIDE),
         new NormalOperatorFactory("%", 12, Operation.MODULO),

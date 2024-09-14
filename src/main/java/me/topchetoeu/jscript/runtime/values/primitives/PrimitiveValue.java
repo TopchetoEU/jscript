@@ -1,5 +1,6 @@
 package me.topchetoeu.jscript.runtime.values.primitives;
 
+import java.util.HashSet;
 import java.util.Set;
 
 import me.topchetoeu.jscript.common.environment.Environment;
@@ -17,8 +18,8 @@ public abstract class PrimitiveValue extends Value {
     @Override public final boolean setPrototype(Environment env, ObjectValue val) { return false; }
 
     @Override public Member getOwnMember(Environment env, KeyCache key) { return null; }
-    @Override public Set<String> getOwnMembers(Environment env, boolean onlyEnumerable) { return Set.of(); }
-    @Override public Set<SymbolValue> getOwnSymbolMembers(Environment env, boolean onlyEnumerable) { return Set.of(); }
+    @Override public Set<String> getOwnMembers(Environment env, boolean onlyEnumerable) { return new HashSet<>(); }
+    @Override public Set<SymbolValue> getOwnSymbolMembers(Environment env, boolean onlyEnumerable) { return new HashSet<>(); }
 
     @Override public State getState() { return State.FROZEN; }
 

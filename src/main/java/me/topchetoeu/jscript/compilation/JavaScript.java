@@ -1,7 +1,8 @@
 package me.topchetoeu.jscript.compilation;
 
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
 
 import me.topchetoeu.jscript.common.environment.Environment;
@@ -57,13 +58,13 @@ public final class JavaScript {
         }
     }
 
-    static final Set<String> reserved = Set.of(
+    static final Set<String> reserved = new HashSet<>(Arrays.asList(
         "true", "false", "void", "null", "this", "if", "else", "try", "catch",
         "finally", "for", "do", "while", "switch", "case", "default", "new",
         "function", "var", "return", "throw", "typeof", "delete", "break",
         "continue", "debugger", "implements", "interface", "package", "private",
         "protected", "public", "static", "arguments"
-    );
+    ));
 
     public static ParseRes<? extends Node> parseParens(Source src, int i) {
         int n = 0;
@@ -252,7 +253,7 @@ public final class JavaScript {
             list.add(res.result);
         }
 
-        return list.toArray(Node[]::new);
+        return list.toArray(new Node[0]);
     }
 
     public static boolean checkVarName(String name) {
@@ -260,7 +261,7 @@ public final class JavaScript {
     }
 
     public static CompileResult compile(Environment env, Node ...statements) {
-        var func = new FunctionValueNode(null, null, new Parameters(List.of()), new CompoundNode(null, true, statements), null);
+        var func = new FunctionValueNode(null, null, new Parameters(Arrays.asList()), new CompoundNode(null, true, statements), null);
         var res = func.compileBody(env, new FunctionScope(true), true, null, null);
         res.buildTask.run();
         return res;

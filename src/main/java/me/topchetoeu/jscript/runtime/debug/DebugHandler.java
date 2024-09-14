@@ -1,5 +1,6 @@
 package me.topchetoeu.jscript.runtime.debug;
 
+import java.util.Arrays;
 import java.util.List;
 
 import me.topchetoeu.jscript.common.FunctionBody;
@@ -73,7 +74,7 @@ public interface DebugHandler {
             }
             @Override public void onSourceLoad(Filename filename, String source) { }
             @Override public void onFunctionLoad(FunctionBody body, FunctionMap map) { }
-            @Override public List<Frame> getStackFrame() { return List.of(); }
+            @Override public List<Frame> getStackFrame() { return Arrays.asList(); }
         };
     }
 }

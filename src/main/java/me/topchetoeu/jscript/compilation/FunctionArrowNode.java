@@ -1,6 +1,6 @@
 package me.topchetoeu.jscript.compilation;
 
-import java.util.List;
+import java.util.Arrays;
 
 import me.topchetoeu.jscript.common.Instruction;
 import me.topchetoeu.jscript.common.Instruction.BreakpointType;
@@ -48,7 +48,7 @@ public class FunctionArrowNode extends FunctionNode {
             n += singleParam.n;
             n += Parsing.skipEmpty(src, i + n);
 
-            params = new Parameters(List.of(singleParam.result));
+            params = new Parameters(Arrays.asList(singleParam.result));
         }
 
         if (!src.is(i + n, "=>")) return ParseRes.failed();

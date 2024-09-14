@@ -1,6 +1,7 @@
 package me.topchetoeu.jscript.runtime.debug;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.WeakHashMap;
@@ -71,7 +72,7 @@ public class DebugContext {
         return getMapOrEmpty(((CodeFunction)func).body);
     }
     public List<Frame> getStackFrames() {
-        if (debugger == null) return List.of();
+        if (debugger == null) return Arrays.asList();
         return this.debugger.getStackFrame();
     }
 

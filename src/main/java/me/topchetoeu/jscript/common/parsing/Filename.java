@@ -1,7 +1,6 @@
 package me.topchetoeu.jscript.common.parsing;
 
 import java.io.File;
-import java.nio.file.Path;
 
 public class Filename {
     public final String protocol;
@@ -48,9 +47,12 @@ public class Filename {
         if (i >= 0) return new Filename(val.substring(0, i).trim(), val.substring(i + 3).trim());
         else return new Filename("file", val.trim());
     }
-    public static Path normalize(String path) {
-        return Path.of(Path.of("/" + path.trim().replace("\\", "/")).normalize().toString().substring(1));
-    }
+    // public static Path normalize(String path) {
+    //     // File file = new File("/" + path.trim().replace("\\", "/"));
+    //     // String normalizedPath = new File("/" + path.trim().replace("\\", "/")).getAbsolutePath().replaceFirst("^/", "").replace("\\", "/");
+    //     // return normalizedPath;
+    //     return Path.of(Path.of("/" + path.trim().replace("\\", "/")).normalize().toString().substring(1));
+    // }
     public static Filename fromFile(File file) {
         return new Filename("file", file.getAbsolutePath());
     }

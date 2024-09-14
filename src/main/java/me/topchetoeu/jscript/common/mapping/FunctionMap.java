@@ -1,6 +1,7 @@
 package me.topchetoeu.jscript.common.mapping;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -111,9 +112,9 @@ public class FunctionMap {
         return res;
     }
     public List<Location> breakpoints(Location start, Location end) {
-        if (!Objects.equals(start.filename(), end.filename())) return List.of();
+        if (!Objects.equals(start.filename(), end.filename())) return Arrays.asList();
         NavigableSet<Location> set = bpLocs.get(start.filename());
-        if (set == null) return List.of();
+        if (set == null) return Arrays.asList();
 
         if (start != null) set = set.tailSet(start, true);
         if (end != null) set = set.headSet(end, true);
@@ -153,7 +154,7 @@ public class FunctionMap {
     // }
 
     public FunctionMap clone() {
-        var res = new FunctionMap(Map.of(), Map.of(), localNames, captureNames);
+        var res = new FunctionMap(new HashMap<>(), new HashMap<>(), localNames, captureNames);
         res.pcToLoc.putAll(this.pcToLoc);
         res.bps.putAll(bps);
         res.bpLocs.putAll(bpLocs);

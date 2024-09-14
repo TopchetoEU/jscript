@@ -1,7 +1,7 @@
 package me.topchetoeu.jscript.common.json;
 
 import java.math.BigDecimal;
-import java.util.Map;
+import java.util.HashMap;
 import java.util.stream.Collectors;
 
 import me.topchetoeu.jscript.common.parsing.Filename;
@@ -49,7 +49,7 @@ public class JSON {
 
         var values = new JSONMap();
 
-        if (src.is(i + n, "}")) return ParseRes.res(new JSONMap(Map.of()), n + 1);
+        if (src.is(i + n, "}")) return ParseRes.res(new JSONMap(new HashMap<>()), n + 1);
         while (true) {
             var name = parseString(src, i + n);
             if (!name.isSuccess()) return name.chainError(src.loc(i + n), "Expected an index");

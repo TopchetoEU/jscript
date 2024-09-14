@@ -1,5 +1,6 @@
 package me.topchetoeu.jscript.compilation.values;
 
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -51,7 +52,7 @@ public class ObjectNode extends Node implements AssignTargetLike {
         }
 
         public PropertyMemberNode(Location loc, Location end, Node key, Pattern argument, CompoundNode body) {
-            super(loc, end, argument == null ? new Parameters(List.of()) : new Parameters(List.of(argument)), body);
+            super(loc, end, argument == null ? new Parameters(Arrays.asList()) : new Parameters(Arrays.asList(argument)), body);
             this.key = key;
             this.argument = argument;
         }

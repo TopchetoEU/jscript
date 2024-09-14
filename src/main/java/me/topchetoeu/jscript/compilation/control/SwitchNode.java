@@ -189,8 +189,8 @@ public class SwitchNode extends Node {
 
         return ParseRes.res(new SwitchNode(
             loc, label.result, val.result, defaultI,
-            cases.toArray(SwitchCase[]::new),
-            statements.toArray(Node[]::new)
+            cases.toArray(new SwitchCase[0]),
+            statements.toArray(new Node[0])
         ), n);
     }
 }

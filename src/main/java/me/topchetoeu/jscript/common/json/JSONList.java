@@ -1,14 +1,14 @@
 package me.topchetoeu.jscript.common.json;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 
 public class JSONList extends ArrayList<JSONElement> {
     public JSONList() {}
     public JSONList(JSONElement ...els) {
-        super(List.of(els));
+        super(Arrays.asList(els));
     }
     public JSONList(Collection<JSONElement> els) {
         super(els);

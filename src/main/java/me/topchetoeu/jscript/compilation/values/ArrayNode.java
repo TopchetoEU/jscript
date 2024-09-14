@@ -76,6 +76,6 @@ public class ArrayNode extends Node {
             }
         }
 
-        return ParseRes.res(new ArrayNode(loc, values.toArray(Node[]::new)), n);
+        return ParseRes.res(new ArrayNode(loc, values.toArray(new Node[0])), n);
     }
 }

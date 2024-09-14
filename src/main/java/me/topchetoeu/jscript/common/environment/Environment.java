@@ -35,7 +35,7 @@ public class Environment {
         }
 
         if (!forceClone) {
-            if (parent == null && child == null) return Set.of();
+            if (parent == null && child == null) return new HashSet<>();
             if (parent == null && child != null) return child;
             if (parent != null && child == null) return parent;
         }
