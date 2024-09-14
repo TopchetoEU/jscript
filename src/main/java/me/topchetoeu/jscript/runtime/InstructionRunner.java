@@ -94,7 +94,7 @@ public class InstructionRunner {
 
         for (var el : members) {
             var obj = new ObjectValue();
-            obj.defineOwnMember(env, "value", new StringValue(el));
+            obj.defineOwnMember(env, "value", StringValue.of(el));
             frame.push(obj);
         }
 
@@ -137,7 +137,7 @@ public class InstructionRunner {
             case PUSH_NULL: frame.push(Value.NULL); break;
             case PUSH_BOOL: frame.push(BoolValue.of(instr.get(0))); break;
             case PUSH_NUMBER: frame.push(NumberValue.of((double)instr.get(0))); break;
-            case PUSH_STRING: frame.push(new StringValue(instr.get(0))); break;
+            case PUSH_STRING: frame.push(StringValue.of(instr.get(0))); break;
             default:
         }
 
@@ -431,7 +431,7 @@ public class InstructionRunner {
                 res = BoolValue.of(stack[ptr - 1].hasMember(env, stack[ptr], false));
                 break;
             case INSTANCEOF:
-                res = BoolValue.of(stack[ptr - 1].isInstanceOf(env, stack[ptr].getMember(env, new StringValue("prototype"))));
+                res = BoolValue.of(stack[ptr - 1].isInstanceOf(env, stack[ptr].getMember(env, StringValue.of("prototype"))));
                 break;
 
             default: return null;

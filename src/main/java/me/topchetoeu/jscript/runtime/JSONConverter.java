@@ -19,7 +19,7 @@ import me.topchetoeu.jscript.runtime.values.primitives.numbers.NumberValue;
 public class JSONConverter {
     public static Value toJs(JSONElement val) {
         if (val.isBoolean()) return BoolValue.of(val.bool());
-        if (val.isString()) return new StringValue(val.string());
+        if (val.isString()) return StringValue.of(val.string());
         if (val.isNumber()) return NumberValue.of(val.number());
         if (val.isList()) return ArrayValue.of(val.list().stream().map(JSONConverter::toJs).collect(Collectors.toList()));
         if (val.isMap()) {

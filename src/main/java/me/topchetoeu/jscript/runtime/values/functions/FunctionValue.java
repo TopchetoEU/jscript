@@ -10,8 +10,6 @@ import me.topchetoeu.jscript.runtime.values.primitives.StringValue;
 import me.topchetoeu.jscript.runtime.values.primitives.numbers.NumberValue;
 
 public abstract class FunctionValue extends ObjectValue {
-    private static final StringValue typeString = new StringValue("function");
-
     public String name = "";
     public int length;
     public Value prototype = new ObjectValue();
@@ -21,8 +19,8 @@ public abstract class FunctionValue extends ObjectValue {
 
     private final FieldMember nameField = new FieldMember(this, true, false, false) {
         @Override public Value get(Environment env, Value self) {
-            if (name == null) return new StringValue("");
-            return new StringValue(name);
+            if (name == null) return StringValue.of("");
+            return StringValue.of(name);
         }
         @Override public boolean set(Environment env, Value val, Value self) {
             name = val.toString(env);
@@ -79,7 +77,7 @@ public abstract class FunctionValue extends ObjectValue {
         }
     }
 
-    @Override public StringValue type() { return typeString; }
+    @Override public StringValue type() { return StringValue.of("function"); }
 
     public void setName(String val) {
         if (this.name == null || this.name.equals("")) this.name = val;

@@ -74,8 +74,8 @@ public abstract class Value {
     public static final Key<ObjectValue> GLOBAL = Key.of();
     public static final Key<Map<String, Value>> INTRINSICS = Key.of();
 
-    public static final VoidValue UNDEFINED = new VoidValue("undefined", new StringValue("undefined"));
-    public static final VoidValue NULL = new VoidValue("null", new StringValue("object"));
+    public static final VoidValue UNDEFINED = new VoidValue("undefined", "undefined");
+    public static final VoidValue NULL = new VoidValue("null", "object");
 
     public abstract StringValue type();
     public abstract boolean isPrimitive();
@@ -96,7 +96,7 @@ public abstract class Value {
     }
     public final Value construct(Environment env, String name, Value ...args) {
         var res = new ObjectValue();
-        var proto = getMember(env, new StringValue("prototype"));
+        var proto = getMember(env, StringValue.of("prototype"));
 
         if (proto instanceof ObjectValue) res.setPrototype(env, (ObjectValue)proto);
         else res.setPrototype(env, null);
@@ -395,9 +395,9 @@ public abstract class Value {
                         var curr = supplier.invoke(env, Value.UNDEFINED);
 
                         if (curr == null) { supplier = null; value = null; }
-                        if (curr.getMember(env, new StringValue("done")).toBoolean()) { supplier = null; value = null; }
+                        if (curr.getMember(env, StringValue.of("done")).toBoolean()) { supplier = null; value = null; }
                         else {
-                            this.value = curr.getMember(env, new StringValue("value"));
+                            this.value = curr.getMember(env, StringValue.of("value"));
                             consumed = false;
                         }
                     }
@@ -615,7 +615,7 @@ public abstract class Value {
         b = b.toPrimitive(env);
 
         if (a instanceof StringValue || b instanceof StringValue) {
-            return new StringValue(a.toString(env) + b.toString(env));
+            return StringValue.of(a.toString(env) + b.toString(env));
         }
         else {
             var na = a.toNumber(env);

@@ -30,8 +30,6 @@ public class ObjectValue extends Value {
         }
     }
 
-    private static final StringValue typeString = new StringValue("object");
-
     protected PrototypeProvider prototype;
 
     public LinkedHashMap<String, Member> members = new LinkedHashMap<>();
@@ -40,14 +38,14 @@ public class ObjectValue extends Value {
     @Override public boolean isPrimitive() { return false; }
     @Override public Value toPrimitive(Environment env) {
         if (env != null) {
-            var valueOf = getMember(env, new StringValue("valueOf"));
+            var valueOf = getMember(env, "valueOf");
 
             if (valueOf instanceof FunctionValue) {
                 var res = valueOf.invoke(env, this);
                 if (res.isPrimitive()) return res;
             }
 
-            var toString = getMember(env, new StringValue("toString"));
+            var toString = getMember(env, "toString");
             if (toString instanceof FunctionValue) {
                 var res = toString.invoke(env, this);
                 if (res.isPrimitive()) return res;
@@ -59,7 +57,7 @@ public class ObjectValue extends Value {
     @Override public String toString(Environment env) { return toPrimitive(env).toString(env); }
     @Override public boolean toBoolean() { return true; }
     @Override public NumberValue toNumber(Environment env) { return toPrimitive(env).toNumber(env);  }
-    @Override public StringValue type() { return typeString; }
+    @Override public StringValue type() { return StringValue.of("object"); }
 
     private State state = State.NORMAL;
 

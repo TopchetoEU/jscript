@@ -2,6 +2,7 @@ package me.topchetoeu.jscript.runtime.values.primitives;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.WeakHashMap;
 
 import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.common.parsing.Parsing;
@@ -13,10 +14,11 @@ import me.topchetoeu.jscript.runtime.values.objects.ObjectValue;
 import me.topchetoeu.jscript.runtime.values.primitives.numbers.NumberValue;
 
 public final class StringValue extends PrimitiveValue {
-    public final String value;
-    private static final StringValue typeString = new StringValue("string");
+    private static final WeakHashMap<String, StringValue> cache = new WeakHashMap<>();
 
-    @Override public StringValue type() { return typeString; }
+    public final String value;
+
+    @Override public StringValue type() { return of("string"); }
 
     @Override public boolean toBoolean() { return !value.equals(""); }
     @Override public NumberValue toNumber(Environment ext) {
@@ -30,7 +32,8 @@ public final class StringValue extends PrimitiveValue {
     @Override public String toString(Environment ext) { return value; }
 
     @Override public boolean equals(Object other) {
-        if (other instanceof StringValue val) return value.length() == val.value.length() && value.equals(val.value);
+        if (this == other) return true;
+        else if (other instanceof StringValue val) return value.length() == val.value.length() && value.equals(val.value);
         else return false;
     }
 
@@ -61,7 +64,16 @@ public final class StringValue extends PrimitiveValue {
         return res;
     }
 
-    public StringValue(String value) {
+    private StringValue(String value) {
         this.value = value;
+    }
+
+    public static StringValue of(String value) {
+        if (cache.containsKey(value)) return cache.get(value);
+        else {
+            StringValue res;
+            cache.put(value, res = new StringValue(value));
+            return res;
+        }
     }
 }

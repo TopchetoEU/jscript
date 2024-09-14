@@ -51,7 +51,7 @@ public final class KeyCache {
         this.value = value;
     }
     public KeyCache(String value) {
-        this.value = new StringValue(value);
+        this.value = StringValue.of(value);
         this.stringCache = value;
         this.booleanCache = !value.equals("");
     }

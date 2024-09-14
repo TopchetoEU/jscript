@@ -21,7 +21,8 @@ public final class IntValue extends NumberValue {
 
     @Override public String toString() { return value + ""; }
     @Override public boolean equals(Object other) {
-        if (other instanceof NumberValue val) return val.isLong() && value == val.getLong();
+        if (this == other) return true;
+        else if (other instanceof NumberValue val) return val.isLong() && value == val.getLong();
         else return false;
     }
 

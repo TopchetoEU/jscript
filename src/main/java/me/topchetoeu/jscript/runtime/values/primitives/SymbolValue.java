@@ -10,15 +10,14 @@ import me.topchetoeu.jscript.runtime.values.primitives.numbers.NumberValue;
 
 public final class SymbolValue extends PrimitiveValue {
     private static final HashMap<String, SymbolValue> registry = new HashMap<>();
-    private static final StringValue typeString = new StringValue("symbol");
 
     public final String value;
 
     public Value key() {
-        return registry.containsKey(value) && registry.get(value) == this ? new StringValue(value) : Value.UNDEFINED;
+        return registry.containsKey(value) && registry.get(value) == this ? StringValue.of(value) : Value.UNDEFINED;
     }
 
-    @Override public StringValue type() { return typeString; }
+    @Override public StringValue type() { return StringValue.of("symbol"); }
 
     @Override public boolean toBoolean() { return false; }
     @Override public String toString(Environment env) {

@@ -9,9 +9,8 @@ import me.topchetoeu.jscript.runtime.values.primitives.StringValue;
 
 public abstract class NumberValue extends PrimitiveValue {
     public static final NumberValue NAN = new DoubleValue(Double.NaN);
-    private static final StringValue typeString = new StringValue("number");
 
-    @Override public final StringValue type() { return typeString; }
+    @Override public final StringValue type() { return StringValue.of("number"); }
 
     public abstract double getDouble();
     public abstract int getInt();

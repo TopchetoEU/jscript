@@ -7,11 +7,10 @@ import me.topchetoeu.jscript.runtime.values.primitives.numbers.NumberValue;
 public final class BoolValue extends PrimitiveValue {
     public static final BoolValue TRUE = new BoolValue(true);
     public static final BoolValue FALSE = new BoolValue(false);
-    private static final StringValue typeString = new StringValue("boolean");
 
     public final boolean value;
 
-    @Override public StringValue type() { return typeString; }
+    @Override public StringValue type() { return StringValue.of("boolean"); }
 
     @Override public boolean toBoolean() { return value; }
     @Override public NumberValue toNumber(Environment ext) { return NumberValue.of(value ? 1 : 0); }
@@ -22,7 +21,8 @@ public final class BoolValue extends PrimitiveValue {
     }
 
     @Override public boolean equals(Object other) {
-        if (other instanceof BoolValue bool) return value == bool.value;
+        if (other == this) return true;
+        else if (other instanceof BoolValue bool) return value == bool.value;
         else return false;
     }
 

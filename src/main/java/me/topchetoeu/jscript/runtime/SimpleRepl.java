@@ -97,7 +97,7 @@ public class SimpleRepl {
         res.defineOwnMember(env, "makeSymbol", new NativeFunction(args -> new SymbolValue(args.get(0).toString(args.env))));
         res.defineOwnMember(env, "getSymbol", new NativeFunction(args -> SymbolValue.get(args.get(0).toString(args.env))));
         res.defineOwnMember(env, "getSymbolKey", new NativeFunction(args -> ((SymbolValue)args.get(0)).key()));
-        res.defineOwnMember(env, "getSymbolDescriptor", new NativeFunction(args -> new StringValue(((SymbolValue)args.get(0)).value)));
+        res.defineOwnMember(env, "getSymbolDescriptor", new NativeFunction(args -> StringValue.of(((SymbolValue)args.get(0)).value)));
 
         return res;
     }
@@ -141,7 +141,7 @@ public class SimpleRepl {
                 sb.append(((StringValue)parts[i]).value);
             }
 
-            return new StringValue(sb.toString());
+            return StringValue.of(sb.toString());
         }));
 
         res.defineOwnMember(env, "fromCharCode", new NativeFunction(args -> {
@@ -152,7 +152,7 @@ public class SimpleRepl {
                 sb.append(((StringValue)parts[i]).value);
             }
 
-            return new StringValue(sb.toString());
+            return StringValue.of(sb.toString());
         }));
 
         return res;
@@ -194,7 +194,7 @@ public class SimpleRepl {
             var val = new ArrayValue();
 
             for (var key : args.get(0).getOwnMembers(env, args.get(1).toBoolean())) {
-                val.set(args.env, val.size(), new StringValue(key));
+                val.set(args.env, val.size(), StringValue.of(key));
             }
 
             return val;
@@ -221,8 +221,8 @@ public class SimpleRepl {
             return Value.UNDEFINED;
         }));
         res.defineOwnMember(env, "invokeType", new NativeFunction(args -> {
-            if (((ArgumentsValue)args.get(0)).frame.isNew) return new StringValue("new");
-            else return new StringValue("call");
+            if (((ArgumentsValue)args.get(0)).frame.isNew) return StringValue.of("new");
+            else return StringValue.of("call");
         }));
 
         res.defineOwnMember(env, "invoke", new NativeFunction(args -> {
@@ -249,7 +249,7 @@ public class SimpleRepl {
         res.setPrototype(null, null);
 
         res.defineOwnMember(env, "stringify", new NativeFunction(args -> {
-            return new StringValue(JSON.stringify(JSONConverter.fromJs(env, args.get(0))));
+            return StringValue.of(JSON.stringify(JSONConverter.fromJs(env, args.get(0))));
         }));
         res.defineOwnMember(env, "parse", new NativeFunction(args -> {
             return JSONConverter.toJs(JSON.parse(null, args.get(0).toString(env)));
@@ -260,8 +260,8 @@ public class SimpleRepl {
             return Value.UNDEFINED;
         }));
         res.defineOwnMember(env, "invokeType", new NativeFunction(args -> {
-            if (((ArgumentsValue)args.get(0)).frame.isNew) return new StringValue("new");
-            else return new StringValue("call");
+            if (((ArgumentsValue)args.get(0)).frame.isNew) return StringValue.of("new");
+            else return StringValue.of("call");
         }));
         res.defineOwnMember(env, "invoke", new NativeFunction(args -> {
             var func = (FunctionValue)args.get(0);

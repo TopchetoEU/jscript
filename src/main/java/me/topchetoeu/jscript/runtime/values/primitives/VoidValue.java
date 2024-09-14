@@ -9,9 +9,9 @@ import me.topchetoeu.jscript.runtime.values.primitives.numbers.NumberValue;
 
 public final class VoidValue extends PrimitiveValue {
     public final String name;
-    public final StringValue typeString;
+    public final String type;
 
-    @Override public StringValue type() { return typeString; }
+    @Override public StringValue type() { return StringValue.of(type); }
     @Override public boolean toBoolean() { return false; }
     @Override public NumberValue toNumber(Environment ext) { return NumberValue.NAN; }
     @Override public String toString(Environment ext) { return name; }
@@ -22,8 +22,8 @@ public final class VoidValue extends PrimitiveValue {
         throw EngineException.ofError(String.format("Cannot read properties of %s (reading '%s')", name, key.toString(env)));
     }
 
-    public VoidValue(String name, StringValue type) {
+    public VoidValue(String name, String type) {
         this.name = name;
-        this.typeString = type;
+        this.type = type;
     }
 }
