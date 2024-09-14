@@ -136,7 +136,7 @@ public class ObjectNode extends Node implements AssignTargetLike {
         public final Node key;
         public final Node value;
 
-        @Override public void compile(CompileResult target, boolean pollute, BreakpointType bp) {
+        @Override public void compile(CompileResult target, boolean pollute) {
             key.compile(target, true);
 
             if (value == null) target.add(Instruction.pushUndefined());
@@ -178,15 +178,7 @@ public class ObjectNode extends Node implements AssignTargetLike {
             if (!var.isSuccess()) return var.chainError();
             n += var.n;
 
-            if (!src.is(i + n, "=")) return ParseRes.res(new FieldMemberNode(loc, new StringNode(loc, var.result.name), var.result), n);
-            var equalsLoc = src.loc(i + n);
-            n++;
-
-            var value = JavaScript.parseExpression(src, i + n, 2);
-            if (!value.isSuccess()) return value.chainError(src.loc(i + n), "Expected a shorthand initializer");
-            n += value.n;
-
-            return ParseRes.res(new FieldMemberNode(loc, new StringNode(loc, var.result.name), new AssignNode(equalsLoc, var.result, value.result)), n);
+            return ParseRes.res(new FieldMemberNode(loc, new StringNode(loc, var.result.name), var.result), n);
         }
 
         public static ParseRes<FieldMemberNode> parseClass(Source src, int i) {
@@ -214,8 +206,49 @@ public class ObjectNode extends Node implements AssignTargetLike {
             return ParseRes.res(new FieldMemberNode(loc, name.result, value.result), n);
         }
     }
+    public static class AssignShorthandNode extends Node {
+        public final Node key;
+        public final AssignTarget target;
+        public final Node value;
+
+        @Override public void compile(CompileResult target, boolean pollute) {
+            throw new SyntaxException(loc(), "Unexpected assign shorthand in non-destructor context");
+        }
+
+        public AssignShorthandNode(Location loc, Node key, AssignTarget target, Node value) {
+            super(loc);
+            this.key = key;
+            this.target = target;
+            this.value = value;
+        }
+
+        public AssignTarget target() {
+            return new AssignNode(loc(), target, value);
+        }
+
+        public static ParseRes<AssignShorthandNode> parse(Source src, int i) {
+            var n = Parsing.skipEmpty(src, i);
+            var loc = src.loc(i + n);
+
+            var var = VariableNode.parse(src, i + n);
+            if (!var.isSuccess()) return var.chainError();
+            n += var.n;
+            n += Parsing.skipEmpty(src, i + n);
+
+            if (!src.is(i + n, "=")) return ParseRes.failed();
+            n++;
+
+            var value = JavaScript.parseExpression(src, i + n, 2);
+            if (!value.isSuccess()) return value.chainError(src.loc(i + n), "Expected a shorthand initializer");
+            n += value.n;
+
+            return ParseRes.res(new AssignShorthandNode(loc, new StringNode(loc, var.result.name), var.result, value.result), n);
+        }
+    }
 
     public final List<Node> members;
+
+    // TODO: Implement spreading into object
 
     // private void compileRestObjBuilder(CompileResult target, int srcDupN) {
     //     var subtarget = target.subtarget();
@@ -274,6 +307,7 @@ public class ObjectNode extends Node implements AssignTargetLike {
                 if (field.value instanceof AssignTargetLike target) newMembers.add(new Member<>(field.key, target.toAssignTarget()));
                 else throw new SyntaxException(field.value.loc(), "Expected an assignable in deconstructor");
             }
+            else if (el instanceof AssignShorthandNode shorthand) newMembers.add(new Member<>(shorthand.key, shorthand.target()));
             else throw new SyntaxException(el.loc(), "Unexpected member in deconstructor");
         }
 
@@ -335,7 +369,9 @@ public class ObjectNode extends Node implements AssignTargetLike {
             ParseRes<Node> prop = ParseRes.first(src, i + n,
                 MethodMemberNode::parse,
                 PropertyMemberNode::parse,
-                FieldMemberNode::parseObject
+                FieldMemberNode::parseObject,
+                AssignShorthandNode::parse,
+                FieldMemberNode::parseShorthand
             );
             if (!prop.isSuccess()) return prop.chainError(src.loc(i + n), "Expected a member in object literal");
             n += prop.n;
