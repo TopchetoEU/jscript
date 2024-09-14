@@ -10,7 +10,7 @@ import me.topchetoeu.jscript.compilation.values.VariableNode;
 /**
  * Represents all nodes that can be a destructors (note that all destructors are assign targets, too)
  */
-public interface Pattern extends PatternLike {
+public interface Pattern {
     Location loc();
 
     /**
@@ -42,6 +42,4 @@ public interface Pattern extends PatternLike {
                 VariableNode::parse
             );
     }
-
-    @Override default Pattern toPattern() { return this; }
 }
