@@ -51,6 +51,7 @@ public class ParseRes<T> {
         return new ParseRes<T>(State.FAILED, null, null, null, 0);
     }
     public static <T> ParseRes<T> error(Location loc, String error) {
+        // TODO: differentiate definitive and probable errors
         return new ParseRes<>(State.ERROR, loc, error, null, 0);
     }
     public static <T> ParseRes<T> res(T val, int i) {
