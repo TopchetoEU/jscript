@@ -470,7 +470,7 @@ public abstract class Value {
             passed.add(this);
 
             if (keys.size() + obj.getOwnSymbolMembers(env, true).size() == 0) {
-                if (!printed) res.append("{}\n");
+                if (!printed) res.append("{}");
             }
             else if (!printed) {
                 if (tab > 3) return "{...}";
