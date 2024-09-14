@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 
 import me.topchetoeu.jscript.common.parsing.Location;
+import me.topchetoeu.jscript.compilation.JavaScript.DeclarationType;
 import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 
 public class Scope {
@@ -41,15 +42,6 @@ public class Scope {
         return var;
     }
 
-    // private final int parentVarOffset() {
-    //     if (parent != null) return parent.variableOffset();
-    //     else return 0;
-    // }
-    // private final int parentCapOffset() {
-    //     if (parent != null) return parent.capturedOffset();
-    //     else return localsCount();
-    // }
-
     protected final SyntaxException alreadyDefinedErr(Location loc, String name) {
         return new SyntaxException(loc, String.format("Identifier '%s' has already been declared", name));
     }
@@ -59,6 +51,16 @@ public class Scope {
      */
     protected final void checkNotEnded() {
         if (ended) throw new IllegalStateException("Cannot define in an ended scope");
+    }
+
+    /**
+     * Defines a nameless variable for holding intermediate temporary values
+     * 
+     * @throws RuntimeException If the scope is finalized or has an active child
+     */
+    public Variable defineTemp() {
+        checkNotEnded();
+        return this.variables.add(new Variable("<temp>", false));
     }
 
     /**
@@ -77,6 +79,11 @@ public class Scope {
     }
 
     /**
+     * Checks if this scope's function parent has a non-strict variable of the given name
+     */
+    public boolean hasNonStrict(String name) { return false; }
+
+    /**
      * Defines an ES2015-style variable
      * @param readonly True if const, false if let
      * @return The index supplier of the variable
@@ -86,6 +93,7 @@ public class Scope {
     public Variable defineStrict(Variable var, Location loc) {
         checkNotEnded();
         if (strictVarMap.containsKey(var.name)) throw alreadyDefinedErr(loc, var.name);
+        if (hasNonStrict(var.name)) throw alreadyDefinedErr(loc, var.name);
 
         strictVarMap.put(var.name, var);
         return variables.add(var);
@@ -125,9 +133,6 @@ public class Scope {
         }
 
         return res;
-
-        // if (parent != null) return parent.variableOffset() + variables.size();
-        // else return variables.size();
     }
     public final int capturablesOffset() {
         var res = 0;
@@ -138,8 +143,11 @@ public class Scope {
         }
 
         return res;
-        // if (parent != null) return parent.capturedOffset() + captured.size();
-        // else return localsCount() + captured.size();
+    }
+
+    public final Variable define(DeclarationType type, String name, Location loc) {
+        if (type.strict) return defineStrict(new Variable(name, type.readonly), loc);
+        else return define(new Variable(name, type.readonly), loc);
     }
 
     public int localsCount() {

@@ -56,9 +56,10 @@ public class Instruction {
         STORE_MEMBER_STR(0x4B),
 
         DEF_PROP(0x50),
-        KEYS(0x51),
-        TYPEOF(0x52),
-        OPERATION(0x53),
+        DEF_FIELD(0x51),
+        KEYS(0x52),
+        TYPEOF(0x53),
+        OPERATION(0x54),
 
         GLOB_GET(0x60),
         GLOB_SET(0x61),
@@ -341,8 +342,8 @@ public class Instruction {
         return new Instruction(Type.GLOB_DEF, name);
     }
     
-    public static Instruction globGet(String name) {
-        return new Instruction(Type.GLOB_GET, name);
+    public static Instruction globGet(String name, boolean force) {
+        return new Instruction(Type.GLOB_GET, name, force);
     }
     public static Instruction globSet(String name, boolean keep, boolean define) {
         return new Instruction(Type.GLOB_SET, name, keep, define);
@@ -404,10 +405,10 @@ public class Instruction {
         return new Instruction(Type.LOAD_ARR, count);
     }
     public static Instruction dup() {
-        return new Instruction(Type.DUP, 1);
+        return new Instruction(Type.DUP, 1, 0);
     }
-    public static Instruction dup(int count) {
-        return new Instruction(Type.DUP, count);
+    public static Instruction dup(int count, int offset) {
+        return new Instruction(Type.DUP, count, offset);
     }
 
     public static Instruction storeVar(int i) {
@@ -435,7 +436,7 @@ public class Instruction {
         return new Instruction(Type.STORE_MEMBER_INT, key, false);
     }
     public static Instruction storeMember(int key, boolean keep) {
-        return new Instruction(Type.STORE_MEMBER_STR, key, keep);
+        return new Instruction(Type.STORE_MEMBER_INT, key, keep);
     }
 
     public static Instruction discard() {
@@ -449,12 +450,15 @@ public class Instruction {
         return new Instruction(Type.TYPEOF, varName);
     }
 
-    public static Instruction keys(boolean forInFormat) {
-        return new Instruction(Type.KEYS, forInFormat);
+    public static Instruction keys(boolean own, boolean onlyEnumerable) {
+        return new Instruction(Type.KEYS, own, onlyEnumerable);
     }
 
-    public static Instruction defProp() {
-        return new Instruction(Type.DEF_PROP);
+    public static Instruction defProp(boolean setter) {
+        return new Instruction(Type.DEF_PROP, setter);
+    }
+    public static Instruction defField() {
+        return new Instruction(Type.DEF_FIELD);
     }
 
     public static Instruction operation(Operation op) {

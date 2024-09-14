@@ -1,26 +1,61 @@
 package me.topchetoeu.jscript.compilation.values.operations;
 
 import me.topchetoeu.jscript.common.Instruction;
-import me.topchetoeu.jscript.common.Operation;
 import me.topchetoeu.jscript.common.Instruction.BreakpointType;
 import me.topchetoeu.jscript.common.parsing.Location;
 import me.topchetoeu.jscript.common.parsing.ParseRes;
 import me.topchetoeu.jscript.common.parsing.Parsing;
 import me.topchetoeu.jscript.common.parsing.Source;
-import me.topchetoeu.jscript.compilation.AssignableNode;
 import me.topchetoeu.jscript.compilation.CompileResult;
 import me.topchetoeu.jscript.compilation.JavaScript;
 import me.topchetoeu.jscript.compilation.Node;
+import me.topchetoeu.jscript.compilation.patterns.ChangeTarget;
 import me.topchetoeu.jscript.compilation.values.constants.NumberNode;
 import me.topchetoeu.jscript.compilation.values.constants.StringNode;
 
-public class IndexNode extends Node implements AssignableNode {
+public class IndexNode extends Node implements ChangeTarget {
     public final Node object;
     public final Node index;
 
-    @Override public Node toAssign(Node val, Operation operation) {
-        return new IndexAssignNode(loc(), object, index, val, operation);
+    @Override public void beforeAssign(CompileResult target) {
+        object.compile(target, true);
+
+        indexStorePushKey(target, index);
     }
+    @Override public void beforeChange(CompileResult target) {
+        object.compile(target, true);
+
+        if (index instanceof NumberNode num && (int)num.value == num.value) {
+            target.add(Instruction.dup());
+            target.add(Instruction.loadMember((int)num.value));
+        }
+        else if (index instanceof StringNode str) {
+            target.add(Instruction.dup());
+            target.add(Instruction.loadMember(str.value));
+        }
+        else {
+            index.compile(target, true);
+
+            target.add(Instruction.dup(1, 1));
+            target.add(Instruction.dup(1, 1));
+            target.add(Instruction.loadMember());
+        }
+    }
+
+    @Override public void assign(CompileResult target, boolean pollute) {
+        object.compile(target, true);
+        target.add(Instruction.dup(1, 1));
+        indexStorePushKey(target, index);
+        indexStore(target, index, pollute);
+    }
+
+    @Override public void afterAssign(CompileResult target, boolean pollute) {
+        indexStore(target, index, pollute);
+    }
+
+    // @Override public Node toAssign(Node val, Operation operation) {
+    //     return new IndexAssignNode(loc(), object, index, val, operation);
+    // }
     public void compile(CompileResult target, boolean dupObj, boolean pollute) {
         object.compile(target, true);
         if (dupObj) target.add(Instruction.dup());
@@ -83,5 +118,36 @@ public class IndexNode extends Node implements AssignableNode {
         n += literal.n;
 
         return ParseRes.res(new IndexNode(loc, prev, new StringNode(loc, literal.result)), n);
+    }
+
+    public static void indexStorePushKey(CompileResult target, Node index) {
+        if (index instanceof NumberNode num && (int)num.value == num.value)  return;
+        if (index instanceof StringNode) return;
+        index.compile(target, true);
+    }
+    public static void indexStore(CompileResult target, Node index, boolean pollute) {
+        if (index instanceof NumberNode num && (int)num.value == num.value) {
+            target.add(Instruction.storeMember((int)num.value, pollute));
+        }
+        else if (index instanceof StringNode str) {
+            target.add(Instruction.storeMember(str.value, pollute));
+        }
+        else {
+            target.add(Instruction.storeMember(pollute));
+        }
+    }
+    public static void indexLoad(CompileResult target, Node index, boolean pollute) {
+        if (index instanceof NumberNode num && (int)num.value == num.value) {
+            target.add(Instruction.loadMember((int)num.value));
+        }
+        else if (index instanceof StringNode str) {
+            target.add(Instruction.loadMember(str.value));
+        }
+        else {
+            index.compile(target, true);
+            target.add(Instruction.loadMember());
+        }
+
+        if (!pollute) target.add(Instruction.discard());
     }
 }

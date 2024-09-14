@@ -1,6 +1,6 @@
 package me.topchetoeu.jscript.runtime.values.primitives;
 
-import java.util.Map;
+import java.util.Set;
 
 import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.runtime.values.KeyCache;
@@ -17,6 +17,12 @@ public abstract class PrimitiveValue extends Value {
     @Override public final boolean setPrototype(Environment env, ObjectValue val) { return false; }
 
     @Override public Member getOwnMember(Environment env, KeyCache key) { return null; }
-    @Override public Map<String, Member> getOwnMembers(Environment env) { return Map.of(); }
-    @Override public Map<SymbolValue, Member> getOwnSymbolMembers(Environment env) { return Map.of(); }
+    @Override public Set<String> getOwnMembers(Environment env, boolean onlyEnumerable) { return Set.of(); }
+    @Override public Set<SymbolValue> getOwnSymbolMembers(Environment env, boolean onlyEnumerable) { return Set.of(); }
+
+    @Override public State getState() { return State.FROZEN; }
+
+    @Override public void preventExtensions() {}
+    @Override public void seal() {}
+    @Override public void freeze() {}
 }

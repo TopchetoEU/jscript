@@ -1,16 +1,15 @@
 package me.topchetoeu.jscript.compilation;
 
 import me.topchetoeu.jscript.common.Instruction;
-import me.topchetoeu.jscript.common.Operation;
 import me.topchetoeu.jscript.common.Instruction.BreakpointType;
 import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.common.parsing.Location;
 import me.topchetoeu.jscript.common.parsing.ParseRes;
 import me.topchetoeu.jscript.common.parsing.Parsing;
 import me.topchetoeu.jscript.common.parsing.Source;
+import me.topchetoeu.jscript.compilation.JavaScript.DeclarationType;
 import me.topchetoeu.jscript.compilation.scope.FunctionScope;
 import me.topchetoeu.jscript.compilation.scope.Variable;
-import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 
 public abstract class FunctionNode extends Node {
     public final CompoundNode body;
@@ -33,40 +32,41 @@ public abstract class FunctionNode extends Node {
         return new CompileResult(env, scope, params.params.size(), target -> {
             if (params.params.size() > 0) {
                 target.add(Instruction.loadArgs(true));
-                if (params.params.size() > 1) target.add(Instruction.dup(params.params.size() - 1));
+                if (params.params.size() > 1) target.add(Instruction.dup(params.params.size() - 1, 0));
                 var i = 0;
 
                 for (var param : params.params) {
-                    if (scope.has(param.name, false)) throw new SyntaxException(param.loc, "Duplicate parameter name not allowed");
-                    if (!JavaScript.checkVarName(param.name)) {
-                        throw new SyntaxException(param.loc, String.format("Unexpected identifier '%s'", param.name));
-                    }
-                    var varI = scope.define(new Variable(param.name, false), param.loc);
-
                     target.add(Instruction.loadMember(i++));
+                    param.destruct(target, DeclarationType.VAR, true);
+                    // if (scope.has(param.name, false)) throw new SyntaxException(param.loc, "Duplicate parameter name not allowed");
+                    // if (!JavaScript.checkVarName(param.name)) {
+                    //     throw new SyntaxException(param.loc, String.format("Unexpected identifier '%s'", param.name));
+                    // }
+                    // var varI = scope.define(new Variable(param.name, false), param.loc);
 
-                    if (param.node != null) {
-                        var end = new DeferredIntSupplier();
+                    // if (param.node != null) {
+                    //     var end = new DeferredIntSupplier();
 
-                        target.add(Instruction.dup());
-                        target.add(Instruction.pushUndefined());
-                        target.add(Instruction.operation(Operation.EQUALS));
-                        target.add(Instruction.jmpIfNot(end));
-                        target.add(Instruction.discard());
-                        param.node.compile(target, true);
+                    //     target.add(Instruction.dup());
+                    //     target.add(Instruction.pushUndefined());
+                    //     target.add(Instruction.operation(Operation.EQUALS));
+                    //     target.add(Instruction.jmpIfNot(end));
+                    //     target.add(Instruction.discard());
+                    //     param.node.compile(target, true);
 
-                        end.set(target.size());
-                    }
+                    //     end.set(target.size());
+                    // }
 
-                    target.add(_i -> varI.index().toSet(false));
+                    // target.add(_i -> varI.index().toSet(false));
                 }
             }
 
-            if (params.restName != null) {
-                if (scope.has(params.restName, false)) throw new SyntaxException(params.restLocation, "Duplicate parameter name not allowed");
-                var restVar = scope.define(new Variable(params.restName, false), params.restLocation);
+            if (params.rest != null) {
                 target.add(Instruction.loadRestArgs(params.params.size()));
-                target.add(_i -> restVar.index().toSet(false));
+                params.rest.destruct(target, DeclarationType.VAR, true);
+                // if (scope.has(params.restName, false)) throw new SyntaxException(params.restLocation, "Duplicate parameter name not allowed");
+                // var restVar = scope.define(new Variable(params.restName, false), params.restLocation);
+                // target.add(_i -> restVar.index().toSet(false));
             }
 
             if (selfName != null && !scope.has(name, false)) {
@@ -107,6 +107,7 @@ public abstract class FunctionNode extends Node {
         this.end = end;
         this.params = params;
         this.body = body;
+        this.body.hasScope = false;
     }
 
     public static void compileWithName(Node stm, CompileResult target, boolean pollute, String name) {
@@ -130,7 +131,7 @@ public abstract class FunctionNode extends Node {
         n += name.n;
         n += Parsing.skipEmpty(src, i + n);
 
-        var params = JavaScript.parseParameters(src, i + n);
+        var params = Parameters.parseParameters(src, i + n);
         if (!params.isSuccess()) return params.chainError(src.loc(i + n), "Expected a parameter list");
         n += params.n;
 

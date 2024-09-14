@@ -10,6 +10,8 @@ import me.topchetoeu.jscript.runtime.values.primitives.NumberValue;
 import me.topchetoeu.jscript.runtime.values.primitives.StringValue;
 
 public abstract class FunctionValue extends ObjectValue {
+    private static final StringValue typeString = new StringValue("function");
+
     public String name = "";
     public int length;
     public Value prototype = new ObjectValue();
@@ -17,7 +19,7 @@ public abstract class FunctionValue extends ObjectValue {
     public boolean enableCall = true;
     public boolean enableNew = true;
 
-    private final FieldMember nameField = new FieldMember(true, false, false) {
+    private final FieldMember nameField = new FieldMember(this, true, false, false) {
         @Override public Value get(Environment env, Value self) {
             if (name == null) return new StringValue("");
             return new StringValue(name);
@@ -27,7 +29,7 @@ public abstract class FunctionValue extends ObjectValue {
             return true;
         }
     };
-    private final FieldMember lengthField = new FieldMember(true, false, false) {
+    private final FieldMember lengthField = new FieldMember(this, true, false, false) {
         @Override public Value get(Environment env, Value self) {
             return new NumberValue(length);
         }
@@ -35,7 +37,7 @@ public abstract class FunctionValue extends ObjectValue {
             return false;
         }
     };
-    private final FieldMember prototypeField = new FieldMember(false, false, true) {
+    private final FieldMember prototypeField = new FieldMember(this, false, false, true) {
         @Override public Value get(Environment env, Value self) {
             return prototype;
         }
@@ -77,6 +79,8 @@ public abstract class FunctionValue extends ObjectValue {
         }
     }
 
+    @Override public StringValue type() { return typeString; }
+
     public void setName(String val) {
         if (this.name == null || this.name.equals("")) this.name = val;
     }
@@ -88,7 +92,7 @@ public abstract class FunctionValue extends ObjectValue {
         this.length = length;
         this.name = name;
 
-        prototype.defineOwnMember(null, "constructor", FieldMember.of(this));
+        prototype.defineOwnMember(null, "constructor", this);
     }
 }
 

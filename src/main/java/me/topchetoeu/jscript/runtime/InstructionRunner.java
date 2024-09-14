@@ -7,7 +7,6 @@ import me.topchetoeu.jscript.common.Instruction;
 import me.topchetoeu.jscript.common.Operation;
 import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
-import me.topchetoeu.jscript.runtime.values.Member.FieldMember;
 import me.topchetoeu.jscript.runtime.values.Member.PropertyMember;
 import me.topchetoeu.jscript.runtime.values.Value;
 import me.topchetoeu.jscript.runtime.values.functions.CodeFunction;
@@ -52,45 +51,50 @@ public class InstructionRunner {
         var callArgs = frame.take(instr.get(0));
         var funcObj = frame.pop();
 
-        frame.push(funcObj.callNew(env, instr.get(1), callArgs));
+        frame.push(funcObj.construct(env, instr.get(1), callArgs));
 
         frame.codePtr++;
         return null;
     }
 
     private static Value execDefProp(Environment env, Instruction instr, Frame frame) {
-        var setterVal = frame.pop();
-        var getterVal = frame.pop();
+        var val = frame.pop();
         var key = frame.pop();
         var obj = frame.pop();
 
-        FunctionValue getter, setter;
+        FunctionValue accessor;
 
-        if (getterVal == Value.UNDEFINED) getter = null;
-        else if (getterVal instanceof FunctionValue) getter = (FunctionValue)getterVal;
+        if (val == Value.UNDEFINED) accessor = null;
+        else if (val instanceof FunctionValue func) accessor = func;
         else throw EngineException.ofType("Getter must be a function or undefined.");
 
-        if (setterVal == Value.UNDEFINED) setter = null;
-        else if (setterVal instanceof FunctionValue) setter = (FunctionValue)setterVal;
-        else throw EngineException.ofType("Setter must be a function or undefined.");
+        if ((boolean)instr.get(0)) obj.defineOwnMember(env, key, new PropertyMember(obj, null, accessor, true, true));
+        else obj.defineOwnMember(env, key, new PropertyMember(obj, accessor, null, true, true));
 
-        obj.defineOwnMember(env, key, new PropertyMember(getter, setter, true, true));
+        frame.codePtr++;
+        return null;
+    }
+    private static Value execDefField(Environment env, Instruction instr, Frame frame) {
+        var val = frame.pop();
+        var key = frame.pop();
+        var obj = frame.pop();
 
-        frame.push(obj);
+        obj.defineOwnMember(env, key, val);
+
         frame.codePtr++;
         return null;
     }
     private static Value execKeys(Environment env, Instruction instr, Frame frame) {
         var val = frame.pop();
 
-        var members = new ArrayList<>(val.getMembers(env, false, true).keySet());
+        var members = new ArrayList<>(val.getMembers(env, instr.get(0), instr.get(1)));
         Collections.reverse(members);
 
         frame.push(null);
 
         for (var el : members) {
             var obj = new ObjectValue();
-            obj.defineOwnMember(env, "value", FieldMember.of(new StringValue(el)));
+            obj.defineOwnMember(env, "value", new StringValue(el));
             frame.push(obj);
         }
 
@@ -116,9 +120,12 @@ public class InstructionRunner {
 
     private static Value execDup(Environment env, Instruction instr, Frame frame) {
         int count = instr.get(0);
+        int offset = instr.get(1);
+
+        var el = frame.stack[frame.stackPtr - offset - 1];
 
         for (var i = 0; i < count; i++) {
-            frame.push(frame.peek());
+            frame.push(el);
         }
 
         frame.codePtr++;
@@ -231,7 +238,7 @@ public class InstructionRunner {
     }
     private static Value execLoadRegEx(Environment env, Instruction instr, Frame frame) {
         if (env.hasNotNull(Value.REGEX_CONSTR)) {
-            frame.push(env.get(Value.REGEX_CONSTR).callNew(env, instr.get(0), instr.get(1)));
+            frame.push(env.get(Value.REGEX_CONSTR).construct(env, instr.get(0), instr.get(1)));
         }
         else {
             throw EngineException.ofSyntax("Regex is not supported.");
@@ -447,10 +454,15 @@ public class InstructionRunner {
     }
     private static Value exexGlobGet(Environment env, Instruction instr, Frame frame) {
         var name = (String)instr.get(0);
-        var res = Value.global(env).getMemberOrNull(env, name);
+        if ((boolean)instr.get(1)) {
+            frame.push(Value.global(env).getMember(env, name));
+        }
+        else {
+            var res = Value.global(env).getMemberOrNull(env, name);
 
-        if (res == null) throw EngineException.ofSyntax(name + " is not defined");
-        else frame.push(res);
+            if (res == null) throw EngineException.ofSyntax(name + " is not defined");
+            else frame.push(res);
+        }
 
         frame.codePtr++;
         return null;
@@ -574,6 +586,7 @@ public class InstructionRunner {
 
             case KEYS: return execKeys(env, instr, frame);
             case DEF_PROP: return execDefProp(env, instr, frame);
+            case DEF_FIELD: return execDefField(env, instr, frame);
             case TYPEOF: return execTypeof(env, instr, frame);
             case DELETE: return execDelete(env, instr, frame);
 

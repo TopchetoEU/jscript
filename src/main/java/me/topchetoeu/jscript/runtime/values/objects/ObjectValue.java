@@ -1,8 +1,8 @@
 package me.topchetoeu.jscript.runtime.values.objects;
 
-import java.util.Collections;
 import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.common.environment.Key;
@@ -20,13 +20,6 @@ public class ObjectValue extends Value {
         public ObjectValue get(Environment env);
     }
 
-    public static enum State {
-        NORMAL,
-        NO_EXTENSIONS,
-        SEALED,
-        FROZEN,
-    }
-
     public static class Property { 
         public final FunctionValue getter;
         public final FunctionValue setter;
@@ -41,8 +34,6 @@ public class ObjectValue extends Value {
 
     protected PrototypeProvider prototype;
 
-    public boolean extensible = true;
-
     public LinkedHashMap<String, Member> members = new LinkedHashMap<>();
     public LinkedHashMap<SymbolValue, Member> symbolMembers = new LinkedHashMap<>();
 
@@ -52,13 +43,13 @@ public class ObjectValue extends Value {
             var valueOf = getMember(env, new StringValue("valueOf"));
 
             if (valueOf instanceof FunctionValue) {
-                var res = valueOf.call(env, this);
+                var res = valueOf.invoke(env, this);
                 if (res.isPrimitive()) return res;
             }
 
             var toString = getMember(env, new StringValue("toString"));
             if (toString instanceof FunctionValue) {
-                var res = toString.call(env, this);
+                var res = toString.invoke(env, this);
                 if (res.isPrimitive()) return res;
             }
         }
@@ -70,9 +61,17 @@ public class ObjectValue extends Value {
     @Override public NumberValue toNumber(Environment env) { return toPrimitive(env).toNumber(env);  }
     @Override public StringValue type() { return typeString; }
 
+    private State state = State.NORMAL;
+
+    @Override public State getState() { return state; }
+
     public final void preventExtensions() {
-        extensible = false;
+        if (state == State.NORMAL) state = State.NON_EXTENDABLE;
     }
+    public final void seal() {
+        if (state == State.NORMAL || state == State.NON_EXTENDABLE) state = State.SEALED;
+    }
+    @Override public final void freeze() { state = State.FROZEN; }
 
     @Override public Member getOwnMember(Environment env, KeyCache key) {
         if (key.isSymbol()) return symbolMembers.get(key.toSymbol());
@@ -80,7 +79,7 @@ public class ObjectValue extends Value {
     }
     @Override public boolean defineOwnMember(Environment env, KeyCache key, Member member) {
         var old = getOwnMember(env, key);
-        if (old != null && old.configure(env, member, this)) return true;
+        if (old != null && old.redefine(env, member, this)) return true;
         if (old != null && !old.configurable()) return false;
 
         if (key.isSymbol()) symbolMembers.put(key.toSymbol(), member);
@@ -89,22 +88,40 @@ public class ObjectValue extends Value {
         return true;
     }
     @Override public boolean deleteOwnMember(Environment env, KeyCache key) {
-        if (!extensible) return false;
+        if (!getState().extendable) return false;
 
         var member = getOwnMember(env, key);
         if (member == null) return true;
-        if (member.configurable()) return false;
+        if (!member.configurable()) return false;
 
         if (key.isSymbol()) symbolMembers.remove(key.toSymbol());
         else members.remove(key.toString(env));
         return true;
     }
 
-    @Override public Map<String, Member> getOwnMembers(Environment env) {
-        return members;
+    @Override public Set<String> getOwnMembers(Environment env, boolean onlyEnumerable) {
+        if (onlyEnumerable) {
+            var res = new LinkedHashSet<String>();
+
+            for (var el : members.entrySet()) {
+                if (el.getValue().enumerable()) res.add(el.getKey());
+            }
+
+            return res;
+        }
+        else  return members.keySet();
     }
-    @Override public Map<SymbolValue, Member> getOwnSymbolMembers(Environment env) {
-        return Collections.unmodifiableMap(symbolMembers);
+    @Override public Set<SymbolValue> getOwnSymbolMembers(Environment env, boolean onlyEnumerable) {
+        if (onlyEnumerable) {
+            var res = new LinkedHashSet<SymbolValue>();
+
+            for (var el : symbolMembers.entrySet()) {
+                if (el.getValue().enumerable()) res.add(el.getKey());
+            }
+
+            return res;
+        }
+        else  return symbolMembers.keySet();
     }
 
     @Override public ObjectValue getPrototype(Environment env) {
@@ -116,12 +133,12 @@ public class ObjectValue extends Value {
     }
 
     public final boolean setPrototype(PrototypeProvider val) {
-        if (!extensible) return false;
+        if (!getState().extendable) return false;
         prototype = val;
         return true;
     }
     public final boolean setPrototype(Key<ObjectValue> key) {
-        if (!extensible) return false;
+        if (!getState().extendable) return false;
         prototype = env -> env.get(key);
         return true;
     }

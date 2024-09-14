@@ -7,51 +7,67 @@ import me.topchetoeu.jscript.runtime.values.primitives.BoolValue;
 
 public interface Member {
     public static final class PropertyMember implements Member {
-        public final FunctionValue getter;
-        public final FunctionValue setter;
-        public final boolean configurable;
-        public final boolean enumerable;
+        public final Value self;
+        public FunctionValue getter;
+        public FunctionValue setter;
+        public boolean configurable;
+        public boolean enumerable;
 
         @Override public Value get(Environment env, Value self) {
-            if (getter != null) return getter.call(env, self);
+            if (getter != null) return getter.call(env, false, "", self);
             else return Value.UNDEFINED;
         }
         @Override public boolean set(Environment env, Value val, Value self) {
             if (setter == null) return false;
-            setter.call(env, self, val);
+            setter.call(env, false, "", self, val);
             return true;
         }
 
-        @Override public boolean configurable() { return configurable; }
+        @Override public boolean configurable() { return configurable && self.getState().configurable; }
         @Override public boolean enumerable() { return enumerable; }
 
-        @Override public boolean configure(Environment env, Member newMember, Value self) {
-            if (!(newMember instanceof PropertyMember)) return false;
-            var prop = (PropertyMember)newMember;
+        @Override public boolean redefine(Environment env, Member newMember, Value self) {
+            // If the given member isn't a property, we can't redefine
+            if (!(newMember instanceof PropertyMember prop)) return false;
 
-            if (prop.configurable != configurable) return false;
-            if (prop.enumerable != enumerable) return false;
+            if (configurable()) {
+                // We will overlay the getters and setters of the new member
+                enumerable = prop.enumerable;
+                configurable = prop.configurable;
 
-            if (prop.getter == getter) return true;
-            if (prop.setter == setter) return true;
-            return false;
+                if (prop.getter != null) getter = prop.getter;
+                if (prop.setter != null) setter = prop.setter;
+
+                return true;
+            }
+            else {
+                // We will pretend that a redefinition has occurred if the two members match exactly
+                if (prop.configurable() != configurable()) return false;
+                if (prop.enumerable != enumerable) return false;
+                if (prop.getter != getter || prop.setter != setter) return false;
+
+                return true;
+            }
         }
 
         @Override public ObjectValue descriptor(Environment env, Value self) {
             var res = new ObjectValue();
 
-            if (getter == null) res.defineOwnMember(env, "getter", FieldMember.of(Value.UNDEFINED));
-            else res.defineOwnMember(env, "getter", FieldMember.of(getter));
+            // Don't touch the ordering, as it's emulating V8
 
-            if (setter == null) res.defineOwnMember(env, "setter", FieldMember.of(Value.UNDEFINED));
-            else res.defineOwnMember(env, "setter", FieldMember.of(setter));
+            if (getter == null) res.defineOwnMember(env, "getter", Value.UNDEFINED);
+            else res.defineOwnMember(env, "getter", getter);
 
-            res.defineOwnMember(env, "enumerable", FieldMember.of(BoolValue.of(enumerable)));
-            res.defineOwnMember(env, "configurable", FieldMember.of(BoolValue.of(configurable)));
+            if (setter == null) res.defineOwnMember(env, "setter", Value.UNDEFINED);
+            else res.defineOwnMember(env, "setter", setter);
+
+            res.defineOwnMember(env, "enumerable", BoolValue.of(enumerable));
+            res.defineOwnMember(env, "configurable", BoolValue.of(configurable));
             return res;
         }
 
-        public PropertyMember(FunctionValue getter, FunctionValue setter, boolean configurable, boolean enumerable) {
+        public PropertyMember(Value self, FunctionValue getter, FunctionValue setter, boolean configurable, boolean enumerable) {
+            this.self = self;
             this.getter = getter;
             this.setter = setter;
             this.configurable = configurable;
@@ -69,60 +85,87 @@ public interface Member {
                 value = val;
                 return true;
             }
-            public SimpleFieldMember(Value value, boolean configurable, boolean enumerable, boolean writable) {
-                super(configurable, enumerable, writable);
+            public SimpleFieldMember(Value self, Value value, boolean configurable, boolean enumerable, boolean writable) {
+                super(self, configurable, enumerable, writable);
                 this.value = value;
             }
         }
 
+        public final Value self;
         public boolean configurable;
         public boolean enumerable;
         public boolean writable;
 
-        @Override public final boolean configurable() { return configurable; }
+        @Override public final boolean configurable() { return configurable && self.getState().configurable; }
         @Override public final boolean enumerable() { return enumerable; }
-        @Override public final boolean configure(Environment env, Member newMember, Value self) {
-            if (!(newMember instanceof FieldMember)) return false;
-            var field = (FieldMember)newMember;
+        public final boolean writable() { return writable && self.getState().writable; }
 
-            if (field.configurable != configurable) return false;
-            if (field.enumerable != enumerable) return false;
-            if (!writable) return field.get(env, self).equals(get(env, self));
+        @Override public final boolean redefine(Environment env, Member newMember, Value self) {
+            // If the given member isn't a field, we can't redefine
+            if (!(newMember instanceof FieldMember field)) return false;
 
-            set(env, field.get(env, self), self);
-            writable = field.writable;
-            return true;
+            if (configurable()) {
+                configurable = field.configurable;
+                enumerable = field.enumerable;
+                writable = field.enumerable;
+
+                // We will try to set a new value. However, the underlying field might be immutably readonly
+                // In such case, we will silently fail, since this is not covered by the specification
+                if (!set(env, field.get(env, self), self)) writable = false;
+                return true;
+            }
+            else {
+                // New field settings must be an exact match
+                if (configurable() != field.configurable()) return false;
+                if (enumerable() != field.enumerable()) return false;
+
+                if (!writable()) {
+                    // If the field isn't writable, the redefinition should be an exact match
+                    if (field.writable()) return false;
+                    if (field.get(env, self).equals(this.get(env, self))) return false;
+
+                    return true;
+                }
+                else {
+                    // Writable non-configurable fields may be made readonly or their values may be changed
+                    writable = field.writable;
+
+                    if (!set(env, field.get(env, self), self)) writable = false;
+                    return true;
+                }
+            }
         }
 
         @Override public ObjectValue descriptor(Environment env, Value self) {
             var res = new ObjectValue();
-            res.defineOwnMember(env, "value", FieldMember.of(get(env, self)));
-            res.defineOwnMember(env, "writable", FieldMember.of(BoolValue.of(writable)));
-            res.defineOwnMember(env, "enumerable", FieldMember.of(BoolValue.of(enumerable)));
-            res.defineOwnMember(env, "configurable", FieldMember.of(BoolValue.of(configurable)));
+            res.defineOwnMember(env, "value", get(env, self));
+            res.defineOwnMember(env, "writable", BoolValue.of(writable));
+            res.defineOwnMember(env, "enumerable", BoolValue.of(enumerable));
+            res.defineOwnMember(env, "configurable", BoolValue.of(configurable));
             return res;
         }
 
-        public FieldMember(boolean configurable, boolean enumerable, boolean writable) {
+        public FieldMember(Value self, boolean configurable, boolean enumerable, boolean writable) {
+            this.self = self;
             this.configurable = configurable;
             this.enumerable = enumerable;
             this.writable = writable;
         }
 
-        public static FieldMember of(Value value) {
-            return new SimpleFieldMember(value, true, true, true);
+        public static FieldMember of(Value self, Value value) {
+            return new SimpleFieldMember(self, value, true, true, true);
         }
-        public static FieldMember of(Value value, boolean writable) {
-            return new SimpleFieldMember(value, true, true, writable);
+        public static FieldMember of(Value self, Value value, boolean writable) {
+            return new SimpleFieldMember(self, value, true, true, writable);
         }
-        public static FieldMember of(Value value, boolean configurable, boolean enumerable, boolean writable) {
-            return new SimpleFieldMember(value, configurable, enumerable, writable);
+        public static FieldMember of(Value self, Value value, boolean configurable, boolean enumerable, boolean writable) {
+            return new SimpleFieldMember(self, value, configurable, enumerable, writable);
         }
     }
 
     public boolean configurable();
     public boolean enumerable();
-    public boolean configure(Environment env, Member newMember, Value self);
+    public boolean redefine(Environment env, Member newMember, Value self);
     public ObjectValue descriptor(Environment env, Value self);
 
     public Value get(Environment env, Value self);

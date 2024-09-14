@@ -41,7 +41,7 @@ public class SimpleRepl {
             try {
                 try { initGlobals(); } catch (ExecutionException e) { throw e.getCause(); }
             }
-            catch (EngineException | SyntaxException e) { System.err.println(Value.errorToReadable(e, null)); }
+            catch (EngineException | SyntaxException e) { System.err.println(Value.errorToReadable(environment, e, null)); }
 
             for (var arg : args) {
                 try {
@@ -58,7 +58,7 @@ public class SimpleRepl {
                     }
                     catch (ExecutionException e) { throw e.getCause(); }
                 }
-                catch (EngineException | SyntaxException e) { System.err.println(Value.errorToReadable(e, null)); }
+                catch (EngineException | SyntaxException e) { System.err.println(Value.errorToReadable(environment, e, null)); }
             }
 
             for (var i = 0; ; i++) {
@@ -77,7 +77,7 @@ public class SimpleRepl {
                     }
                     catch (ExecutionException e) { throw e.getCause(); }
                 }
-                catch (EngineException | SyntaxException e) { System.err.println(Value.errorToReadable(e, null)); }
+                catch (EngineException | SyntaxException e) { System.err.println(Value.errorToReadable(environment, e, null)); }
             }
         }
         catch (IOException e) {
@@ -171,9 +171,7 @@ public class SimpleRepl {
             var configurable = args.get(4).toBoolean();
             var value = args.get(5);
 
-            obj.defineOwnMember(args.env, key, FieldMember.of(value, enumerable, configurable, writable));
-
-            return Value.UNDEFINED;
+            return BoolValue.of(obj.defineOwnMember(args.env, key, FieldMember.of(obj, value, configurable, enumerable, writable)));
         }));
         res.defineOwnMember(env, "defineProperty", new NativeFunction(args -> {
             var obj = (ObjectValue)args.get(0);
@@ -183,9 +181,7 @@ public class SimpleRepl {
             var getter = args.get(4) instanceof VoidValue ? null : (FunctionValue)args.get(4);
             var setter = args.get(5) instanceof VoidValue ? null : (FunctionValue)args.get(5);
 
-            obj.defineOwnMember(args.env, key, new PropertyMember(getter, setter, configurable, enumerable));
-
-            return Value.UNDEFINED;
+            return BoolValue.of(obj.defineOwnMember(args.env, key, new PropertyMember(obj, getter, setter, configurable, enumerable)));
         }));
         res.defineOwnMember(env, "getPrototype", new NativeFunction(args -> {
             return args.get(0).getPrototype(env);
@@ -195,6 +191,19 @@ public class SimpleRepl {
             args.get(0).setPrototype(env, proto);
             return args.get(0);
         }));
+        res.defineOwnMember(env, "getOwnMembers", new NativeFunction(args -> {
+            var val = new ArrayValue();
+
+            for (var key : args.get(0).getOwnMembers(env, args.get(1).toBoolean())) {
+                val.set(val.size(), new StringValue(key));
+            }
+
+            return val;
+        }));
+        res.defineOwnMember(env, "getOwnSymbolMembers", new NativeFunction(args -> {
+            return ArrayValue.of(args.get(0).getOwnSymbolMembers(env, args.get(1).toBoolean()));
+        }));
+
         return res;
     }
 
@@ -216,12 +225,21 @@ public class SimpleRepl {
             if (((ArgumentsValue)args.get(0)).frame.isNew) return new StringValue("new");
             else return new StringValue("call");
         }));
+
         res.defineOwnMember(env, "invoke", new NativeFunction(args -> {
             var func = (FunctionValue)args.get(0);
             var self = args.get(1);
             var funcArgs = (ArrayValue)args.get(2);
+            var name = args.get(3).toString(env).value;
 
-            return func.call(env, self, funcArgs.toArray());
+            return func.invoke(env, name, self, funcArgs.toArray());
+        }));
+        res.defineOwnMember(env, "construct", new NativeFunction(args -> {
+            var func = (FunctionValue)args.get(0);
+            var funcArgs = (ArrayValue)args.get(1);
+            var name = args.get(2).toString(env).value;
+
+            return func.construct(env, name, funcArgs.toArray());
         }));
 
         return res;
@@ -251,7 +269,7 @@ public class SimpleRepl {
             var self = args.get(1);
             var funcArgs = (ArrayValue)args.get(2);
 
-            return func.call(env, self, funcArgs.toArray());
+            return func.invoke(env, self, funcArgs.toArray());
         }));
 
         return res;
@@ -275,28 +293,55 @@ public class SimpleRepl {
             var obj = (ObjectValue)args.get(1);
 
             switch (type) {
-                case "string":
-                    args.env.add(Value.STRING_PROTO, obj);
+                case "object":
+                    args.env.add(Value.OBJECT_PROTO, obj);
                     break;
-                case "number":
-                    args.env.add(Value.NUMBER_PROTO, obj);
+                case "function":
+                    args.env.add(Value.FUNCTION_PROTO, obj);
+                    break;
+                case "array":
+                    args.env.add(Value.ARRAY_PROTO, obj);
                     break;
                 case "boolean":
                     args.env.add(Value.BOOL_PROTO, obj);
                     break;
+                case "number":
+                    args.env.add(Value.NUMBER_PROTO, obj);
+                    break;
+                case "string":
+                    args.env.add(Value.STRING_PROTO, obj);
+                    break;
                 case "symbol":
                     args.env.add(Value.SYMBOL_PROTO, obj);
                     break;
-                case "object":
-                    args.env.add(Value.OBJECT_PROTO, obj);
+                case "error":
+                    args.env.add(Value.ERROR_PROTO, obj);
+                    break;
+                case "syntax":
+                    args.env.add(Value.SYNTAX_ERR_PROTO, obj);
+                    break;
+                case "type":
+                    args.env.add(Value.TYPE_ERR_PROTO, obj);
+                    break;
+                case "range":
+                    args.env.add(Value.RANGE_ERR_PROTO, obj);
                     break;
             }
+
+            return Value.UNDEFINED;
+        }));
+        res.defineOwnMember(env, "setIntrinsic", new NativeFunction(args -> {
+            var name = args.get(0).toString(env).value;
+            var val = args.get(1);
+
+            Value.intrinsics(environment).put(name, val);
 
             return Value.UNDEFINED;
         }));
         res.defineOwnMember(env, "compile", new NativeFunction(args -> {
             return Compiler.compileFunc(env, new Filename("jscript", "func" + i[0]++ + ".js"), args.get(0).toString(env).value);
         }));
+
         return res;
     }
 

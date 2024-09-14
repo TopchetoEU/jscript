@@ -22,7 +22,9 @@ public interface Compiler {
             return body;
         }
         catch (SyntaxException e) {
-            throw EngineException.ofSyntax(e.loc + ": " + e.msg);
+            var res = EngineException.ofSyntax(e.msg);
+            res.add(env, e.loc.filename() + "", e.loc);
+            throw res;
         }
     };
 

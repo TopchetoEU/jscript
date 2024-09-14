@@ -41,10 +41,8 @@ public final class Engine implements EventLoop {
                 try {
                     ((Task<Object>)task).notifier.complete(task.runnable.get());
                 }
-                catch (RuntimeException e) {
-                    if (e instanceof InterruptException) throw e;
-                    task.notifier.completeExceptionally(e);
-                }
+                catch (InterruptException e) { throw e; }
+                catch (RuntimeException e) { task.notifier.completeExceptionally(e); }
             }
             catch (InterruptedException | InterruptException e) {
                 for (var msg : tasks) msg.notifier.cancel(false);

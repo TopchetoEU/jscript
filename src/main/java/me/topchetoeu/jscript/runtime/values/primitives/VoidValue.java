@@ -1,7 +1,5 @@
 package me.topchetoeu.jscript.runtime.values.primitives;
 
-import java.util.Map;
-
 import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
 import me.topchetoeu.jscript.runtime.values.KeyCache;
@@ -24,16 +22,6 @@ public final class VoidValue extends PrimitiveValue {
     @Override public Member getOwnMember(Environment env, KeyCache key) {
         throw EngineException.ofError(String.format("Cannot read properties of %s (reading '%s')", name, key.toString(env)));
     }
-    @Override public Map<String, Member> getOwnMembers(Environment env) {
-        throw EngineException.ofError(String.format("Cannot read properties of %s (listing all members)", name));
-    }
-    @Override public Map<SymbolValue, Member> getOwnSymbolMembers(Environment env) {
-        throw EngineException.ofError(String.format("Cannot read properties of %s (listing all symbol members)", name));
-    }
-
-    // @Override public Value call(Environment env, Value self, Value... args) {
-    //     throw EngineException.ofType(String.format("Tried to call a value of %s", name));
-    // }
 
     public VoidValue(String name, StringValue type) {
         this.name = name;

@@ -19,6 +19,13 @@ public class FunctionScope extends Scope {
 
     public final boolean passtrough;
 
+    @Override public boolean hasNonStrict(String name) {
+        if (functionVarMap.containsKey(name)) return true;
+        if (blacklistNames.contains(name)) return true;
+
+        return false;
+    }
+
     @Override public Variable define(Variable var, Location loc) {
         checkNotEnded();
         if (strictVarMap.containsKey(var.name)) throw alreadyDefinedErr(loc, var.name);
@@ -31,13 +38,6 @@ public class FunctionScope extends Scope {
             functionVarMap.put(var.name, var);
             return variables.add(var);
         }
-    }
-    @Override public Variable defineStrict(Variable var, Location loc) {
-        checkNotEnded();
-        if (functionVarMap.containsKey(var.name)) throw alreadyDefinedErr(loc, var.name);
-        if (blacklistNames.contains(var.name)) throw alreadyDefinedErr(loc, var.name);
-
-        return super.defineStrict(var, loc);
     }
     public Variable defineSpecial(Variable var, Location loc) {
         checkNotEnded();

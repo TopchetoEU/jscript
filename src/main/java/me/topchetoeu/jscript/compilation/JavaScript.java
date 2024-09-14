@@ -39,6 +39,7 @@ import me.topchetoeu.jscript.compilation.values.operations.ChangeNode;
 import me.topchetoeu.jscript.compilation.values.operations.DiscardNode;
 import me.topchetoeu.jscript.compilation.values.operations.IndexNode;
 import me.topchetoeu.jscript.compilation.values.operations.OperationNode;
+import me.topchetoeu.jscript.compilation.values.operations.PostfixNode;
 import me.topchetoeu.jscript.compilation.values.operations.TypeofNode;
 import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 
@@ -140,8 +141,8 @@ public final class JavaScript {
                 ParseRes<Node> res = ParseRes.first(src, i + n,
                     (s, j) -> OperationNode.parseInstanceof(s, j, _prev, precedence),
                     (s, j) -> OperationNode.parseIn(s, j, _prev, precedence),
-                    (s, j) -> ChangeNode.parsePostfixIncrease(s, j, _prev, precedence),
-                    (s, j) -> ChangeNode.parsePostfixDecrease(s, j, _prev, precedence),
+                    (s, j) -> PostfixNode.parsePostfixIncrease(s, j, _prev, precedence),
+                    (s, j) -> PostfixNode.parsePostfixDecrease(s, j, _prev, precedence),
                     (s, j) -> OperationNode.parseOperator(s, j, _prev, precedence),
                     (s, j) -> IfNode.parseTernary(s, j, _prev, precedence),
                     (s, j) -> IndexNode.parseMember(s, j, _prev, precedence),
@@ -219,71 +220,6 @@ public final class JavaScript {
         if (src.is(i + n, '}')) return ParseRes.res(true, n);
 
         return ParseRes.failed();
-    }
-
-    public static ParseRes<Parameters> parseParameters(Source src, int i) {
-        var n = Parsing.skipEmpty(src, i);
-
-        var openParen = Parsing.parseOperator(src, i + n, "(");
-        if (!openParen.isSuccess()) return openParen.chainError(src.loc(i + n), "Expected a parameter list");
-        n += openParen.n;
-
-        var params = new ArrayList<Parameter>();
-
-        var closeParen = Parsing.parseOperator(src, i + n, ")");
-        n += closeParen.n;
-
-        if (!closeParen.isSuccess()) {
-            while (true) {
-                n += Parsing.skipEmpty(src, i + n);
-
-                if (src.is(i + n, "...")) {
-                    n += 3;
-                    var restLoc = src.loc(i);
-
-                    var restName = Parsing.parseIdentifier(src, i + n);
-                    if (!restName.isSuccess()) return ParseRes.error(src.loc(i + n), "Expected a rest parameter");
-                    n += restName.n;
-                    n += Parsing.skipEmpty(src, i + n);
-
-                    if (!src.is(i + n, ")")) return ParseRes.error(src.loc(i + n),  "Expected an end of parameters list after rest parameter");
-                    n++;
-
-                    return ParseRes.res(new Parameters(params, restName.result, restLoc), n);
-                }
-
-                var paramLoc = src.loc(i);
-
-                var name = Parsing.parseIdentifier(src, i + n);
-                if (!name.isSuccess()) return ParseRes.error(src.loc(i + n), "Expected a parameter or a closing brace");
-                n += name.n;
-                n += Parsing.skipEmpty(src, i + n);
-
-                if (src.is(i + n, "=")) {
-                    n++;
-
-                    var val = parseExpression(src, i + n, 2);
-                    if (!val.isSuccess()) return openParen.chainError(src.loc(i + n), "Expected a parameter default value");
-                    n += val.n;
-                    n += Parsing.skipEmpty(src, i + n);
-
-                    params.add(new Parameter(paramLoc, name.result, val.result));
-                }
-                else params.add(new Parameter(paramLoc, name.result, null));
-
-                if (src.is(i + n, ",")) {
-                    n++;
-                    n += Parsing.skipEmpty(src, i + n);
-                }
-
-                if (src.is(i + n, ")")) {
-                    n++;
-                    break;
-                }
-            }
-        }
-
-        return ParseRes.res(new Parameters(params), n);
     }
 
     public static ParseRes<DeclarationType> parseDeclarationType(Source src, int i) {

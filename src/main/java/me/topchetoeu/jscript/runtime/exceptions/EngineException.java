@@ -6,7 +6,6 @@ import java.util.List;
 import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.common.parsing.Location;
 import me.topchetoeu.jscript.runtime.values.Value;
-import me.topchetoeu.jscript.runtime.values.Member.FieldMember;
 import me.topchetoeu.jscript.runtime.values.objects.ObjectValue;
 import me.topchetoeu.jscript.runtime.values.objects.ObjectValue.PrototypeProvider;
 import me.topchetoeu.jscript.runtime.values.primitives.StringValue;
@@ -67,7 +66,7 @@ public class EngineException extends RuntimeException {
     public String toString(Environment env) {
         var ss = new StringBuilder();
         try {
-            ss.append(value.toString(env)).append('\n');
+            ss.append(value.toString(env).value).append('\n');
         }
         catch (EngineException e) {
             var name = value.getMember(env, "name");
@@ -98,8 +97,8 @@ public class EngineException extends RuntimeException {
 
         if (msg == null) msg = "";
 
-        if (name != null) res.defineOwnMember(Environment.empty(), "name", FieldMember.of(new StringValue(name)));
-        res.defineOwnMember(Environment.empty(), "message", FieldMember.of(new StringValue(msg)));
+        if (name != null) res.defineOwnMember(Environment.empty(), "name", new StringValue(name));
+        res.defineOwnMember(Environment.empty(), "message", new StringValue(msg));
         return res;
     }
 
