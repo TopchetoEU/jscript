@@ -171,9 +171,7 @@ public class SimpleRepl {
             var configurable = args.get(4).toBoolean();
             var value = args.get(5);
 
-            obj.defineOwnMember(args.env, key, FieldMember.of(value, enumerable, configurable, writable));
-
-            return Value.UNDEFINED;
+            return BoolValue.of(obj.defineOwnMember(args.env, key, FieldMember.of(obj, value, configurable, enumerable, writable)));
         }));
         res.defineOwnMember(env, "defineProperty", new NativeFunction(args -> {
             var obj = (ObjectValue)args.get(0);
@@ -183,9 +181,7 @@ public class SimpleRepl {
             var getter = args.get(4) instanceof VoidValue ? null : (FunctionValue)args.get(4);
             var setter = args.get(5) instanceof VoidValue ? null : (FunctionValue)args.get(5);
 
-            obj.defineOwnMember(args.env, key, new PropertyMember(getter, setter, configurable, enumerable));
-
-            return Value.UNDEFINED;
+            return BoolValue.of(obj.defineOwnMember(args.env, key, new PropertyMember(obj, getter, setter, configurable, enumerable)));
         }));
         res.defineOwnMember(env, "getPrototype", new NativeFunction(args -> {
             return args.get(0).getPrototype(env);

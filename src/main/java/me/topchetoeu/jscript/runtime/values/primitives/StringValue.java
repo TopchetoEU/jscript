@@ -40,10 +40,10 @@ public final class StringValue extends PrimitiveValue {
         var i = key.toInt(env);
 
         if (i == num && i >= 0 && i < value.length()) {
-            return FieldMember.of(new StringValue(value.charAt(i) + ""), false, true, false);
+            return FieldMember.of(this, new StringValue(value.charAt(i) + ""), false, true, false);
         }
         else if (key.toString(env).equals("length")) {
-            return FieldMember.of(new NumberValue(value.length()), false, false, false);
+            return FieldMember.of(this, new NumberValue(value.length()), false, false, false);
         }
         else return super.getOwnMember(env, key);
     }

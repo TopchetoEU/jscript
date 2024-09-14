@@ -1,8 +1,6 @@
 package me.topchetoeu.jscript.runtime;
 
 import java.util.Arrays;
-import java.util.LinkedHashSet;
-import java.util.Set;
 import java.util.Stack;
 
 import me.topchetoeu.jscript.common.Instruction;
@@ -11,11 +9,9 @@ import me.topchetoeu.jscript.common.environment.Key;
 import me.topchetoeu.jscript.runtime.debug.DebugContext;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
 import me.topchetoeu.jscript.runtime.exceptions.InterruptException;
-import me.topchetoeu.jscript.runtime.values.KeyCache;
-import me.topchetoeu.jscript.runtime.values.Member;
 import me.topchetoeu.jscript.runtime.values.Value;
-import me.topchetoeu.jscript.runtime.values.Member.FieldMember;
 import me.topchetoeu.jscript.runtime.values.functions.CodeFunction;
+import me.topchetoeu.jscript.runtime.values.objects.ArrayLikeValue;
 import me.topchetoeu.jscript.runtime.values.objects.ObjectValue;
 
 public final class Frame {
@@ -385,31 +381,39 @@ public final class Frame {
      * Gets an array proxy of the local locals
      */
     public ObjectValue getValStackScope() {
-        return new ObjectValue() {
-            @Override public Member getOwnMember(Environment env, KeyCache key) {
-                var res = super.getOwnMember(env, key);
-                if (res != null) return res;
+        return new ArrayLikeValue() {
+            @Override public Value get(int i) { return stack[i]; }
+            @Override public void set(int i, Value val) { stack[i] = val; }
+            @Override public boolean has(int i) { return i >= 0 && i < size(); }
+            @Override public void remove(int i) { }
 
-                var num = key.toNumber(env);
-                var i = key.toInt(env);
+            @Override public int size() { return stackPtr; }
+            @Override public boolean setSize(int val) { return false; }
 
-                if (num != i || i < 0 || i >= stackPtr) return null;
-                else return new FieldMember(false, true, true) {
-                    @Override public Value get(Environment env, Value self) { return stack[i]; }
-                    @Override public boolean set(Environment env, Value val, Value self) {
-                        stack[i] = val;
-                        return true;
-                    }
-                };
-            }
-            @Override public Set<String> getOwnMembers(Environment env, boolean onlyEnumerable) {
-                var res = new LinkedHashSet<String>();
-                res.addAll(super.getOwnMembers(env, onlyEnumerable));
+            // @Override public Member getOwnMember(Environment env, KeyCache key) {
+            //     var res = super.getOwnMember(env, key);
+            //     if (res != null) return res;
 
-                for (var i = 0; i < stackPtr; i++) res.add(i + "");
+            //     var num = key.toNumber(env);
+            //     var i = key.toInt(env);
 
-                return res;
-            }
+            //     if (num != i || i < 0 || i >= stackPtr) return null;
+            //     else return new FieldMember(this, false, true, true) {
+            //         @Override public Value get(Environment env, Value self) { return stack[i]; }
+            //         @Override public boolean set(Environment env, Value val, Value self) {
+            //             stack[i] = val;
+            //             return true;
+            //         }
+            //     };
+            // }
+            // @Override public Set<String> getOwnMembers(Environment env, boolean onlyEnumerable) {
+            //     var res = new LinkedHashSet<String>();
+            //     res.addAll(super.getOwnMembers(env, onlyEnumerable));
+
+            //     for (var i = 0; i < stackPtr; i++) res.add(i + "");
+
+            //     return res;
+            // }
         };
     }
 

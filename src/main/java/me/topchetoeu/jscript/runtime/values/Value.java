@@ -20,6 +20,7 @@ import me.topchetoeu.jscript.runtime.debug.DebugContext;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
 import me.topchetoeu.jscript.runtime.exceptions.SyntaxException;
 import me.topchetoeu.jscript.runtime.values.Member.FieldMember;
+import me.topchetoeu.jscript.runtime.values.Member.PropertyMember;
 import me.topchetoeu.jscript.runtime.values.functions.FunctionValue;
 import me.topchetoeu.jscript.runtime.values.functions.NativeFunction;
 import me.topchetoeu.jscript.runtime.values.objects.ArrayValue;
@@ -31,21 +32,21 @@ import me.topchetoeu.jscript.runtime.values.primitives.SymbolValue;
 import me.topchetoeu.jscript.runtime.values.primitives.VoidValue;
 
 public abstract class Value {
-    public static enum CompareResult {
-        NOT_EQUAL,
-        EQUAL,
-        LESS,
-        GREATER;
+    public static enum State {
+        NORMAL(true, true, true),
+        NON_EXTENDABLE(false, true, true),
+        SEALED(false, false, true),
+        FROZEN(false, false, false);
 
-        public boolean less() { return this == LESS; }
-        public boolean greater() { return this == GREATER; }
-        public boolean lessOrEqual() { return this == LESS || this == EQUAL; }
-        public boolean greaterOrEqual() { return this == GREATER || this == EQUAL; }
 
-        public static CompareResult from(int cmp) {
-            if (cmp < 0) return LESS;
-            if (cmp > 0) return GREATER;
-            return EQUAL;
+        public final boolean extendable;
+        public final boolean configurable;
+        public final boolean writable;
+
+        private State(boolean extendable, boolean configurable, boolean writable) {
+            this.extendable = extendable;
+            this.writable = writable;
+            this.configurable = configurable;
         }
     }
 
@@ -132,6 +133,12 @@ public abstract class Value {
     public abstract ObjectValue getPrototype(Environment env);
     public abstract boolean setPrototype(Environment env, ObjectValue val);
 
+    public abstract State getState();
+
+    public abstract void preventExtensions();
+    public abstract void seal();
+    public abstract void freeze();
+
     public final Member getOwnMember(Environment env, Value key) {
         return getOwnMember(env, new KeyCache(key));
     }
@@ -159,19 +166,19 @@ public abstract class Value {
     }
 
     public final boolean defineOwnMember(Environment env, KeyCache key, Value val) {
-        return defineOwnMember(env, key, FieldMember.of(val));
+        return defineOwnMember(env, key, FieldMember.of(this, val));
     }
     public final boolean defineOwnMember(Environment env, Value key, Value val) {
-        return defineOwnMember(env, new KeyCache(key), FieldMember.of(val));
+        return defineOwnMember(env, new KeyCache(key), val);
     }
     public final boolean defineOwnMember(Environment env, String key, Value val) {
-        return defineOwnMember(env, new KeyCache(key), FieldMember.of(val));
+        return defineOwnMember(env, new KeyCache(key), val);
     }
     public final boolean defineOwnMember(Environment env, int key, Value val) {
-        return defineOwnMember(env, new KeyCache(key), FieldMember.of(val));
+        return defineOwnMember(env, new KeyCache(key), val);
     }
     public final boolean defineOwnMember(Environment env, double key, Value val) {
-        return defineOwnMember(env, new KeyCache(key), FieldMember.of(val));
+        return defineOwnMember(env, new KeyCache(key), val);
     }
 
     public final boolean deleteOwnMember(Environment env, Value key) {
@@ -238,7 +245,7 @@ public abstract class Value {
             }
         }
 
-        if (defineOwnMember(env, key, FieldMember.of(val))) {
+        if (defineOwnMember(env, key, val)) {
             if (val instanceof FunctionValue) ((FunctionValue)val).setName(key.toString(env));
             return true;
         }
@@ -475,7 +482,13 @@ public abstract class Value {
 
                     var member = obj.getOwnMember(env, entry);
                     if (member instanceof FieldMember field) res.append(field.get(env, obj).toReadable(env, passed, tab + 1));
-                    else res.append("[property]");
+                    else if (member instanceof PropertyMember prop) {
+                        if (prop.getter == null && prop.setter == null) res.append("[No accessors]");
+                        else if (prop.getter == null) res.append("[Setter]");
+                        else if (prop.setter == null) res.append("[Getter]");
+                        else res.append("[Getter/Setter]");
+                    }
+                    else res.append("[???]");
 
                     res.append(",\n");
                 }
@@ -485,7 +498,13 @@ public abstract class Value {
 
                     var member = obj.getOwnMember(env, entry);
                     if (member instanceof FieldMember field) res.append(field.get(env, obj).toReadable(env, passed, tab + 1));
-                    else res.append("[property]");
+                    else if (member instanceof PropertyMember prop) {
+                        if (prop.getter == null && prop.setter == null) res.append("[No accessors]");
+                        else if (prop.getter == null) res.append("[Setter]");
+                        else if (prop.setter == null) res.append("[Getter]");
+                        else res.append("[Getter/Setter]");
+                    }
+                    else res.append("[???]");
 
                     res.append(",\n");
                 }
@@ -520,8 +539,8 @@ public abstract class Value {
         return new NativeFunction("", args -> {
             var obj = new ObjectValue();
 
-            if (!it.hasNext()) obj.defineOwnMember(args.env, "done", FieldMember.of(BoolValue.TRUE));
-            else obj.defineOwnMember(args.env, "value", FieldMember.of(it.next()));
+            if (!it.hasNext()) obj.defineOwnMember(args.env, "done", BoolValue.TRUE);
+            else obj.defineOwnMember(args.env, "value", it.next());
 
             return obj;
         });

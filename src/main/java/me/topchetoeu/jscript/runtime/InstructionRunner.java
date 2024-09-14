@@ -73,7 +73,7 @@ public class InstructionRunner {
         else if (setterVal instanceof FunctionValue) setter = (FunctionValue)setterVal;
         else throw EngineException.ofType("Setter must be a function or undefined.");
 
-        obj.defineOwnMember(env, key, new PropertyMember(getter, setter, true, true));
+        obj.defineOwnMember(env, key, new PropertyMember(obj, getter, setter, true, true));
 
         frame.push(obj);
         frame.codePtr++;

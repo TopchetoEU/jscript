@@ -19,4 +19,10 @@ public abstract class PrimitiveValue extends Value {
     @Override public Member getOwnMember(Environment env, KeyCache key) { return null; }
     @Override public Set<String> getOwnMembers(Environment env, boolean onlyEnumerable) { return Set.of(); }
     @Override public Set<SymbolValue> getOwnSymbolMembers(Environment env, boolean onlyEnumerable) { return Set.of(); }
+
+    @Override public State getState() { return State.FROZEN; }
+
+    @Override public void preventExtensions() {}
+    @Override public void seal() {}
+    @Override public void freeze() {}
 }

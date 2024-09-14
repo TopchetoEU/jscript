@@ -8,7 +8,6 @@ import me.topchetoeu.jscript.common.json.JSONElement;
 import me.topchetoeu.jscript.common.json.JSONList;
 import me.topchetoeu.jscript.common.json.JSONMap;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
-import me.topchetoeu.jscript.runtime.values.Member.FieldMember;
 import me.topchetoeu.jscript.runtime.values.Value;
 import me.topchetoeu.jscript.runtime.values.objects.ArrayValue;
 import me.topchetoeu.jscript.runtime.values.objects.ObjectValue;
@@ -27,7 +26,7 @@ public class JSONConverter {
             var res = new ObjectValue();
     
             for (var el : val.map().entrySet()) {
-                res.defineOwnMember(null, el.getKey(), FieldMember.of(toJs(el.getValue())));
+                res.defineOwnMember(null, el.getKey(), toJs(el.getValue()));
             }
     
             return res;
