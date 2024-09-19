@@ -254,11 +254,6 @@ public class SimpleRepl {
         res.defineOwnMember(env, "parse", new NativeFunction(args -> {
             return JSONConverter.toJs(JSON.parse(null, args.get(0).toString(env)));
         }));
-        res.defineOwnMember(env, "setConstructable", new NativeFunction(args -> {
-            var func = (FunctionValue)args.get(0);
-            func.enableNew = args.get(1).toBoolean();
-            return Value.UNDEFINED;
-        }));
         res.defineOwnMember(env, "invokeType", new NativeFunction(args -> {
             if (((ArgumentsValue)args.get(0)).frame.isNew) return StringValue.of("new");
             else return StringValue.of("call");

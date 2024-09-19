@@ -1,4 +1,4 @@
-return;
+// return;
 
 const target = arguments[0];
 const primordials = arguments[1];
@@ -60,8 +60,7 @@ const undefined = ({}).definitelyDefined;
 
 target.undefined = undefined;
 
-const unwrapThis = (self, type, constr, name, arg, defaultVal) => {
-    if (arg == null) arg = "this";
+const unwrapThis = (self, type, constr, name, arg = "this", defaultVal) => {
     if (typeof self === type) return self;
     if (self instanceof constr && valueKey in self) self = self[valueKey];
     if (typeof self === type) return self;
@@ -72,14 +71,31 @@ const unwrapThis = (self, type, constr, name, arg, defaultVal) => {
 
 const wrapIndex = (i, len) => {};
 
-const Symbol = (name = "") => symbol.makeSymbol(name);
+class Symbol {
+    get description() {
+        return symbol.getSymbolDescriptor(unwrapThis(this, "symbol", Symbol, "Symbol.prototype.description"));
+    }
+    toString() {
+        return "Symbol(" + unwrapThis(this, "symbol", Symbol, "Symbol.prototype.toString").description + ")";
+    }
+    valueOf() {
+        return unwrapThis(this, "symbol", Symbol, "Symbol.prototype.valueOf");
+    }
 
-defineField(Symbol, "for", true, false, true, function(name) {
-    return symbol.getSymbol(name + "");
-});
-defineField(Symbol, "keyFor", true, false, true, function(value) {
-    return symbol.getSymbolKey(unwrapThis(value, "symbol", Symbol, "Symbol.keyFor"));
-});
+    constructor(name = "") {
+        return symbol.makeSymbol(name);
+    }
+
+    static for(name) {
+        return symbol.getSymbol(name + "");
+    }
+    static keyFor(value) {
+        return symbol.getSymbolKey(unwrapThis(value, "symbol", Symbol, "Symbol.keyFor"));
+    }
+}
+
+setCallable(Symbol, true);
+setConstructable(Symbol, false);
 
 defineField(Symbol, "asyncIterator", false, false, false, Symbol("Symbol.asyncIterator"));
 defineField(Symbol, "iterator", false, false, false, Symbol("Symbol.iterator"));
@@ -89,61 +105,60 @@ defineField(Symbol, "replace", false, false, false, Symbol("Symbol.replace"));
 defineField(Symbol, "search", false, false, false, Symbol("Symbol.search"));
 defineField(Symbol, "split", false, false, false, Symbol("Symbol.split"));
 defineField(Symbol, "toStringTag", false, false, false, Symbol("Symbol.toStringTag"));
-defineField(Symbol, "prototype", false, false, false, {});
 
-defineProperty(Symbol.prototype, "description", false, true, function () {
-    return symbol.getSymbolDescription(unwrapThis(this, "symbol", Symbol, "Symbol.prototype.description"));
-}, undefined);
-defineField(Symbol.prototype, "toString", true, false, true, function() {
-    return "Symbol(" + unwrapThis(this, "symbol", Symbol, "Symbol.prototype.toString").description + ")";
-});
-defineField(Symbol.prototype, "valueOf", true, false, true, function() {
-    return unwrapThis(this, "symbol", Symbol, "Symbol.prototype.valueOf");
-});
-
+Symbol();
 target.Symbol = Symbol;
 
-const Number = function(value) {
-    if (invokeType(arguments) === "call") {
-        if (arguments.length === 0) return 0;
-        else return +value;
+class Number {
+    toString() {
+        return "" + unwrapThis(this, "number", Number, "Number.prototype.toString");
+    }
+    valueOf() {
+        return unwrapThis(this, "number", Number, "Number.prototype.toString");
     }
 
-    this[valueKey] = target.Number(value);
-};
+    constructor(value) {
+        if (invokeType(arguments) === "call") {
+            if (arguments.length === 0) return 0;
+            else return +value;
+        }
 
-defineField(Number, "isFinite", true, false, true, function(value) {
-    value = unwrapThis(value, "number", Number, "Number.isFinite", "value", undefined);
+        this[valueKey] = target.Number(value);
+    }
 
-    if (value === undefined || value !== value) return false;
-    if (value === Infinity || value === -Infinity) return false;
+    static isFinite(value) {
+        value = unwrapThis(value, "number", Number, "Number.isFinite", "value", undefined);
 
-    return true;
-});
-defineField(Number, "isInteger", true, false, true, function(value) {
-    value = unwrapThis(value, "number", Number, "Number.isInteger", "value", undefined);
-    if (value === undefined) return false;
-    return number.parseInt(value) === value;
-});
-defineField(Number, "isNaN", true, false, true, function(value) {
-    return number.isNaN(value);
-});
-defineField(Number, "isSafeInteger", true, false, true, function(value) {
-    value = unwrapThis(value, "number", Number, "Number.isSafeInteger", "value", undefined);
-    if (value === undefined || number.parseInt(value) !== value) return false;
-    return value >= -9007199254740991 && value <= 9007199254740991;
-});
-defineField(Number, "parseFloat", true, false, true, function(value) {
-    value = 0 + value;
-    return number.parseFloat(value);
-});
-defineField(Number, "parseInt", true, false, true, function(value, radix) {
-    value = 0 + value;
-    radix = +radix;
-    if (number.isNaN(radix)) radix = 10;
+        if (value === undefined || value !== value) return false;
+        if (value === Infinity || value === -Infinity) return false;
 
-    return number.parseInt(value, radix);
-});
+        return true;
+    }
+    static isInteger(value) {
+        value = unwrapThis(value, "number", Number, "Number.isInteger", "value", undefined);
+        if (value === undefined) return false;
+        return number.parseInt(value) === value;
+    }
+    static isNaN(value) {
+        return number.isNaN(value);
+    }
+    static isSafeInteger(value) {
+        value = unwrapThis(value, "number", Number, "Number.isSafeInteger", "value", undefined);
+        if (value === undefined || number.parseInt(value) !== value) return false;
+        return value >= -9007199254740991 && value <= 9007199254740991;
+    }
+    static parseFloat(value) {
+        value = 0 + value;
+        return number.parseFloat(value);
+    }
+    static parseInt(value, radix) {
+        value = 0 + value;
+        radix = +radix;
+        if (number.isNaN(radix)) radix = 10;
+
+        return number.parseInt(value, radix);
+    }
+}
 
 defineField(Number, "EPSILON", false, false, false, 2.220446049250313e-16);
 defineField(Number, "MIN_SAFE_INTEGER", false, false, false, -9007199254740991);
@@ -153,267 +168,288 @@ defineField(Number, "NEGATIVE_INFINITY", false, false, false, -number.Infinity);
 defineField(Number, "NaN", false, false, false, number.NaN);
 defineField(Number, "MAX_VALUE", false, false, false, 1.7976931348623157e+308);
 defineField(Number, "MIN_VALUE", false, false, false, 5e-324);
-defineField(Number, "prototype", false, false, false, {});
 
-defineField(Number.prototype, "toString", true, false, true);   
-defineField(Number.prototype, "toString", true, false, true, function() {
-    return "" + unwrapThis(this, "number", Number, "Number.prototype.toString");
-});
-defineField(Number.prototype, "valueOf", true, false, true, function() {
-    return unwrapThis(this, "number", Number, "Number.prototype.toString");
-});
-
+setCallable(Number, true);
 target.Number = Number;
 target.parseInt = Number.parseInt;
 target.parseFloat = Number.parseFloat;
 target.NaN = Number.NaN;
 target.Infinity = Number.POSITIVE_INFINITY;
 
-const String = function(value) {
-    if (invokeType(arguments) === "call") {
-        if (arguments.length === 0) return "";
-        else return value + "";
+class String {
+    at(index) {
+        throw "Not implemented :/";
+        return unwrapThis(this, "string", String, "String.prototype.at")[index];
+    }
+    toString() {
+        return unwrapThis(this, "string", String, "String.prototype.toString");
+    }
+    valueOf() {
+        return unwrapThis(this, "string", String, "String.prototype.valueOf");
     }
 
-    this[valueKey] = String(value);
-};
+    constructor(value) {
+        if (invokeType(arguments) === "call") {
+            if (arguments.length === 0) return "";
+            else return value + "";
+        }
 
-defineField(String, "fromCharCode", true, false, true, function() {
-    const res = [];
-    res[arguments.length] = 0;
-
-    for (let i = 0; i < arguments.length; i++) {
-        res[i] = fromCharCode(+arguments[i]);
+        this[valueKey] = String(value);
     }
 
-    return stringBuild(res);
-});
-defineField(String, "fromCodePoint", true, false, true, function() {
-    const res = [];
-    res[arguments.length] = 0;
+    static fromCharCode() {
+        const res = [];
+        res[arguments.length] = 0;
 
-    for (let i = 0; i < arguments.length; i++) {
-        res[i] = fromCodePoint(+arguments[i]);
+        for (let i = 0; i < arguments.length; i++) {
+            res[i] = fromCharCode(+arguments[i]);
+        }
+
+        return stringBuild(res);
     }
+    static fromCodePoint() {
+        const res = [];
+        res[arguments.length] = 0;
 
-    return stringBuild(res);
-});
+        for (let i = 0; i < arguments.length; i++) {
+            res[i] = fromCodePoint(+arguments[i]);
+        }
 
-defineField(String, "prototype", false, false, false, {});
+        return stringBuild(res);
+    }
+}
 
-defineField(String.prototype, "at", true, false, true, function(index) {
-    throw "Not implemented :/";
-    return unwrapThis(this, "string", String, "String.prototype.at")[index];
-});
-defineField(String.prototype, "toString", true, false, true, function() {
-    return unwrapThis(this, "string", String, "String.prototype.toString");
-});
-defineField(String.prototype, "valueOf", true, false, true, function() {
-    return unwrapThis(this, "string", String, "String.prototype.valueOf");
-});
-
+setCallable(String, true);
 target.String = String;
 
-const Boolean = function(value) {
-    if (invokeType(arguments) === "call") {
-        if (arguments.length === 0) return false;
-        else return !!value;
+class Boolean {
+    toString() {
+        return "" + unwrapThis(this, "boolean", Boolean, "Boolean.prototype.toString");
+    }
+    valueOf() {
+        return unwrapThis(this, "boolean", Boolean, "Boolean.prototype.valueOf");
     }
 
-    this[valueKey] = Boolean(value);
-};
+    constructor(value) {
+        if (invokeType(arguments) === "call") {
+            if (arguments.length === 0) return false;
+            else return !!value;
+        }
 
-defineField(Boolean, "prototype", false, false, false, {});
+        this[valueKey] = Boolean(value);
+    }
+}
 
-defineField(Boolean.prototype, "toString", true, false, true, function() {
-    return "" + unwrapThis(this, "boolean", Boolean, "Boolean.prototype.toString");
-});
-defineField(Boolean.prototype, "valueOf", true, false, true, function() {
-    return unwrapThis(this, "boolean", Boolean, "Boolean.prototype.valueOf");
-});
-
+setCallable(Boolean, true);
 target.Boolean = Boolean;
 
-const Object = function(value) {
-    if (typeof value === 'object' && value !== null) return value;
+class Object {
+    toString() {
+        print("2");
+        if (this !== null && this !== undefined && (Symbol.toStringTag in this)) return "[object " + this[Symbol.toStringTag] + "]";
+        else if (typeof this === "number" || this instanceof Number) return "[object Number]";
+        else if (typeof this === "symbol" || this instanceof Symbol) return "[object Symbol]";
+        else if (typeof this === "string" || this instanceof String) return "[object String]";
+        else if (typeof this === "boolean" || this instanceof Boolean) return "[object Boolean]";
+        else if (typeof this === "function") return "[object Function]";
+        else return "[object Object]";
+    }
+    valueOf() {
+        print("1");
+        return this;
+    }
 
-    if (typeof value === 'string') return new String(value);
-    if (typeof value === 'number') return new Number(value);
-    if (typeof value === 'boolean') return new Boolean(value);
-    if (typeof value === 'symbol') {
-        const res = {};
-        setPrototype(res, Symbol.prototype);
-        res[valueKey] = value;
+    constructor(value) {
+        if (typeof value === 'object' && value !== null) return value;
+
+        if (typeof value === 'string') return new String(value);
+        if (typeof value === 'number') return new Number(value);
+        if (typeof value === 'boolean') return new Boolean(value);
+        if (typeof value === 'symbol') {
+            const res = {};
+            setPrototype(res, Symbol.prototype);
+            res[valueKey] = value;
+            return res;
+        }
+
+        const target = this;
+        // TODO: use new.target.prototype as proto
+        if (target == null || typeof target !== 'object') target = {};
+
+        this[valueKey] = Object(value);
+    }
+
+    static defineProperty(obj, key, desc) {
+        if (typeof obj !== "object" || obj === null) {
+            print(obj);
+            print(typeof obj);
+            throw new TypeError("Object.defineProperty called on non-object");
+        }
+        if (typeof desc !== "object" || desc === null) throw new TypeError("Property description must be an object: " + desc);
+
+        if ("get" in desc || "set" in desc) {
+            let get = desc.get, set = desc.set;
+
+            print(typeof get);
+
+            if (get !== undefined && typeof get !== "function") throw new TypeError("Getter must be a function: " + get);
+            if (set !== undefined && typeof set !== "function") throw new TypeError("Setter must be a function: " + set);
+
+            if ("value" in desc || "writable" in desc) {
+                throw new TypeError("Invalid property descriptor. Cannot both specify accessors and a value or writable attribute");
+            }
+
+            if (!defineProperty(obj, key, desc.enumerable, desc.configurable, get, set)) {
+                throw new TypeError("Cannot redefine property: " + key);
+            }
+        }
+        else if (!defineField(obj, key, desc.writable, desc.enumerable, desc.configurable, desc.value)) {
+            throw new TypeError("Cannot redefine property: " + key);
+        }
+
+        return obj;
+    }
+}
+
+setCallable(Object, true);
+setPrototype(Object.prototype, null);
+target.Object = Object;
+
+class Function {
+    toString() {
+        if (this.name !== "") return "function " + this.name + "(...) { ... }";
+        else return "function (...) { ... }";
+    }
+
+    constructor() {
+        const parts = ["return function annonymous("];
+
+        for (let i = 0; i < arguments.length - 1; i++) {
+            if (i > 0) parts[parts.length] = ",";
+            parts[parts.length] = arguments[i];
+        }
+        parts[parts.length] = "){\n";
+        parts[parts.length] = String(arguments[arguments.length - 1]);
+        parts[parts.length] = "\n}";
+
+        const res = compile(stringBuild(parts))();
         return res;
     }
 
-    const target = this;
-    if (target == null || typeof target !== 'object') target = {};
+    static compile(src = "", { globals = [], wrap = false } = {}) {
+        const parts = [];
 
-    this[valueKey] = Object(value);
-};
+        if (wrap) parts[parts.length] = "return (function() {\n";
+        if (globals.length > 0) {
+            parts[parts.length] = "var ";
 
-defineField(Object, "prototype", false, false, false, setPrototype({}, null));
+            for (let i = 0; i < globals.length; i++) {
+                if (i > 0) parts[parts.length] = ",";
+                parts[parts.length] = globals[i];
+            }
 
-defineField(Object, "defineProperty", true, false, true, (obj, key, desc) => {
-    if (typeof obj !== "object" || obj === null) {
-        print(obj);
-        print(typeof obj);
-        throw new TypeError("Object.defineProperty called on non-object");
-    }
-    if (typeof desc !== "object" || desc === null) throw new TypeError("Property description must be an object: " + desc);
+            parts[parts.length] = ";((g=arguments[0])=>{";
 
-    if ("get" in desc || "set" in desc) {
-        let get = desc.get, set = desc.set;
+            for (let i = 0; i < globals.length; i++) {
+                const name = globals[i];
+                parts[parts.length] = name + "=g[" + json.stringify(name) + "];";
+            }
 
-        print(typeof get);
-
-        if (get !== undefined && typeof get !== "function") throw new TypeError("Getter must be a function: " + get);
-        if (set !== undefined && typeof set !== "function") throw new TypeError("Setter must be a function: " + set);
-
-        if ("value" in desc || "writable" in desc) {
-            throw new TypeError("Invalid property descriptor. Cannot both specify accessors and a value or writable attribute");
+            parts[parts.length] = "})()\n";
         }
 
-        if (!defineProperty(obj, key, desc.enumerable, desc.configurable, get, set)) {
-            throw new TypeError("Cannot redefine property: " + key);
-        }
+        parts[parts.length] = src;
+        if (wrap) parts[parts.length] = "\n})(arguments[0])";
+
+        const res = compile(stringBuild(parts));
+        return res;
     }
-    else if (!defineField(obj, key, desc.writable, desc.enumerable, desc.configurable, desc.value)) {
-        throw new TypeError("Cannot redefine property: " + key);
-    }
+}
 
-    return obj;
-});
-
-defineField(Object.prototype, "toString", true, false, true, function() {
-    if (this !== null && this !== undefined && (Symbol.toStringTag in this)) return "[object " + this[Symbol.toStringTag] + "]";
-    else if (typeof this === "number" || this instanceof Number) return "[object Number]";
-    else if (typeof this === "symbol" || this instanceof Symbol) return "[object Symbol]";
-    else if (typeof this === "string" || this instanceof String) return "[object String]";
-    else if (typeof this === "boolean" || this instanceof Boolean) return "[object Boolean]";
-    else if (typeof this === "function") return "[object Function]";
-    else return "[object Object]";
-});
-defineField(Object.prototype, "valueOf", true, false, true, function() {
-    return this;
-});
-
-target.Object = Object;
-
-const Function = function() {
-    const parts = ["return function annonymous("];
-
-    for (let i = 0; i < arguments.length - 1; i++) {
-        if (i > 0) parts[parts.length] = ",";
-        parts[parts.length] = arguments[i];
-    }
-    parts[parts.length] = "){\n";
-    parts[parts.length] = String(arguments[arguments.length - 1]);
-    parts[parts.length] = "\n}";
-
-    const res = compile(stringBuild(parts))();
-    return res;
-};
-
-defineField(Function, "compile", true, false, true, (src = "", options = {}) => {
-    if (options.globals == null) options.globals = [];
-    if (options.wrap == null) options.wrap = true;
-
-    const parts = [];
-
-    if (options.wrap) parts[parts.length] = "return (function() {\n";
-    if (options.globals.length > 0) {
-        parts[parts.length] = "var ";
-
-        for (let i = 0; i < options.globals.length; i++) {
-            if (i > 0) parts[parts.length] = ",";
-            parts[parts.length] = options.globals[i];
-        }
-
-        parts[parts.length] = ";((g=arguments[0])=>{";
-
-        for (let i = 0; i < options.globals.length; i++) {
-            const name = options.globals[i];
-            parts[parts.length] = name + "=g[" + json.stringify(name) + "];";
-        }
-
-        parts[parts.length] = "})()\n";
-    }
-
-    parts[parts.length] = src;
-    if (options.wrap) parts[parts.length] = "\n})(arguments[0])";
-
-    const res = compile(stringBuild(parts));
-    return res;
-});
-defineField(Function, "prototype", false, false, false, setPrototype({}, null));
-
-defineField(Function.prototype, "toString", true, false, true, function() {
-    if (this.name !== "") return "function " + this.name + "(...) { ... }";
-    else return "function (...) { ... }";
-});
-defineField(Function.prototype, "valueOf", true, false, true, function() {
-    return this;
-});
-
+setCallable(Function, true);
 target.Function = Function;
 
-// setIntrinsic("spread_obj", target.spread_obj = (target, obj) => {
-//     if (obj === null || obj === undefined) return;
-//     const members = getOwnMembers(obj, true);
-//     const symbols = getOwnSymbolMembers(obj, true);
+class Array {
+    constructor(len) {
+        if (arguments.length === 1 && typeof len === "number") {
+            const res = [];
+            res.length = len;
+            return res;
+        }
+        // TODO: Implement spreading
+        else throw new Error("Spreading not implemented");
+    }
+}
 
-//     for (let i = 0; i < members.length; i++) {
-//         const member = members[i];
-//         target[member] = obj[member];
-//     }
+setCallable(Array, true);
+target.Array = Array;
 
-//     for (let i = 0; i < symbols.length; i++) {
-//         const member = symbols[i];
-//         target[member] = obj[member];
-//     }
-// });
-// setIntrinsic("apply", target.spread_call = (func, self, args) => {
-//     return invoke(func, self, args);
-// });
-// setIntrinsic("apply", target.spread_new = (func, args) => {
-//     return invoke(func, null, args);
-// });
+class Error {
+    toString() {
+        let res = this.name || "Error";
 
-const Error = function(msg = "") {
-    if (invokeType(arguments) === "call") return new Error(msg);
-    this.message = msg + "";
-};
+        const msg = this.message;
+        if (msg) res += ": " + msg;
+
+        return res;
+    }
+
+    constructor (msg = "") {
+        if (invokeType(arguments) === "call") return new Error(msg);
+        this.message = msg + "";
+    }
+}
+
 defineField(Error.prototype, "name", true, false, true, "Error");
 defineField(Error.prototype, "message", true, false, true, "");
-defineField(Error.prototype, "toString", true, false, true, function toString() {
-    let res = this.name || "Error";
-
-    const msg = this.message;
-    if (msg) res += ": " + msg;
-
-    return res;
-});
-
+setCallable(Error, true);
 target.Error = Error;
 
-const SyntaxError = function(msg = "") {
-    if (invokeType(arguments) === "call") return new SyntaxError(msg);
-    this.message = msg + "";
-};
-defineField(SyntaxError.prototype, "name", true, false, true, "SyntaxError");
+class SyntaxError {
+    constructor (msg = "") {
+        if (invokeType(arguments) === "call") return new SyntaxError(msg);
+        this.message = msg + "";
+    }
+}
 
+defineField(SyntaxError.prototype, "name", true, false, true, "SyntaxError");
 setPrototype(SyntaxError, Error);
 setPrototype(SyntaxError.prototype, Error.prototype);
-
+setCallable(SyntaxError, true);
 target.SyntaxError = SyntaxError;
+
+class TypeError {
+    constructor (msg = "") {
+        if (invokeType(arguments) === "call") return new TypeError(msg);
+        this.message = msg + "";
+    }
+}
+
+defineField(TypeError.prototype, "name", true, false, true, "TypeError");
+setPrototype(TypeError, Error);
+setPrototype(TypeError.prototype, Error.prototype);
+setCallable(TypeError, true);
+target.TypeError = TypeError;
+
+class RangeError {
+    constructor (msg = "") {
+        if (invokeType(arguments) === "call") return new RangeError(msg);
+        this.message = msg + "";
+    }
+}
+
+defineField(RangeError.prototype, "name", true, false, true, "RangeError");
+setPrototype(RangeError, Error);
+setPrototype(RangeError.prototype, Error.prototype);
+setCallable(RangeError, true);
+target.RangeError = RangeError;
 
 setGlobalPrototype("string", String.prototype);
 setGlobalPrototype("number", Number.prototype);
 setGlobalPrototype("boolean", Boolean.prototype);
 setGlobalPrototype("symbol", Symbol.prototype);
 setGlobalPrototype("object", Object.prototype);
+setGlobalPrototype("array", Array.prototype);
 setGlobalPrototype("function", Function.prototype);
 setGlobalPrototype("error", Error.prototype);
 setGlobalPrototype("syntax", SyntaxError.prototype);
