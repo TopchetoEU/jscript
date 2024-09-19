@@ -54,7 +54,7 @@ public class ArrayValue extends ArrayLikeValue implements Iterable<Value> {
     @Override public boolean remove(int i) {
         if (i < 0 || i >= values.length) return true;
         values[i] = null;
-        return false;
+        return true;
     }
 
     public void shrink(int n) {

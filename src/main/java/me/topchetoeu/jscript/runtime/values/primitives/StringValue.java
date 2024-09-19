@@ -40,16 +40,19 @@ public final class StringValue extends PrimitiveValue {
     @Override public ObjectValue getPrototype(Environment env) { return env.get(STRING_PROTO); }
 
     @Override public Member getOwnMember(Environment env, KeyCache key) {
-        var num = key.toNumber(env);
-        var i = key.toInt(env);
+        if (!key.isSymbol()) {
+            var num = key.toNumber(env);
+            var i = key.toInt(env);
 
-        if (i == num && i >= 0 && i < value.length()) {
-            return FieldMember.of(this, new StringValue(value.charAt(i) + ""), false, true, false);
+            if (i == num && i >= 0 && i < value.length()) {
+                return FieldMember.of(this, new StringValue(value.charAt(i) + ""), false, true, false);
+            }
+            else if (key.toString(env).equals("length")) {
+                return FieldMember.of(this, NumberValue.of(value.length()), false, false, false);
+            }
         }
-        else if (key.toString(env).equals("length")) {
-            return FieldMember.of(this, NumberValue.of(value.length()), false, false, false);
-        }
-        else return super.getOwnMember(env, key);
+
+        return super.getOwnMember(env, key);
     }
 
     @Override public Set<String> getOwnMembers(Environment env, boolean onlyEnumerable) {

@@ -200,7 +200,7 @@ public abstract class Value {
     public final Value getMemberOrNull(Environment env, KeyCache key) {
         for (Value obj = this; obj != null; obj = obj.getPrototype(env)) {
             var member = obj.getOwnMember(env, key);
-            if (member != null) return member.get(env, obj);
+            if (member != null) return member.get(env, this);
         }
 
         return null;
@@ -240,7 +240,7 @@ public abstract class Value {
         for (Value obj = this; obj != null; obj = obj.getPrototype(env)) {
             var member = obj.getOwnMember(env, key);
             if (member != null && (member instanceof PropertyMember || obj == this)) {
-                if (member.set(env, val, obj)) {
+                if (member.set(env, val, this)) {
                     if (val instanceof FunctionValue) ((FunctionValue)val).setName(key.toString(env));
                     return true;
                 }
