@@ -19,9 +19,8 @@ import me.topchetoeu.jscript.compilation.Node;
 import me.topchetoeu.jscript.compilation.Parameters;
 import me.topchetoeu.jscript.compilation.patterns.AssignTarget;
 import me.topchetoeu.jscript.compilation.patterns.AssignTargetLike;
-import me.topchetoeu.jscript.compilation.patterns.ObjectAssignable;
+import me.topchetoeu.jscript.compilation.patterns.ObjectPattern;
 import me.topchetoeu.jscript.compilation.patterns.Pattern;
-import me.topchetoeu.jscript.compilation.patterns.ObjectDestructor.Member;
 import me.topchetoeu.jscript.compilation.values.constants.NumberNode;
 import me.topchetoeu.jscript.compilation.values.constants.StringNode;
 import me.topchetoeu.jscript.compilation.values.operations.AssignNode;
@@ -296,18 +295,18 @@ public class ObjectNode extends Node implements AssignTargetLike {
     }
 
     @Override public AssignTarget toAssignTarget() {
-        var newMembers = new LinkedList<Member<AssignTarget>>();
+        var newMembers = new LinkedList<ObjectPattern.Member>();
 
         for (var el : members) {
             if (el instanceof FieldMemberNode field) {
-                if (field.value instanceof AssignTargetLike target) newMembers.add(new Member<>(field.key, target.toAssignTarget()));
+                if (field.value instanceof AssignTargetLike target) newMembers.add(new ObjectPattern.Member(field.key, target.toAssignTarget()));
                 else throw new SyntaxException(field.value.loc(), "Expected an assignable in deconstructor");
             }
-            else if (el instanceof AssignShorthandNode shorthand) newMembers.add(new Member<>(shorthand.key, shorthand.target()));
+            else if (el instanceof AssignShorthandNode shorthand) newMembers.add(new ObjectPattern.Member(shorthand.key, shorthand.target()));
             else throw new SyntaxException(el.loc(), "Unexpected member in deconstructor");
         }
 
-        return new ObjectAssignable(loc(), newMembers);
+        return new ObjectPattern(loc(), newMembers);
     }
 
     public ObjectNode(Location loc, List<Node> map) {

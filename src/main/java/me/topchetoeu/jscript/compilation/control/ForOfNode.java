@@ -12,24 +12,20 @@ import me.topchetoeu.jscript.compilation.DeferredIntSupplier;
 import me.topchetoeu.jscript.compilation.JavaScript;
 import me.topchetoeu.jscript.compilation.LabelContext;
 import me.topchetoeu.jscript.compilation.Node;
-import me.topchetoeu.jscript.compilation.JavaScript.DeclarationType;
-import me.topchetoeu.jscript.compilation.scope.Variable;
-import me.topchetoeu.jscript.compilation.values.VariableNode;
+import me.topchetoeu.jscript.compilation.patterns.Binding;
 
 public class ForOfNode extends Node {
-    public final String varName;
-    public final DeclarationType declType;
+    public final Binding binding;
     public final Node iterable, body;
     public final String label;
-    public final Location varLocation;
 
     @Override public void resolve(CompileResult target) {
         body.resolve(target);
-        if (declType != null && !declType.strict) target.scope.define(new Variable(varName, false), varLocation);
+        binding.resolve(target);
     }
 
     @Override public void compile(CompileResult target, boolean pollute) {
-        if (declType != null && declType.strict) target.scope.defineStrict(new Variable(varName, declType.readonly), varLocation);
+        binding.declareLateInit(target);
 
         iterable.compile(target, true, BreakpointType.STEP_OVER);
         target.add(Instruction.dup());
@@ -46,8 +42,8 @@ public class ForOfNode extends Node {
         target.add(Instruction.loadMember("done")).setLocation(iterable.loc());
         int mid = target.temp();
 
-        target.add(Instruction.loadMember("value")).setLocation(varLocation);
-        target.add(VariableNode.toSet(target, varLocation, varName, false, declType != null && declType.strict));
+        target.add(Instruction.loadMember("value")).setLocation(binding.loc);
+        binding.assign(target, false);
 
         var end = new DeferredIntSupplier();
 
@@ -65,12 +61,10 @@ public class ForOfNode extends Node {
         if (pollute) target.add(Instruction.pushUndefined());
     }
 
-    public ForOfNode(Location loc, Location varLocation, String label, DeclarationType declType, String varName, Node object, Node body) {
+    public ForOfNode(Location loc, String label, Binding binding, Node object, Node body) {
         super(loc);
-        this.varLocation = varLocation;
         this.label = label;
-        this.declType = declType;
-        this.varName = varName;
+        this.binding = binding;
         this.iterable = object;
         this.body = body;
     }
@@ -91,13 +85,9 @@ public class ForOfNode extends Node {
         n++;
         n += Parsing.skipEmpty(src, i + n);
 
-        var declType = JavaScript.parseDeclarationType(src, i + n);
-        n += declType.n;
-
-        var name = Parsing.parseIdentifier(src, i + n);
-        if (!name.isSuccess()) return ParseRes.error(src.loc(i + n), "Expected a variable name for for-of loop");
-        var nameLoc = src.loc(i + n);
-        n += name.n;
+        var binding = Binding.parse(src, i + n);
+        if (!binding.isSuccess()) return ParseRes.error(src.loc(i + n), "Expected a binding in for-of loop");
+        n += binding.n;
         n += Parsing.skipEmpty(src, i + n);
 
         if (!Parsing.isIdentifier(src, i + n, "of")) return ParseRes.error(src.loc(i + n), "Expected 'of' keyword after variable declaration");
@@ -115,6 +105,6 @@ public class ForOfNode extends Node {
         if (!bodyRes.isSuccess()) return bodyRes.chainError(src.loc(i + n), "Expected a for-of body");
         n += bodyRes.n;
 
-        return ParseRes.res(new ForOfNode(loc, nameLoc, label.result, declType.result, name.result, obj.result, bodyRes.result), n);
+        return ParseRes.res(new ForOfNode(loc, label.result, binding.result, obj.result, bodyRes.result), n);
     }
 }

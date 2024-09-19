@@ -1,6 +1,5 @@
 package me.topchetoeu.jscript.runtime;
 
-import java.util.Arrays;
 import java.util.Stack;
 import java.util.concurrent.CancellationException;
 
@@ -361,15 +360,7 @@ public final class Frame {
         this.argsVal = new ArgumentsValue(this, args);
         this.captures = func.captures;
 
-        var i = 0;
-
         this.locals = new Value[func.body.localsN];
-        Arrays.fill(locals, Value.UNDEFINED);
-
         this.capturables = new Value[func.body.capturablesN][1];
-
-        for (i = 0; i < func.body.capturablesN; i++) {
-            this.capturables[i][0] = Value.UNDEFINED;
-        }
     }
 }

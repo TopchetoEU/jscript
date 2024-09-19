@@ -50,7 +50,7 @@ public abstract class FunctionNode extends Node {
                 var i = scope.defineSpecial(new Variable(selfName, true), end);
 
                 target.add(Instruction.loadCallee());
-                target.add(_i -> i.index().toSet(false));
+                target.add(_i -> i.index().toInit());
             }
 
             body.resolve(target);

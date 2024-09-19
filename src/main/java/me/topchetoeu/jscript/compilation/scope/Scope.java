@@ -10,8 +10,8 @@ import me.topchetoeu.jscript.compilation.JavaScript.DeclarationType;
 public class Scope {
     protected final HashMap<String, Variable> strictVarMap = new HashMap<>();
 
-    protected final VariableList variables = new VariableList(VariableIndex.IndexType.LOCALS, this::variableOffset);
-    protected final VariableList captured = new VariableList(VariableIndex.IndexType.CAPTURABLES, this::capturablesOffset);
+    protected final VariableList locals = new VariableList(VariableIndex.IndexType.LOCALS, this::variableOffset);
+    protected final VariableList capturables = new VariableList(VariableIndex.IndexType.CAPTURABLES, this::capturablesOffset);
 
     private boolean ended = false;
     private boolean finished = false;
@@ -29,7 +29,7 @@ public class Scope {
 
     protected void transferCaptured(Variable var) {
         if (!singleEntry) {
-            this.captured.add(var);
+            this.capturables.add(var);
         }
         else if (parent != null) {
             parent.transferCaptured(var);
@@ -60,7 +60,7 @@ public class Scope {
      */
     public Variable defineTemp() {
         checkNotEnded();
-        return this.variables.add(new Variable("<temp>", false));
+        return this.locals.add(new Variable("<temp>", false));
     }
 
     /**
@@ -96,7 +96,7 @@ public class Scope {
         if (hasNonStrict(var.name)) throw alreadyDefinedErr(loc, var.name);
 
         strictVarMap.put(var.name, var);
-        return variables.add(var);
+        return locals.add(var);
     }
     /**
      * Gets the index supplier of the given variable name, or null if it is a global
@@ -129,7 +129,7 @@ public class Scope {
         var res = 0;
 
         for (var curr = parent; curr != null; curr = curr.parent) {
-            res += parent.variables.size();
+            res += parent.locals.size();
         }
 
         return res;
@@ -138,7 +138,7 @@ public class Scope {
         var res = 0;
 
         for (var curr = this; curr != null; curr = curr.parent) {
-            if (curr != this) res += parent.captured.size();
+            if (curr != this) res += parent.capturables.size();
             if (curr.parent == null) res += curr.localsCount();
         }
 
@@ -157,17 +157,24 @@ public class Scope {
             if (res < childN) res = childN;
         }
 
-        return res + variables.size();
+        return res + locals.size();
     }
     public int capturesCount() { return 0; }
     public int allocCount() {
-        var res = captured.size();
+        var res = capturables.size();
         return res;
     }
     public int capturablesCount() {
-        var res = captured.size();
+        var res = capturables.size();
         for (var child : children) res += child.capturablesCount();
         return res;
+    }
+
+    public Iterable<Variable> capturables() {
+        return capturables.all();
+    }
+    public Iterable<Variable> locals() {
+        return locals.all();
     }
 
     /**
@@ -187,8 +194,8 @@ public class Scope {
     }
 
     protected void onFinish() {
-        this.variables.freeze();
-        this.captured.freeze();
+        this.locals.freeze();
+        this.capturables.freeze();
     }
 
     /**

@@ -37,8 +37,8 @@ public class VariableDeclareNode extends Node {
     @Override public void compile(CompileResult target, boolean pollute) {
         for (var entry : values) {
             if (entry.value == null) {
-                if (declType == DeclarationType.VAR) entry.destructor.declare(target, null);
-                else entry.destructor.declare(target, declType);
+                if (declType == DeclarationType.VAR) entry.destructor.declare(target, null, false);
+                else entry.destructor.declare(target, declType, false);
             }
             else {
                 entry.value.compile(target, true);

@@ -26,17 +26,18 @@ public class VariableNode extends Node implements Pattern, ChangeTarget {
     }
 
     @Override public void destructDeclResolve(CompileResult target) {
-        target.scope.define(new Variable(name, false), loc());
+        var i = target.scope.define(new Variable(name, false), loc());
+        if (i != null) target.add(_i -> i.index().toUndefinedInit(false));
     }
 
     @Override public void afterAssign(CompileResult target, boolean pollute) {
-        target.add(VariableNode.toSet(target, loc(), name, pollute, false));
+        target.add(VariableNode.toSet(target, loc(), name, pollute));
     }
 
-    @Override public void declare(CompileResult target, DeclarationType decl) {
+    @Override public void declare(CompileResult target, DeclarationType decl, boolean lateInitializer) {
         if (decl != null) {
-            if (decl.strict) target.scope.defineStrict(new Variable(name, decl.readonly), loc());
-            else target.scope.define(new Variable(name, decl.readonly), loc());
+            var i = target.scope.define(decl, name, loc());
+            target.add(_i -> i.index().toUndefinedInit(decl.strict));
         }
         else target.add(_i -> {
             var i = target.scope.get(name, false);
@@ -48,52 +49,60 @@ public class VariableNode extends Node implements Pattern, ChangeTarget {
 
     @Override public void destruct(CompileResult target, DeclarationType decl, boolean shouldDeclare) {
         if (!shouldDeclare || decl == null) {
-            target.add(VariableNode.toSet(target, loc(), name, false, shouldDeclare));
+            if (shouldDeclare) target.add(VariableNode.toInit(target, loc(), name));
+            else target.add(VariableNode.toInit(target, loc(), name));
         }
         else {
             if (decl == DeclarationType.VAR && target.scope.has(name, false)) throw new SyntaxException(loc(), "Duplicate parameter name not allowed");
             var v = target.scope.define(decl, name, loc());
-            target.add(_i -> v.index().toSet(false));
+            target.add(_i -> v.index().toInit());
         }
     }
 
     @Override public void compile(CompileResult target, boolean pollute) {
-        var i = target.scope.get(name, false);
-
-        if (i == null) {
-            target.add(_i -> {
-                if (target.scope.has(name, false)) return Instruction.throwSyntax(loc(), String.format("Cannot access '%s' before initialization", name));
-                return Instruction.globGet(name, false);
-            });
-
-            if (!pollute) target.add(Instruction.discard());
-        }
-        else if (pollute) target.add(_i -> i.index().toGet());
+        target.add(toGet(target, loc(), name, true, false));
     }
 
-    public static IntFunction<Instruction> toGet(CompileResult target, Location loc, String name, boolean forceGet) {
-        var i = target.scope.get(name, false);
+    public static IntFunction<Instruction> toGet(CompileResult target, Location loc, String name, boolean keep, boolean forceGet) {
+        var oldI = target.scope.get(name, true);
 
-        if (i == null) return _i -> {
-            if (target.scope.has(name, false)) return Instruction.throwSyntax(loc, String.format("Cannot access '%s' before initialization", name));
-            else return Instruction.globGet(name, forceGet);
+        if (oldI != null) {
+            if (keep) return _i -> oldI.index().toGet();
+            else return _i -> Instruction.nop();
+        }
+        else return _i -> {
+            var newI = target.scope.get(name, false);
+
+            if (newI == null) return Instruction.globGet(name, forceGet);
+            else if (keep) return newI.index().toGet();
+            else return Instruction.nop();
         };
-        else return _i -> i.index().toGet();
     }
     public static IntFunction<Instruction> toGet(CompileResult target, Location loc, String name) {
-        return toGet(target, loc, name, false);
+        return toGet(target, loc, name, true, false);
     }
 
+    public static IntFunction<Instruction> toInit(CompileResult target, Location loc, String name) {
+        var oldI = target.scope.get(name, true);
 
-    public static IntFunction<Instruction> toSet(CompileResult target, Location loc, String name, boolean keep, boolean define) {
-        var i = target.scope.get(name, false);
+        if (oldI != null) return _i -> oldI.index().toInit();
+        else return _i -> {
+            var i = target.scope.get(name, false);
 
-        if (i == null) return _i -> {
-            if (target.scope.has(name, false)) return Instruction.throwSyntax(loc, String.format("Cannot access '%s' before initialization", name));
-            else return Instruction.globSet(name, keep, define);
+            if (i == null) return Instruction.globSet(name, false, true);
+            else return i.index().toInit();
         };
-        else if (!define && i.readonly) return _i -> Instruction.throwSyntax(new SyntaxException(loc, "Assignment to constant variable"));
-        else return _i -> i.index().toSet(keep);
+    }
+    public static IntFunction<Instruction> toSet(CompileResult target, Location loc, String name, boolean keep) {
+        var oldI = target.scope.get(name, true);
+
+        if (oldI != null) return _i -> oldI.index().toSet(keep);
+        else return _i -> {
+            var i = target.scope.get(name, false);
+
+            if (i == null) return Instruction.globSet(name, keep, false);
+            else return i.index().toSet(keep);
+        };
     }
 
     public VariableNode(Location loc, String name) {

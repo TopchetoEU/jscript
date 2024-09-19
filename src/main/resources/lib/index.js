@@ -1,3 +1,5 @@
+return;
+
 const target = arguments[0];
 const primordials = arguments[1];
 

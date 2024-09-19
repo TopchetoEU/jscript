@@ -25,10 +25,7 @@ public class CompoundNode extends Node {
         List<Node> statements = new ArrayList<Node>();
 
         var subtarget = hasScope ? target.subtarget() : target;
-        if (hasScope) {
-            subtarget.add(i -> Instruction.stackAlloc(subtarget.scope.capturablesOffset(), subtarget.scope.allocCount()));
-            subtarget.scope.singleEntry = singleEntry;
-        }
+        if (hasScope) subtarget.beginScope();
 
         for (var stm : this.statements) {
             if (stm instanceof FunctionStatementNode func) {
@@ -46,7 +43,7 @@ public class CompoundNode extends Node {
             else stm.compile(subtarget, polluted = pollute, BreakpointType.STEP_OVER);
         }
 
-        if (hasScope) subtarget.scope.end();
+        if (hasScope) subtarget.endScope();
 
         if (!polluted && pollute) {
             target.add(Instruction.pushUndefined());

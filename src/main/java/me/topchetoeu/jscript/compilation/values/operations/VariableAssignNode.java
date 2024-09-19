@@ -18,11 +18,11 @@ public class VariableAssignNode extends Node {
             target.add(VariableNode.toGet(target, loc(), name));
             FunctionNode.compileWithName(value, target, true, name);
             target.add(Instruction.operation(operation));
-            target.add(VariableNode.toSet(target, loc(), name, pollute, false));
+            target.add(VariableNode.toSet(target, loc(), name, pollute));
         }
         else {
             FunctionNode.compileWithName(value, target, true, name);
-            target.add(VariableNode.toSet(target, loc(), name, pollute, false));
+            target.add(VariableNode.toSet(target, loc(), name, pollute));
         }
     }
 

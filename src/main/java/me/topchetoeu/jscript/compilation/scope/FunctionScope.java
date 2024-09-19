@@ -36,7 +36,7 @@ public class FunctionScope extends Scope {
         }
         else {
             functionVarMap.put(var.name, var);
-            return variables.add(var);
+            return locals.add(var);
         }
     }
     public Variable defineSpecial(Variable var, Location loc) {
@@ -44,7 +44,7 @@ public class FunctionScope extends Scope {
         if (strictVarMap.containsKey(var.name)) throw alreadyDefinedErr(loc, var.name);
 
         specialVarMap.put(var.name, var);
-        return variables.add(var);
+        return locals.add(var);
     }
 
     @Override public Variable get(String name, boolean capture) {
