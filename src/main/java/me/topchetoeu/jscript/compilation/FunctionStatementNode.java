@@ -18,7 +18,8 @@ public class FunctionStatementNode extends FunctionNode {
     @Override public void compile(CompileResult target, boolean pollute, String name, BreakpointType bp) {
         var id = target.addChild(compileBody(target, name, null));
         target.add(_i -> Instruction.loadFunc(id, true, true, false, name, captures(id, target)));
-        target.add(VariableNode.toSet(target, end, this.name, pollute, true));
+        target.add(VariableNode.toInit(target, end, this.name));
+        if (pollute) target.add(Instruction.pushUndefined());
     }
 
     public FunctionStatementNode(Location loc, Location end, Parameters params, CompoundNode body, String name) {

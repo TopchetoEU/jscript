@@ -10,7 +10,7 @@ import me.topchetoeu.jscript.compilation.values.VariableNode;
 /**
  * Represents all nodes that can be a destructors (note that all destructors are assign targets, too)
  */
-public interface Pattern {
+public interface Pattern extends AssignTarget {
     Location loc();
 
     /**
@@ -28,7 +28,21 @@ public interface Pattern {
     /**
      * Run when destructing a declaration without an initializer
      */
-    void declare(CompileResult target, DeclarationType decl);
+    void declare(CompileResult target, DeclarationType decl, boolean lateInitializer);
+
+    public default void destructArg(CompileResult target, DeclarationType decl) {
+        destruct(target, decl, false);
+    }
+    public default void destructVar(CompileResult target, DeclarationType decl, boolean hasInitializer) {
+        if (hasInitializer) {
+            if (decl == null || !decl.strict) destruct(target, null, true);
+            else destruct(target, decl, true);
+        }
+        else {
+            if (decl == null || !decl.strict) declare(target, null, false);
+            else declare(target, decl, false);
+        }
+    }
 
     public static ParseRes<Pattern> parse(Source src, int i, boolean withDefault) {
         return withDefault ?

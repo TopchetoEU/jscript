@@ -78,6 +78,31 @@ public final class CompileResult {
         setLocationAndDebug(instructions.size() - 1, loc, type);
     }
 
+    public void beginScope() {
+        // for (var cap : scope.capturables()) {
+        //     add(_i -> Instruction.capInit(cap.index().index));
+        // }
+    }
+    public void reallocScope() {
+        for (var cap : scope.capturables()) {
+            add(_i -> cap.index().toGet());
+            add(_i -> Instruction.capFree(cap.index().index));
+            add(_i -> cap.index().toInit());
+        }
+
+        scope.end();
+    }
+    public void endScope() {
+        for (var cap : scope.capturables()) {
+            add(_i -> Instruction.capFree(cap.index().index));
+        }
+        for (var var : scope.locals()) {
+            add(_i -> Instruction.varFree(var.index().index));
+        }
+
+        scope.end();
+    }
+
     public int addChild(CompileResult res) {
         this.children.add(res);
         return this.children.size() - 1;

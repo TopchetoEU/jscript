@@ -55,6 +55,7 @@ public abstract class ArrayLikeValue extends ObjectValue {
     @Override public Member getOwnMember(Environment env, KeyCache key) {
         var res = super.getOwnMember(env, key);
         if (res != null) return res;
+        if (key.isSymbol()) return null;
 
         var num = key.toNumber(env);
         var i = key.toInt(env);
@@ -67,18 +68,21 @@ public abstract class ArrayLikeValue extends ObjectValue {
         if (!(member instanceof FieldMember) || super.getOwnMember(env, key) != null) return super.defineOwnMember(env, key, member);
         if (!getState().writable) return false;
 
-        var num = key.toNumber(env);
-        var i = key.toInt(env);
+        if (!key.isSymbol()) {
+            var num = key.toNumber(env);
+            var i = key.toInt(env);
 
-        if (i == num) {
-            if (!getState().extendable && !has(i)) return false;
-            if (set(env, i, ((FieldMember)member).get(env, this))) return true;
+            if (i == num) {
+                if (!getState().extendable && !has(i)) return false;
+                if (set(env, i, ((FieldMember)member).get(env, this))) return true;
+            }
         }
 
         return super.defineOwnMember(env, key, member);
     }
     @Override public boolean deleteOwnMember(Environment env, KeyCache key) {
         if (!super.deleteOwnMember(env, key)) return false;
+        if (key.isSymbol()) return true;
 
         var num = key.toNumber(env);
         var i = key.toInt(env);

@@ -90,7 +90,7 @@ public class InstructionRunner {
         var members = new ArrayList<>(val.getMembers(env, instr.get(0), instr.get(1)));
         Collections.reverse(members);
 
-        frame.push(null);
+        frame.push(Value.UNDEFINED);
 
         for (var el : members) {
             var obj = new ObjectValue();
@@ -147,7 +147,9 @@ public class InstructionRunner {
     private static Value execLoadVar(Environment env, Instruction instr, Frame frame) {
         int i = instr.get(0);
 
-        frame.push(frame.getVar(i));
+        var res = frame.getVar(i);
+        if (res == null) throw EngineException.ofSyntax("Uninitialized variable");
+        frame.push(res);
         frame.codePtr++;
 
         return null;
@@ -285,6 +287,7 @@ public class InstructionRunner {
         var val = (boolean)instr.get(1) ? frame.peek() : frame.pop();
         int i = instr.get(0);
 
+        if (!(boolean)instr.get(2) && frame.getVar(i) == null) throw EngineException.ofSyntax("Uninitialized variable");
         frame.setVar(i, val);
         frame.codePtr++;
 
@@ -516,21 +519,21 @@ public class InstructionRunner {
         return null;
     }
 
-    private static Value execStackAlloc(Environment env, Instruction instr, Frame frame) {
-        int offset = instr.get(0);
-        int n = instr.get(1);
-
-        for (var i = offset; i < n; i++) frame.capturables[i] = new Value[] { Value.UNDEFINED };
+    private static Value execVarInit(Environment env, Instruction instr, Frame frame) {
+        if ((boolean)instr.get(1) || frame.getVar(instr.get(0)) == null) {
+            frame.setVar(instr.get(0), Value.UNDEFINED);
+        }
 
         frame.codePtr++;
         return null;
     }
-    private static Value execStackRealloc(Environment env, Instruction instr, Frame frame) {
-        int offset = instr.get(0);
-        int n = instr.get(1);
-
-        for (var i = offset; i < n; i++) frame.capturables[i] = new Value[] { frame.capturables[i][0] };
-
+    private static Value execVarFree(Environment env, Instruction instr, Frame frame) {
+        frame.locals[(int)instr.get(0)] = null;
+        frame.codePtr++;
+        return null;
+    }
+    private static Value execCapFree(Environment env, Instruction instr, Frame frame) {
+        frame.capturables[(int)instr.get(0) - frame.locals.length] = new Value[1];
         frame.codePtr++;
         return null;
     }
@@ -592,8 +595,9 @@ public class InstructionRunner {
             case GLOB_GET: return exexGlobGet(env, instr, frame);
             case GLOB_SET: return exexGlobSet(env, instr, frame);
 
-            case STACK_ALLOC: return execStackAlloc(env, instr, frame);
-            case STACK_REALLOC: return execStackRealloc(env, instr, frame);
+            case VAR_INIT: return execVarInit(env, instr, frame);
+            case VAR_FREE: return execVarFree(env, instr, frame);
+            case CAP_FREE: return execCapFree(env, instr, frame);
 
             default: throw EngineException.ofSyntax("Invalid instruction " + instr.type.name() + ".");
         }

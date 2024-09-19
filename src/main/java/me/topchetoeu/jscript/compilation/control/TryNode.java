@@ -43,13 +43,14 @@ public class TryNode extends Node {
 
             if (captureName != null) {
                 var subtarget = target.subtarget();
-                subtarget.add(i -> Instruction.stackAlloc(subtarget.scope.capturablesOffset(), subtarget.scope.allocCount()));
+                subtarget.beginScope();
                 subtarget.scope.singleEntry = true;
 
                 var catchVar = subtarget.scope.defineStrict(new Variable(captureName, false), catchBody.loc());
                 subtarget.add(Instruction.loadError());
-                subtarget.add(_i -> catchVar.index().toSet(false));
+                subtarget.add(catchVar.index().toInit());
                 catchBody.compile(subtarget, false);
+                subtarget.endScope();
 
                 subtarget.scope.end();
             }

@@ -16,7 +16,7 @@ public class TypeofNode extends Node {
 
     @Override public void compile(CompileResult target, boolean pollute) {
         if (value instanceof VariableNode varNode) {
-            target.add(VariableNode.toGet(target, varNode.loc(), varNode.name, true));
+            target.add(VariableNode.toGet(target, varNode.loc(), varNode.name, true, true));
             if (pollute) target.add(Instruction.typeof());
             else target.add(Instruction.discard());
 

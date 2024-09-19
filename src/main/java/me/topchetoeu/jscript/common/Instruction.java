@@ -64,8 +64,10 @@ public class Instruction {
         GLOB_SET(0x61),
         GLOB_DEF(0x62),
 
-        STACK_ALLOC(0x70),
-        STACK_REALLOC(0x71);
+        // CAP_INIT(0x70),
+        VAR_INIT(0x71),
+        CAP_FREE(0x72),
+        VAR_FREE(0x73);
 
         private static final HashMap<Integer, Type> types = new HashMap<>();
         public final int numeric;
@@ -409,11 +411,11 @@ public class Instruction {
         return new Instruction(Type.DUP, count, offset);
     }
 
-    public static Instruction storeVar(int i) {
-        return new Instruction(Type.STORE_VAR, i, false);
-    }
-    public static Instruction storeVar(int i, boolean keep) {
-        return new Instruction(Type.STORE_VAR, i, keep);
+    // public static Instruction storeVar(int i) {
+    //     return new Instruction(Type.STORE_VAR, i, false);
+    // }
+    public static Instruction storeVar(int i, boolean keep, boolean initialize) {
+        return new Instruction(Type.STORE_VAR, i, keep, initialize);
     }
 
     public static Instruction storeMember() {
@@ -463,12 +465,21 @@ public class Instruction {
         return new Instruction(Type.OPERATION, op);
     }
 
-    public static Instruction stackAlloc(int start, int n) {
-        return new Instruction(Type.STACK_ALLOC, start, start + n);
+    public static Instruction capFree(int i) {
+        return new Instruction(Type.CAP_FREE, i);
     }
-    public static Instruction stackRealloc(int start, int n) {
-        return new Instruction(Type.STACK_REALLOC, start, start + n);
+    public static Instruction varFree(int i) {
+        return new Instruction(Type.VAR_FREE, i);
     }
+    public static Instruction varInit(int i, boolean force) {
+        return new Instruction(Type.VAR_INIT, i, force);
+    }
+    // public static Instruction stackAlloc(int start, int n) {
+    //     return new Instruction(Type.STACK_ALLOC, start, start + n);
+    // }
+    // public static Instruction stackRealloc(int start, int n) {
+    //     return new Instruction(Type.STACK_REALLOC, start, start + n);
+    // }
 
     @Override public String toString() {
         var res = type.toString();

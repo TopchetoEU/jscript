@@ -26,7 +26,7 @@ public class ForNode extends Node {
     @Override public void compile(CompileResult target, boolean pollute) {
         var subtarget = target.subtarget();
         subtarget.scope.singleEntry = false;
-        subtarget.add(i -> Instruction.stackAlloc(subtarget.scope.capturablesOffset(), subtarget.scope.allocCount()));
+        subtarget.beginScope();
 
         declaration.compile(subtarget, false, BreakpointType.STEP_OVER);
 
@@ -40,7 +40,7 @@ public class ForNode extends Node {
         CompoundNode.compileMultiEntry(body, subtarget, false, BreakpointType.STEP_OVER);
         LabelContext.popLoop(subtarget.env, label);
 
-        subtarget.add(_i -> Instruction.stackRealloc(subtarget.scope.capturablesOffset(), subtarget.scope.allocCount()));
+        subtarget.reallocScope();
 
         CompoundNode.compileMultiEntry(assignment, subtarget, false, BreakpointType.STEP_OVER);
         int endI = subtarget.size();
@@ -51,7 +51,7 @@ public class ForNode extends Node {
         subtarget.set(mid, Instruction.jmpIfNot(endI - mid + 1));
         if (pollute) subtarget.add(Instruction.pushUndefined());
 
-        subtarget.scope.end();
+        subtarget.endScope();
     }
 
     public ForNode(Location loc, String label, Node declaration, Node condition, Node assignment, Node body) {

@@ -14,19 +14,17 @@ import me.topchetoeu.jscript.compilation.JavaScript.DeclarationType;
 
 public class AssignPattern implements Pattern {
     public final Location loc;
-    public final Pattern assignable;
+    public final AssignTarget assignable;
     public final Node value;
 
     @Override public Location loc() { return loc; }
 
     @Override public void destructDeclResolve(CompileResult target) {
-        assignable.destructDeclResolve(target);
+        if (!(assignable instanceof Pattern p)) throw new SyntaxException(assignable.loc(), "Unexpected non-pattern in destruct context");
+        p.destructDeclResolve(target);
     }
 
-    @Override public void declare(CompileResult target, DeclarationType decl) {
-        throw new SyntaxException(loc(), "Expected an assignment value for destructor declaration");
-    }
-    @Override public void destruct(CompileResult target, DeclarationType decl, boolean shouldDeclare) {
+    private void common(CompileResult target) {
         target.add(Instruction.dup());
         target.add(Instruction.pushUndefined());
         target.add(Instruction.operation(Operation.EQUALS));
@@ -36,8 +34,27 @@ public class AssignPattern implements Pattern {
         value.compile(target, true);
 
         target.set(start, Instruction.jmpIfNot(target.size() - start));
+    }
 
-        assignable.destruct(target, decl, shouldDeclare);
+    @Override public void declare(CompileResult target, DeclarationType decl, boolean lateInitializer) {
+        if (lateInitializer) {
+            if (assignable instanceof Pattern p) p.declare(target, decl, lateInitializer);
+            else throw new SyntaxException(assignable.loc(), "Unexpected non-pattern in destruct context");
+        }
+        else throw new SyntaxException(loc(), "Expected an assignment value for destructor declaration");
+    }
+    @Override public void destruct(CompileResult target, DeclarationType decl, boolean shouldDeclare) {
+        if (!(assignable instanceof Pattern p)) throw new SyntaxException(assignable.loc(), "Unexpected non-pattern in destruct context");
+        common(target);
+        p.destruct(target, decl, shouldDeclare);
+    }
+
+    @Override public void beforeAssign(CompileResult target) {
+        assignable.beforeAssign(target);
+    }
+    @Override public void afterAssign(CompileResult target, boolean pollute) {
+        common(target);
+        assignable.afterAssign(target, false);
     }
 
     public AssignPattern(Location loc, Pattern assignable, Node value) {

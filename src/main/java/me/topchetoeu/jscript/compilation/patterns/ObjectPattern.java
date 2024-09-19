@@ -2,36 +2,79 @@ package me.topchetoeu.jscript.compilation.patterns;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.function.Consumer;
 
+import me.topchetoeu.jscript.common.Instruction;
 import me.topchetoeu.jscript.common.SyntaxException;
 import me.topchetoeu.jscript.common.parsing.Location;
 import me.topchetoeu.jscript.common.parsing.ParseRes;
 import me.topchetoeu.jscript.common.parsing.Parsing;
 import me.topchetoeu.jscript.common.parsing.Source;
 import me.topchetoeu.jscript.compilation.CompileResult;
+import me.topchetoeu.jscript.compilation.Node;
 import me.topchetoeu.jscript.compilation.JavaScript.DeclarationType;
 import me.topchetoeu.jscript.compilation.values.ObjectNode;
 import me.topchetoeu.jscript.compilation.values.VariableNode;
 import me.topchetoeu.jscript.compilation.values.constants.StringNode;
+import me.topchetoeu.jscript.compilation.values.operations.IndexNode;
 
-public class ObjectPattern extends ObjectDestructor<Pattern> implements Pattern {
+public class ObjectPattern extends Node implements Pattern {
+    public static final class Member {
+        public final Node key;
+        public final AssignTarget consumable;
+
+        public Member(Node key, AssignTarget consumer) {
+            this.key = key;
+            this.consumable = consumer;
+        }
+    }
+
+    public final List<Member> members;
+
+    public void compile(CompileResult target, Consumer<AssignTarget> consumer, boolean pollute) {
+        for (var el : members) {
+            target.add(Instruction.dup());
+            IndexNode.indexLoad(target, el.key, true);
+            consumer.accept(el.consumable);
+        }
+
+        if (!pollute) target.add(Instruction.discard());
+    }
+
     @Override public void destructDeclResolve(CompileResult target) {
-        consume(t -> t.destructDeclResolve(target));
+        for (var t : members) {
+            if (t.consumable instanceof Pattern p) p.destructDeclResolve(target);
+            else throw new SyntaxException(t.consumable.loc(), "Unexpected non-pattern in destruct context");
+        }
     }
 
     @Override public void destruct(CompileResult target, DeclarationType decl, boolean shouldDeclare) {
-        compile(target, t -> t.destruct(target, decl, shouldDeclare), false);
+        compile(target, t -> {
+            if (t instanceof Pattern p) p.destruct(target, decl, shouldDeclare);
+            else throw new SyntaxException(t.loc(), "Unexpected non-pattern in destruct context");
+        }, false);
     }
 
-    @Override public void declare(CompileResult target, DeclarationType decl) {
-        throw new SyntaxException(loc(), "Object pattern must be initialized");
+    @Override public void afterAssign(CompileResult target, boolean pollute) {
+        compile(target, t -> t.assign(target, false), pollute);
     }
 
-    public ObjectPattern(Location loc, List<Member<Pattern>> members) {
-        super(loc, members);
+    @Override public void declare(CompileResult target, DeclarationType decl, boolean lateInitializer) {
+        if (lateInitializer) {
+            for (var t : members) {
+                if (t.consumable instanceof Pattern p) p.declare(target, decl, lateInitializer);
+                else throw new SyntaxException(t.consumable.loc(), "Unexpected non-pattern in destruct context");
+            }
+        }
+        else throw new SyntaxException(loc(), "Object pattern must be initialized");
     }
 
-    private static ParseRes<Member<Pattern>> parseShorthand(Source src, int i) {
+    public ObjectPattern(Location loc, List<Member> members) {
+        super(loc);
+        this.members = members;
+    }
+
+    private static ParseRes<Member> parseShorthand(Source src, int i) {
         ParseRes<Pattern> res = ParseRes.first(src, i,
             AssignPattern::parse,
             VariableNode::parse
@@ -40,17 +83,17 @@ public class ObjectPattern extends ObjectDestructor<Pattern> implements Pattern 
         if (res.isSuccess()) {
             if (res.result instanceof AssignPattern assign) {
                 if (assign.assignable instanceof VariableNode var) {
-                    return ParseRes.res(new Member<>(new StringNode(var.loc(), var.name), res.result), res.n);
+                    return ParseRes.res(new Member(new StringNode(var.loc(), var.name), res.result), res.n);
                 }
             }
             else if (res.result instanceof VariableNode var) {
-                return ParseRes.res(new Member<>(new StringNode(var.loc(), var.name), res.result), res.n);
+                return ParseRes.res(new Member(new StringNode(var.loc(), var.name), res.result), res.n);
             }
         }
 
         return res.chainError();
     }
-    private static ParseRes<Member<Pattern>> parseKeyed(Source src, int i) {
+    private static ParseRes<Member> parseKeyed(Source src, int i) {
         var n = Parsing.skipEmpty(src, i);
 
         var key = ObjectNode.parsePropName(src, i + n);
@@ -65,7 +108,7 @@ public class ObjectPattern extends ObjectDestructor<Pattern> implements Pattern 
         if (!res.isSuccess()) return ParseRes.error(src.loc(i + n), "Expected a pattern after colon");
         n += res.n;
 
-        return ParseRes.res(new Member<>(key.result, res.result), n);
+        return ParseRes.res(new Member(key.result, res.result), n);
     }
 
     public static ParseRes<ObjectPattern> parse(Source src, int i) {
@@ -76,7 +119,7 @@ public class ObjectPattern extends ObjectDestructor<Pattern> implements Pattern 
         n++;
         n += Parsing.skipEmpty(src, i + n);
 
-        var members = new LinkedList<Member<Pattern>>();
+        var members = new LinkedList<Member>();
 
         if (src.is(i + n, "}")) {
             n++;
@@ -84,7 +127,7 @@ public class ObjectPattern extends ObjectDestructor<Pattern> implements Pattern 
         }
 
         while (true) {
-            ParseRes<Member<Pattern>> prop = ParseRes.first(src, i + n,
+            ParseRes<Member> prop = ParseRes.first(src, i + n,
                 ObjectPattern::parseKeyed,
                 ObjectPattern::parseShorthand
             );
