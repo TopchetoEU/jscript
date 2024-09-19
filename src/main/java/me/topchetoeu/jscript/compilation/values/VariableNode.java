@@ -64,7 +64,7 @@ public class VariableNode extends Node implements Pattern, ChangeTarget {
     }
 
     public static IntFunction<Instruction> toGet(CompileResult target, Location loc, String name, boolean keep, boolean forceGet) {
-        var oldI = target.scope.get(name, true);
+        var oldI = target.scope.get(name, false);
 
         if (oldI != null) {
             if (keep) return _i -> oldI.index().toGet();
@@ -83,7 +83,7 @@ public class VariableNode extends Node implements Pattern, ChangeTarget {
     }
 
     public static IntFunction<Instruction> toInit(CompileResult target, Location loc, String name) {
-        var oldI = target.scope.get(name, true);
+        var oldI = target.scope.get(name, false);
 
         if (oldI != null) return _i -> oldI.index().toInit();
         else return _i -> {
@@ -94,7 +94,7 @@ public class VariableNode extends Node implements Pattern, ChangeTarget {
         };
     }
     public static IntFunction<Instruction> toSet(CompileResult target, Location loc, String name, boolean keep) {
-        var oldI = target.scope.get(name, true);
+        var oldI = target.scope.get(name, false);
 
         if (oldI != null) return _i -> oldI.index().toSet(keep);
         else return _i -> {
