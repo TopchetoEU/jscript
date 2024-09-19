@@ -1,6 +1,7 @@
 package me.topchetoeu.jscript.runtime.values.functions;
 
 import me.topchetoeu.jscript.common.environment.Environment;
+import me.topchetoeu.jscript.runtime.exceptions.EngineException;
 import me.topchetoeu.jscript.runtime.values.KeyCache;
 import me.topchetoeu.jscript.runtime.values.Member;
 import me.topchetoeu.jscript.runtime.values.Value;
@@ -50,7 +51,10 @@ public abstract class FunctionValue extends ObjectValue {
     @Override public String toString() { return String.format("function %s(...)", name); }
     @Override public Value call(Environment ext, boolean isNew, String name, Value thisArg, Value ...args) {
         if (isNew && !enableNew) super.call(ext, isNew, name, thisArg, args);
-        if (!isNew && !enableCall) super.call(ext, isNew, name, thisArg, args);
+        if (!isNew && !enableCall) {
+            if (name == null || name.equals("")) name = "(intermediate value)";
+            throw EngineException.ofType(name + " is not invokable");
+        }
 
         return onCall(ext, isNew, name, thisArg, args);
     }
