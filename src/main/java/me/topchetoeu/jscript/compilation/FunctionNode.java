@@ -22,6 +22,8 @@ public abstract class FunctionNode extends Node {
         return ((FunctionScope)target.children.get(id).scope).getCaptureIndices();
     }
 
+    protected void compilePreBody(CompileResult target) { }
+
     public final CompileResult compileBody(Environment env, FunctionScope scope, boolean lastReturn, String _name, String selfName) {
         var name = this.name() != null ? this.name() : _name;
 
@@ -30,6 +32,8 @@ public abstract class FunctionNode extends Node {
             .remove(LabelContext.CONTINUE_CTX);
 
         return new CompileResult(env, scope, params.params.size(), target -> {
+            compilePreBody(target);
+
             if (params.params.size() > 0) {
                 target.add(Instruction.loadArgs(true));
                 if (params.params.size() > 1) target.add(Instruction.dup(params.params.size() - 1, 0));

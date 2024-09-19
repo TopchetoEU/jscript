@@ -131,7 +131,7 @@ public final class CompileResult {
 
         for (var suppl : instructions) {
             instrRes[i] = suppl.apply(i);
-            System.out.println(instrRes[i]);
+            // System.out.println(instrRes[i]);
             i++;
         }
 

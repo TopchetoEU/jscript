@@ -28,6 +28,7 @@ import me.topchetoeu.jscript.compilation.control.WhileNode;
 import me.topchetoeu.jscript.compilation.scope.FunctionScope;
 import me.topchetoeu.jscript.compilation.values.ArgumentsNode;
 import me.topchetoeu.jscript.compilation.values.ArrayNode;
+import me.topchetoeu.jscript.compilation.values.ClassValueNode;
 import me.topchetoeu.jscript.compilation.values.ObjectNode;
 import me.topchetoeu.jscript.compilation.values.RegexNode;
 import me.topchetoeu.jscript.compilation.values.ThisNode;
@@ -63,7 +64,7 @@ public final class JavaScript {
         "finally", "for", "do", "while", "switch", "case", "default", "new",
         "function", "var", "return", "throw", "typeof", "delete", "break",
         "continue", "debugger", "implements", "interface", "package", "private",
-        "protected", "public", "static", "arguments"
+        "protected", "public", "static", "arguments", "class"
     ));
 
     public static ParseRes<? extends Node> parseParens(Source src, int i) {
@@ -88,6 +89,7 @@ public final class JavaScript {
         return ParseRes.first(src, i,
             (s, j) -> statement ? ParseRes.failed() : ObjectNode.parse(s, j),
             (s, j) -> statement ? ParseRes.failed() : FunctionNode.parseFunction(s, j, false),
+            (s, j) -> statement ? ParseRes.failed() : ClassValueNode.parse(s, j),
             JavaScript::parseLiteral,
             StringNode::parse,
             RegexNode::parse,
@@ -96,7 +98,7 @@ public final class JavaScript {
             ChangeNode::parsePrefixIncrease,
             OperationNode::parsePrefix,
             ArrayNode::parse,
-            FunctionArrowNode::parse,
+            (s, j) -> statement ? ParseRes.failed() : FunctionArrowNode.parse(s, j),
             JavaScript::parseParens,
             CallNode::parseNew,
             TypeofNode::parse,
@@ -188,6 +190,7 @@ public final class JavaScript {
         if (Parsing.isIdentifier(src, i + n, "with")) return ParseRes.error(src.loc(i + n), "'with' statements are not allowed.");
 
         ParseRes<? extends Node> res = ParseRes.first(src, i + n,
+            ClassStatementNode::parse,
             VariableDeclareNode::parse,
             ReturnNode::parse,
             ThrowNode::parse,
