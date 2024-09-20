@@ -454,11 +454,11 @@ public class Instruction {
         return new Instruction(Type.KEYS, own, onlyEnumerable);
     }
 
-    public static Instruction defProp(boolean setter) {
-        return new Instruction(Type.DEF_PROP, setter);
+    public static Instruction defProp(boolean setter, boolean enumerable) {
+        return new Instruction(Type.DEF_PROP, setter, enumerable);
     }
-    public static Instruction defField() {
-        return new Instruction(Type.DEF_FIELD);
+    public static Instruction defField(boolean enumerable) {
+        return new Instruction(Type.DEF_FIELD, enumerable);
     }
 
     public static Instruction operation(Operation op) {

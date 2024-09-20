@@ -11,19 +11,20 @@ import me.topchetoeu.jscript.common.parsing.ParseRes;
 import me.topchetoeu.jscript.common.parsing.Parsing;
 import me.topchetoeu.jscript.common.parsing.Source;
 import me.topchetoeu.jscript.compilation.members.FieldMemberNode;
+import me.topchetoeu.jscript.compilation.members.Member;
 import me.topchetoeu.jscript.compilation.members.MethodMemberNode;
 import me.topchetoeu.jscript.compilation.members.PropertyMemberNode;
 
 public abstract class ClassNode extends FunctionNode {
     public static final class ClassBody {
-        public final List<Node> staticMembers;
+        public final List<Member> staticMembers;
         public final List<FieldMemberNode> protoFields;
-        public final List<Node> protoMembers;
+        public final List<Member> protoMembers;
         public final Parameters constructorParameters;
         public final CompoundNode constructorBody;
 
         public ClassBody(
-            List<Node> staticMembers, List<FieldMemberNode> protoFields, List<Node> protoMembers,
+            List<Member> staticMembers, List<FieldMemberNode> protoFields, List<Member> protoMembers,
             Parameters constructorParameters, CompoundNode constructorBody
         ) {
             this.staticMembers = staticMembers;
@@ -34,13 +35,15 @@ public abstract class ClassNode extends FunctionNode {
         }
     }
 
+    // public static final Key<Void> 
+
     public final ClassBody body;
     public final String name;
 
     @Override public String name() { return name; }
 
     public void compileStatic(CompileResult target) {
-        for (var member : body.staticMembers) member.compile(target, true);
+        for (var member : body.staticMembers) member.compile(target, true, false);
     }
     public void compilePrototype(CompileResult target) {
         if (body.protoMembers.size() > 0) {
@@ -48,17 +51,17 @@ public abstract class ClassNode extends FunctionNode {
             target.add(Instruction.loadMember("prototype"));
 
             for (var i = 0; i < body.protoMembers.size() - 1; i++) {
-                body.protoMembers.get(i).compile(target, true);
+                body.protoMembers.get(i).compile(target, true, false);
             }
 
-            body.protoMembers.get(body.protoMembers.size() - 1).compile(target, false);
+            body.protoMembers.get(body.protoMembers.size() - 1).compile(target, false, false);
         }
     }
 
     @Override protected void compilePreBody(CompileResult target) {
         for (var member : body.protoFields) {
             target.add(Instruction.loadThis());
-            member.compile(target, false);
+            member.compile(target, false, false);
         }
     }
 
@@ -76,7 +79,7 @@ public abstract class ClassNode extends FunctionNode {
         this.body = body;
     }
 
-    public static ParseRes<Node> parseMember(Source src, int i) {
+    public static ParseRes<Member> parseMember(Source src, int i) {
         return ParseRes.first(src, i,
             PropertyMemberNode::parse,
             FieldMemberNode::parseClass,
@@ -93,8 +96,8 @@ public abstract class ClassNode extends FunctionNode {
         n += Parsing.skipEmpty(src, i + n);
 
         var fields = new LinkedList<FieldMemberNode>();
-        var members = new LinkedList<Node>();
-        var statics = new LinkedList<Node>();
+        var members = new LinkedList<Member>();
+        var statics = new LinkedList<Member>();
 
         var params = new Parameters(new ArrayList<>());
         var body = new CompoundNode(loc, false);
@@ -106,7 +109,7 @@ public abstract class ClassNode extends FunctionNode {
         }
 
         while (true) {
-            ParseRes<Node> prop = parseMember(src, i + n);
+            ParseRes<Member> prop = parseMember(src, i + n);
 
             if (prop.isSuccess()) {
                 n += prop.n;

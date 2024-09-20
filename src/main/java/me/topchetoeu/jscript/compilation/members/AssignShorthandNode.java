@@ -13,17 +13,20 @@ import me.topchetoeu.jscript.compilation.values.VariableNode;
 import me.topchetoeu.jscript.compilation.values.constants.StringNode;
 import me.topchetoeu.jscript.compilation.values.operations.AssignNode;
 
-public class AssignShorthandNode extends Node {
+public class AssignShorthandNode implements Member {
+    public final Location loc;
     public final Node key;
     public final AssignTarget target;
     public final Node value;
 
-    @Override public void compile(CompileResult target, boolean pollute) {
+    @Override public Location loc() { return loc; }
+
+    @Override public void compile(CompileResult target, boolean pollute, boolean enumerable) {
         throw new SyntaxException(loc(), "Unexpected assign shorthand in non-destructor context");
     }
 
     public AssignShorthandNode(Location loc, Node key, AssignTarget target, Node value) {
-        super(loc);
+        this.loc = loc;
         this.key = key;
         this.target = target;
         this.value = value;

@@ -17,7 +17,7 @@ import me.topchetoeu.jscript.compilation.patterns.Pattern;
 import me.topchetoeu.jscript.compilation.values.ObjectNode;
 import me.topchetoeu.jscript.compilation.values.constants.StringNode;
 
-public class PropertyMemberNode extends FunctionNode {
+public class PropertyMemberNode extends FunctionNode implements Member{
     public final Node key;
     public final Pattern argument;
 
@@ -38,8 +38,12 @@ public class PropertyMemberNode extends FunctionNode {
 
         var id = target.addChild(compileBody(target, name, null));
         target.add(_i -> Instruction.loadFunc(id, true, false, false, name, captures(id, target)));
+    }
 
-        target.add(Instruction.defProp(isSetter()));
+
+    @Override public void compile(CompileResult target, boolean pollute, boolean enumerable) {
+        compile(target, pollute);
+        target.add(Instruction.defProp(isSetter(), enumerable));
     }
 
     public PropertyMemberNode(Location loc, Location end, Node key, Pattern argument, CompoundNode body) {

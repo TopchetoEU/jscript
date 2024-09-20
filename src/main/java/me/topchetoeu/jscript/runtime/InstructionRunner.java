@@ -7,6 +7,7 @@ import me.topchetoeu.jscript.common.Instruction;
 import me.topchetoeu.jscript.common.Operation;
 import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
+import me.topchetoeu.jscript.runtime.values.Member.FieldMember;
 import me.topchetoeu.jscript.runtime.values.Member.PropertyMember;
 import me.topchetoeu.jscript.runtime.values.Value;
 import me.topchetoeu.jscript.runtime.values.functions.CodeFunction;
@@ -68,8 +69,8 @@ public class InstructionRunner {
         else if (val instanceof FunctionValue func) accessor = func;
         else throw EngineException.ofType("Getter must be a function or undefined.");
 
-        if ((boolean)instr.get(0)) obj.defineOwnMember(env, key, new PropertyMember(obj, null, accessor, true, true));
-        else obj.defineOwnMember(env, key, new PropertyMember(obj, accessor, null, true, true));
+        if ((boolean)instr.get(0)) obj.defineOwnMember(env, key, new PropertyMember(obj, null, accessor, true, instr.get(1)));
+        else obj.defineOwnMember(env, key, new PropertyMember(obj, accessor, null, true, instr.get(1)));
 
         frame.codePtr++;
         return null;
@@ -79,7 +80,7 @@ public class InstructionRunner {
         var key = frame.pop();
         var obj = frame.pop();
 
-        obj.defineOwnMember(env, key, val);
+        obj.defineOwnMember(env, key, FieldMember.of(obj, val, true, instr.get(0), true));
 
         frame.codePtr++;
         return null;

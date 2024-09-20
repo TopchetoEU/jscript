@@ -14,6 +14,7 @@ import me.topchetoeu.jscript.compilation.JavaScript;
 import me.topchetoeu.jscript.compilation.Node;
 import me.topchetoeu.jscript.compilation.members.AssignShorthandNode;
 import me.topchetoeu.jscript.compilation.members.FieldMemberNode;
+import me.topchetoeu.jscript.compilation.members.Member;
 import me.topchetoeu.jscript.compilation.members.MethodMemberNode;
 import me.topchetoeu.jscript.compilation.members.PropertyMemberNode;
 import me.topchetoeu.jscript.compilation.patterns.AssignTarget;
@@ -23,7 +24,7 @@ import me.topchetoeu.jscript.compilation.values.constants.NumberNode;
 import me.topchetoeu.jscript.compilation.values.constants.StringNode;
 
 public class ObjectNode extends Node implements AssignTargetLike {
-    public final List<Node> members;
+    public final List<Member> members;
 
     // TODO: Implement spreading into object
 
@@ -64,7 +65,7 @@ public class ObjectNode extends Node implements AssignTargetLike {
 
     @Override public void compile(CompileResult target, boolean pollute) {
         target.add(Instruction.loadObj());
-        for (var el : members) el.compile(target, true);
+        for (var el : members) el.compile(target, true, true);
     }
 
     @Override public AssignTarget toAssignTarget() {
@@ -82,7 +83,7 @@ public class ObjectNode extends Node implements AssignTargetLike {
         return new ObjectPattern(loc(), newMembers);
     }
 
-    public ObjectNode(Location loc, List<Node> map) {
+    public ObjectNode(Location loc, List<Member> map) {
         super(loc);
         this.members = map;
     }
@@ -126,7 +127,7 @@ public class ObjectNode extends Node implements AssignTargetLike {
         n++;
         n += Parsing.skipEmpty(src, i + n);
 
-        var members = new LinkedList<Node>();
+        var members = new LinkedList<Member>();
 
         if (src.is(i + n, "}")) {
             n++;
@@ -134,7 +135,7 @@ public class ObjectNode extends Node implements AssignTargetLike {
         }
 
         while (true) {
-            ParseRes<Node> prop = ParseRes.first(src, i + n,
+            ParseRes<Member> prop = ParseRes.first(src, i + n,
                 MethodMemberNode::parse,
                 PropertyMemberNode::parse,
                 FieldMemberNode::parseObject,

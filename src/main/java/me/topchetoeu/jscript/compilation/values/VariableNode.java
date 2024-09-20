@@ -45,6 +45,8 @@ public class VariableNode extends Node implements Pattern, ChangeTarget {
             if (i == null) return Instruction.globDef(name);
             else return Instruction.nop();
         });
+
+        target.setLocation(loc());
     }
 
     @Override public void destruct(CompileResult target, DeclarationType decl, boolean shouldDeclare) {
@@ -57,10 +59,12 @@ public class VariableNode extends Node implements Pattern, ChangeTarget {
             var v = target.scope.define(decl, name, loc());
             target.add(_i -> v.index().toInit());
         }
+
+        target.setLocation(loc());
     }
 
     @Override public void compile(CompileResult target, boolean pollute) {
-        target.add(toGet(target, loc(), name, true, false));
+        target.add(toGet(target, loc(), name, true, false)).setLocation(loc());
     }
 
     public static IntFunction<Instruction> toGet(CompileResult target, Location loc, String name, boolean keep, boolean forceGet) {

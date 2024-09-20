@@ -14,7 +14,7 @@ import me.topchetoeu.jscript.compilation.Parameters;
 import me.topchetoeu.jscript.compilation.values.ObjectNode;
 import me.topchetoeu.jscript.compilation.values.constants.StringNode;
 
-public class MethodMemberNode extends FunctionNode {
+public class MethodMemberNode extends FunctionNode implements Member {
     public final Node key;
 
     @Override public String name() {
@@ -28,8 +28,11 @@ public class MethodMemberNode extends FunctionNode {
 
         var id = target.addChild(compileBody(target, name, null));
         target.add(_i -> Instruction.loadFunc(id, true, false, false, name, captures(id, target)));
+    }
 
-        target.add(Instruction.defField());
+    @Override public void compile(CompileResult target, boolean pollute, boolean enumerable) {
+        compile(target, pollute);
+        target.add(Instruction.defField(enumerable));
     }
 
     public MethodMemberNode(Location loc, Location end, Node key, Parameters params, CompoundNode body) {

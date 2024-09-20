@@ -7,6 +7,7 @@ import java.util.Set;
 
 import me.topchetoeu.jscript.common.SyntaxException;
 import me.topchetoeu.jscript.common.environment.Environment;
+import me.topchetoeu.jscript.common.environment.Key;
 import me.topchetoeu.jscript.common.parsing.Filename;
 import me.topchetoeu.jscript.common.parsing.ParseRes;
 import me.topchetoeu.jscript.common.parsing.Parsing;
@@ -31,6 +32,7 @@ import me.topchetoeu.jscript.compilation.values.ArrayNode;
 import me.topchetoeu.jscript.compilation.values.ClassValueNode;
 import me.topchetoeu.jscript.compilation.values.ObjectNode;
 import me.topchetoeu.jscript.compilation.values.RegexNode;
+import me.topchetoeu.jscript.compilation.values.SuperNode;
 import me.topchetoeu.jscript.compilation.values.ThisNode;
 import me.topchetoeu.jscript.compilation.values.VariableNode;
 import me.topchetoeu.jscript.compilation.values.constants.BoolNode;
@@ -58,6 +60,8 @@ public final class JavaScript {
             this.readonly = readonly;
         }
     }
+
+    public static final Key<Environment> COMPILE_ROOT = Key.of();
 
     static final Set<String> reserved = new HashSet<>(Arrays.asList(
         "true", "false", "void", "null", "this", "if", "else", "try", "catch",
@@ -120,6 +124,7 @@ public final class JavaScript {
         if (id.result.equals("false")) return ParseRes.res(new BoolNode(loc, false), n);
         if (id.result.equals("null")) return ParseRes.res(new NullNode(loc), n);
         if (id.result.equals("this")) return ParseRes.res(new ThisNode(loc), n);
+        if (id.result.equals("super")) return ParseRes.res(new SuperNode(loc), n);
         if (id.result.equals("arguments")) return ParseRes.res(new ArgumentsNode(loc), n);
 
         return ParseRes.failed();
@@ -264,6 +269,9 @@ public final class JavaScript {
     }
 
     public static CompileResult compile(Environment env, Node ...statements) {
+        env = env.child();
+        env.add(COMPILE_ROOT, env);
+
         var func = new FunctionValueNode(null, null, new Parameters(Arrays.asList()), new CompoundNode(null, true, statements), null);
         var res = func.compileBody(env, new FunctionScope(true), true, null, null);
         res.buildTask.run();

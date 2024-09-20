@@ -1,5 +1,3 @@
-// return;
-
 const target = arguments[0];
 const primordials = arguments[1];
 
@@ -20,28 +18,26 @@ const symbol = primordials.symbol || (() => {
     };
 });
 
-const number = primordials.number || (() => {
-    return {
-        parseInt() { throw new Error("parseInt not supported"); },
-        parseFloat() { throw new Error("parseFloat not supported"); },
-        isNaN: (val) => val !== val,
-        NaN: 0 / 0,
-        Infinity: 1 / 0,
-    };
-});
+const number = primordials.number || {
+    parseInt() { throw new Error("parseInt not supported"); },
+    parseFloat() { throw new Error("parseFloat not supported"); },
+    isNaN: (val) => val !== val,
+    NaN: 0 / 0,
+    Infinity: 1 / 0,
+};
 
-const fromCharCode = primordials.string.fromCharCode;
-const fromCodePoint = primordials.string.fromCodePoint;
-const stringBuild = primordials.string.stringBuild;
+const string = primordials.string;
 
-const defineProperty = primordials.object.defineProperty;
-const defineField = primordials.object.defineField;
-const getOwnMember = primordials.object.getMember;
-const getOwnSymbolMember = primordials.object.getOwnSymbolMember;
-const getOwnMembers = primordials.object.getOwnMembers;
-const getOwnSymbolMembers = primordials.object.getOwnSymbolMembers;
-const getPrototype = primordials.object.getPrototype;
-const setPrototype = primordials.object.setPrototype;
+const object = primordials.object || {
+    defineProperty() { throw new Error("Define property not polyfillable"); },
+    defineField(obj, key, a, b, c, value) { obj[key] = value; },
+    getOwnMember() { throw new Error("Get own member not polyfillable"); },
+    getOwnSymbolMember() { throw new Error("Get own symbol member not polyfillable"); },
+    getOwnMembers() { throw new Error("Get own members not polyfillable"); },
+    getOwnSymbolMembers() { throw new Error("Get own symbol members not polyfillable"); },
+    getPrototype() { throw new Error("Get prototype not polyfillable"); },
+    setPrototype() { throw new Error("Set prototype not polyfillable"); },
+}
 
 const invokeType = primordials.function.invokeType;
 const setConstructable = primordials.function.setConstructable;
@@ -97,14 +93,14 @@ class Symbol {
 setCallable(Symbol, true);
 setConstructable(Symbol, false);
 
-defineField(Symbol, "asyncIterator", false, false, false, Symbol("Symbol.asyncIterator"));
-defineField(Symbol, "iterator", false, false, false, Symbol("Symbol.iterator"));
-defineField(Symbol, "match", false, false, false, Symbol("Symbol.match"));
-defineField(Symbol, "matchAll", false, false, false, Symbol("Symbol.matchAll"));
-defineField(Symbol, "replace", false, false, false, Symbol("Symbol.replace"));
-defineField(Symbol, "search", false, false, false, Symbol("Symbol.search"));
-defineField(Symbol, "split", false, false, false, Symbol("Symbol.split"));
-defineField(Symbol, "toStringTag", false, false, false, Symbol("Symbol.toStringTag"));
+object.defineField(Symbol, "asyncIterator", false, false, false, Symbol("Symbol.asyncIterator"));
+object.defineField(Symbol, "iterator", false, false, false, Symbol("Symbol.iterator"));
+object.defineField(Symbol, "match", false, false, false, Symbol("Symbol.match"));
+object.defineField(Symbol, "matchAll", false, false, false, Symbol("Symbol.matchAll"));
+object.defineField(Symbol, "replace", false, false, false, Symbol("Symbol.replace"));
+object.defineField(Symbol, "search", false, false, false, Symbol("Symbol.search"));
+object.defineField(Symbol, "split", false, false, false, Symbol("Symbol.split"));
+object.defineField(Symbol, "toStringTag", false, false, false, Symbol("Symbol.toStringTag"));
 
 Symbol();
 target.Symbol = Symbol;
@@ -160,14 +156,14 @@ class Number {
     }
 }
 
-defineField(Number, "EPSILON", false, false, false, 2.220446049250313e-16);
-defineField(Number, "MIN_SAFE_INTEGER", false, false, false, -9007199254740991);
-defineField(Number, "MAX_SAFE_INTEGER", false, false, false, 9007199254740991);
-defineField(Number, "POSITIVE_INFINITY", false, false, false, +number.Infinity);
-defineField(Number, "NEGATIVE_INFINITY", false, false, false, -number.Infinity);
-defineField(Number, "NaN", false, false, false, number.NaN);
-defineField(Number, "MAX_VALUE", false, false, false, 1.7976931348623157e+308);
-defineField(Number, "MIN_VALUE", false, false, false, 5e-324);
+object.defineField(Number, "EPSILON", false, false, false, 2.220446049250313e-16);
+object.defineField(Number, "MIN_SAFE_INTEGER", false, false, false, -9007199254740991);
+object.defineField(Number, "MAX_SAFE_INTEGER", false, false, false, 9007199254740991);
+object.defineField(Number, "POSITIVE_INFINITY", false, false, false, +number.Infinity);
+object.defineField(Number, "NEGATIVE_INFINITY", false, false, false, -number.Infinity);
+object.defineField(Number, "NaN", false, false, false, number.NaN);
+object.defineField(Number, "MAX_VALUE", false, false, false, 1.7976931348623157e+308);
+object.defineField(Number, "MIN_VALUE", false, false, false, 5e-324);
 
 setCallable(Number, true);
 target.Number = Number;
@@ -202,20 +198,20 @@ class String {
         res[arguments.length] = 0;
 
         for (let i = 0; i < arguments.length; i++) {
-            res[i] = fromCharCode(+arguments[i]);
+            res[i] = string.fromCharCode(+arguments[i]);
         }
 
-        return stringBuild(res);
+        return string.stringBuild(res);
     }
     static fromCodePoint() {
         const res = [];
         res[arguments.length] = 0;
 
         for (let i = 0; i < arguments.length; i++) {
-            res[i] = fromCodePoint(+arguments[i]);
+            res[i] = string.fromCodePoint(+arguments[i]);
         }
 
-        return stringBuild(res);
+        return string.stringBuild(res);
     }
 }
 
@@ -290,8 +286,6 @@ class Object {
         if ("get" in desc || "set" in desc) {
             let get = desc.get, set = desc.set;
 
-            print(typeof get);
-
             if (get !== undefined && typeof get !== "function") throw new TypeError("Getter must be a function: " + get);
             if (set !== undefined && typeof set !== "function") throw new TypeError("Setter must be a function: " + set);
 
@@ -299,11 +293,11 @@ class Object {
                 throw new TypeError("Invalid property descriptor. Cannot both specify accessors and a value or writable attribute");
             }
 
-            if (!defineProperty(obj, key, desc.enumerable, desc.configurable, get, set)) {
+            if (!object.defineProperty(obj, key, desc.enumerable, desc.configurable, get, set)) {
                 throw new TypeError("Cannot redefine property: " + key);
             }
         }
-        else if (!defineField(obj, key, desc.writable, desc.enumerable, desc.configurable, desc.value)) {
+        else if (!object.defineField(obj, key, desc.writable, desc.enumerable, desc.configurable, desc.value)) {
             throw new TypeError("Cannot redefine property: " + key);
         }
 
@@ -312,7 +306,7 @@ class Object {
 }
 
 setCallable(Object, true);
-setPrototype(Object.prototype, null);
+object.setPrototype(Object.prototype, null);
 target.Object = Object;
 
 class Function {
@@ -322,7 +316,7 @@ class Function {
     }
 
     constructor() {
-        const parts = ["return function annonymous("];
+        const parts = ["(function annonymous("];
 
         for (let i = 0; i < arguments.length - 1; i++) {
             if (i > 0) parts[parts.length] = ",";
@@ -330,9 +324,9 @@ class Function {
         }
         parts[parts.length] = "){\n";
         parts[parts.length] = String(arguments[arguments.length - 1]);
-        parts[parts.length] = "\n}";
+        parts[parts.length] = "\n})";
 
-        const res = compile(stringBuild(parts))();
+        const res = compile(string.stringBuild(parts))();
         return res;
     }
 
@@ -341,27 +335,20 @@ class Function {
 
         if (wrap) parts[parts.length] = "return (function() {\n";
         if (globals.length > 0) {
-            parts[parts.length] = "var ";
+            parts[parts.length] = "let {";
 
             for (let i = 0; i < globals.length; i++) {
                 if (i > 0) parts[parts.length] = ",";
                 parts[parts.length] = globals[i];
             }
 
-            parts[parts.length] = ";((g=arguments[0])=>{";
-
-            for (let i = 0; i < globals.length; i++) {
-                const name = globals[i];
-                parts[parts.length] = name + "=g[" + json.stringify(name) + "];";
-            }
-
-            parts[parts.length] = "})()\n";
+            parts[parts.length] = "} = arguments[0];";
         }
 
         parts[parts.length] = src;
         if (wrap) parts[parts.length] = "\n})(arguments[0])";
 
-        const res = compile(stringBuild(parts));
+        const res = compile(string.stringBuild(parts));
         return res;
     }
 }
@@ -400,8 +387,8 @@ class Error {
     }
 }
 
-defineField(Error.prototype, "name", true, false, true, "Error");
-defineField(Error.prototype, "message", true, false, true, "");
+object.defineField(Error.prototype, "name", true, false, true, "Error");
+object.defineField(Error.prototype, "message", true, false, true, "");
 setCallable(Error, true);
 target.Error = Error;
 
@@ -412,9 +399,9 @@ class SyntaxError {
     }
 }
 
-defineField(SyntaxError.prototype, "name", true, false, true, "SyntaxError");
-setPrototype(SyntaxError, Error);
-setPrototype(SyntaxError.prototype, Error.prototype);
+object.defineField(SyntaxError.prototype, "name", true, false, true, "SyntaxError");
+object.setPrototype(SyntaxError, Error);
+object.setPrototype(SyntaxError.prototype, Error.prototype);
 setCallable(SyntaxError, true);
 target.SyntaxError = SyntaxError;
 
@@ -425,9 +412,9 @@ class TypeError {
     }
 }
 
-defineField(TypeError.prototype, "name", true, false, true, "TypeError");
-setPrototype(TypeError, Error);
-setPrototype(TypeError.prototype, Error.prototype);
+object.defineField(TypeError.prototype, "name", true, false, true, "TypeError");
+object.setPrototype(TypeError, Error);
+object.setPrototype(TypeError.prototype, Error.prototype);
 setCallable(TypeError, true);
 target.TypeError = TypeError;
 
@@ -438,9 +425,9 @@ class RangeError {
     }
 }
 
-defineField(RangeError.prototype, "name", true, false, true, "RangeError");
-setPrototype(RangeError, Error);
-setPrototype(RangeError.prototype, Error.prototype);
+object.defineField(RangeError.prototype, "name", true, false, true, "RangeError");
+object.setPrototype(RangeError, Error);
+object.setPrototype(RangeError.prototype, Error.prototype);
 setCallable(RangeError, true);
 target.RangeError = RangeError;
 

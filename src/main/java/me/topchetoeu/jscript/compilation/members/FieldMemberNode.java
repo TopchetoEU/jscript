@@ -12,22 +12,25 @@ import me.topchetoeu.jscript.compilation.values.ObjectNode;
 import me.topchetoeu.jscript.compilation.values.VariableNode;
 import me.topchetoeu.jscript.compilation.values.constants.StringNode;
 
-public class FieldMemberNode extends Node {
+public class FieldMemberNode implements Member {
+    public final Location loc;
     public final Node key;
     public final Node value;
 
-    @Override public void compile(CompileResult target, boolean pollute) {
+    @Override public Location loc() { return loc; }
+
+    @Override public void compile(CompileResult target, boolean pollute, boolean enumerable) {
         if (pollute) target.add(Instruction.dup());
         key.compile(target, true);
 
         if (value == null) target.add(Instruction.pushUndefined());
         else value.compile(target, true);
 
-        target.add(Instruction.defField());
+        target.add(Instruction.defField(enumerable));
     }
 
     public FieldMemberNode(Location loc, Node key, Node value) {
-        super(loc);
+        this.loc = loc;
         this.key = key;
         this.value = value;
     }
