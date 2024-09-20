@@ -1,6 +1,12 @@
 package me.topchetoeu.jscript.runtime.values.functions;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+
 import me.topchetoeu.jscript.common.environment.Environment;
+import me.topchetoeu.jscript.runtime.debug.DebugContext;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
 import me.topchetoeu.jscript.runtime.values.KeyCache;
 import me.topchetoeu.jscript.runtime.values.Member;
@@ -82,6 +88,20 @@ public abstract class FunctionValue extends ObjectValue {
     }
 
     @Override public StringValue type() { return StringValue.of("function"); }
+
+    @Override public List<String> toReadableLines(Environment env, HashSet<ObjectValue> passed) {
+        var dbg = DebugContext.get(env);
+        var res = new StringBuilder(this.toString());
+        var loc = dbg.getMapOrEmpty(this).start();
+
+        if (loc != null) res.append(" @ " + loc);
+
+        var lines = new LinkedList<String>(super.toReadableLines(env, passed));
+        if (lines.size() == 1 && lines.getFirst().equals("{}")) return Arrays.asList(res.toString());
+        lines.set(0, res.toString() + " " + lines.getFirst());
+
+        return lines;
+    }
 
     public void setName(String val) {
         if (this.name == null || this.name.equals("")) this.name = val;

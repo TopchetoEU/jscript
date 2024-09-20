@@ -1,6 +1,10 @@
 package me.topchetoeu.jscript.runtime.values.objects;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
 
 import me.topchetoeu.jscript.common.environment.Environment;
@@ -103,5 +107,91 @@ public abstract class ArrayLikeValue extends ObjectValue {
         if (!onlyEnumerable) res.add("length");
 
         return res;
+    }
+
+    private LinkedList<String> toReadableBase(Environment env, HashSet<ObjectValue> passed, HashSet<String> ignoredKeys) {
+        var stringified = new LinkedList<LinkedList<String>>();
+
+        passed.add(this);
+
+        var emptyN = 0;
+
+        for (int i = 0; i < size(); i++) {
+            if (has(i)) {
+                String emptyStr = null;
+
+                if (emptyN == 1) emptyStr = "<empty>";
+                else if (emptyN > 1) emptyStr = "<empty x " + emptyN + ">";
+
+                if (emptyStr != null) stringified.add(new LinkedList<>(Arrays.asList(emptyStr + ",")));
+                emptyN = 0;
+
+                stringified.add(new LinkedList<>(get(i).toReadableLines(env, passed)));
+                ignoredKeys.add(i + "");
+
+                var entry = stringified.getLast();
+                entry.set(entry.size() - 1, entry.getLast() + ",");
+            }
+            else {
+                emptyN++;
+            }
+        }
+
+        String emptyStr = null;
+
+        if (emptyN == 1) emptyStr = "<empty>";
+        else if (emptyN > 1) emptyStr = "<empty x " + emptyN + ">";
+
+        if (emptyStr != null) stringified.add(new LinkedList<>(Arrays.asList(emptyStr)));
+        else if (stringified.size() > 0) {
+            var lastEntry = stringified.getLast();
+            lastEntry.set(lastEntry.size() - 1, lastEntry.getLast().substring(0, lastEntry.getLast().length() - 1));
+        }
+
+
+        passed.remove(this);
+
+        if (stringified.size() == 0) return new LinkedList<>(Arrays.asList("[]"));
+        var concat = new StringBuilder();
+        for (var entry : stringified) {
+            // We make a one-liner only when all members are one-liners
+            if (entry.size() != 1) {
+                concat = null;
+                break;
+            }
+
+            if (concat.length() != 0) concat.append(" ");
+            concat.append(entry.get(0));
+        }
+
+        // We don't want too long one-liners
+        if (concat != null && concat.length() < 160) return new LinkedList<>(Arrays.asList("[" + concat.toString() + "]"));
+
+        var res = new LinkedList<String>();
+
+        res.add("[");
+
+        for (var entry : stringified) {
+            for (var line : entry) {
+                res.add("    " + line);
+            }
+        }
+        res.set(res.size() - 1, res.getLast().substring(0, res.getLast().length() - 1));
+        res.add("]");
+
+        return res;
+    }
+
+    @Override public List<String> toReadableLines(Environment env, HashSet<ObjectValue> passed) {
+        var ignored = new HashSet<String>();
+        var lines = toReadableBase(env, passed, ignored);
+
+        var superLines = new LinkedList<String>(super.toReadableLines(env, passed, ignored));
+        if (superLines.size() == 1 && superLines.getFirst().equals("{}")) return lines;
+
+        lines.set(lines.size() - 1, lines.getLast() + " " + superLines.getFirst());
+        lines.addAll(superLines.subList(1, superLines.size()));
+
+        return lines;
     }
 }

@@ -3,27 +3,25 @@ package me.topchetoeu.jscript.runtime.values;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import me.topchetoeu.jscript.common.SyntaxException;
 import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.common.environment.Key;
-import me.topchetoeu.jscript.common.json.JSON;
-import me.topchetoeu.jscript.common.json.JSONElement;
 import me.topchetoeu.jscript.runtime.EventLoop;
-import me.topchetoeu.jscript.runtime.debug.DebugContext;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
 import me.topchetoeu.jscript.runtime.values.Member.FieldMember;
 import me.topchetoeu.jscript.runtime.values.Member.PropertyMember;
 import me.topchetoeu.jscript.runtime.values.functions.FunctionValue;
 import me.topchetoeu.jscript.runtime.values.functions.NativeFunction;
-import me.topchetoeu.jscript.runtime.values.objects.ArrayValue;
 import me.topchetoeu.jscript.runtime.values.objects.ObjectValue;
 import me.topchetoeu.jscript.runtime.values.primitives.BoolValue;
 import me.topchetoeu.jscript.runtime.values.primitives.StringValue;
@@ -429,105 +427,13 @@ public abstract class Value {
         }
     }
 
-    private final String toReadable(Environment env, HashSet<Object> passed, int tab) {
-        if (passed.contains(this)) return "[circular]";
-
-        if (this instanceof ObjectValue obj) {
-            var res = new StringBuilder();
-            var dbg = DebugContext.get(env);
-            var printed = true;
-            var keys = this.getMembers(env, true, false);
-
-            if (this instanceof FunctionValue func) {
-                res.append(this.toString());
-                var loc = dbg.getMapOrEmpty(func).start();
-
-                if (loc != null) res.append(" @ " + loc);
-
-                if (
-                    func.prototype instanceof ObjectValue objProto &&
-                    objProto.getMember(env, "constructor") == func && 
-                    objProto.getOwnMembers(env, true).size() + objProto.getOwnSymbolMembers(env, true).size() == 1
-                ) { keys.remove("constructor"); }
-            }
-            else if (this instanceof ArrayValue) {
-                res.append("[");
-                var arr = (ArrayValue)this;
-
-                for (int i = 0; i < arr.size(); i++) {
-                    if (i != 0) res.append(", ");
-                    else res.append(" ");
-
-                    if (arr.hasMember(env, i, true)) {
-                        res.append(arr.getMember(env, i).toReadable(env, passed, tab));
-                        keys.remove(i + "");
-                    }
-                    else res.append("<empty>");
-                }
-
-                res.append(" ] ");
-            }
-            else printed = false;
-
-
-            passed.add(this);
-
-            if (keys.size() + obj.getOwnSymbolMembers(env, true).size() == 0) {
-                if (!printed) res.append("{}");
-            }
-            else if (!printed) {
-                if (tab > 3) return "{...}";
-                res.append("{\n");
-
-                for (var entry : obj.getOwnSymbolMembers(env, true)) {
-                    for (int i = 0; i < tab + 1; i++) res.append("    ");
-                    res.append("[" + entry.value + "]" + ": ");
-
-                    var member = obj.getOwnMember(env, entry);
-                    if (member instanceof FieldMember field) res.append(field.get(env, obj).toReadable(env, passed, tab + 1));
-                    else if (member instanceof PropertyMember prop) {
-                        if (prop.getter == null && prop.setter == null) res.append("[No accessors]");
-                        else if (prop.getter == null) res.append("[Setter]");
-                        else if (prop.setter == null) res.append("[Getter]");
-                        else res.append("[Getter/Setter]");
-                    }
-                    else res.append("[???]");
-
-                    res.append(",\n");
-                }
-                for (var entry : obj.getOwnMembers(env, true)) {
-                    for (int i = 0; i < tab + 1; i++) res.append("    ");
-                    res.append(entry + ": ");
-
-                    var member = obj.getOwnMember(env, entry);
-                    if (member instanceof FieldMember field) res.append(field.get(env, obj).toReadable(env, passed, tab + 1));
-                    else if (member instanceof PropertyMember prop) {
-                        if (prop.getter == null && prop.setter == null) res.append("[No accessors]");
-                        else if (prop.getter == null) res.append("[Setter]");
-                        else if (prop.setter == null) res.append("[Getter]");
-                        else res.append("[Getter/Setter]");
-                    }
-                    else res.append("[???]");
-
-                    res.append(",\n");
-                }
-
-                for (int i = 0; i < tab; i++) res.append("    ");
-                res.append("}");
-            }
-
-            passed.remove(this);
-            return res.toString();
-        }
-        else if (this instanceof VoidValue) return ((VoidValue)this).name;
-        else if (this instanceof StringValue) return JSON.stringify(JSONElement.string(((StringValue)this).value));
-        else if (this instanceof SymbolValue) return this.toString();
-        else if (this instanceof NumberValue num && num.isLong()) return num.getLong() + "i";
-        else return this.toString(env);
+    /** @internal */
+    public List<String> toReadableLines(Environment env, HashSet<ObjectValue> passed) {
+        return Arrays.asList(toString(env));
     }
 
     public final String toReadable(Environment ext) {
-        return toReadable(ext, new HashSet<>(), 0);
+        return String.join("\n", toReadableLines(ext, new HashSet<>()));
     }
 
     public static final ObjectValue global(Environment env) {
