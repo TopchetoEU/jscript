@@ -61,7 +61,7 @@ public abstract class ClassNode extends FunctionNode {
     @Override protected void compilePreBody(CompileResult target) {
         for (var member : body.protoFields) {
             target.add(Instruction.loadThis());
-            member.compile(target, false, false);
+            member.compile(target, false, true);
         }
     }
 
