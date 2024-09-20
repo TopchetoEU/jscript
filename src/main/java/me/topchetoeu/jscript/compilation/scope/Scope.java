@@ -129,7 +129,7 @@ public class Scope {
         var res = 0;
 
         for (var curr = parent; curr != null; curr = curr.parent) {
-            res += parent.locals.size();
+            res += curr.locals.size();
         }
 
         return res;
@@ -138,7 +138,7 @@ public class Scope {
         var res = 0;
 
         for (var curr = this; curr != null; curr = curr.parent) {
-            if (curr != this) res += parent.capturables.size();
+            if (curr != this) res += curr.capturables.size();
             if (curr.parent == null) res += curr.localsCount();
         }
 
