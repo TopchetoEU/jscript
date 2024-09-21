@@ -14,6 +14,7 @@ public class FunctionScope extends Scope {
     private final HashSet<String> blacklistNames = new HashSet<>();
 
     private final HashMap<Variable, Variable> childToParent = new HashMap<>();
+    private final HashMap<Variable, Variable> parentToChild = new HashMap<>();
 
     private final Scope captureParent;
 
@@ -63,11 +64,13 @@ public class FunctionScope extends Scope {
         var childVar = captures.add(parentVar.clone());
         capturesMap.put(childVar.name, childVar);
         childToParent.put(childVar, parentVar);
+        parentToChild.put(parentVar, childVar);
 
         return childVar;
     }
 
     @Override public Variable get(Variable var, boolean capture) {
+        if (parentToChild.containsKey(var)) return addCaptured(parentToChild.get(var), capture);
         if (captures.has(var)) return addCaptured(var, capture);
         if (locals.has(var)) return addCaptured(var, capture);
 
@@ -78,6 +81,7 @@ public class FunctionScope extends Scope {
 
         var childVar = captures.add(parentVar.clone());
         childToParent.put(childVar, parentVar);
+        parentToChild.put(parentVar, childVar);
 
         return childVar;
     }

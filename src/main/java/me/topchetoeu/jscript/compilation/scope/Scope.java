@@ -29,7 +29,7 @@ public class Scope {
 
     protected void transferCaptured(Variable var) {
         if (!singleEntry) {
-            this.capturables.add(var);
+            if (!this.capturables.has(var)) this.capturables.add(var);
         }
         else if (parent != null) {
             parent.transferCaptured(var);
