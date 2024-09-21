@@ -99,7 +99,9 @@ public abstract class ClassNode extends FunctionNode {
             compilePrototype(target);
         }
         else {
-            var subtarget = target.rootEnvironment(JavaScript.COMPILE_ROOT).subtarget();
+            var subtarget = target.subtarget().rootEnvironment(JavaScript.COMPILE_ROOT);
+            subtarget.scope.singleEntry = true;
+            subtarget.beginScope();
             var protoVar = target.scope.defineTemp();
             var constrVar = target.scope.defineTemp();
 
@@ -138,6 +140,7 @@ public abstract class ClassNode extends FunctionNode {
 
             compileStatic(staticTarget);
             compilePrototype(protoTarget);
+            subtarget.endScope();
         }
     }
 
@@ -228,7 +231,7 @@ public abstract class ClassNode extends FunctionNode {
                 n++;
                 break;
             }
-            else ParseRes.error(src.loc(i + n), "Expected a comma or a closing brace.");
+            // else return ParseRes.error(src.loc(i + n), "Expected a comma or a closing brace.");
         }
 
         return ParseRes.res(new ClassBody(statics, fields, members, params, body, superExpr.result, hasConstr), n);
