@@ -75,7 +75,7 @@ public class FieldMemberNode implements Member {
         n += Parsing.skipEmpty(src, i + n);
 
         if (!src.is(i + n, "=")) {
-            var end = JavaScript.parseStatement(src, i + n);
+            var end = JavaScript.parseStatementEnd(src, i + n);
             if (!end.isSuccess()) return ParseRes.error(src.loc(i + n), "Expected an end of statement or a field initializer");
             n += end.n;
 
