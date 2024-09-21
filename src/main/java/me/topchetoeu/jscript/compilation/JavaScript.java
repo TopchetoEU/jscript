@@ -219,7 +219,7 @@ public final class JavaScript {
 
     public static ParseRes<Boolean> parseStatementEnd(Source src, int i) {
         var n = Parsing.skipEmpty(src, i);
-        if (i >= src.size()) return ParseRes.res(true, n);
+        if (i + n >= src.size()) return ParseRes.res(true, n);
 
         for (var j = i; j < i + n; j++) {
             if (src.is(j, '\n')) return ParseRes.res(true, n);
