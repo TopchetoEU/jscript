@@ -110,8 +110,8 @@ public class OperationNode extends Node {
             arg.compile(target, true);
         }
 
-        if (pollute) target.add(Instruction.operation(operation));
-        else target.add(Instruction.discard());
+        target.add(Instruction.operation(operation));
+        if (!pollute) target.add(Instruction.discard());
     }
 
     public OperationNode(Location loc, Operation operation, Node ...args) {
