@@ -40,6 +40,9 @@ public class InstructionRunner {
         return null;
     }
     private static Value execCallSuper(Environment env, Instruction instr, Frame frame) {
+        if (!frame.isNew) throw EngineException.ofError("Super constructor may be called only when constructing");
+        if (frame.self != null) throw EngineException.ofError("Super constructor may be called once");
+
         var callArgs = frame.take(instr.get(0));
         var superFunc = frame.pop();
 
