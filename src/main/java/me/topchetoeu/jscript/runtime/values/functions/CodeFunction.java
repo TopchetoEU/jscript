@@ -14,7 +14,6 @@ public final class CodeFunction extends FunctionValue {
     public Value argsVal;
 
     private Value onCall(Frame frame) {
-        if (mustCallSuper) frame.self = null;
         frame.onPush();
 
         try {
@@ -32,6 +31,7 @@ public final class CodeFunction extends FunctionValue {
         var frame = new Frame(env, isNew, thisArg, args, this);
         if (argsVal != null) frame.fakeArgs = argsVal;
         if (self != null) frame.self = self;
+        if (mustCallSuper && isNew) frame.self = null;
 
         var res = onCall(frame);
 
