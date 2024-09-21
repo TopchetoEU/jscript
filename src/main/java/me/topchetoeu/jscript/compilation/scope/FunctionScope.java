@@ -67,6 +67,21 @@ public class FunctionScope extends Scope {
         return childVar;
     }
 
+    @Override public Variable get(Variable var, boolean capture) {
+        if (captures.has(var)) return addCaptured(var, capture);
+        if (locals.has(var)) return addCaptured(var, capture);
+
+        if (captureParent == null) return null;
+
+        var parentVar = captureParent.get(var, true);
+        if (parentVar == null) return null;
+
+        var childVar = captures.add(parentVar.clone());
+        childToParent.put(childVar, parentVar);
+
+        return childVar;
+    }
+
     @Override public boolean has(String name, boolean capture) {
         if (functionVarMap.containsKey(name)) return true;
         if (specialVarMap.containsKey(name)) return true;

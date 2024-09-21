@@ -64,7 +64,7 @@ public final class VariableList {
     public boolean frozen() {
         if (frozenList != null) {
             assert frozenList != null;
-            assert varMap == null;
+            assert varMap != null;
             assert first == null;
             assert last == null;
 
@@ -139,6 +139,10 @@ public final class VariableList {
         return node.var;
     }
 
+    public boolean has(Variable var) {
+        return varMap.containsKey(var);
+    }
+
     public Supplier<VariableIndex> indexer(Variable var) {
         return varMap.get(var);
     }
@@ -162,7 +166,6 @@ public final class VariableList {
         }
 
         first = last = null;
-        varMap = null;
     }
 
     public Iterable<Variable> all() {

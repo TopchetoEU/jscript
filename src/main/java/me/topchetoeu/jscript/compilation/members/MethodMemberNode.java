@@ -2,6 +2,7 @@ package me.topchetoeu.jscript.compilation.members;
 
 import me.topchetoeu.jscript.common.Instruction;
 import me.topchetoeu.jscript.common.Instruction.BreakpointType;
+import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.common.parsing.Location;
 import me.topchetoeu.jscript.common.parsing.ParseRes;
 import me.topchetoeu.jscript.common.parsing.Parsing;
@@ -22,12 +23,16 @@ public class MethodMemberNode extends FunctionNode implements Member {
         else return null;
     }
 
+    @Override protected Environment rootEnv(Environment env) {
+        return env;
+    }
+
     @Override public void compile(CompileResult target, boolean pollute, String name, BreakpointType bp) {
         if (pollute) target.add(Instruction.dup());
         key.compile(target, true);
 
         var id = target.addChild(compileBody(target, name, null));
-        target.add(_i -> Instruction.loadFunc(id, true, false, false, name, captures(id, target)));
+        target.add(_i -> Instruction.loadFunc(id, true, false, false, false, null, captures(id, target)));
     }
 
     @Override public void compile(CompileResult target, boolean pollute, boolean enumerable) {

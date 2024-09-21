@@ -31,13 +31,12 @@ public class ForOfNode extends Node {
         target.add(Instruction.dup());
         target.add(Instruction.loadIntrinsics("it_key"));
         target.add(Instruction.loadMember()).setLocation(iterable.loc());
-        target.add(Instruction.call(0)).setLocation(iterable.loc());
+        target.add(Instruction.call(0, true)).setLocation(iterable.loc());
 
         int start = target.size();
-        target.add(Instruction.dup());
-        target.add(Instruction.dup());
+        target.add(Instruction.dup(2, 0));
         target.add(Instruction.loadMember("next")).setLocation(iterable.loc());
-        target.add(Instruction.call(0)).setLocation(iterable.loc());
+        target.add(Instruction.call(0, true)).setLocation(iterable.loc());
         target.add(Instruction.dup());
         target.add(Instruction.loadMember("done")).setLocation(iterable.loc());
         int mid = target.temp();

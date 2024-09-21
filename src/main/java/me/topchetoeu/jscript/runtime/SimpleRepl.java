@@ -231,7 +231,7 @@ public class SimpleRepl {
             var funcArgs = (ArrayValue)args.get(2);
             var name = args.get(3).toString(env);
 
-            return func.invoke(env, name, self, funcArgs.toArray());
+            return func.apply(env, name, self, funcArgs.toArray());
         }));
         res.defineOwnMember(env, "construct", new NativeFunction(args -> {
             var func = (FunctionValue)args.get(0);
@@ -263,7 +263,7 @@ public class SimpleRepl {
             var self = args.get(1);
             var funcArgs = (ArrayValue)args.get(2);
 
-            return func.invoke(env, self, funcArgs.toArray());
+            return func.apply(env, self, funcArgs.toArray());
         }));
 
         return res;
@@ -362,7 +362,7 @@ public class SimpleRepl {
         glob.defineOwnMember(null, "measure", new NativeFunction("measure", args -> {
             var start = System.nanoTime();
 
-            ((FunctionValue)args.get(0)).invoke(args.env, Value.UNDEFINED);
+            ((FunctionValue)args.get(0)).apply(args.env, Value.UNDEFINED);
 
             System.out.println(String.format("Finished in %sns", System.nanoTime() - start));
 

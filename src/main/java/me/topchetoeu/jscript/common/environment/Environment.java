@@ -90,7 +90,7 @@ public class Environment {
         if (has(key)) return get(key);
         else return defaultVal;
     }
-    public <T> T get(Key<T> key, Supplier<T> defaultVal) {
+    public <T> T getWith(Key<T> key, Supplier<T> defaultVal) {
         if (has(key)) return get(key);
         else return defaultVal.get();
     }

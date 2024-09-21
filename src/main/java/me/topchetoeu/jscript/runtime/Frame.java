@@ -15,6 +15,11 @@ import me.topchetoeu.jscript.runtime.values.objects.ObjectValue;
 
 public final class Frame {
     public static final Key<Frame> KEY = Key.of();
+    public static final EngineException STACK_OVERFLOW;
+    static {
+        STACK_OVERFLOW = EngineException.ofRange("Stack overflow!");
+        STACK_OVERFLOW.value.freeze();
+    }
 
     public static enum TryState {
         TRY,
@@ -193,6 +198,7 @@ public final class Frame {
                     }
                 }
             }
+            catch (StackOverflowError e) { throw STACK_OVERFLOW; }
             catch (EngineException e) { error = e; }
             catch (RuntimeException e) {
                 System.out.println(dbg.getMapOrEmpty(function).toLocation(codePtr, true));
@@ -268,6 +274,13 @@ public final class Frame {
             }
         }
 
+        if (returnValue != null) {
+            if (self == null) error = EngineException.ofError("Super constructor must be called before returning");
+            else {
+                dbg.onInstruction(env, this, instr, returnValue, null, false);
+                return returnValue;
+            }
+        }
         if (error != null) {
             var caught = false;
 
@@ -279,10 +292,6 @@ public final class Frame {
 
             dbg.onInstruction(env, this, instr, null, error, caught);
             throw error;
-        }
-        if (returnValue != null) {
-            dbg.onInstruction(env, this, instr, returnValue, null, false);
-            return returnValue;
         }
 
         return null;

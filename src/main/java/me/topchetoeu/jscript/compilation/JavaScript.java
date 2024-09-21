@@ -68,7 +68,7 @@ public final class JavaScript {
         "finally", "for", "do", "while", "switch", "case", "default", "new",
         "function", "var", "return", "throw", "typeof", "delete", "break",
         "continue", "debugger", "implements", "interface", "package", "private",
-        "protected", "public", "static", "arguments", "class"
+        "protected", "public", "static", "arguments", "class", "extends"
     ));
 
     public static ParseRes<? extends Node> parseParens(Source src, int i) {
@@ -130,7 +130,7 @@ public final class JavaScript {
         return ParseRes.failed();
     }
 
-    public static ParseRes<? extends Node> parseExpression(Source src, int i, int precedence, boolean statement) {
+    public static ParseRes<Node> parseExpression(Source src, int i, int precedence, boolean statement) {
         var n = Parsing.skipEmpty(src, i);
         Node prev = null;
 
@@ -174,11 +174,11 @@ public final class JavaScript {
         else return ParseRes.res(prev, n);
     }
 
-    public static ParseRes<? extends Node> parseExpression(Source src, int i, int precedence) {
+    public static ParseRes<Node> parseExpression(Source src, int i, int precedence) {
         return parseExpression(src, i, precedence, false);
     }
 
-    public static ParseRes<? extends Node> parseExpressionStatement(Source src, int i) {
+    public static ParseRes<Node> parseExpressionStatement(Source src, int i) {
         var res = parseExpression(src, i, 0, true);
         if (!res.isSuccess()) return res.chainError();
 
@@ -219,7 +219,7 @@ public final class JavaScript {
 
     public static ParseRes<Boolean> parseStatementEnd(Source src, int i) {
         var n = Parsing.skipEmpty(src, i);
-        if (i >= src.size()) return ParseRes.res(true, n + 1);
+        if (i >= src.size()) return ParseRes.res(true, n);
 
         for (var j = i; j < i + n; j++) {
             if (src.is(j, '\n')) return ParseRes.res(true, n);

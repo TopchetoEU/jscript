@@ -4,6 +4,7 @@ import java.util.Arrays;
 
 import me.topchetoeu.jscript.common.Instruction;
 import me.topchetoeu.jscript.common.Instruction.BreakpointType;
+import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.common.parsing.Location;
 import me.topchetoeu.jscript.common.parsing.ParseRes;
 import me.topchetoeu.jscript.common.parsing.Parsing;
@@ -16,7 +17,11 @@ public class FunctionArrowNode extends FunctionNode {
 
     @Override public void compile(CompileResult target, boolean pollute, String name, BreakpointType bp) {
         var id = target.addChild(compileBody(target, name, null));
-        target.add(_i -> Instruction.loadFunc(id, true, false, true, null, captures(id, target)));
+        target.add(_i -> Instruction.loadFunc(id, true, false, true, false, null, captures(id, target)));
+    }
+
+    @Override protected Environment rootEnv(Environment env) {
+        return env.getWith(ClassNode.CLASS_ROOT, () -> super.rootEnv(env));
     }
 
     public FunctionArrowNode(Location loc, Location end, Parameters params, Node body) {

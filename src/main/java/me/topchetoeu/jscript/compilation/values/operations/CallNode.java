@@ -10,12 +10,14 @@ import me.topchetoeu.jscript.common.parsing.Location;
 import me.topchetoeu.jscript.common.parsing.ParseRes;
 import me.topchetoeu.jscript.common.parsing.Parsing;
 import me.topchetoeu.jscript.common.parsing.Source;
+import me.topchetoeu.jscript.compilation.ClassNode;
 import me.topchetoeu.jscript.compilation.CompileResult;
 import me.topchetoeu.jscript.compilation.JavaScript;
 import me.topchetoeu.jscript.compilation.Node;
 import me.topchetoeu.jscript.compilation.values.ArgumentsNode;
 import me.topchetoeu.jscript.compilation.values.ArrayNode;
 import me.topchetoeu.jscript.compilation.values.ObjectNode;
+import me.topchetoeu.jscript.compilation.values.SuperNode;
 import me.topchetoeu.jscript.compilation.values.ThisNode;
 import me.topchetoeu.jscript.compilation.values.VariableNode;
 import me.topchetoeu.jscript.compilation.values.constants.BoolNode;
@@ -88,18 +90,37 @@ public class CallNode extends Node {
     }
 
     @Override public void compile(CompileResult target, boolean pollute, BreakpointType type) {
-        if (!isNew && func instanceof IndexNode) {
-            var obj = ((IndexNode)func).object;
-            var index = ((IndexNode)func).index;
+        var superInstr = target.env.get(ClassNode.SUPER);
+
+        if (!isNew && func instanceof SuperNode && superInstr != null && target.env.hasNotNull(ClassNode.ON_SUPER_CALL)) {
+            target.env.get(ClassNode.SUPER_CONSTR).accept(target);
+            for (var arg : args) arg.compile(target, true);
+            target.add(Instruction.callSuper(args.length));
+            target.env.get(ClassNode.ON_SUPER_CALL).accept(target);
+        }
+        else if (!isNew && func instanceof IndexNode indexn) {
+            var obj = indexn.object;
+            var index = indexn.index;
             String name = "";
 
-            obj.compile(target, true);
-            index.compile(target, true);
+            if (superInstr != null && obj instanceof SuperNode) {
+                new ThisNode(null).compile(target, true);
+                target.env.get(ClassNode.SUPER).accept(target);
+                IndexNode.indexLoad(target, index, true);
+            }
+            else {
+                obj.compile(target, true);
+                target.add(Instruction.dup());
+                IndexNode.indexLoad(target, index, true);
+            }
+
             for (var arg : args) arg.compile(target, true);
 
             if (ATTACH_NAME) name = generateName(obj, index);
 
-            target.add(Instruction.callMember(args.length, name)).setLocationAndDebug(loc(), type);
+            target.add(Instruction.call(args.length, true, name));
+
+            target.setLocationAndDebug(loc(), type);
         }
         else {
             String name = "";
@@ -110,7 +131,7 @@ public class CallNode extends Node {
             if (ATTACH_NAME) name = generateName(func, null);
 
             if (isNew) target.add(Instruction.callNew(args.length, name)).setLocationAndDebug(loc(), type);
-            else target.add(Instruction.call(args.length, name)).setLocationAndDebug(loc(), type);
+            else target.add(Instruction.call(args.length, false, name)).setLocationAndDebug(loc(), type);
         }
         if (!pollute) target.add(Instruction.discard());
     }

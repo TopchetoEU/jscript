@@ -38,6 +38,11 @@ public class ParseRes<T> {
         return new ParseRes<>(state, errorLocation, error, null, 0);
     }
     @SuppressWarnings("unchecked")
+    public <T2> ParseRes<T2> chainError(ParseRes<?> other) {
+        if (!this.isError()) return other.chainError();
+        return (ParseRes<T2>) this;
+    }
+    @SuppressWarnings("unchecked")
     public <T2> ParseRes<T2> chainError(Location loc, String error) {
         if (!this.isError()) return new ParseRes<>(State.ERROR, loc, error, null, 0);
         return (ParseRes<T2>) this;

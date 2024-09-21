@@ -28,9 +28,9 @@ public interface EventLoop {
     }
 
     public default Future<Value> pushMsg(boolean micro, Environment env, FunctionValue func, Value thisArg, Value ...args) {
-        return pushMsg(() -> func.invoke(env, thisArg, args), micro);
+        return pushMsg(() -> func.apply(env, thisArg, args), micro);
     }
     public default Future<Value> pushMsg(boolean micro, Environment env, Filename filename, String raw, Value thisArg, Value ...args) {
-        return pushMsg(() -> Compiler.compileFunc(env, filename, raw).invoke(env, thisArg, args), micro);
+        return pushMsg(() -> Compiler.compileFunc(env, filename, raw).apply(env, thisArg, args), micro);
     }
 }

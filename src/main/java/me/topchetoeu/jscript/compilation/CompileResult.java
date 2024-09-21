@@ -10,6 +10,7 @@ import me.topchetoeu.jscript.common.FunctionBody;
 import me.topchetoeu.jscript.common.Instruction;
 import me.topchetoeu.jscript.common.Instruction.BreakpointType;
 import me.topchetoeu.jscript.common.environment.Environment;
+import me.topchetoeu.jscript.common.environment.Key;
 import me.topchetoeu.jscript.common.mapping.FunctionMap;
 import me.topchetoeu.jscript.common.mapping.FunctionMap.FunctionMapBuilder;
 import me.topchetoeu.jscript.common.parsing.Location;
@@ -142,7 +143,21 @@ public final class CompileResult {
     }
 
     public CompileResult subtarget() {
-        return new CompileResult(new Scope(scope), this);
+        return new CompileResult(env, new Scope(scope), this);
+    }
+
+    public CompileResult setEnvironment(Environment env) {
+        return new CompileResult(env, scope, this);
+    }
+    /**
+     * Returns a compile result with a child of the environment that relates to the given key.
+     * In essence, this is used to create a compile result which is back at the root environment of the compilation
+     */
+    public CompileResult rootEnvironment(Key<Environment> env) {
+        return new CompileResult(this.env.get(env).child(), scope, this);
+    }
+    public CompileResult subEnvironment() {
+        return new CompileResult(env.child(), scope, this);
     }
 
     public CompileResult(Environment env, Scope scope, int length, Consumer<CompileResult> task) {
@@ -154,11 +169,11 @@ public final class CompileResult {
         this.length = length;
         this.buildTask = () -> task.accept(this);
     }
-    private CompileResult(Scope scope, CompileResult parent) {
+    private CompileResult(Environment env, Scope scope, CompileResult parent) {
         this.scope = scope;
         this.instructions = parent.instructions;
         this.children = parent.children;
         this.map = parent.map;
-        this.env = parent.env;
+        this.env = env;
     }
 }

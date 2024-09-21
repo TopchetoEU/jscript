@@ -241,7 +241,6 @@ target.Boolean = Boolean;
 
 class Object {
     toString() {
-        print("2");
         if (this !== null && this !== undefined && (Symbol.toStringTag in this)) return "[object " + this[Symbol.toStringTag] + "]";
         else if (typeof this === "number" || this instanceof Number) return "[object Number]";
         else if (typeof this === "symbol" || this instanceof Symbol) return "[object Symbol]";
@@ -251,13 +250,11 @@ class Object {
         else return "[object Object]";
     }
     valueOf() {
-        print("1");
         return this;
     }
 
     constructor(value) {
         if (typeof value === 'object' && value !== null) return value;
-
         if (typeof value === 'string') return new String(value);
         if (typeof value === 'number') return new Number(value);
         if (typeof value === 'boolean') return new Boolean(value);
@@ -268,19 +265,15 @@ class Object {
             return res;
         }
 
-        const target = this;
-        // TODO: use new.target.prototype as proto
-        if (target == null || typeof target !== 'object') target = {};
+        return {};
+        // // TODO: use new.target.prototype as proto
+        // if (target == null || typeof target !== 'object') target = {};
 
-        this[valueKey] = Object(value);
+        // return target;
     }
 
     static defineProperty(obj, key, desc) {
-        if (typeof obj !== "object" || obj === null) {
-            print(obj);
-            print(typeof obj);
-            throw new TypeError("Object.defineProperty called on non-object");
-        }
+        if (typeof obj !== "object" || obj === null) throw new TypeError("Object.defineProperty called on non-object");
         if (typeof desc !== "object" || desc === null) throw new TypeError("Property description must be an object: " + desc);
 
         if ("get" in desc || "set" in desc) {

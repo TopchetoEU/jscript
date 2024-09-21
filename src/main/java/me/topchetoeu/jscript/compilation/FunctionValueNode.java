@@ -11,7 +11,7 @@ public class FunctionValueNode extends FunctionNode {
 
     @Override public void compile(CompileResult target, boolean pollute, String name, BreakpointType bp) {
         var id = target.addChild(compileBody(target, name, null));
-        target.add(_i -> Instruction.loadFunc(id, true, true, false, name, captures(id, target)));
+        target.add(_i -> Instruction.loadFunc(id, true, true, false, false, name, captures(id, target)));
     }
 
     public FunctionValueNode(Location loc, Location end, Parameters params, CompoundNode body, String name) {

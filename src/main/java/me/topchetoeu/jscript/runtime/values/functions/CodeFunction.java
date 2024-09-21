@@ -8,11 +8,13 @@ import me.topchetoeu.jscript.runtime.values.Value;
 public final class CodeFunction extends FunctionValue {
     public final FunctionBody body;
     public final Value[][] captures;
-    public Value self;
-    public Value argsVal;
     public Environment env;
 
+    public Value self;
+    public Value argsVal;
+
     private Value onCall(Frame frame) {
+        if (mustCallSuper) frame.self = null;
         frame.onPush();
 
         try {
@@ -31,7 +33,10 @@ public final class CodeFunction extends FunctionValue {
         if (argsVal != null) frame.fakeArgs = argsVal;
         if (self != null) frame.self = self;
 
-        return onCall(frame);
+        var res = onCall(frame);
+
+        if (isNew) return frame.self;
+        else return res;
     }
 
     public CodeFunction(Environment env, String name, FunctionBody body, Value[][] captures) {

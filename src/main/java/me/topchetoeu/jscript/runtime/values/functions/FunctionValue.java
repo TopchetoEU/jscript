@@ -23,6 +23,7 @@ public abstract class FunctionValue extends ObjectValue {
 
     public boolean enableCall = true;
     public boolean enableNew = true;
+    public boolean mustCallSuper = false;
 
     private final FieldMember nameField = new FieldMember(this, true, false, false) {
         @Override public Value get(Environment env, Value self) {

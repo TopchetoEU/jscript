@@ -32,18 +32,22 @@ public class InstructionRunner {
     private static Value execCall(Environment env, Instruction instr, Frame frame) {
         var callArgs = frame.take(instr.get(0));
         var func = frame.pop();
+        var self = (boolean)instr.get(1) ? frame.pop() : Value.UNDEFINED;
 
-        frame.push(func.call(env, false, instr.get(1), Value.UNDEFINED, callArgs));
+        frame.push(func.apply(env, instr.get(2), self, callArgs));
 
         frame.codePtr++;
         return null;
     }
-    private static Value execCallMember(Environment env, Instruction instr, Frame frame) {
+    private static Value execCallSuper(Environment env, Instruction instr, Frame frame) {
         var callArgs = frame.take(instr.get(0));
-        var index = frame.pop();
-        var obj = frame.pop();
+        var superFunc = frame.pop();
 
-        frame.push(obj.getMember(env, index).call(env, false, instr.get(1), obj, callArgs));
+        var self = new ObjectValue();
+        if (frame.function.prototype instanceof ObjectValue objProto) self.setPrototype(env, objProto);
+
+        frame.self = superFunc.construct(env, "super", self, callArgs);
+        frame.push(frame.self);
 
         frame.codePtr++;
         return null;
@@ -185,11 +189,12 @@ public class InstructionRunner {
         boolean callable = instr.get(2);
         boolean constructible = instr.get(3);
         boolean captureThis = instr.get(4);
-    
-        var captures = new Value[instr.params.length - 5][];
+        boolean noThis = instr.get(5);
 
-        for (var i = 5; i < instr.params.length; i++) {
-            captures[i - 5] = frame.captureVar(instr.get(i));
+        var captures = new Value[instr.params.length - 6][];
+
+        for (var i = 6; i < instr.params.length; i++) {
+            captures[i - 6] = frame.captureVar(instr.get(i));
         }
 
         var func = new CodeFunction(env, name, frame.function.body.children[id], captures);
@@ -199,6 +204,8 @@ public class InstructionRunner {
             func.self = frame.self;
             func.argsVal = frame.argsVal;
         }
+        if (noThis) func.mustCallSuper = true;
+
         frame.push(func);
 
         frame.codePtr++;
@@ -487,6 +494,20 @@ public class InstructionRunner {
         frame.codePtr++;
         return null;
     }
+    private static Value execExtend(Environment env, Instruction instr, Frame frame) {
+        var superVal = frame.peek(0);
+        var derivedVal = frame.peek(1);
+
+        if (!(superVal instanceof FunctionValue superFunc)) throw EngineException.ofType("Illegal EXTENDS instruction");
+        if (!(superFunc.prototype instanceof ObjectValue superProto)) throw EngineException.ofType("Illegal EXTENDS instruction");
+        if (!(derivedVal instanceof FunctionValue derivedFunc)) throw EngineException.ofType("Illegal EXTENDS instruction");
+
+        derivedFunc.setPrototype(env, superFunc);
+        derivedFunc.prototype.setPrototype(env, superProto);
+
+        frame.codePtr++;
+        return null;
+    }
 
     private static Value execLoadArgs(Environment env, Instruction instr, Frame frame) {
         if ((boolean)instr.get(0) || frame.fakeArgs == null) frame.push(frame.argsVal);
@@ -510,6 +531,7 @@ public class InstructionRunner {
         return null;
     }
     private static Value execLoadThis(Environment env, Instruction instr, Frame frame) {
+        if (frame.self == null) throw EngineException.ofError("Super constructor must be called before 'this' is accessed");
         frame.push(frame.self);
         frame.codePtr++;
         return null;
@@ -547,7 +569,7 @@ public class InstructionRunner {
             case THROW_SYNTAX: return execThrowSyntax(env, instr, frame);
             case CALL: return execCall(env, instr, frame);
             case CALL_NEW: return execCallNew(env, instr, frame);
-            case CALL_MEMBER: return execCallMember(env, instr, frame);
+            case CALL_SUPER: return execCallSuper(env, instr, frame);
             case TRY_START: return execTryStart(env, instr, frame);
             case TRY_END: return execTryEnd(env, instr, frame);
 
@@ -595,6 +617,7 @@ public class InstructionRunner {
             case GLOB_DEF: return exexGlobDef(env, instr, frame);
             case GLOB_GET: return exexGlobGet(env, instr, frame);
             case GLOB_SET: return exexGlobSet(env, instr, frame);
+            case EXTEND: return execExtend(env, instr, frame);
 
             case VAR_INIT: return execVarInit(env, instr, frame);
             case VAR_FREE: return execVarFree(env, instr, frame);

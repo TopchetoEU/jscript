@@ -4,6 +4,7 @@ import java.util.Arrays;
 
 import me.topchetoeu.jscript.common.Instruction;
 import me.topchetoeu.jscript.common.Instruction.BreakpointType;
+import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.common.parsing.Location;
 import me.topchetoeu.jscript.common.parsing.ParseRes;
 import me.topchetoeu.jscript.common.parsing.Parsing;
@@ -29,6 +30,10 @@ public class PropertyMemberNode extends FunctionNode implements Member{
         else return null;
     }
 
+    @Override protected Environment rootEnv(Environment env) {
+        return env;
+    }
+
     public boolean isGetter() { return argument == null; }
     public boolean isSetter() { return argument != null; }
 
@@ -37,7 +42,7 @@ public class PropertyMemberNode extends FunctionNode implements Member{
         key.compile(target, true);
 
         var id = target.addChild(compileBody(target, name, null));
-        target.add(_i -> Instruction.loadFunc(id, true, false, false, name, captures(id, target)));
+        target.add(_i -> Instruction.loadFunc(id, true, false, false, false, null, captures(id, target)));
     }
 
 

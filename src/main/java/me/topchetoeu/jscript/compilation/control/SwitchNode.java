@@ -118,7 +118,6 @@ public class SwitchNode extends Node {
 
         return ParseRes.res(null, n);
     }
-    @SuppressWarnings("unused")
     public static ParseRes<SwitchNode> parse(Source src, int i) {
         var n = Parsing.skipEmpty(src, i);
         var loc = src.loc(i + n);

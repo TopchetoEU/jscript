@@ -89,7 +89,7 @@ public abstract class Value {
         else throw EngineException.ofType(name + " is not a function");
     }
 
-    public final Value invoke(Environment env, String name, Value self, Value ...args) {
+    public final Value apply(Environment env, String name, Value self, Value ...args) {
         return call(env, false, name, self, args);
     }
     public final Value construct(Environment env, String name, Value ...args) {
@@ -97,16 +97,19 @@ public abstract class Value {
         var proto = getMember(env, StringValue.of("prototype"));
 
         if (proto instanceof ObjectValue) res.setPrototype(env, (ObjectValue)proto);
-        else res.setPrototype(env, null);
 
         var ret = this.call(env, true, name, res, args);
 
         if (!ret.isPrimitive()) return ret;
         return res;
     }
+    public final Value construct(Environment env, String name, Value self, Value ...args) {
+        var ret = this.call(env, true, name, self, args);
+        return ret.isPrimitive() ? self : ret;
+    }
 
-    public final Value invoke(Environment env, Value self, Value ...args) {
-        return invoke(env, "", self, args);
+    public final Value apply(Environment env, Value self, Value ...args) {
+        return apply(env, "", self, args);
     }
     public final Value construct(Environment env, Value ...args) {
         return construct(env, "", args);
@@ -118,7 +121,7 @@ public abstract class Value {
     public abstract boolean toBoolean();
 
     public final boolean isInstanceOf(Environment env, Value proto) {
-        for (var val = getPrototype(env); val != null; val = getPrototype(env)) {
+        for (var val = getPrototype(env); val != null; val = val.getPrototype(env)) {
             if (val.equals(proto)) return true;
         }
 
@@ -390,7 +393,7 @@ public abstract class Value {
                 private void loadNext() {
                     if (supplier == null) value = null;
                     else if (consumed) {
-                        var curr = supplier.invoke(env, Value.UNDEFINED);
+                        var curr = supplier.apply(env, Value.UNDEFINED);
 
                         if (curr == null) { supplier = null; value = null; }
                         if (curr.getMember(env, StringValue.of("done")).toBoolean()) { supplier = null; value = null; }
@@ -418,12 +421,12 @@ public abstract class Value {
 
     public void callWith(Environment env, Iterable<? extends Value> it) {
         for (var el : it) {
-            this.invoke(env, Value.UNDEFINED, el);
+            this.apply(env, Value.UNDEFINED, el);
         }
     }
     public void callWithAsync(Environment env, Iterable<? extends Value> it, boolean async) {
         for (var el : it) {
-            env.get(EventLoop.KEY).pushMsg(() -> this.invoke(env, Value.UNDEFINED, el), true);
+            env.get(EventLoop.KEY).pushMsg(() -> this.apply(env, Value.UNDEFINED, el), true);
         }
     }
 

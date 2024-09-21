@@ -112,6 +112,18 @@ public class Scope {
         return null;
     }
     /**
+     * Gets the index supplier of the given variable, or null if it isn't in this scope chain.
+     * This will also execute capturing logic.
+     *
+     * @param capture If true, the variable is being captured by a function
+     */
+    public Variable get(Variable var, boolean capture) {
+        if (locals.has(var)) return addCaptured(var, capture);
+        if (parent != null) return parent.get(var, capture);
+
+        return null;
+    }
+    /**
      * Checks if the given variable name is accessible
      * 
      * @param capture If true, will check beyond this function's scope

@@ -24,6 +24,10 @@ public abstract class FunctionNode extends Node {
 
     protected void compilePreBody(CompileResult target) { }
 
+    protected Environment rootEnv(Environment env) {
+        return env.get(JavaScript.COMPILE_ROOT);
+    }
+
     public final CompileResult compileBody(Environment env, FunctionScope scope, boolean lastReturn, String _name, String selfName) {
         var name = this.name() != null ? this.name() : _name;
 
@@ -64,7 +68,7 @@ public abstract class FunctionNode extends Node {
         });
     }
     public final CompileResult compileBody(CompileResult parent, String name, String selfName) {
-        return compileBody(parent.env.get(JavaScript.COMPILE_ROOT).child(), new FunctionScope(parent.scope), false, name, selfName);
+        return compileBody(rootEnv(parent.env).child(), new FunctionScope(parent.scope), false, name, selfName);
     }
 
     public abstract void compile(CompileResult target, boolean pollute, String name, BreakpointType bp);

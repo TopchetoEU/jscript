@@ -17,11 +17,13 @@ public class Instruction {
         TRY_END(0x06),
 
         CALL(0x10),
+        @Deprecated
         CALL_MEMBER(0x11),
         CALL_NEW(0x12),
-        JMP_IF(0x13),
-        JMP_IFN(0x14),
-        JMP(0x15),
+        CALL_SUPER(0x13),
+        JMP_IF(0x18),
+        JMP_IFN(0x19),
+        JMP(0x1A),
 
         PUSH_UNDEFINED(0x20),
         PUSH_NULL(0x21),
@@ -59,6 +61,7 @@ public class Instruction {
         KEYS(0x52),
         TYPEOF(0x53),
         OPERATION(0x54),
+        EXTEND(0x55),
 
         GLOB_GET(0x60),
         GLOB_SET(0x61),
@@ -282,15 +285,17 @@ public class Instruction {
         return new Instruction(Type.NOP, params);
     }
 
-    public static Instruction call(int argn, String name) {
-        return new Instruction(Type.CALL, argn, name);
+    public static Instruction call(int argn, boolean hasSelf, String name) {
+        return new Instruction(Type.CALL, argn, hasSelf, name);
     }
-    public static Instruction call(int argn) {
-        return call(argn, "");
+    public static Instruction call(int argn, boolean hasSelf) {
+        return call(argn, hasSelf, "");
     }
+    @Deprecated
     public static Instruction callMember(int argn, String name) {
         return new Instruction(Type.CALL_MEMBER, argn, name);
     }
+    @Deprecated
     public static Instruction callMember(int argn) {
         return new Instruction(Type.CALL_MEMBER, argn, "");
     }
@@ -299,6 +304,9 @@ public class Instruction {
     }
     public static Instruction callNew(int argn) {
         return new Instruction(Type.CALL_NEW, argn, "");
+    }
+    public static Instruction callSuper(int argn) {
+        return new Instruction(Type.CALL_SUPER, argn);
     }
 
     public static Instruction jmp(int offset) {
@@ -320,7 +328,6 @@ public class Instruction {
     public static IntFunction<Instruction> jmpIfNot(IntSupplier pos) {
         return i -> new Instruction(Type.JMP_IFN, pos.getAsInt() - i);
     }
-
 
     public static Instruction pushUndefined() {
         return new Instruction(Type.PUSH_UNDEFINED);
@@ -386,16 +393,18 @@ public class Instruction {
     public static Instruction loadRegex(String pattern, String flags) {
         return new Instruction(Type.LOAD_REGEX, pattern, flags);
     }
-    public static Instruction loadFunc(int id, boolean callable, boolean constructible, boolean captureThis, String name, int[] captures) {
+    // TODO: make this capturing a concern of the compiler
+    public static Instruction loadFunc(int id, boolean callable, boolean constructible, boolean captureThis, boolean noThis, String name, int[] captures) {
         if (name == null) name = "";
 
-        var args = new Object[5 + captures.length];
+        var args = new Object[6 + captures.length];
         args[0] = id;
         args[1] = name;
         args[2] = callable;
         args[3] = constructible;
         args[4] = captureThis;
-        for (var i = 0; i < captures.length; i++) args[i + 5] = captures[i];
+        args[5] = noThis;
+        for (var i = 0; i < captures.length; i++) args[i + 6] = captures[i];
         return new Instruction(Type.LOAD_FUNC, args);
     }
     public static Instruction loadObj() {
@@ -459,6 +468,9 @@ public class Instruction {
     }
     public static Instruction defField(boolean enumerable) {
         return new Instruction(Type.DEF_FIELD, enumerable);
+    }
+    public static Instruction extend() {
+        return new Instruction(Type.EXTEND);
     }
 
     public static Instruction operation(Operation op) {

@@ -46,13 +46,13 @@ public class ObjectValue extends Value {
             var valueOf = getMember(env, "valueOf");
 
             if (valueOf instanceof FunctionValue) {
-                var res = valueOf.invoke(env, this);
+                var res = valueOf.apply(env, this);
                 if (res.isPrimitive()) return res;
             }
 
             var toString = getMember(env, "toString");
             if (toString instanceof FunctionValue) {
-                var res = toString.invoke(env, this);
+                var res = toString.apply(env, this);
                 if (res.isPrimitive()) return res;
             }
         }
