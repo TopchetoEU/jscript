@@ -547,8 +547,8 @@ public abstract class Value {
         var na = a.toNumber(env);
         var nb = b.toNumber(env);
 
-        if (na.isInt() && nb.isInt()) return NumberValue.of(na.getInt() - nb.getInt());
-        else return NumberValue.of(na.getDouble() - nb.getDouble());
+        if (na.isInt() && nb.isInt()) return NumberValue.of(na.getInt() * nb.getInt());
+        else return NumberValue.of(na.getDouble() * nb.getDouble());
     }
     public static final NumberValue divide(Environment env, Value a, Value b) {
         var na = a.toNumber(env);
