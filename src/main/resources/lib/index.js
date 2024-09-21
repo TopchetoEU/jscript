@@ -385,42 +385,36 @@ object.defineField(Error.prototype, "message", true, false, true, "");
 setCallable(Error, true);
 target.Error = Error;
 
-class SyntaxError {
-    constructor (msg = "") {
+class SyntaxError extends Error {
+    constructor (msg) {
         if (invokeType(arguments) === "call") return new SyntaxError(msg);
-        this.message = msg + "";
+        super(msg);
     }
 }
 
 object.defineField(SyntaxError.prototype, "name", true, false, true, "SyntaxError");
-object.setPrototype(SyntaxError, Error);
-object.setPrototype(SyntaxError.prototype, Error.prototype);
 setCallable(SyntaxError, true);
 target.SyntaxError = SyntaxError;
 
-class TypeError {
-    constructor (msg = "") {
+class TypeError extends Error {
+    constructor (msg) {
         if (invokeType(arguments) === "call") return new TypeError(msg);
-        this.message = msg + "";
+        super(msg);
     }
 }
 
 object.defineField(TypeError.prototype, "name", true, false, true, "TypeError");
-object.setPrototype(TypeError, Error);
-object.setPrototype(TypeError.prototype, Error.prototype);
 setCallable(TypeError, true);
 target.TypeError = TypeError;
 
-class RangeError {
-    constructor (msg = "") {
+class RangeError extends Error {
+    constructor (msg) {
         if (invokeType(arguments) === "call") return new RangeError(msg);
-        this.message = msg + "";
+        super(msg);
     }
 }
 
 object.defineField(RangeError.prototype, "name", true, false, true, "RangeError");
-object.setPrototype(RangeError, Error);
-object.setPrototype(RangeError.prototype, Error.prototype);
 setCallable(RangeError, true);
 target.RangeError = RangeError;
 
