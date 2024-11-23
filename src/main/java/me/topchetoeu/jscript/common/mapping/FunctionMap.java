@@ -15,7 +15,6 @@ import java.util.stream.Collectors;
 import me.topchetoeu.jscript.common.Instruction.BreakpointType;
 import me.topchetoeu.jscript.common.parsing.Filename;
 import me.topchetoeu.jscript.common.parsing.Location;
-import me.topchetoeu.jscript.compilation.scope.Scope;
 
 public class FunctionMap {
     public static class FunctionMapBuilder {
@@ -53,9 +52,6 @@ public class FunctionMap {
 
         public FunctionMap build(String[] localNames, String[] captureNames) {
             return new FunctionMap(sourceMap, breakpoints, localNames, captureNames);
-        }
-        public FunctionMap build(Scope scope) {
-            return new FunctionMap(sourceMap, breakpoints, new String[0], new String[0]);
         }
         public FunctionMap build() {
             return new FunctionMap(sourceMap, breakpoints, new String[0], new String[0]);
