@@ -34,23 +34,7 @@ public class InstructionRunner {
         var func = frame.pop();
         var self = (boolean)instr.get(1) ? frame.pop() : Value.UNDEFINED;
 
-        frame.push(func.apply(env, instr.get(2), self, callArgs));
-
-        frame.codePtr++;
-        return null;
-    }
-    private static Value execCallSuper(Environment env, Instruction instr, Frame frame) {
-        if (!frame.isNew) throw EngineException.ofError("Super constructor may be called only when constructing");
-        if (frame.self != null) throw EngineException.ofError("Super constructor may be called once");
-
-        var callArgs = frame.take(instr.get(0));
-        var superFunc = frame.pop();
-
-        var self = new ObjectValue();
-        if (frame.function.prototype instanceof ObjectValue objProto) self.setPrototype(env, objProto);
-
-        frame.self = superFunc.construct(env, "super", self, callArgs);
-        frame.push(frame.self);
+        frame.push(func.apply(env, self, callArgs));
 
         frame.codePtr++;
         return null;
@@ -74,10 +58,10 @@ public class InstructionRunner {
 
         if (val == Value.UNDEFINED) accessor = null;
         else if (val instanceof FunctionValue func) accessor = func;
-        else throw EngineException.ofType("Getter must be a function or undefined.");
+        else throw EngineException.ofType("Getter must be a function or undefined");
 
-        if ((boolean)instr.get(0)) obj.defineOwnMember(env, key, new PropertyMember(obj, null, accessor, true, instr.get(1)));
-        else obj.defineOwnMember(env, key, new PropertyMember(obj, accessor, null, true, instr.get(1)));
+        if ((boolean)instr.get(0)) obj.defineOwnMember(env, key, new PropertyMember(obj, null, accessor, true, true));
+        else obj.defineOwnMember(env, key, new PropertyMember(obj, accessor, null, true, true));
 
         frame.codePtr++;
         return null;
@@ -87,7 +71,7 @@ public class InstructionRunner {
         var key = frame.pop();
         var obj = frame.pop();
 
-        obj.defineOwnMember(env, key, FieldMember.of(obj, val, true, instr.get(0), true));
+        obj.defineOwnMember(env, key, FieldMember.of(obj, val, true, true, true));
 
         frame.codePtr++;
         return null;
@@ -155,9 +139,7 @@ public class InstructionRunner {
     private static Value execLoadVar(Environment env, Instruction instr, Frame frame) {
         int i = instr.get(0);
 
-        var res = frame.getVar(i);
-        if (res == null) throw EngineException.ofSyntax("Uninitialized variable");
-        frame.push(res);
+        frame.push(frame.getVar(i));
         frame.codePtr++;
 
         return null;
@@ -189,25 +171,14 @@ public class InstructionRunner {
     private static Value execLoadFunc(Environment env, Instruction instr, Frame frame) {
         int id = instr.get(0);
         String name = instr.get(1);
-        boolean callable = instr.get(2);
-        boolean constructible = instr.get(3);
-        boolean captureThis = instr.get(4);
-        boolean noThis = instr.get(5);
 
-        var captures = new Value[instr.params.length - 6][];
+        var captures = new Value[instr.params.length - 2][];
 
-        for (var i = 6; i < instr.params.length; i++) {
-            captures[i - 6] = frame.captureVar(instr.get(i));
+        for (var i = 2; i < instr.params.length; i++) {
+            captures[i - 2] = frame.captureVar(instr.get(i));
         }
 
         var func = new CodeFunction(env, name, frame.function.body.children[id], captures);
-        if (!callable) func.enableCall = false;
-        if (!constructible) func.enableNew = false;
-        if (captureThis) {
-            func.self = frame.self;
-            func.argsVal = frame.argsVal;
-        }
-        if (noThis) func.mustCallSuper = true;
 
         frame.push(func);
 
@@ -254,7 +225,7 @@ public class InstructionRunner {
             frame.push(env.get(Value.REGEX_CONSTR).construct(env, instr.get(0), instr.get(1)));
         }
         else {
-            throw EngineException.ofSyntax("Regex is not supported.");
+            throw EngineException.ofSyntax("Regex is not supported");
         }
 
         frame.codePtr++;
@@ -271,7 +242,7 @@ public class InstructionRunner {
         var key = frame.pop();
         var obj = frame.pop();
 
-        if (!obj.setMember(env, key, val)) throw EngineException.ofSyntax("Can't set member '" + key.toReadable(env) + "'.");
+        if (!obj.setMember(env, key, val)) throw EngineException.ofSyntax("Can't set member '" + key.toReadable(env) + "'");
         if ((boolean)instr.get(0)) frame.push(val);
         frame.codePtr++;
         return null;
@@ -280,7 +251,7 @@ public class InstructionRunner {
         var val = frame.pop();
         var obj = frame.pop();
 
-        if (!obj.setMember(env, (String)instr.get(0), val)) throw EngineException.ofSyntax("Can't set member '" + instr.get(0) + "'.");
+        if (!obj.setMember(env, (String)instr.get(0), val)) throw EngineException.ofSyntax("Can't set member '" + instr.get(0) + "'");
         if ((boolean)instr.get(1)) frame.push(val);
         frame.codePtr++;
         return null;
@@ -289,7 +260,7 @@ public class InstructionRunner {
         var val = frame.pop();
         var obj = frame.pop();
 
-        if (!obj.setMember(env, (int)instr.get(0), val)) throw EngineException.ofSyntax("Can't set member '" + instr.get(0) + "'.");
+        if (!obj.setMember(env, (int)instr.get(0), val)) throw EngineException.ofSyntax("Can't set member '" + instr.get(0) + "'");
         if ((boolean)instr.get(1)) frame.push(val);
         frame.codePtr++;
         return null;
@@ -298,7 +269,6 @@ public class InstructionRunner {
         var val = (boolean)instr.get(1) ? frame.peek() : frame.pop();
         int i = instr.get(0);
 
-        if (!(boolean)instr.get(2) && frame.getVar(i) == null) throw EngineException.ofSyntax("Uninitialized variable");
         frame.setVar(i, val);
         frame.codePtr++;
 
@@ -348,7 +318,7 @@ public class InstructionRunner {
         var key = frame.pop();
         var val = frame.pop();
 
-        if (!val.deleteMember(env, key)) throw EngineException.ofSyntax("Can't delete member '" + key.toReadable(env) + "'.");
+        if (!val.deleteMember(env, key)) throw EngineException.ofSyntax("Can't delete member '" + key.toReadable(env) + "'");
         frame.codePtr++;
         return null;
     }
@@ -456,7 +426,7 @@ public class InstructionRunner {
         return null;
     }
 
-    private static Value exexGlobDef(Environment env, Instruction instr, Frame frame) {
+    private static Value execGlobDef(Environment env, Instruction instr, Frame frame) {
         var name = (String)instr.get(0);
 
         if (!Value.global(env).hasMember(env, name, false)) {
@@ -466,7 +436,7 @@ public class InstructionRunner {
         frame.codePtr++;
         return null;
     }
-    private static Value exexGlobGet(Environment env, Instruction instr, Frame frame) {
+    private static Value execGlobGet(Environment env, Instruction instr, Frame frame) {
         var name = (String)instr.get(0);
         if ((boolean)instr.get(1)) {
             frame.push(Value.global(env).getMember(env, name));
@@ -481,7 +451,7 @@ public class InstructionRunner {
         frame.codePtr++;
         return null;
     }
-    private static Value exexGlobSet(Environment env, Instruction instr, Frame frame) {
+    private static Value execGlobSet(Environment env, Instruction instr, Frame frame) {
         var name = (String)instr.get(0);
         var keep = (boolean)instr.get(1);
         var define = (boolean)instr.get(2);
@@ -497,34 +467,19 @@ public class InstructionRunner {
         frame.codePtr++;
         return null;
     }
-    private static Value execExtend(Environment env, Instruction instr, Frame frame) {
-        var superVal = frame.peek(0);
-        var derivedVal = frame.peek(1);
 
-        if (!(superVal instanceof FunctionValue superFunc)) throw EngineException.ofType("Illegal EXTENDS instruction");
-        if (!(superFunc.prototype instanceof ObjectValue superProto)) throw EngineException.ofType("Illegal EXTENDS instruction");
-        if (!(derivedVal instanceof FunctionValue derivedFunc)) throw EngineException.ofType("Illegal EXTENDS instruction");
-
-        derivedFunc.setPrototype(env, superFunc);
-        derivedFunc.prototype.setPrototype(env, superProto);
-
+    private static Value execLoadArg(Environment env, Instruction instr, Frame frame) {
+		frame.push(frame.args[(int)instr.get(0)]);
         frame.codePtr++;
         return null;
     }
-
+    private static Value execLoadArgsN(Environment env, Instruction instr, Frame frame) {
+		frame.push(frame.argsLen);
+        frame.codePtr++;
+        return null;
+    }
     private static Value execLoadArgs(Environment env, Instruction instr, Frame frame) {
-        if ((boolean)instr.get(0) || frame.fakeArgs == null) frame.push(frame.argsVal);
-        else frame.push(frame.fakeArgs);
-        frame.codePtr++;
-        return null;
-    }
-    private static Value execLoadRestArgs(Environment env, Instruction instr, Frame frame) {
-        int offset = instr.get(0);
-        var res = new ArrayValue();
-
-        if (offset < frame.args.length) res.copyFrom(frame.args, instr.get(0), 0, frame.args.length - offset);
-
-        frame.push(res);
+        frame.push(frame.argsVal);
         frame.codePtr++;
         return null;
     }
@@ -545,26 +500,7 @@ public class InstructionRunner {
         return null;
     }
 
-    private static Value execVarInit(Environment env, Instruction instr, Frame frame) {
-        if ((boolean)instr.get(1) || frame.getVar(instr.get(0)) == null) {
-            frame.setVar(instr.get(0), Value.UNDEFINED);
-        }
-
-        frame.codePtr++;
-        return null;
-    }
-    private static Value execVarFree(Environment env, Instruction instr, Frame frame) {
-        frame.locals[(int)instr.get(0)] = null;
-        frame.codePtr++;
-        return null;
-    }
-    private static Value execCapFree(Environment env, Instruction instr, Frame frame) {
-        frame.capturables[(int)instr.get(0) - frame.locals.length] = new Value[1];
-        frame.codePtr++;
-        return null;
-    }
-
-    public static Value exec(Environment env, Instruction instr, Frame frame) {
+	public static Value exec(Environment env, Instruction instr, Frame frame) {
         switch (instr.type) {
             case NOP: return execNop(env, instr, frame);
             case RETURN: return execReturn(env, instr, frame);
@@ -572,7 +508,6 @@ public class InstructionRunner {
             case THROW_SYNTAX: return execThrowSyntax(env, instr, frame);
             case CALL: return execCall(env, instr, frame);
             case CALL_NEW: return execCallNew(env, instr, frame);
-            case CALL_SUPER: return execCallSuper(env, instr, frame);
             case TRY_START: return execTryStart(env, instr, frame);
             case TRY_END: return execTryEnd(env, instr, frame);
 
@@ -593,11 +528,13 @@ public class InstructionRunner {
             case LOAD_REGEX: return execLoadRegEx(env, instr, frame);
             case LOAD_GLOB: return execLoadGlob(env, instr, frame);
             case LOAD_INTRINSICS: return execLoadIntrinsics(env, instr, frame);
-            case LOAD_ARGS: return execLoadArgs(env, instr, frame);
-            case LOAD_REST_ARGS: return execLoadRestArgs(env, instr, frame);
-            case LOAD_CALLEE: return execLoadCallee(env, instr, frame);
-            case LOAD_THIS: return execLoadThis(env, instr, frame);
             case LOAD_ERROR: return execLoadError(env, instr, frame);
+
+            case LOAD_THIS: return execLoadThis(env, instr, frame);
+			case LOAD_ARG: return execLoadArg(env, instr, frame);
+            case LOAD_ARGS: return execLoadArgs(env, instr, frame);
+            case LOAD_ARGS_N: return execLoadArgsN(env, instr, frame);
+			case LOAD_CALLED: return execLoadCallee(env, instr, frame);
 
             case DISCARD: return execDiscard(env, instr, frame);
             case STORE_MEMBER: return execStoreMember(env, instr, frame);
@@ -617,16 +554,11 @@ public class InstructionRunner {
 
             case OPERATION: return execOperation(env, instr, frame);
 
-            case GLOB_DEF: return exexGlobDef(env, instr, frame);
-            case GLOB_GET: return exexGlobGet(env, instr, frame);
-            case GLOB_SET: return exexGlobSet(env, instr, frame);
-            case EXTEND: return execExtend(env, instr, frame);
+            case GLOB_DEF: return execGlobDef(env, instr, frame);
+            case GLOB_GET: return execGlobGet(env, instr, frame);
+            case GLOB_SET: return execGlobSet(env, instr, frame);
 
-            case VAR_INIT: return execVarInit(env, instr, frame);
-            case VAR_FREE: return execVarFree(env, instr, frame);
-            case CAP_FREE: return execCapFree(env, instr, frame);
-
-            default: throw EngineException.ofSyntax("Invalid instruction " + instr.type.name() + ".");
+            default: throw EngineException.ofSyntax("Invalid instruction " + instr.type.name() + "");
         }
     }
 }

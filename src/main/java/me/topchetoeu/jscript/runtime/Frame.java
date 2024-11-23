@@ -1,5 +1,6 @@
 package me.topchetoeu.jscript.runtime;
 
+import java.util.Arrays;
 import java.util.Stack;
 import java.util.concurrent.CancellationException;
 
@@ -12,6 +13,7 @@ import me.topchetoeu.jscript.runtime.values.Value;
 import me.topchetoeu.jscript.runtime.values.functions.CodeFunction;
 import me.topchetoeu.jscript.runtime.values.objects.ArrayLikeValue;
 import me.topchetoeu.jscript.runtime.values.objects.ObjectValue;
+import me.topchetoeu.jscript.runtime.values.primitives.numbers.IntValue;
 
 public final class Frame {
     public static final Key<Frame> KEY = Key.of();
@@ -95,17 +97,26 @@ public final class Frame {
     }
 
     /**
-     * A list of one-element arrays of values. This is so that we can pass captures to other functions
+     * An array of captures from the parent function
      */
     public final Value[][] captures;
+	/**
+	 * An array of non-capture variables
+	 */
     public final Value[] locals;
+	/**
+	 * An array of children-captured variables
+	 */
     public final Value[][] capturables;
-    public final Value argsVal;
-    public Value self;
-    public Value fakeArgs;
+
+	public final Value self;
     public final Value[] args;
-    public final boolean isNew;
-    public final Stack<TryCtx> tryStack = new Stack<>();
+    public final Value argsVal;
+	public final Value argsLen;
+
+	public final boolean isNew;
+
+	public final Stack<TryCtx> tryStack = new Stack<>();
     public final CodeFunction function;
     public final Environment env;
     private final DebugContext dbg;
@@ -275,11 +286,8 @@ public final class Frame {
         }
 
         if (returnValue != null) {
-            if (self == null) error = EngineException.ofError("Super constructor must be called before returning");
-            else {
                 dbg.onInstruction(env, this, instr, returnValue, null, false);
                 return returnValue;
-            }
         }
         if (error != null) {
             var caught = false;
@@ -358,18 +366,21 @@ public final class Frame {
         };
     }
 
-    public Frame(Environment env, boolean isNew, Value thisArg, Value[] args, CodeFunction func) {
+    public Frame(Environment env, boolean isNew, Value self, Value[] args, CodeFunction func) {
         this.env = env;
         this.dbg = DebugContext.get(env);
         this.function = func;
         this.isNew = isNew;
 
-        this.self = thisArg;
+        this.self = self;
         this.args = args;
         this.argsVal = new ArgumentsValue(this, args);
+        this.argsLen = new IntValue(args.length);
         this.captures = func.captures;
 
         this.locals = new Value[func.body.localsN];
+		Arrays.fill(this.locals, Value.UNDEFINED);
         this.capturables = new Value[func.body.capturablesN][1];
+		for (var i = 0; i < this.capturables.length; i++) this.capturables[i][0] = Value.UNDEFINED;
     }
 }

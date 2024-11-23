@@ -14,12 +14,12 @@ public interface Member {
         public boolean enumerable;
 
         @Override public Value get(Environment env, Value self) {
-            if (getter != null) return getter.call(env, false, "", self);
+            if (getter != null) return getter.apply(env, self);
             else return Value.UNDEFINED;
         }
         @Override public boolean set(Environment env, Value val, Value self) {
             if (setter == null) return false;
-            setter.call(env, false, "", self, val);
+            setter.apply(env, self, val);
             return true;
         }
 

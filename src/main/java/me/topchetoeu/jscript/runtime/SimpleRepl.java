@@ -212,12 +212,12 @@ public class SimpleRepl {
 
         res.defineOwnMember(env, "setCallable", new NativeFunction(args -> {
             var func = (FunctionValue)args.get(0);
-            func.enableCall = args.get(1).toBoolean();
+            func.enableApply = args.get(1).toBoolean();
             return Value.UNDEFINED;
         }));
         res.defineOwnMember(env, "setConstructable", new NativeFunction(args -> {
             var func = (FunctionValue)args.get(0);
-            func.enableNew = args.get(1).toBoolean();
+            func.enableConstruct = args.get(1).toBoolean();
             return Value.UNDEFINED;
         }));
         res.defineOwnMember(env, "invokeType", new NativeFunction(args -> {
@@ -229,16 +229,14 @@ public class SimpleRepl {
             var func = (FunctionValue)args.get(0);
             var self = args.get(1);
             var funcArgs = (ArrayValue)args.get(2);
-            var name = args.get(3).toString(env);
 
-            return func.apply(env, name, self, funcArgs.toArray());
+            return func.apply(env, self, funcArgs.toArray());
         }));
         res.defineOwnMember(env, "construct", new NativeFunction(args -> {
             var func = (FunctionValue)args.get(0);
             var funcArgs = (ArrayValue)args.get(1);
-            var name = args.get(2).toString(env);
 
-            return func.construct(env, name, funcArgs.toArray());
+            return func.construct(env, funcArgs.toArray());
         }));
 
         return res;
