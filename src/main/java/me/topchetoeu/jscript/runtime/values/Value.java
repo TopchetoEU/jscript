@@ -82,38 +82,25 @@ public abstract class Value {
         return this == NumberValue.NAN || this instanceof NumberValue num && Double.isNaN(num.getDouble());
     }
 
-    public Value call(Environment env, boolean isNew, String name, Value self, Value ...args) {
-        if (name == null || name.equals("")) name = "(intermediate value)";
-
-        if (isNew) throw EngineException.ofType(name + " is not a constructor");
-        else throw EngineException.ofType(name + " is not a function");
+    public Value apply(Environment env, Value self, Value ...args) {
+        throw EngineException.ofType("Value is not a function");
     }
+	public Value construct(Environment env, Value self, Value ...args) {
+        throw EngineException.ofType("Value is not a constructor");
+	}
 
-    public final Value apply(Environment env, String name, Value self, Value ...args) {
-        return call(env, false, name, self, args);
-    }
-    public final Value construct(Environment env, String name, Value ...args) {
+    public final Value construct(Environment env, Value ...args) {
         var res = new ObjectValue();
         var proto = getMember(env, StringValue.of("prototype"));
 
         if (proto instanceof ObjectValue) res.setPrototype(env, (ObjectValue)proto);
 
-        var ret = this.call(env, true, name, res, args);
+        var ret = this.construct(env, res, args);
 
-        if (!ret.isPrimitive()) return ret;
-        return res;
-    }
-    public final Value construct(Environment env, String name, Value self, Value ...args) {
-        var ret = this.call(env, true, name, self, args);
-        return ret.isPrimitive() ? self : ret;
+        if (ret == Value.UNDEFINED || ret.isPrimitive()) return res;
+        return ret;
     }
 
-    public final Value apply(Environment env, Value self, Value ...args) {
-        return apply(env, "", self, args);
-    }
-    public final Value construct(Environment env, Value ...args) {
-        return construct(env, "", args);
-    }
 
     public abstract Value toPrimitive(Environment env);
     public abstract NumberValue toNumber(Environment env);
