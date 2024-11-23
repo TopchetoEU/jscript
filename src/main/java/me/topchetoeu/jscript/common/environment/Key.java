@@ -1,7 +1,7 @@
 package me.topchetoeu.jscript.common.environment;
 
-public interface Key<T> {
+public final class Key<T> {
     public static <T> Key<T> of() {
-        return new Key<>() { };
+        return new Key<>();
     }
 }
