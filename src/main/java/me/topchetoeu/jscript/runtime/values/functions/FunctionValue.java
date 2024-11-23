@@ -7,7 +7,6 @@ import java.util.List;
 
 import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.runtime.debug.DebugContext;
-import me.topchetoeu.jscript.runtime.exceptions.EngineException;
 import me.topchetoeu.jscript.runtime.values.KeyCache;
 import me.topchetoeu.jscript.runtime.values.Member;
 import me.topchetoeu.jscript.runtime.values.Value;
@@ -21,9 +20,8 @@ public abstract class FunctionValue extends ObjectValue {
     public int length;
     public Value prototype = new ObjectValue();
 
-    public boolean enableCall = true;
-    public boolean enableNew = true;
-    public boolean mustCallSuper = false;
+    public boolean enableApply = true;
+    public boolean enableConstruct = true;
 
     private final FieldMember nameField = new FieldMember(this, true, false, false) {
         @Override public Value get(Environment env, Value self) {
@@ -53,18 +51,17 @@ public abstract class FunctionValue extends ObjectValue {
         }
     };
 
-    protected abstract Value onCall(Environment ext, boolean isNew, String name, Value thisArg, Value ...args);
+    protected abstract Value onCall(Environment ext, boolean isNew, Value thisArg, Value ...args);
 
     @Override public String toString() { return String.format("function %s(...)", name); }
-    @Override public Value call(Environment ext, boolean isNew, String name, Value thisArg, Value ...args) {
-        if (isNew && !enableNew) super.call(ext, isNew, name, thisArg, args);
-        if (!isNew && !enableCall) {
-            if (name == null || name.equals("")) name = "(intermediate value)";
-            throw EngineException.ofType(name + " is not invokable");
-        }
-
-        return onCall(ext, isNew, name, thisArg, args);
-    }
+	@Override public Value apply(Environment env, Value self, Value... args) {
+        if (!enableApply) throw new RuntimeException("Function cannot be applied");
+        return onCall(env, false, self, args);
+	}
+	@Override public Value construct(Environment env, Value self, Value... args) {
+        if (!enableConstruct) throw new RuntimeException("Function cannot be constructed");
+        return onCall(env, true, self, args);
+	}
 
     @Override public Member getOwnMember(Environment env, KeyCache key) {
         switch (key.toString(env)) {

@@ -10,9 +10,6 @@ public final class CodeFunction extends FunctionValue {
     public final Value[][] captures;
     public Environment env;
 
-    public Value self;
-    public Value argsVal;
-
     private Value onCall(Frame frame) {
         frame.onPush();
 
@@ -27,11 +24,8 @@ public final class CodeFunction extends FunctionValue {
         }
     }
 
-    @Override public Value onCall(Environment env, boolean isNew, String name, Value thisArg, Value ...args) {
-        var frame = new Frame(env, isNew, thisArg, args, this);
-        if (argsVal != null) frame.fakeArgs = argsVal;
-        if (self != null) frame.self = self;
-        if (mustCallSuper && isNew) frame.self = null;
+    @Override public Value onCall(Environment env, boolean isNew, Value self, Value ...args) {
+        var frame = new Frame(env, isNew, self, args, this);
 
         var res = onCall(frame);
 
