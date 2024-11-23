@@ -6,12 +6,10 @@ import me.topchetoeu.jscript.common.parsing.Location;
 import me.topchetoeu.jscript.common.parsing.ParseRes;
 import me.topchetoeu.jscript.common.parsing.Parsing;
 import me.topchetoeu.jscript.common.parsing.Source;
-import me.topchetoeu.jscript.compilation.ClassNode;
 import me.topchetoeu.jscript.compilation.CompileResult;
 import me.topchetoeu.jscript.compilation.JavaScript;
 import me.topchetoeu.jscript.compilation.Node;
 import me.topchetoeu.jscript.compilation.patterns.ChangeTarget;
-import me.topchetoeu.jscript.compilation.values.SuperNode;
 import me.topchetoeu.jscript.compilation.values.constants.NumberNode;
 import me.topchetoeu.jscript.compilation.values.constants.StringNode;
 
@@ -20,11 +18,11 @@ public class IndexNode extends Node implements ChangeTarget {
     public final Node index;
 
     @Override public void beforeAssign(CompileResult target) {
-        compileObj(target, object);
+        object.compile(target, true);
         indexStorePushKey(target, index);
     }
     @Override public void beforeChange(CompileResult target) {
-        compileObj(target, object);
+        object.compile(target, true);
 
         if (index instanceof NumberNode num && (int)num.value == num.value) {
             target.add(Instruction.dup());
@@ -44,7 +42,7 @@ public class IndexNode extends Node implements ChangeTarget {
     }
 
     @Override public void assign(CompileResult target, boolean pollute) {
-        compileObj(target, object);
+        object.compile(target, true);
         target.add(Instruction.dup(1, 1));
         indexStorePushKey(target, index);
         indexStore(target, index, pollute);
@@ -55,7 +53,7 @@ public class IndexNode extends Node implements ChangeTarget {
     }
 
     public void compile(CompileResult target, boolean dupObj, boolean pollute) {
-        compileObj(target, object);
+        object.compile(target, true);
         if (dupObj) target.add(Instruction.dup());
 
         if (index instanceof NumberNode num && (int)num.value == num.value) {
@@ -81,13 +79,6 @@ public class IndexNode extends Node implements ChangeTarget {
         super(loc);
         this.object = object;
         this.index = index;
-    }
-
-    private static void compileObj(CompileResult target, Node obj) {
-        if (obj instanceof SuperNode && target.env.hasNotNull(ClassNode.SUPER)) {
-            target.env.get(ClassNode.SUPER).accept(target);
-        }
-        else obj.compile(target, true);
     }
 
     public static ParseRes<IndexNode> parseIndex(Source src, int i, Node prev, int precedence) {
