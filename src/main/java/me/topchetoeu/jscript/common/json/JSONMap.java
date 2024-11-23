@@ -51,7 +51,7 @@ public class JSONMap implements Map<String, JSONElement> {
 
     public JSONMap map(String path) {
         var el = get(path);
-        if (el == null) throw new RuntimeException(String.format("'%s' doesn't exist.", path));
+        if (el == null) throw new RuntimeException(String.format("'%s' doesn't exist", path));
         return el.map();
     }
     public JSONMap map(String path, JSONMap defaultVal) {
@@ -63,7 +63,7 @@ public class JSONMap implements Map<String, JSONElement> {
 
     public JSONList list(String path) {
         var el = get(path);
-        if (el == null) throw new RuntimeException(String.format("'%s' doesn't exist.", path));
+        if (el == null) throw new RuntimeException(String.format("'%s' doesn't exist", path));
         return el.list();
     }
     public JSONList list(String path, JSONList defaultVal) {
@@ -75,7 +75,7 @@ public class JSONMap implements Map<String, JSONElement> {
 
     public String string(String path) {
         var el = get(path);
-        if (el == null) throw new RuntimeException(String.format("'%s' doesn't exist.", path));
+        if (el == null) throw new RuntimeException(String.format("'%s' doesn't exist", path));
         return el.string();
     }
     public String string(String path, String defaultVal) {
@@ -87,7 +87,7 @@ public class JSONMap implements Map<String, JSONElement> {
 
     public double number(String path) {
         var el = get(path);
-        if (el == null) throw new RuntimeException(String.format("'%s' doesn't exist.", path));
+        if (el == null) throw new RuntimeException(String.format("'%s' doesn't exist", path));
         return el.number();
     }
     public double number(String path, double defaultVal) {
@@ -99,7 +99,7 @@ public class JSONMap implements Map<String, JSONElement> {
 
     public boolean bool(String path) {
         var el = get(path);
-        if (el == null) throw new RuntimeException(String.format("'%s' doesn't exist.", path));
+        if (el == null) throw new RuntimeException(String.format("'%s' doesn't exist", path));
         return el.bool();
     }
     public boolean bool(String path, boolean defaultVal) {

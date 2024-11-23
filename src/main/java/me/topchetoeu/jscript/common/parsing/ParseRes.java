@@ -34,7 +34,7 @@ public class ParseRes<T> {
         return new ParseRes<>(state, null, null, result, this.n + n);
     }
     public <T2> ParseRes<T2> chainError() {
-        if (isSuccess()) throw new RuntimeException("Can't transform a ParseRes that hasn't failed.");
+        if (isSuccess()) throw new RuntimeException("Can't transform a ParseRes that hasn't failed");
         return new ParseRes<>(state, errorLocation, error, null, 0);
     }
     @SuppressWarnings("unchecked")

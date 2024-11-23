@@ -35,7 +35,7 @@ public class JSONElement {
         else if (val instanceof Boolean) return bool((Boolean)val);
         else if (val instanceof Number) return number(((Number)val).doubleValue());
         else if (val == null) return NULL;
-        else throw new IllegalArgumentException("val must be: String, Boolean, Number, JSONList or JSONMap.");
+        else throw new IllegalArgumentException("val must be: String, Boolean, Number, JSONList or JSONMap");
     }
 
     public final Type type;
@@ -49,23 +49,23 @@ public class JSONElement {
     public boolean isNull() { return type == Type.NULL; }
 
     public JSONMap map() {
-        if (!isMap()) throw new IllegalStateException("Element is not a map.");
+        if (!isMap()) throw new IllegalStateException("Element is not a map");
         return (JSONMap)value;
     }
     public JSONList list() {
-        if (!isList()) throw new IllegalStateException("Element is not a map.");
+        if (!isList()) throw new IllegalStateException("Element is not a map");
         return (JSONList)value;
     }
     public String string() {
-        if (!isString()) throw new IllegalStateException("Element is not a string.");
+        if (!isString()) throw new IllegalStateException("Element is not a string");
         return (String)value;
     }
     public double number() {
-        if (!isNumber()) throw new IllegalStateException("Element is not a number.");
+        if (!isNumber()) throw new IllegalStateException("Element is not a number");
         return (double)value;
     }
     public boolean bool() {
-        if (!isBoolean()) throw new IllegalStateException("Element is not a boolean.");
+        if (!isBoolean()) throw new IllegalStateException("Element is not a boolean");
         return (boolean)value;
     }
 

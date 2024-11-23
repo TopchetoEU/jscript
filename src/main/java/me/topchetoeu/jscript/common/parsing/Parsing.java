@@ -86,10 +86,10 @@ public class Parsing {
                 var newC = 0;
 
                 for (var j = 0; j < 2; j++) {
-                    if (i + n >= src.size()) return ParseRes.error(src.loc(i), "Invalid hexadecimal escape sequence.");
+                    if (i + n >= src.size()) return ParseRes.error(src.loc(i), "Invalid hexadecimal escape sequence");
 
                     int val = fromHex(src.at(i + n));
-                    if (val == -1) throw new SyntaxException(src.loc(i + n), "Invalid hexadecimal escape sequence.");
+                    if (val == -1) throw new SyntaxException(src.loc(i + n), "Invalid hexadecimal escape sequence");
                     n++;
 
                     newC = (newC << 4) | val;
