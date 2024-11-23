@@ -1,8 +1,9 @@
 package me.topchetoeu.jscript.compilation;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.function.IntFunction;
+import java.util.Stack;
 import java.util.function.IntSupplier;
 
 import me.topchetoeu.jscript.common.Instruction;
@@ -18,6 +19,8 @@ public class LabelContext {
     private final LinkedList<IntSupplier> list = new LinkedList<>();
     private final HashMap<String, IntSupplier> map = new HashMap<>();
 
+	private final Stack<ArrayList<Runnable>> deferredAdders = new Stack<>();
+
     public IntSupplier get() {
         return list.peekLast();
     }
@@ -25,15 +28,31 @@ public class LabelContext {
         return map.get(name);
     }
 
-    public IntFunction<Instruction> getJump() {
+	public void flushAdders() {
+		for (var adder : deferredAdders.peek()) {
+			adder.run();
+		}
+
+		deferredAdders.pop();
+	}
+
+    public boolean jump(CompileResult target) {
         var res = get();
-        if (res == null) return null;
-        else return i -> Instruction.jmp(res.getAsInt() - i);
+        if (res != null) {
+			var tmp = target.temp();
+			this.deferredAdders.peek().add(() -> target.set(tmp, Instruction.jmp(res.getAsInt() - tmp)));
+			return true;
+		}
+		else return false;
     }
-    public IntFunction<Instruction> getJump(String name) {
+    public boolean jump(CompileResult target, String name) {
         var res = get(name);
-        if (res == null) return null;
-        else return i -> Instruction.jmp(res.getAsInt() - i);
+        if (res != null) {
+			var tmp = target.temp();
+			this.deferredAdders.peek().add(() -> target.set(tmp, Instruction.jmp(res.getAsInt() - tmp)));
+			return true;
+		}
+		else return false;
     }
 
     public void push(IntSupplier jumpTarget) {
@@ -48,6 +67,7 @@ public class LabelContext {
     public void pushLoop(Location loc, String name, IntSupplier jumpTarget) {
         push(jumpTarget);
         push(loc, name, jumpTarget);
+		deferredAdders.push(new ArrayList<>());
     }
 
     public void pop() {
@@ -61,6 +81,7 @@ public class LabelContext {
     public void popLoop(String name) {
         pop();
         pop(name);
+		flushAdders();
     }
 
     public static LabelContext getBreak(Environment env) {

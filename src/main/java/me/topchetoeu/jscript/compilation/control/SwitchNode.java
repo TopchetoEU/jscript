@@ -43,41 +43,37 @@ public class SwitchNode extends Node {
 
         value.compile(target, true, BreakpointType.STEP_OVER);
 
-        var subtarget = target.subtarget();
-        subtarget.beginScope();
-
         // TODO: create a jump map
         for (var ccase : cases) {
-            subtarget.add(Instruction.dup());
-            ccase.value.compile(subtarget, true);
-            subtarget.add(Instruction.operation(Operation.EQUALS));
-            caseToStatement.put(subtarget.temp(), ccase.statementI);
+            target.add(Instruction.dup());
+            ccase.value.compile(target, true);
+            target.add(Instruction.operation(Operation.EQUALS));
+            caseToStatement.put(target.temp(), ccase.statementI);
         }
 
-        int start = subtarget.temp();
+        int start = target.temp();
         var end = new DeferredIntSupplier();
 
         LabelContext.getBreak(target.env).push(loc(), label, end);
         for (var stm : body) {
-            statementToIndex.put(statementToIndex.size(), subtarget.size());
-            stm.compile(subtarget, false, BreakpointType.STEP_OVER);
+            statementToIndex.put(statementToIndex.size(), target.size());
+            stm.compile(target, false, BreakpointType.STEP_OVER);
         }
+
+        int endI = target.size();
+        end.set(endI);
         LabelContext.getBreak(target.env).pop(label);
 
-        subtarget.endScope();
+        target.add(Instruction.discard());
+        if (pollute) target.add(Instruction.pushUndefined());
 
-        int endI = subtarget.size();
-        end.set(endI);
-        subtarget.add(Instruction.discard());
-        if (pollute) subtarget.add(Instruction.pushUndefined());
-
-        if (defaultI < 0 || defaultI >= body.length) subtarget.set(start, Instruction.jmp(endI - start));
-        else subtarget.set(start, Instruction.jmp(statementToIndex.get(defaultI) - start));
+        if (defaultI < 0 || defaultI >= body.length) target.set(start, Instruction.jmp(endI - start));
+        else target.set(start, Instruction.jmp(statementToIndex.get(defaultI) - start));
 
         for (var el : caseToStatement.entrySet()) {
             var i = statementToIndex.get(el.getValue());
             if (i == null) i = endI;
-            subtarget.set(el.getKey(), Instruction.jmpIf(i - el.getKey()));
+            target.set(el.getKey(), Instruction.jmpIf(i - el.getKey()));
         }
 
     }

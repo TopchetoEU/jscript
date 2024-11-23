@@ -27,12 +27,13 @@ public class DoWhileNode extends Node {
 
         LabelContext.pushLoop(target.env, loc(), label, end, start);
         body.compile(target, false, BreakpointType.STEP_OVER);
-        LabelContext.popLoop(target.env, label);
 
         mid.set(target.size());
         condition.compile(target, true, BreakpointType.STEP_OVER);
         int endI = target.size();
         end.set(endI + 1);
+
+        LabelContext.popLoop(target.env, label);
 
         target.add(Instruction.jmpIf(start - endI));
     }

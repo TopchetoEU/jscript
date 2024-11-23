@@ -3,6 +3,7 @@ package me.topchetoeu.jscript.compilation;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import me.topchetoeu.jscript.common.SyntaxException;
@@ -17,9 +18,7 @@ import me.topchetoeu.jscript.compilation.control.ContinueNode;
 import me.topchetoeu.jscript.compilation.control.DebugNode;
 import me.topchetoeu.jscript.compilation.control.DeleteNode;
 import me.topchetoeu.jscript.compilation.control.DoWhileNode;
-import me.topchetoeu.jscript.compilation.control.ForInNode;
 import me.topchetoeu.jscript.compilation.control.ForNode;
-import me.topchetoeu.jscript.compilation.control.ForOfNode;
 import me.topchetoeu.jscript.compilation.control.IfNode;
 import me.topchetoeu.jscript.compilation.control.ReturnNode;
 import me.topchetoeu.jscript.compilation.control.SwitchNode;
@@ -29,7 +28,6 @@ import me.topchetoeu.jscript.compilation.control.WhileNode;
 import me.topchetoeu.jscript.compilation.scope.FunctionScope;
 import me.topchetoeu.jscript.compilation.values.ArgumentsNode;
 import me.topchetoeu.jscript.compilation.values.ArrayNode;
-import me.topchetoeu.jscript.compilation.values.ClassValueNode;
 import me.topchetoeu.jscript.compilation.values.ObjectNode;
 import me.topchetoeu.jscript.compilation.values.RegexNode;
 import me.topchetoeu.jscript.compilation.values.SuperNode;
@@ -49,16 +47,8 @@ import me.topchetoeu.jscript.compilation.values.operations.TypeofNode;
 
 public final class JavaScript {
     public static enum DeclarationType {
-        VAR(false, false),
-        CONST(true, true),
-        LET(true, false);
-
-        public final boolean strict, readonly;
-
-        private DeclarationType(boolean strict, boolean readonly) {
-            this.strict = strict;
-            this.readonly = readonly;
-        }
+		@Deprecated
+        VAR;
     }
 
     public static final Key<Environment> COMPILE_ROOT = Key.of();
@@ -93,7 +83,6 @@ public final class JavaScript {
         return ParseRes.first(src, i,
             (s, j) -> statement ? ParseRes.failed() : ObjectNode.parse(s, j),
             (s, j) -> statement ? ParseRes.failed() : FunctionNode.parseFunction(s, j, false),
-            (s, j) -> statement ? ParseRes.failed() : ClassValueNode.parse(s, j),
             JavaScript::parseLiteral,
             StringNode::parse,
             RegexNode::parse,
@@ -102,7 +91,6 @@ public final class JavaScript {
             ChangeNode::parsePrefixIncrease,
             OperationNode::parsePrefix,
             ArrayNode::parse,
-            (s, j) -> statement ? ParseRes.failed() : FunctionArrowNode.parse(s, j),
             JavaScript::parseParens,
             CallNode::parseNew,
             TypeofNode::parse,
@@ -188,14 +176,13 @@ public final class JavaScript {
         return res.addN(end.n);
     }
 
-    public static ParseRes<? extends Node> parseStatement(Source src, int i) {
+    public static ParseRes<Node> parseStatement(Source src, int i) {
         var n = Parsing.skipEmpty(src, i);
 
         if (src.is(i + n, ";")) return ParseRes.res(new DiscardNode(src.loc(i+ n), null), n + 1);
         if (Parsing.isIdentifier(src, i + n, "with")) return ParseRes.error(src.loc(i + n), "'with' statements are not allowed.");
 
-        ParseRes<? extends Node> res = ParseRes.first(src, i + n,
-            ClassStatementNode::parse,
+        ParseRes<Node> res = ParseRes.first(src, i + n,
             VariableDeclareNode::parse,
             ReturnNode::parse,
             ThrowNode::parse,
@@ -206,8 +193,6 @@ public final class JavaScript {
             WhileNode::parse,
             SwitchNode::parse,
             ForNode::parse,
-            ForInNode::parse,
-            ForOfNode::parse,
             DoWhileNode::parse,
             TryNode::parse,
             CompoundNode::parse,
@@ -231,13 +216,11 @@ public final class JavaScript {
         return ParseRes.failed();
     }
 
-    public static ParseRes<DeclarationType> parseDeclarationType(Source src, int i) {
+    public static ParseRes<Boolean> parseDeclarationType(Source src, int i) {
         var res = Parsing.parseIdentifier(src, i);
         if (!res.isSuccess()) return res.chainError();
 
-        if (res.result.equals("var")) return ParseRes.res(DeclarationType.VAR, res.n);
-        if (res.result.equals("let")) return ParseRes.res(DeclarationType.LET, res.n);
-        if (res.result.equals("const")) return ParseRes.res(DeclarationType.CONST, res.n);
+        if (res.result.equals("var")) return ParseRes.res(true, res.n);
 
         return ParseRes.failed();
     }
@@ -272,9 +255,8 @@ public final class JavaScript {
         env = env.child();
         env.add(COMPILE_ROOT, env);
 
-        var func = new FunctionValueNode(null, null, new Parameters(Arrays.asList()), new CompoundNode(null, true, statements), null);
+        var func = new FunctionValueNode(null, null, Arrays.asList(), new CompoundNode(null, statements), null);
         var res = func.compileBody(env, new FunctionScope(true), true, null, null);
-        res.buildTask.run();
         return res;
     }
 
@@ -299,4 +281,42 @@ public final class JavaScript {
     
         return ParseRes.res(nameRes.result, n);
     }
+
+	public static ParseRes<List<VariableNode>> parseParameters(Source src, int i) {
+	    var n = Parsing.skipEmpty(src, i);
+	
+	    var openParen = Parsing.parseOperator(src, i + n, "(");
+	    if (!openParen.isSuccess()) return openParen.chainError(src.loc(i + n), "Expected a parameter list");
+	    n += openParen.n;
+	
+	    var params = new ArrayList<VariableNode>();
+	
+	    var closeParen = Parsing.parseOperator(src, i + n, ")");
+	    n += closeParen.n;
+	
+	    if (!closeParen.isSuccess()) {
+	        while (true) {
+	            n += Parsing.skipEmpty(src, i + n);
+	
+	            var param = VariableNode.parse(src, i + n);
+	            if (!param.isSuccess()) return ParseRes.error(src.loc(i + n), "Expected a parameter or a closing brace");
+	            n += param.n;
+	            n += Parsing.skipEmpty(src, i + n);
+	
+	            params.add(param.result);
+	
+	            if (src.is(i + n, ",")) {
+	                n++;
+	                n += Parsing.skipEmpty(src, i + n);
+	            }
+	
+	            if (src.is(i + n, ")")) {
+	                n++;
+	                break;
+	            }
+	        }
+	    }
+	
+	    return ParseRes.res(params, n);
+	}
 }

@@ -3,8 +3,6 @@ package me.topchetoeu.jscript.compilation;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.LinkedList;
-import java.util.function.Consumer;
-import java.util.function.IntFunction;
 
 import me.topchetoeu.jscript.common.FunctionBody;
 import me.topchetoeu.jscript.common.Instruction;
@@ -14,7 +12,7 @@ import me.topchetoeu.jscript.common.environment.Key;
 import me.topchetoeu.jscript.common.mapping.FunctionMap;
 import me.topchetoeu.jscript.common.mapping.FunctionMap.FunctionMapBuilder;
 import me.topchetoeu.jscript.common.parsing.Location;
-import me.topchetoeu.jscript.compilation.scope.Scope;
+import me.topchetoeu.jscript.compilation.scope.FunctionScope;
 
 public final class CompileResult {
     public static final class ChildData {
@@ -27,15 +25,12 @@ public final class CompileResult {
         }
     }
 
-    public final List<IntFunction<Instruction>> instructions;
+    public final List<Instruction> instructions;
     public final List<CompileResult> children;
     public final FunctionMapBuilder map;
     public final Environment env;
     public int length;
-    public Runnable buildTask = () -> {
-        throw new IllegalStateException("Compile result is not ready to be built");
-    };
-    public final Scope scope;
+    public final FunctionScope scope;
 
     public int temp() {
         instructions.add(null);
@@ -43,21 +38,14 @@ public final class CompileResult {
     }
 
     public CompileResult add(Instruction instr) {
-        instructions.add(i -> instr);
-        return this;
-    }
-    public CompileResult add(IntFunction<Instruction> instr) {
         instructions.add(instr);
         return this;
     }
     public CompileResult set(int i, Instruction instr) {
-        instructions.set(i, _i -> instr);
-        return this;
-    }
-    public CompileResult set(int i, IntFunction<Instruction>instr) {
         instructions.set(i, instr);
         return this;
     }
+
     public int size() { return instructions.size(); }
 
     public void setDebug(Location loc, BreakpointType type) {
@@ -79,62 +67,25 @@ public final class CompileResult {
         setLocationAndDebug(instructions.size() - 1, loc, type);
     }
 
-    public void beginScope() {
-        // for (var cap : scope.capturables()) {
-        //     add(_i -> Instruction.capInit(cap.index().index));
-        // }
-    }
-    public void reallocScope() {
-        for (var cap : scope.capturables()) {
-            add(_i -> cap.index().toGet());
-            add(_i -> Instruction.capFree(cap.index().index));
-            add(_i -> cap.index().toInit());
-        }
-
-        scope.end();
-    }
-    public void endScope() {
-        for (var cap : scope.capturables()) {
-            add(_i -> Instruction.capFree(cap.index().index));
-        }
-        for (var var : scope.locals()) {
-            add(_i -> Instruction.varFree(var.index().index));
-        }
-
-        scope.end();
-    }
-
     public int addChild(CompileResult res) {
         this.children.add(res);
         return this.children.size() - 1;
     }
 
     public Instruction[] instructions() {
-        var res = new Instruction[instructions.size()];
-        var i = 0;
-        for (var suppl : instructions) {
-            res[i] = suppl.apply(i);
-            i++;
-        }
-        return res;
+		return instructions.toArray(new Instruction[0]);
     }
 
     public FunctionMap map() {
-        return map.build(scope);
+        return map.build(scope.localNames(), scope.captureNames());
     }
     public FunctionBody body() {
         var builtChildren = new FunctionBody[children.size()];
-
         for (var i = 0; i < children.size(); i++) builtChildren[i] = children.get(i).body();
 
-        var instrRes = new Instruction[instructions.size()];
-        var i = 0;
+        var instrRes = instructions();
 
-        for (var suppl : instructions) {
-            instrRes[i] = suppl.apply(i);
-            // System.out.println(instrRes[i]);
-            i++;
-        }
+		for (var instr : instrRes) System.out.println(instr);
 
         return new FunctionBody(
             scope.localsCount(), scope.capturablesCount(), scope.capturesCount(),
@@ -143,7 +94,7 @@ public final class CompileResult {
     }
 
     public CompileResult subtarget() {
-        return new CompileResult(env, new Scope(scope), this);
+        return new CompileResult(env, new FunctionScope(scope), this);
     }
 
     public CompileResult setEnvironment(Environment env) {
@@ -160,16 +111,15 @@ public final class CompileResult {
         return new CompileResult(env.child(), scope, this);
     }
 
-    public CompileResult(Environment env, Scope scope, int length, Consumer<CompileResult> task) {
+    public CompileResult(Environment env, FunctionScope scope, int length) {
         this.scope = scope;
         this.instructions = new ArrayList<>();
         this.children = new LinkedList<>();
         this.map = FunctionMap.builder();
         this.env = env;
         this.length = length;
-        this.buildTask = () -> task.accept(this);
     }
-    private CompileResult(Environment env, Scope scope, CompileResult parent) {
+    private CompileResult(Environment env, FunctionScope scope, CompileResult parent) {
         this.scope = scope;
         this.instructions = parent.instructions;
         this.children = parent.children;

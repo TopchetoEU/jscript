@@ -12,7 +12,6 @@ import me.topchetoeu.jscript.compilation.DeferredIntSupplier;
 import me.topchetoeu.jscript.compilation.JavaScript;
 import me.topchetoeu.jscript.compilation.LabelContext;
 import me.topchetoeu.jscript.compilation.Node;
-import me.topchetoeu.jscript.compilation.scope.Variable;
 
 public class TryNode extends Node {
     public final CompoundNode tryBody;
@@ -42,17 +41,11 @@ public class TryNode extends Node {
             catchStart = target.size() - start;
 
             if (captureName != null) {
-                var subtarget = target.subtarget();
-                subtarget.beginScope();
-                subtarget.scope.singleEntry = true;
-
-                var catchVar = subtarget.scope.defineStrict(new Variable(captureName, false), catchBody.loc());
-                subtarget.add(Instruction.loadError());
-                subtarget.add(catchVar.index().toInit());
-                catchBody.compile(subtarget, false);
-                subtarget.endScope();
-
-                subtarget.scope.end();
+                var catchVar = target.scope.defineCatch(captureName);
+                target.add(Instruction.loadError());
+                target.add(catchVar.index().toInit());
+                catchBody.compile(target, false);
+				target.scope.undefineCatch();
             }
             else catchBody.compile(target, false);
 

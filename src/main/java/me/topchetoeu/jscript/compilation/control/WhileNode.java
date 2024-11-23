@@ -30,10 +30,10 @@ public class WhileNode extends Node {
 
         LabelContext.pushLoop(target.env, loc(), label, end, start);
         CompoundNode.compileMultiEntry(body, target, false, BreakpointType.STEP_OVER);
-        LabelContext.popLoop(target.env, label);
 
         var endI = target.size();
         end.set(endI + 1);
+        LabelContext.popLoop(target.env, label);
 
         target.add(Instruction.jmp(start - end.getAsInt()));
         target.set(mid, Instruction.jmpIfNot(end.getAsInt() - mid + 1));

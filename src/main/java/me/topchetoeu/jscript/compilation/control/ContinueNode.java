@@ -15,12 +15,10 @@ public class ContinueNode extends Node {
     public final String label;
 
     @Override public void compile(CompileResult target, boolean pollute) {
-        var res = LabelContext.getCont(target.env).getJump();
-        if (res == null) {
+		if (!LabelContext.getCont(target.env).jump(target)) {
             if (label != null) throw new SyntaxException(loc(), String.format("Undefined label '%s'", label));
             else throw new SyntaxException(loc(), "Illegal continue statement");
         }
-        target.add(res);
 
         if (pollute) target.add(Instruction.pushUndefined());
     }
