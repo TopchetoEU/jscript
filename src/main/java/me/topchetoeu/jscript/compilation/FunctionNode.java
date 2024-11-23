@@ -1,5 +1,7 @@
 package me.topchetoeu.jscript.compilation;
 
+import java.util.List;
+
 import me.topchetoeu.jscript.common.Instruction;
 import me.topchetoeu.jscript.common.Instruction.BreakpointType;
 import me.topchetoeu.jscript.common.environment.Environment;
@@ -7,65 +9,49 @@ import me.topchetoeu.jscript.common.parsing.Location;
 import me.topchetoeu.jscript.common.parsing.ParseRes;
 import me.topchetoeu.jscript.common.parsing.Parsing;
 import me.topchetoeu.jscript.common.parsing.Source;
-import me.topchetoeu.jscript.compilation.JavaScript.DeclarationType;
 import me.topchetoeu.jscript.compilation.scope.FunctionScope;
-import me.topchetoeu.jscript.compilation.scope.Variable;
+import me.topchetoeu.jscript.compilation.values.VariableNode;
 
 public abstract class FunctionNode extends Node {
     public final CompoundNode body;
-    public final Parameters params;
+    public final List<VariableNode> params;
     public final Location end;
 
     public abstract String name();
+	public final String name(String fallback) {
+        return this.name() != null ? this.name() : fallback;
+	}
 
     protected final int[] captures(int id, CompileResult target) {
-        return ((FunctionScope)target.children.get(id).scope).getCaptureIndices();
+        return target.children.get(id).scope.getCaptureIndices();
     }
 
-    protected void compilePreBody(CompileResult target) { }
-
-    protected Environment rootEnv(Environment env) {
+    protected final Environment rootEnv(Environment env) {
         return env.get(JavaScript.COMPILE_ROOT);
     }
 
     public final CompileResult compileBody(Environment env, FunctionScope scope, boolean lastReturn, String _name, String selfName) {
-        var name = this.name() != null ? this.name() : _name;
+        var target = new CompileResult(env, scope, params.size());
+		var i = 0;
 
-        return new CompileResult(env, scope, params.params.size(), target -> {
-            compilePreBody(target);
+		for (var param : params) {
+			var index = scope.define(param.name);
 
-            if (params.params.size() > 0) {
-                target.add(Instruction.loadArgs(true));
-                if (params.params.size() > 1) target.add(Instruction.dup(params.params.size() - 1, 0));
-                var i = 0;
+			target.add(Instruction.loadArg(i++));
+			target.add(index.index().toInit());
+		}
 
-                for (var param : params.params) {
-                    target.add(Instruction.loadMember(i++));
-                    param.destruct(target, DeclarationType.VAR, true);
-                }
-            }
+		// if (selfName != null && !scope.has(selfName, false)) {
+		//     var i = scope.defineSpecial(new Variable(selfName, true), end);
 
-            if (params.rest != null) {
-                target.add(Instruction.loadRestArgs(params.params.size()));
-                params.rest.destruct(target, DeclarationType.VAR, true);
-            }
+		//     target.add(Instruction.loadCalled());
+		//     target.add(_i -> i.index().toInit());
+		// }
 
-            if (selfName != null && !scope.has(name, false)) {
-                var i = scope.defineSpecial(new Variable(selfName, true), end);
+		body.resolve(target);
+		body.compile(target, lastReturn, BreakpointType.NONE);
 
-                target.add(Instruction.loadCallee());
-                target.add(_i -> i.index().toInit());
-            }
-
-            body.resolve(target);
-            body.compile(target, lastReturn, BreakpointType.NONE);
-
-            scope.end();
-
-            for (var child : target.children) child.buildTask.run();
-
-            scope.finish();
-        });
+		return target;
     }
     public final CompileResult compileBody(CompileResult parent, String name, String selfName) {
         return compileBody(rootEnv(parent.env).child(), new FunctionScope(parent.scope), false, name, selfName);
@@ -82,13 +68,12 @@ public abstract class FunctionNode extends Node {
         compile(target, pollute, (String)null, BreakpointType.NONE);
     }
 
-    public FunctionNode(Location loc, Location end, Parameters params, CompoundNode body) {
+    public FunctionNode(Location loc, Location end, List<VariableNode> params, CompoundNode body) {
         super(loc);
 
         this.end = end;
         this.params = params;
         this.body = body;
-        this.body.hasScope = false;
     }
 
     public static void compileWithName(Node stm, CompileResult target, boolean pollute, String name) {
@@ -112,7 +97,7 @@ public abstract class FunctionNode extends Node {
         n += name.n;
         n += Parsing.skipEmpty(src, i + n);
 
-        var params = Parameters.parseParameters(src, i + n);
+        var params = JavaScript.parseParameters(src, i + n);
         if (!params.isSuccess()) return params.chainError(src.loc(i + n), "Expected a parameter list");
         n += params.n;
 
