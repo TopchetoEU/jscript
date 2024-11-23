@@ -6,5 +6,5 @@ import me.topchetoeu.jscript.compilation.CompileResult;
 public interface Member {
     Location loc();
 
-    void compile(CompileResult target, boolean pollute, boolean enumerable);
+    void compile(CompileResult target, boolean pollute);
 }

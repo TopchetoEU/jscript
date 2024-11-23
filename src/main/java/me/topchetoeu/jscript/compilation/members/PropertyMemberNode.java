@@ -4,7 +4,6 @@ import java.util.Arrays;
 
 import me.topchetoeu.jscript.common.Instruction;
 import me.topchetoeu.jscript.common.Instruction.BreakpointType;
-import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.common.parsing.Location;
 import me.topchetoeu.jscript.common.parsing.ParseRes;
 import me.topchetoeu.jscript.common.parsing.Parsing;
@@ -12,15 +11,15 @@ import me.topchetoeu.jscript.common.parsing.Source;
 import me.topchetoeu.jscript.compilation.CompileResult;
 import me.topchetoeu.jscript.compilation.CompoundNode;
 import me.topchetoeu.jscript.compilation.FunctionNode;
+import me.topchetoeu.jscript.compilation.JavaScript;
 import me.topchetoeu.jscript.compilation.Node;
-import me.topchetoeu.jscript.compilation.Parameters;
-import me.topchetoeu.jscript.compilation.patterns.Pattern;
 import me.topchetoeu.jscript.compilation.values.ObjectNode;
+import me.topchetoeu.jscript.compilation.values.VariableNode;
 import me.topchetoeu.jscript.compilation.values.constants.StringNode;
 
-public class PropertyMemberNode extends FunctionNode implements Member{
+public final class PropertyMemberNode extends FunctionNode implements Member {
     public final Node key;
-    public final Pattern argument;
+    public final VariableNode argument;
 
     @Override public String name() {
         if (key instanceof StringNode str) {
@@ -28,10 +27,6 @@ public class PropertyMemberNode extends FunctionNode implements Member{
             else return "set " + str.value;
         }
         else return null;
-    }
-
-    @Override protected Environment rootEnv(Environment env) {
-        return env;
     }
 
     public boolean isGetter() { return argument == null; }
@@ -42,17 +37,17 @@ public class PropertyMemberNode extends FunctionNode implements Member{
         key.compile(target, true);
 
         var id = target.addChild(compileBody(target, name, null));
-        target.add(_i -> Instruction.loadFunc(id, true, false, false, false, null, captures(id, target)));
+        target.add(Instruction.loadFunc(id, name(), captures(id, target)));
     }
 
 
-    @Override public void compile(CompileResult target, boolean pollute, boolean enumerable) {
-        compile(target, pollute);
-        target.add(Instruction.defProp(isSetter(), enumerable));
+    @Override public void compile(CompileResult target, boolean pollute) {
+        super.compile(target, pollute);
+        target.add(Instruction.defProp(isSetter()));
     }
 
-    public PropertyMemberNode(Location loc, Location end, Node key, Pattern argument, CompoundNode body) {
-        super(loc, end, argument == null ? new Parameters(Arrays.asList()) : new Parameters(Arrays.asList(argument)), body);
+    public PropertyMemberNode(Location loc, Location end, Node key, VariableNode argument, CompoundNode body) {
+        super(loc, end, argument == null ? Arrays.asList() : Arrays.asList(argument), body);
         this.key = key;
         this.argument = argument;
     }
@@ -70,11 +65,10 @@ public class PropertyMemberNode extends FunctionNode implements Member{
         if (!name.isSuccess()) return name.chainError(src.loc(i + n), "Expected a property name after '" + access + "'");
         n += name.n;
 
-        var params = Parameters.parseParameters(src, i + n);
+        var params = JavaScript.parseParameters(src, i + n);
         if (!params.isSuccess()) return params.chainError(src.loc(i + n), "Expected an argument list");
-        if (access.result.equals("get") && params.result.params.size() != 0) return ParseRes.error(src.loc(i + n), "Getter must not have any parameters");
-        if (access.result.equals("set") && params.result.params.size() != 1) return ParseRes.error(src.loc(i + n), "Setter must have exactly one parameter");
-        if (params.result.rest != null) return ParseRes.error(params.result.rest.loc(), "Property members may not have rest arguments");
+        if (access.result.equals("get") && params.result.size() != 0) return ParseRes.error(src.loc(i + n), "Getter must not have any parameters");
+        if (access.result.equals("set") && params.result.size() != 1) return ParseRes.error(src.loc(i + n), "Setter must have exactly one parameter");
         n += params.n;
 
         var body = CompoundNode.parse(src, i + n);
@@ -84,7 +78,7 @@ public class PropertyMemberNode extends FunctionNode implements Member{
         var end = src.loc(i + n - 1);
 
         return ParseRes.res(new PropertyMemberNode(
-            loc, end, name.result, access.result.equals("get") ? null : params.result.params.get(0), body.result
+            loc, end, name.result, access.result.equals("get") ? null : params.result.get(0), body.result
         ), n);
     }
 }
