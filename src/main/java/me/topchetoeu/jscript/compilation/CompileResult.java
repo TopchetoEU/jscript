@@ -15,6 +15,8 @@ import me.topchetoeu.jscript.common.parsing.Location;
 import me.topchetoeu.jscript.compilation.scope.FunctionScope;
 
 public final class CompileResult {
+	public static final Key<Void> DEBUG_LOG = new Key<>();
+
     public static final class ChildData {
         public final int id;
         public final CompileResult result;
@@ -85,7 +87,14 @@ public final class CompileResult {
 
         var instrRes = instructions();
 
-		for (var instr : instrRes) System.out.println(instr);
+		if (env.has(DEBUG_LOG)) {
+			System.out.println("================= BODY =================");
+			System.out.println("LOCALS: " + scope.localsCount());
+			System.out.println("CAPTURABLES: " + scope.capturablesCount());
+			System.out.println("CAPTURES: " + scope.capturesCount());
+
+			for (var instr : instrRes) System.out.println(instr);
+		}
 
         return new FunctionBody(
             scope.localsCount(), scope.capturablesCount(), scope.capturesCount(),
