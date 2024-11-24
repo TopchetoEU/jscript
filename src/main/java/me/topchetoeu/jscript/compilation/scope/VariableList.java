@@ -13,7 +13,7 @@ public final class VariableList implements Iterable<Variable> {
         public VariableNode next;
         public VariableNode prev;
         public int index;
-		public int indexIteration;
+		public int indexIteration = -1;
 
         public VariableList list() { return VariableList.this; }
 
@@ -120,6 +120,7 @@ public final class VariableList implements Iterable<Variable> {
         node.prev = null;
 
         varMap.remove(node.var);
+		node.var.setIndexSupplier(null);
 
         return node.var;
     }
@@ -178,7 +179,10 @@ public final class VariableList implements Iterable<Variable> {
 	 */
     public VariableList(IndexType type, VariableList prev) {
         this.indexType = type;
-        this.offset = prev::size;
+        this.offset = () -> {
+			if (prev.offset != null) return prev.offset.getAsInt() + prev.size();
+			else return prev.size();
+		};
     }
     public VariableList(IndexType type) {
         this.indexType = type;

@@ -45,14 +45,6 @@ public final class VariableIndex {
             default: throw new UnsupportedOperationException("Unknown index type " + type);
         }
     }
-    public final Instruction toInit() {
-        switch (type) {
-            case CAPTURES: throw new UnsupportedOperationException("Unknown index type " + type);
-            case CAPTURABLES: return Instruction.storeVar(index, false, true);
-            case LOCALS: return Instruction.storeVar(index, false, true);
-            default: throw new UnsupportedOperationException("Unknown index type " + type);
-        }
-    }
 
     public VariableIndex(VariableIndex.IndexType type, int index) {
         this.type = type;

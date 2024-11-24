@@ -5,8 +5,7 @@ import java.util.HashMap;
 
 public final class FunctionScope {
     protected final VariableList locals = new VariableList(VariableIndex.IndexType.LOCALS);
-    protected final VariableList catches = new VariableList(VariableIndex.IndexType.LOCALS, this.locals);
-    protected final VariableList capturables = new VariableList(VariableIndex.IndexType.CAPTURABLES, this.catches);
+    protected final VariableList capturables = new VariableList(VariableIndex.IndexType.CAPTURABLES, this.locals);
     private final VariableList captures = new VariableList(VariableIndex.IndexType.CAPTURES);
 
     private final HashMap<String, Variable> localsMap = new HashMap<>();
@@ -38,8 +37,10 @@ public final class FunctionScope {
     public Variable define(Variable var) {
         if (passthrough) return null;
         else {
-			var old = get(var.name, false);
-			if (old != null) return old;
+			var catchVar = getCatchVar(var.name);
+			if (catchVar != null) return catchVar;
+			if (localsMap.containsKey(var.name)) return localsMap.get(var.name);
+			if (capturesMap.containsKey(var.name)) throw new RuntimeException("HEY!");
 
             localsMap.put(var.name, var);
             return locals.add(var);
@@ -58,7 +59,7 @@ public final class FunctionScope {
 	 */
 	public Variable defineCatch(String name) {
 		var var = new Variable(name, false);
-		this.catches.add(var);
+		this.locals.add(var);
 		this.catchesMap.add(var);
 		return var;
 	}
@@ -87,7 +88,7 @@ public final class FunctionScope {
         var parentVar = parent.get(name, true);
         if (parentVar == null) return null;
 
-        var childVar = captures.add(parentVar.clone());
+		var childVar = captures.add(parentVar.clone().setIndexSupplier(null));
         capturesMap.put(childVar.name, childVar);
         childToParent.put(childVar, parentVar);
         parentToChild.put(parentVar, childVar);
@@ -103,7 +104,6 @@ public final class FunctionScope {
      * @param capture Whether or not to execute this capturing logic
      */
     public Variable get(Variable var, boolean capture) {
-        if (catches.has(var)) return addCaptured(var, capture);
         if (captures.has(var)) return addCaptured(var, capture);
         if (locals.has(var)) return addCaptured(var, capture);
 
