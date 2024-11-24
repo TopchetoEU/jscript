@@ -34,7 +34,7 @@ public class ForInNode extends Node {
         int mid = target.temp();
 
         target.add(Instruction.loadMember("value")).setLocation(binding.loc());
-        target.add(VariableNode.toInit(target, loc(), binding.name));
+        target.add(VariableNode.toSet(target, loc(), binding.name, false, true));
 
         target.setLocationAndDebug(object.loc(), BreakpointType.STEP_OVER);
 

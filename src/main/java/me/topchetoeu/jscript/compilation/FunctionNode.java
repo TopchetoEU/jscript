@@ -38,7 +38,7 @@ public abstract class FunctionNode extends Node {
 			var index = scope.define(param.name);
 
 			target.add(Instruction.loadArg(i++));
-			target.add(index.index().toInit());
+			target.add(index.index().toSet(false));
 		}
 
 		// if (selfName != null && !scope.has(selfName, false)) {

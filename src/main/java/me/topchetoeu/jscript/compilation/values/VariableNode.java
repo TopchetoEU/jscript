@@ -20,7 +20,7 @@ public class VariableNode extends Node implements ChangeTarget {
     }
 
     @Override public void afterAssign(CompileResult target, boolean pollute) {
-        target.add(VariableNode.toSet(target, loc(), name, pollute));
+        target.add(VariableNode.toSet(target, loc(), name, pollute, false));
     }
 
     @Override public void compile(CompileResult target, boolean pollute) {
@@ -40,17 +40,11 @@ public class VariableNode extends Node implements ChangeTarget {
         return toGet(target, loc, name, true, false);
     }
 
-    public static Instruction toInit(CompileResult target, Location loc, String name) {
-        var i = target.scope.get(name, false);
-
-        if (i != null) return i.index().toInit();
-        else return Instruction.globSet(name, false, true);
-    }
-    public static Instruction toSet(CompileResult target, Location loc, String name, boolean keep) {
+    public static Instruction toSet(CompileResult target, Location loc, String name, boolean keep, boolean init) {
         var i = target.scope.get(name, false);
 
         if (i != null) return i.index().toSet(keep);
-        else return Instruction.globSet(name, keep, false);
+        else return Instruction.globSet(name, keep, init);
     }
 
     public VariableNode(Location loc, String name) {
