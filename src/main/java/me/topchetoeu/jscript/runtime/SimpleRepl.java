@@ -10,6 +10,7 @@ import me.topchetoeu.jscript.common.Metadata;
 import me.topchetoeu.jscript.common.Reading;
 import me.topchetoeu.jscript.common.SyntaxException;
 import me.topchetoeu.jscript.common.environment.Environment;
+import me.topchetoeu.jscript.common.environment.Key;
 import me.topchetoeu.jscript.common.json.JSON;
 import me.topchetoeu.jscript.common.parsing.Filename;
 import me.topchetoeu.jscript.runtime.debug.DebugContext;
@@ -252,20 +253,16 @@ public class SimpleRepl {
         res.defineOwnMember(env, "parse", new NativeFunction(args -> {
             return JSONConverter.toJs(JSON.parse(null, args.get(0).toString(env)));
         }));
-        res.defineOwnMember(env, "invokeType", new NativeFunction(args -> {
-            if (((ArgumentsValue)args.get(0)).frame.isNew) return StringValue.of("new");
-            else return StringValue.of("call");
-        }));
-        res.defineOwnMember(env, "invoke", new NativeFunction(args -> {
-            var func = (FunctionValue)args.get(0);
-            var self = args.get(1);
-            var funcArgs = (ArrayValue)args.get(2);
-
-            return func.apply(env, self, funcArgs.toArray());
-        }));
 
         return res;
     }
+
+	private static void setProto(Environment env, Environment target, Key<ObjectValue> key, ObjectValue repo, String name) {
+		var val = repo.getMember(env, name);
+		if (val instanceof ObjectValue obj) {
+			target.add(key, obj);
+		}
+	}
 
     private static ObjectValue primordials(Environment env) {
         var res = new ObjectValue();
@@ -280,45 +277,20 @@ public class SimpleRepl {
 
         int[] i = new int[1];
 
-        res.defineOwnMember(env, "setGlobalPrototype", new NativeFunction(args -> {
-            var type = args.get(0).toString(env);
+        res.defineOwnMember(env, "setGlobalPrototypes", new NativeFunction(args -> {
             var obj = (ObjectValue)args.get(1);
 
-            switch (type) {
-                case "object":
-                    args.env.add(Value.OBJECT_PROTO, obj);
-                    break;
-                case "function":
-                    args.env.add(Value.FUNCTION_PROTO, obj);
-                    break;
-                case "array":
-                    args.env.add(Value.ARRAY_PROTO, obj);
-                    break;
-                case "boolean":
-                    args.env.add(Value.BOOL_PROTO, obj);
-                    break;
-                case "number":
-                    args.env.add(Value.NUMBER_PROTO, obj);
-                    break;
-                case "string":
-                    args.env.add(Value.STRING_PROTO, obj);
-                    break;
-                case "symbol":
-                    args.env.add(Value.SYMBOL_PROTO, obj);
-                    break;
-                case "error":
-                    args.env.add(Value.ERROR_PROTO, obj);
-                    break;
-                case "syntax":
-                    args.env.add(Value.SYNTAX_ERR_PROTO, obj);
-                    break;
-                case "type":
-                    args.env.add(Value.TYPE_ERR_PROTO, obj);
-                    break;
-                case "range":
-                    args.env.add(Value.RANGE_ERR_PROTO, obj);
-                    break;
-            }
+			setProto(args.env, env, Value.OBJECT_PROTO, obj, "object");
+			setProto(args.env, env, Value.FUNCTION_PROTO, obj, "function");
+			setProto(args.env, env, Value.ARRAY_PROTO, obj, "array");
+			setProto(args.env, env, Value.BOOL_PROTO, obj, "boolean");
+			setProto(args.env, env, Value.NUMBER_PROTO, obj, "number");
+			setProto(args.env, env, Value.STRING_PROTO, obj, "string");
+			setProto(args.env, env, Value.SYMBOL_PROTO, obj, "symbol");
+			setProto(args.env, env, Value.ERROR_PROTO, obj, "error");
+			setProto(args.env, env, Value.SYNTAX_ERR_PROTO, obj, "syntax");
+			setProto(args.env, env, Value.TYPE_ERR_PROTO, obj, "type");
+			setProto(args.env, env, Value.RANGE_ERR_PROTO, obj, "range");
 
             return Value.UNDEFINED;
         }));

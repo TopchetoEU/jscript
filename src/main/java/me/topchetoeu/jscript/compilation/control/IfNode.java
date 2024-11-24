@@ -80,7 +80,7 @@ public class IfNode extends Node {
         var a = JavaScript.parseExpression(src, i + n, 2);
         if (!a.isSuccess()) return a.chainError(src.loc(i + n), "Expected a value after the ternary operator.");
         n += a.n;
-        n += Parsing.skipEmpty(src, i);
+        n += Parsing.skipEmpty(src, i + n);
 
         if (!src.is(i + n, ":")) return ParseRes.failed();
         n++;
