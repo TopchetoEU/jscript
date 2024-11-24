@@ -18,6 +18,7 @@ import me.topchetoeu.jscript.compilation.control.ContinueNode;
 import me.topchetoeu.jscript.compilation.control.DebugNode;
 import me.topchetoeu.jscript.compilation.control.DeleteNode;
 import me.topchetoeu.jscript.compilation.control.DoWhileNode;
+import me.topchetoeu.jscript.compilation.control.ForInNode;
 import me.topchetoeu.jscript.compilation.control.ForNode;
 import me.topchetoeu.jscript.compilation.control.IfNode;
 import me.topchetoeu.jscript.compilation.control.ReturnNode;
@@ -28,6 +29,7 @@ import me.topchetoeu.jscript.compilation.control.WhileNode;
 import me.topchetoeu.jscript.compilation.scope.FunctionScope;
 import me.topchetoeu.jscript.compilation.values.ArgumentsNode;
 import me.topchetoeu.jscript.compilation.values.ArrayNode;
+import me.topchetoeu.jscript.compilation.values.GlobalThisNode;
 import me.topchetoeu.jscript.compilation.values.ObjectNode;
 import me.topchetoeu.jscript.compilation.values.RegexNode;
 import me.topchetoeu.jscript.compilation.values.SuperNode;
@@ -114,6 +116,7 @@ public final class JavaScript {
         if (id.result.equals("this")) return ParseRes.res(new ThisNode(loc), n);
         if (id.result.equals("super")) return ParseRes.res(new SuperNode(loc), n);
         if (id.result.equals("arguments")) return ParseRes.res(new ArgumentsNode(loc), n);
+        if (id.result.equals("globalThis")) return ParseRes.res(new GlobalThisNode(loc), n);
 
         return ParseRes.failed();
     }
@@ -192,6 +195,7 @@ public final class JavaScript {
             IfNode::parse,
             WhileNode::parse,
             SwitchNode::parse,
+            ForInNode::parse,
             ForNode::parse,
             DoWhileNode::parse,
             TryNode::parse,
