@@ -4,18 +4,12 @@ import java.util.function.Supplier;
 
 public final class Variable {
     private Supplier<VariableIndex> indexSupplier;
-    private boolean frozen;
 
     public final boolean readonly;
     public final String name;
 
     public final VariableIndex index() {
-        if (!frozen) throw new IllegalStateException("Tried to access the index of a variable before it was finalized");
         return indexSupplier.get();
-    }
-
-    public final void freeze() {
-        this.frozen = true;
     }
 
     public final Variable setIndexSupplier(Supplier<VariableIndex> index) {

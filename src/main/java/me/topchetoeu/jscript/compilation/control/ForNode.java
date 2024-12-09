@@ -7,7 +7,6 @@ import me.topchetoeu.jscript.common.parsing.ParseRes;
 import me.topchetoeu.jscript.common.parsing.Parsing;
 import me.topchetoeu.jscript.common.parsing.Source;
 import me.topchetoeu.jscript.compilation.CompileResult;
-import me.topchetoeu.jscript.compilation.CompoundNode;
 import me.topchetoeu.jscript.compilation.DeferredIntSupplier;
 import me.topchetoeu.jscript.compilation.JavaScript;
 import me.topchetoeu.jscript.compilation.LabelContext;
@@ -23,35 +22,36 @@ public class ForNode extends Node {
         declaration.resolve(target);
         body.resolve(target);
     }
+	@Override public void compileFunctions(CompileResult target) {
+		if (declaration != null) declaration.compileFunctions(target);
+		if (assignment != null) assignment.compileFunctions(target);
+		if (condition != null) condition.compileFunctions(target);
+		body.compileFunctions(target);
+	}
     @Override public void compile(CompileResult target, boolean pollute) {
-        var subtarget = target.subtarget();
-        subtarget.scope.singleEntry = false;
-        subtarget.beginScope();
+        if (declaration != null) declaration.compile(target, false, BreakpointType.STEP_OVER);
 
-        declaration.compile(subtarget, false, BreakpointType.STEP_OVER);
-
-        int start = subtarget.size();
-        CompoundNode.compileMultiEntry(condition, subtarget, true, BreakpointType.STEP_OVER);
-        int mid = subtarget.temp();
+        int start = target.size();
+		int mid = -1;
+        if (condition != null) {
+			condition.compile(target, true, BreakpointType.STEP_OVER);
+			mid = target.temp();
+		}
 
         var end = new DeferredIntSupplier();
 
-        LabelContext.pushLoop(subtarget.env, loc(), label, end, start);
-        CompoundNode.compileMultiEntry(body, subtarget, false, BreakpointType.STEP_OVER);
-        LabelContext.popLoop(subtarget.env, label);
+        LabelContext.pushLoop(target.env, loc(), label, end, start);
+        body.compile(target, false, BreakpointType.STEP_OVER);
 
-        subtarget.reallocScope();
-
-        CompoundNode.compileMultiEntry(assignment, subtarget, false, BreakpointType.STEP_OVER);
-        int endI = subtarget.size();
+        if (assignment != null) assignment.compile(target, false, BreakpointType.STEP_OVER);
+        int endI = target.size();
 
         end.set(endI);
+        LabelContext.popLoop(target.env, label);
 
-        subtarget.add(Instruction.jmp(start - endI));
-        subtarget.set(mid, Instruction.jmpIfNot(endI - mid + 1));
-        if (pollute) subtarget.add(Instruction.pushUndefined());
-
-        subtarget.endScope();
+        target.add(Instruction.jmp(start - endI));
+        if (mid >= 0) target.set(mid, Instruction.jmpIfNot(endI - mid + 1));
+        if (pollute) target.add(Instruction.pushUndefined());
     }
 
     public ForNode(Location loc, String label, Node declaration, Node condition, Node assignment, Node body) {

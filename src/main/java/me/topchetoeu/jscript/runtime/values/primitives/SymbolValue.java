@@ -1,6 +1,9 @@
 package me.topchetoeu.jscript.runtime.values.primitives;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 
 import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
@@ -33,6 +36,11 @@ public final class SymbolValue extends PrimitiveValue {
         if (value == null) return "Symbol()";
         else return "Symbol(" + value + ")";
     }
+
+	@Override
+	public List<String> toReadableLines(Environment env, HashSet<ObjectValue> passed) {
+		return Arrays.asList(toString());
+	}
 
     public SymbolValue(String value) {
         this.value = value;

@@ -1,10 +1,15 @@
 package me.topchetoeu.jscript.runtime.values.primitives;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.WeakHashMap;
 
 import me.topchetoeu.jscript.common.environment.Environment;
+import me.topchetoeu.jscript.common.json.JSON;
+import me.topchetoeu.jscript.common.json.JSONElement;
 import me.topchetoeu.jscript.common.parsing.Parsing;
 import me.topchetoeu.jscript.common.parsing.Source;
 import me.topchetoeu.jscript.runtime.values.KeyCache;
@@ -31,6 +36,9 @@ public final class StringValue extends PrimitiveValue {
     }
     @Override public String toString(Environment ext) { return value; }
 
+	@Override public int hashCode() {
+		return value.hashCode();
+	}
     @Override public boolean equals(Object other) {
         if (this == other) return true;
         else if (other instanceof StringValue val) return value.length() == val.value.length() && value.equals(val.value);
@@ -65,6 +73,10 @@ public final class StringValue extends PrimitiveValue {
         if (!onlyEnumerable) res.add("length");
 
         return res;
+    }
+
+    @Override public List<String> toReadableLines(Environment env, HashSet<ObjectValue> passed) {
+        return Arrays.asList(JSON.stringify(JSONElement.string(value)));
     }
 
     private StringValue(String value) {

@@ -11,15 +11,15 @@ import me.topchetoeu.jscript.common.parsing.Source;
 import me.topchetoeu.jscript.compilation.CompileResult;
 import me.topchetoeu.jscript.compilation.CompoundNode;
 import me.topchetoeu.jscript.compilation.FunctionNode;
+import me.topchetoeu.jscript.compilation.JavaScript;
 import me.topchetoeu.jscript.compilation.Node;
-import me.topchetoeu.jscript.compilation.Parameters;
-import me.topchetoeu.jscript.compilation.patterns.Pattern;
 import me.topchetoeu.jscript.compilation.values.ObjectNode;
+import me.topchetoeu.jscript.compilation.values.VariableNode;
 import me.topchetoeu.jscript.compilation.values.constants.StringNode;
 
-public class PropertyMemberNode extends FunctionNode {
+public final class PropertyMemberNode extends FunctionNode implements Member {
     public final Node key;
-    public final Pattern argument;
+    public final VariableNode argument;
 
     @Override public String name() {
         if (key instanceof StringNode str) {
@@ -32,18 +32,21 @@ public class PropertyMemberNode extends FunctionNode {
     public boolean isGetter() { return argument == null; }
     public boolean isSetter() { return argument != null; }
 
+	@Override public void compileFunctions(CompileResult target) {
+		key.compileFunctions(target);
+		target.addChild(this, compileBody(target, null));
+	}
+
     @Override public void compile(CompileResult target, boolean pollute, String name, BreakpointType bp) {
         if (pollute) target.add(Instruction.dup());
         key.compile(target, true);
 
-        var id = target.addChild(compileBody(target, name, null));
-        target.add(_i -> Instruction.loadFunc(id, true, false, false, name, captures(id, target)));
-
+        target.add(Instruction.loadFunc(target.childrenIndices.get(this), name(name), captures(target))).setLocation(loc());
         target.add(Instruction.defProp(isSetter()));
     }
 
-    public PropertyMemberNode(Location loc, Location end, Node key, Pattern argument, CompoundNode body) {
-        super(loc, end, argument == null ? new Parameters(Arrays.asList()) : new Parameters(Arrays.asList(argument)), body);
+    public PropertyMemberNode(Location loc, Location end, Node key, VariableNode argument, CompoundNode body) {
+        super(loc, end, argument == null ? Arrays.asList() : Arrays.asList(argument), body);
         this.key = key;
         this.argument = argument;
     }
@@ -61,11 +64,10 @@ public class PropertyMemberNode extends FunctionNode {
         if (!name.isSuccess()) return name.chainError(src.loc(i + n), "Expected a property name after '" + access + "'");
         n += name.n;
 
-        var params = Parameters.parseParameters(src, i + n);
+        var params = JavaScript.parseParameters(src, i + n);
         if (!params.isSuccess()) return params.chainError(src.loc(i + n), "Expected an argument list");
-        if (access.result.equals("get") && params.result.params.size() != 0) return ParseRes.error(src.loc(i + n), "Getter must not have any parameters");
-        if (access.result.equals("set") && params.result.params.size() != 1) return ParseRes.error(src.loc(i + n), "Setter must have exactly one parameter");
-        if (params.result.rest != null) return ParseRes.error(params.result.rest.loc(), "Property members may not have rest arguments");
+        if (access.result.equals("get") && params.result.size() != 0) return ParseRes.error(src.loc(i + n), "Getter must not have any parameters");
+        if (access.result.equals("set") && params.result.size() != 1) return ParseRes.error(src.loc(i + n), "Setter must have exactly one parameter");
         n += params.n;
 
         var body = CompoundNode.parse(src, i + n);
@@ -75,7 +77,7 @@ public class PropertyMemberNode extends FunctionNode {
         var end = src.loc(i + n - 1);
 
         return ParseRes.res(new PropertyMemberNode(
-            loc, end, name.result, access.result.equals("get") ? null : params.result.params.get(0), body.result
+            loc, end, name.result, access.result.equals("get") ? null : params.result.get(0), body.result
         ), n);
     }
 }

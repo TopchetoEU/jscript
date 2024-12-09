@@ -3,27 +3,25 @@ package me.topchetoeu.jscript.runtime.values;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import me.topchetoeu.jscript.common.SyntaxException;
 import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.common.environment.Key;
-import me.topchetoeu.jscript.common.json.JSON;
-import me.topchetoeu.jscript.common.json.JSONElement;
 import me.topchetoeu.jscript.runtime.EventLoop;
-import me.topchetoeu.jscript.runtime.debug.DebugContext;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
 import me.topchetoeu.jscript.runtime.values.Member.FieldMember;
 import me.topchetoeu.jscript.runtime.values.Member.PropertyMember;
 import me.topchetoeu.jscript.runtime.values.functions.FunctionValue;
 import me.topchetoeu.jscript.runtime.values.functions.NativeFunction;
-import me.topchetoeu.jscript.runtime.values.objects.ArrayValue;
 import me.topchetoeu.jscript.runtime.values.objects.ObjectValue;
 import me.topchetoeu.jscript.runtime.values.primitives.BoolValue;
 import me.topchetoeu.jscript.runtime.values.primitives.StringValue;
@@ -84,35 +82,25 @@ public abstract class Value {
         return this == NumberValue.NAN || this instanceof NumberValue num && Double.isNaN(num.getDouble());
     }
 
-    public Value call(Environment env, boolean isNew, String name, Value self, Value ...args) {
-        if (name == null || name.equals("")) name = "(intermediate value)";
-
-        if (isNew) throw EngineException.ofType(name + " is not a constructor");
-        else throw EngineException.ofType(name + " is not a function");
+    public Value apply(Environment env, Value self, Value ...args) {
+        throw EngineException.ofType("Value is not a function");
     }
+	public Value construct(Environment env, Value self, Value ...args) {
+        throw EngineException.ofType("Value is not a constructor");
+	}
 
-    public final Value invoke(Environment env, String name, Value self, Value ...args) {
-        return call(env, false, name, self, args);
-    }
-    public final Value construct(Environment env, String name, Value ...args) {
+    public final Value construct(Environment env, Value ...args) {
         var res = new ObjectValue();
         var proto = getMember(env, StringValue.of("prototype"));
 
         if (proto instanceof ObjectValue) res.setPrototype(env, (ObjectValue)proto);
-        else res.setPrototype(env, null);
 
-        var ret = this.call(env, true, name, res, args);
+        var ret = this.construct(env, res, args);
 
-        if (!ret.isPrimitive()) return ret;
-        return res;
+        if (ret == Value.UNDEFINED || ret.isPrimitive()) return res;
+        return ret;
     }
 
-    public final Value invoke(Environment env, Value self, Value ...args) {
-        return invoke(env, "", self, args);
-    }
-    public final Value construct(Environment env, Value ...args) {
-        return construct(env, "", args);
-    }
 
     public abstract Value toPrimitive(Environment env);
     public abstract NumberValue toNumber(Environment env);
@@ -120,7 +108,7 @@ public abstract class Value {
     public abstract boolean toBoolean();
 
     public final boolean isInstanceOf(Environment env, Value proto) {
-        for (var val = getPrototype(env); val != null; val = getPrototype(env)) {
+        for (var val = getPrototype(env); val != null; val = val.getPrototype(env)) {
             if (val.equals(proto)) return true;
         }
 
@@ -392,7 +380,7 @@ public abstract class Value {
                 private void loadNext() {
                     if (supplier == null) value = null;
                     else if (consumed) {
-                        var curr = supplier.invoke(env, Value.UNDEFINED);
+                        var curr = supplier.apply(env, Value.UNDEFINED);
 
                         if (curr == null) { supplier = null; value = null; }
                         if (curr.getMember(env, StringValue.of("done")).toBoolean()) { supplier = null; value = null; }
@@ -420,114 +408,22 @@ public abstract class Value {
 
     public void callWith(Environment env, Iterable<? extends Value> it) {
         for (var el : it) {
-            this.invoke(env, Value.UNDEFINED, el);
+            this.apply(env, Value.UNDEFINED, el);
         }
     }
     public void callWithAsync(Environment env, Iterable<? extends Value> it, boolean async) {
         for (var el : it) {
-            env.get(EventLoop.KEY).pushMsg(() -> this.invoke(env, Value.UNDEFINED, el), true);
+            env.get(EventLoop.KEY).pushMsg(() -> this.apply(env, Value.UNDEFINED, el), true);
         }
     }
 
-    private final String toReadable(Environment env, HashSet<Object> passed, int tab) {
-        if (passed.contains(this)) return "[circular]";
-
-        if (this instanceof ObjectValue obj) {
-            var res = new StringBuilder();
-            var dbg = DebugContext.get(env);
-            var printed = true;
-            var keys = this.getMembers(env, true, false);
-
-            if (this instanceof FunctionValue func) {
-                res.append(this.toString());
-                var loc = dbg.getMapOrEmpty(func).start();
-
-                if (loc != null) res.append(" @ " + loc);
-
-                if (
-                    func.prototype instanceof ObjectValue objProto &&
-                    objProto.getMember(env, "constructor") == func && 
-                    objProto.getOwnMembers(env, true).size() + objProto.getOwnSymbolMembers(env, true).size() == 1
-                ) { keys.remove("constructor"); }
-            }
-            else if (this instanceof ArrayValue) {
-                res.append("[");
-                var arr = (ArrayValue)this;
-
-                for (int i = 0; i < arr.size(); i++) {
-                    if (i != 0) res.append(", ");
-                    else res.append(" ");
-
-                    if (arr.hasMember(env, i, true)) {
-                        res.append(arr.getMember(env, i).toReadable(env, passed, tab));
-                        keys.remove(i + "");
-                    }
-                    else res.append("<empty>");
-                }
-
-                res.append(" ] ");
-            }
-            else printed = false;
-
-
-            passed.add(this);
-
-            if (keys.size() + obj.getOwnSymbolMembers(env, true).size() == 0) {
-                if (!printed) res.append("{}");
-            }
-            else if (!printed) {
-                if (tab > 3) return "{...}";
-                res.append("{\n");
-
-                for (var entry : obj.getOwnSymbolMembers(env, true)) {
-                    for (int i = 0; i < tab + 1; i++) res.append("    ");
-                    res.append("[" + entry.value + "]" + ": ");
-
-                    var member = obj.getOwnMember(env, entry);
-                    if (member instanceof FieldMember field) res.append(field.get(env, obj).toReadable(env, passed, tab + 1));
-                    else if (member instanceof PropertyMember prop) {
-                        if (prop.getter == null && prop.setter == null) res.append("[No accessors]");
-                        else if (prop.getter == null) res.append("[Setter]");
-                        else if (prop.setter == null) res.append("[Getter]");
-                        else res.append("[Getter/Setter]");
-                    }
-                    else res.append("[???]");
-
-                    res.append(",\n");
-                }
-                for (var entry : obj.getOwnMembers(env, true)) {
-                    for (int i = 0; i < tab + 1; i++) res.append("    ");
-                    res.append(entry + ": ");
-
-                    var member = obj.getOwnMember(env, entry);
-                    if (member instanceof FieldMember field) res.append(field.get(env, obj).toReadable(env, passed, tab + 1));
-                    else if (member instanceof PropertyMember prop) {
-                        if (prop.getter == null && prop.setter == null) res.append("[No accessors]");
-                        else if (prop.getter == null) res.append("[Setter]");
-                        else if (prop.setter == null) res.append("[Getter]");
-                        else res.append("[Getter/Setter]");
-                    }
-                    else res.append("[???]");
-
-                    res.append(",\n");
-                }
-
-                for (int i = 0; i < tab; i++) res.append("    ");
-                res.append("}");
-            }
-
-            passed.remove(this);
-            return res.toString();
-        }
-        else if (this instanceof VoidValue) return ((VoidValue)this).name;
-        else if (this instanceof StringValue) return JSON.stringify(JSONElement.string(((StringValue)this).value));
-        else if (this instanceof SymbolValue) return this.toString();
-        else if (this instanceof NumberValue num && num.isLong()) return num.getLong() + "i";
-        else return this.toString(env);
+    /** @internal */
+    public List<String> toReadableLines(Environment env, HashSet<ObjectValue> passed) {
+        return Arrays.asList(toString(env));
     }
 
     public final String toReadable(Environment ext) {
-        return toReadable(ext, new HashSet<>(), 0);
+        return String.join("\n", toReadableLines(ext, new HashSet<>()));
     }
 
     public static final ObjectValue global(Environment env) {
@@ -638,8 +534,8 @@ public abstract class Value {
         var na = a.toNumber(env);
         var nb = b.toNumber(env);
 
-        if (na.isInt() && nb.isInt()) return NumberValue.of(na.getInt() - nb.getInt());
-        else return NumberValue.of(na.getDouble() - nb.getDouble());
+        if (na.isInt() && nb.isInt()) return NumberValue.of(na.getInt() * nb.getInt());
+        else return NumberValue.of(na.getDouble() * nb.getDouble());
     }
     public static final NumberValue divide(Environment env, Value a, Value b) {
         var na = a.toNumber(env);

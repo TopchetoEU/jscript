@@ -8,8 +8,6 @@ import me.topchetoeu.jscript.runtime.values.Value;
 public final class CodeFunction extends FunctionValue {
     public final FunctionBody body;
     public final Value[][] captures;
-    public Value self;
-    public Value argsVal;
     public Environment env;
 
     private Value onCall(Frame frame) {
@@ -26,12 +24,13 @@ public final class CodeFunction extends FunctionValue {
         }
     }
 
-    @Override public Value onCall(Environment env, boolean isNew, String name, Value thisArg, Value ...args) {
-        var frame = new Frame(env, isNew, thisArg, args, this);
-        if (argsVal != null) frame.fakeArgs = argsVal;
-        if (self != null) frame.self = self;
+    @Override public Value onCall(Environment env, boolean isNew, Value self, Value ...args) {
+        var frame = new Frame(env, isNew, self, args, this);
 
-        return onCall(frame);
+        var res = onCall(frame);
+
+        if (isNew) return frame.self;
+        else return res;
     }
 
     public CodeFunction(Environment env, String name, FunctionBody body, Value[][] captures) {

@@ -16,6 +16,10 @@ public class DeleteNode extends Node {
     public final Node key;
     public final Node value;
 
+	@Override public void compileFunctions(CompileResult target) {
+		key.compileFunctions(target);
+		value.compileFunctions(target);
+	}
     @Override public void compile(CompileResult target, boolean pollute) {
         value.compile(target, true);
         key.compile(target, true);

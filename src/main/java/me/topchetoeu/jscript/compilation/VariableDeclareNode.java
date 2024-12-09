@@ -3,58 +3,45 @@ package me.topchetoeu.jscript.compilation;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.github.bsideup.jabel.Desugar;
+
 import me.topchetoeu.jscript.common.Instruction;
 import me.topchetoeu.jscript.common.parsing.Location;
 import me.topchetoeu.jscript.common.parsing.ParseRes;
 import me.topchetoeu.jscript.common.parsing.Parsing;
 import me.topchetoeu.jscript.common.parsing.Source;
-import me.topchetoeu.jscript.compilation.JavaScript.DeclarationType;
-import me.topchetoeu.jscript.compilation.patterns.Pattern;
+import me.topchetoeu.jscript.compilation.values.VariableNode;
 
 public class VariableDeclareNode extends Node {
-    public static class Pair {
-        public final Pattern destructor;
-        public final Node value;
-        public final Location location;
-
-        public Pair(Pattern destr, Node value, Location location) {
-            this.destructor = destr;
-            this.value = value;
-            this.location = location;
-        }
-    }
+	@Desugar
+    public static record Pair(VariableNode var, Node value) { }
 
     public final List<Pair> values;
-    public final DeclarationType declType;
 
     @Override public void resolve(CompileResult target) {
-        if (!declType.strict) {
-            for (var entry : values) {
-                entry.destructor.destructDeclResolve(target);
-            }
-        }
+		for (var entry : values) {
+			target.scope.define(entry.var.name);
+		}
     }
+	@Override public void compileFunctions(CompileResult target) {
+		for (var pair : values) {
+			if (pair.value != null) pair.value.compileFunctions(target);
+		}
+	}
     @Override public void compile(CompileResult target, boolean pollute) {
         for (var entry : values) {
-            if (entry.value == null) {
-                if (declType == DeclarationType.VAR) entry.destructor.declare(target, null, false);
-                else entry.destructor.declare(target, declType, false);
-            }
-            else {
+            if (entry.value != null) {
                 entry.value.compile(target, true);
-
-                if (declType == DeclarationType.VAR) entry.destructor.destruct(target, null, true);
-                else entry.destructor.destruct(target, declType, true);
+				target.add(VariableNode.toSet(target, loc(), entry.var.name, false, true)).setLocation(loc());
             }
         }
 
         if (pollute) target.add(Instruction.pushUndefined());
     }
 
-    public VariableDeclareNode(Location loc, DeclarationType declType, List<Pair> values) {
+    public VariableDeclareNode(Location loc, List<Pair> values) {
         super(loc);
         this.values = values;
-        this.declType = declType;
     }
 
     public static ParseRes<VariableDeclareNode> parse(Source src, int i) {
@@ -70,14 +57,14 @@ public class VariableDeclareNode extends Node {
         var end = JavaScript.parseStatementEnd(src, i + n);
         if (end.isSuccess()) {
             n += end.n;
-            return ParseRes.res(new VariableDeclareNode(loc, declType.result, res), n);
+            return ParseRes.res(new VariableDeclareNode(loc, res), n);
         }
 
         while (true) {
             var nameLoc = src.loc(i + n);
 
-            var name = Pattern.parse(src, i + n, false);
-            if (!name.isSuccess()) return name.chainError(nameLoc, "Expected a variable name or a destructor");
+            var name = Parsing.parseIdentifier(src, i + n);
+            if (!name.isSuccess()) return name.chainError(nameLoc, "Expected a variable name");
             n += name.n;
 
             Node val = null;
@@ -96,7 +83,7 @@ public class VariableDeclareNode extends Node {
                 val = valRes.result;
             }
 
-            res.add(new Pair(name.result, val, nameLoc));
+            res.add(new Pair(new VariableNode(nameLoc, name.result), val));
 
             if (src.is(i + n, ",")) {
                 n++;
@@ -107,7 +94,7 @@ public class VariableDeclareNode extends Node {
 
             if (end.isSuccess()) {
                 n += end.n + endN - n;
-                return ParseRes.res(new VariableDeclareNode(loc, declType.result, res), n);
+                return ParseRes.res(new VariableDeclareNode(loc, res), n);
             }
             else return end.chainError(src.loc(i + n), "Expected a comma or end of statement");
         }

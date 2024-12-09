@@ -12,6 +12,11 @@ public class AssignNode extends Node implements AssignTarget {
     public final AssignTarget assignable;
     public final Node value;
 
+	@Override public void compileFunctions(CompileResult target) {
+		((Node)assignable).compileFunctions(target);
+		value.compileFunctions(target);
+	}
+
     @Override public void compile(CompileResult target, boolean pollute) {
         if (assignable instanceof AssignNode other) throw new SyntaxException(other.loc(), "Assign deconstructor not allowed here");
 

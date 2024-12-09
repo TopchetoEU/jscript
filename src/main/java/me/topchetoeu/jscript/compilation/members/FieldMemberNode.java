@@ -9,12 +9,18 @@ import me.topchetoeu.jscript.compilation.CompileResult;
 import me.topchetoeu.jscript.compilation.JavaScript;
 import me.topchetoeu.jscript.compilation.Node;
 import me.topchetoeu.jscript.compilation.values.ObjectNode;
-import me.topchetoeu.jscript.compilation.values.VariableNode;
-import me.topchetoeu.jscript.compilation.values.constants.StringNode;
 
-public class FieldMemberNode extends Node {
+public class FieldMemberNode implements Member {
+    public final Location loc;
     public final Node key;
     public final Node value;
+
+    @Override public Location loc() { return loc; }
+
+	@Override public void compileFunctions(CompileResult target) {
+		key.compileFunctions(target);
+		value.compileFunctions(target);
+	}
 
     @Override public void compile(CompileResult target, boolean pollute) {
         if (pollute) target.add(Instruction.dup());
@@ -27,12 +33,12 @@ public class FieldMemberNode extends Node {
     }
 
     public FieldMemberNode(Location loc, Node key, Node value) {
-        super(loc);
+        this.loc = loc;
         this.key = key;
         this.value = value;
     }
 
-    public static ParseRes<FieldMemberNode> parseObject(Source src, int i) {
+    public static ParseRes<FieldMemberNode> parse(Source src, int i) {
         var n = Parsing.skipEmpty(src, i);
         var loc = src.loc(i + n);
 
@@ -42,42 +48,6 @@ public class FieldMemberNode extends Node {
         n += Parsing.skipEmpty(src, i + n);
 
         if (!src.is(i + n, ":")) return ParseRes.failed();
-        n++;
-
-        var value = JavaScript.parseExpression(src, i + n, 2);
-        if (!value.isSuccess()) return value.chainError(src.loc(i + n), "Expected a value");
-        n += value.n;
-
-        return ParseRes.res(new FieldMemberNode(loc, name.result, value.result), n);
-    }
-
-    public static ParseRes<FieldMemberNode> parseShorthand(Source src, int i) {
-        var n = Parsing.skipEmpty(src, i);
-        var loc = src.loc(i + n);
-
-        var var = VariableNode.parse(src, i + n);
-        if (!var.isSuccess()) return var.chainError();
-        n += var.n;
-
-        return ParseRes.res(new FieldMemberNode(loc, new StringNode(loc, var.result.name), var.result), n);
-    }
-
-    public static ParseRes<FieldMemberNode> parseClass(Source src, int i) {
-        var n = Parsing.skipEmpty(src, i);
-        var loc = src.loc(i + n);
-
-        var name = ObjectNode.parsePropName(src, i + n);
-        if (!name.isSuccess()) return name.chainError();
-        n += name.n;
-        n += Parsing.skipEmpty(src, i + n);
-
-        if (!src.is(i + n, "=")) {
-            var end = JavaScript.parseStatement(src, i + n);
-            if (!end.isSuccess()) return ParseRes.error(src.loc(i + n), "Expected an end of statement or a field initializer");
-            n += end.n;
-
-            return ParseRes.res(new FieldMemberNode(loc, name.result, null), n);
-        }
         n++;
 
         var value = JavaScript.parseExpression(src, i + n, 2);

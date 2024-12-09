@@ -17,11 +17,10 @@ public class Instruction {
         TRY_END(0x06),
 
         CALL(0x10),
-        CALL_MEMBER(0x11),
         CALL_NEW(0x12),
-        JMP_IF(0x13),
-        JMP_IFN(0x14),
-        JMP(0x15),
+        JMP_IF(0x18),
+        JMP_IFN(0x19),
+        JMP(0x1A),
 
         PUSH_UNDEFINED(0x20),
         PUSH_NULL(0x21),
@@ -38,11 +37,12 @@ public class Instruction {
 
         LOAD_GLOB(0x38),
         LOAD_INTRINSICS(0x39),
-        LOAD_ARGS(0x3A),
-        LOAD_REST_ARGS(0x3B),
-        LOAD_CALLEE(0x3C),
-        LOAD_THIS(0x3D),
-        LOAD_ERROR(0x3E),
+        LOAD_ARG(0x3A),
+        LOAD_ARGS_N(0x3B),
+        LOAD_ARGS(0x3C),
+        LOAD_CALLED(0x3D),
+        LOAD_THIS(0x3E),
+        LOAD_ERROR(0x3F),
 
         LOAD_VAR(0x40),
         LOAD_MEMBER(0x41),
@@ -62,12 +62,7 @@ public class Instruction {
 
         GLOB_GET(0x60),
         GLOB_SET(0x61),
-        GLOB_DEF(0x62),
-
-        // CAP_INIT(0x70),
-        VAR_INIT(0x71),
-        CAP_FREE(0x72),
-        VAR_FREE(0x73);
+        GLOB_DEF(0x62);
 
         private static final HashMap<Integer, Type> types = new HashMap<>();
         public final int numeric;
@@ -85,8 +80,19 @@ public class Instruction {
         }
     }
     public static enum BreakpointType {
+		/**
+		 * A debugger should never stop at such instruction, unless a breakpoint has been set on it
+		 */
         NONE,
+		/**
+		 * Debuggers should pause at instructions marked with this breakpoint type
+		 * after any step command
+		 */
         STEP_OVER,
+		/**
+		 * Debuggers should pause at instructions marked with this breakpoint type
+		 * only after a step-in command
+		 */
         STEP_IN;
 
         public boolean shouldStepIn() {
@@ -104,27 +110,6 @@ public class Instruction {
     public <T> T get(int i) {
         if (i >= params.length || i < 0) return null;
         return (T)params[i];
-    }
-    @SuppressWarnings("unchecked")
-    public <T> T get(int i, T defaultVal) {
-        if (i >= params.length || i < 0) return defaultVal;
-        return (T)params[i];
-    }
-    public boolean match(Object ...args) {
-        if (args.length != params.length) return false;
-        for (int i = 0; i < args.length; i++) {
-            var a = params[i];
-            var b = args[i];
-            if (a == null || b == null) {
-                if (!(a == null && b == null)) return false;
-            }
-            if (!a.equals(b)) return false;
-        }
-        return true;
-    }
-    public boolean is(int i, Object arg) {
-        if (params.length <= i) return false;
-        return params[i].equals(arg);
     }
 
     // public void write(DataOutputStream writer) throws IOException {
@@ -250,55 +235,79 @@ public class Instruction {
     //     }
     // }
 
+	/**
+	 * Signals the start of a protected context
+	 * @param catchStart The point to witch to jump if an error has been caught
+	 * @param finallyStart The point to witch to jump after either the try or catch bodies have exited
+	 * @param end The point to which to jump after exiting the whole protected context
+	 */
     public static Instruction tryStart(int catchStart, int finallyStart, int end) {
         return new Instruction(Type.TRY_START, catchStart, finallyStart, end);
     }
+	/**
+	 * Signifies that the current protected section (try, catch or finally) has ended
+	 */
     public static Instruction tryEnd() {
         return new Instruction(Type.TRY_END);
     }
+	/**
+	 * Throws the top stack value
+	 */
     public static Instruction throwInstr() {
         return new Instruction(Type.THROW);
     }
+	/**
+	 * Converts the given exception to a runtime syntax error and throws it
+	 */
     public static Instruction throwSyntax(SyntaxException err) {
         return new Instruction(Type.THROW_SYNTAX, err.getMessage());
     }
+	/**
+	 * Converts the given exception to a runtime syntax error and throws it
+	 */
     public static Instruction throwSyntax(String err) {
         return new Instruction(Type.THROW_SYNTAX, err);
     }
+	/**
+	 * Converts the given exception to a runtime syntax error and throws it
+	 */
     public static Instruction throwSyntax(Location loc, String err) {
         return new Instruction(Type.THROW_SYNTAX, new SyntaxException(loc, err).getMessage());
     }
+	/**
+	 * Performs a JS object property deletion.
+	 * Operands:
+	 * 1. Object to manipulate
+	 * 2. Key to delete
+	 */
     public static Instruction delete() {
         return new Instruction(Type.DELETE);
     }
+	/**
+	 * Returns the top stack value
+	 */
     public static Instruction ret() {
         return new Instruction(Type.RETURN);
     }
+	/**
+	 * A special NOP instruction telling any debugger to pause
+	 */
     public static Instruction debug() {
         return new Instruction(Type.NOP, "debug");
     }
 
+	/**
+	 * Does nothing. May be used for metadata or implementation-specific instructions that don't alter the behavior
+	 */
     public static Instruction nop(Object ...params) {
         return new Instruction(Type.NOP, params);
     }
 
-    public static Instruction call(int argn, String name) {
-        return new Instruction(Type.CALL, argn, name);
-    }
-    public static Instruction call(int argn) {
-        return call(argn, "");
-    }
-    public static Instruction callMember(int argn, String name) {
-        return new Instruction(Type.CALL_MEMBER, argn, name);
-    }
-    public static Instruction callMember(int argn) {
-        return new Instruction(Type.CALL_MEMBER, argn, "");
-    }
-    public static Instruction callNew(int argn, String name) {
-        return new Instruction(Type.CALL_NEW, argn, name);
+    public static Instruction call(int argn, boolean hasSelf) {
+        return new Instruction(Type.CALL, argn, hasSelf);
     }
     public static Instruction callNew(int argn) {
-        return new Instruction(Type.CALL_NEW, argn, "");
+        return new Instruction(Type.CALL_NEW, argn);
     }
 
     public static Instruction jmp(int offset) {
@@ -320,7 +329,6 @@ public class Instruction {
     public static IntFunction<Instruction> jmpIfNot(IntSupplier pos) {
         return i -> new Instruction(Type.JMP_IFN, pos.getAsInt() - i);
     }
-
 
     public static Instruction pushUndefined() {
         return new Instruction(Type.PUSH_UNDEFINED);
@@ -355,14 +363,30 @@ public class Instruction {
     public static Instruction loadThis() {
         return new Instruction(Type.LOAD_THIS);
     }
-    public static Instruction loadArgs(boolean real) {
-        return new Instruction(Type.LOAD_ARGS, real);
+	/**
+	 * Loads the given argument
+	 * @param i The index of the argument to load. If -1, will get the index from the stack instead
+	 */
+    public static Instruction loadArg(int i) {
+        return new Instruction(Type.LOAD_ARG, i);
     }
-    public static Instruction loadRestArgs(int offset) {
-        return new Instruction(Type.LOAD_REST_ARGS, offset);
+	/**
+	 * Pushes the amount of arguments to the stack
+	 */
+    public static Instruction loadArgsN() {
+        return new Instruction(Type.LOAD_ARGS_N);
     }
-    public static Instruction loadCallee() {
-        return new Instruction(Type.LOAD_CALLEE);
+	/**
+	 * Pushes the arguments object to the stack
+	 */
+    public static Instruction loadArgs() {
+        return new Instruction(Type.LOAD_ARGS);
+    }
+	/**
+	 * Loads a reference to the function being called
+	 */
+    public static Instruction loadCalled() {
+        return new Instruction(Type.LOAD_CALLED);
     }
     public static Instruction loadGlob() {
         return new Instruction(Type.LOAD_GLOB);
@@ -386,16 +410,12 @@ public class Instruction {
     public static Instruction loadRegex(String pattern, String flags) {
         return new Instruction(Type.LOAD_REGEX, pattern, flags);
     }
-    public static Instruction loadFunc(int id, boolean callable, boolean constructible, boolean captureThis, String name, int[] captures) {
-        if (name == null) name = "";
-
-        var args = new Object[5 + captures.length];
+    // TODO: make this capturing a concern of the compiler
+    public static Instruction loadFunc(int id, String name, int[] captures) {
+        var args = new Object[2 + captures.length];
         args[0] = id;
         args[1] = name;
-        args[2] = callable;
-        args[3] = constructible;
-        args[4] = captureThis;
-        for (var i = 0; i < captures.length; i++) args[i + 5] = captures[i];
+        for (var i = 0; i < captures.length; i++) args[i + 2] = captures[i];
         return new Instruction(Type.LOAD_FUNC, args);
     }
     public static Instruction loadObj() {
@@ -464,22 +484,6 @@ public class Instruction {
     public static Instruction operation(Operation op) {
         return new Instruction(Type.OPERATION, op);
     }
-
-    public static Instruction capFree(int i) {
-        return new Instruction(Type.CAP_FREE, i);
-    }
-    public static Instruction varFree(int i) {
-        return new Instruction(Type.VAR_FREE, i);
-    }
-    public static Instruction varInit(int i, boolean force) {
-        return new Instruction(Type.VAR_INIT, i, force);
-    }
-    // public static Instruction stackAlloc(int start, int n) {
-    //     return new Instruction(Type.STACK_ALLOC, start, start + n);
-    // }
-    // public static Instruction stackRealloc(int start, int n) {
-    //     return new Instruction(Type.STACK_REALLOC, start, start + n);
-    // }
 
     @Override public String toString() {
         var res = type.toString();

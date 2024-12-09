@@ -102,7 +102,7 @@ public class JSON {
         if (filename == null) filename = new Filename("jscript", "json");
 
         var res = parseValue(new Source(null, filename, raw), 0);
-        if (res.isFailed()) throw new SyntaxException(null, "Invalid JSON given.");
+        if (res.isFailed()) throw new SyntaxException(null, "Invalid JSON given");
         else if (res.isError()) throw new SyntaxException(null, res.error);
         else return JSONElement.of(res.result);
     }

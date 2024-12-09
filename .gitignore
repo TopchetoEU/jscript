@@ -1,6 +1,6 @@
 *
 
-!/src
+!/src/
 !/src/**/*
 
 !/doc
@@ -22,3 +22,5 @@
 !/gradle
 !/gradle/wrapper
 !/gradle/wrapper/gradle-wrapper.properties
+
+!/

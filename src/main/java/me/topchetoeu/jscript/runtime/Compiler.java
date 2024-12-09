@@ -34,7 +34,7 @@ public interface Compiler {
 
     public static Compiler get(Environment ext) {
         return ext.get(KEY, (env, filename, src) -> {
-            throw EngineException.ofError("No compiler attached to engine.");
+            throw EngineException.ofError("No compiler attached to engine");
         });
     }
 

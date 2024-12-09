@@ -6,6 +6,9 @@ import me.topchetoeu.jscript.compilation.CompileResult;
 import me.topchetoeu.jscript.compilation.Node;
 
 public class NullNode extends Node {
+	@Override public void compileFunctions(CompileResult target) {
+	}
+
     @Override public void compile(CompileResult target, boolean pollute) {
         if (pollute) target.add(Instruction.pushNull());
     }

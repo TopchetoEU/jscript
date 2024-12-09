@@ -20,7 +20,11 @@ public class IfNode extends Node {
         body.resolve(target);
         if (elseBody != null) elseBody.resolve(target);
     }
-
+	@Override public void compileFunctions(CompileResult target) {
+		condition.compileFunctions(target);
+		body.compileFunctions(target);
+		if (elseBody != null) elseBody.compileFunctions(target);
+	}
     @Override public void compile(CompileResult target, boolean pollute, BreakpointType breakpoint) {
         condition.compile(target, true, breakpoint);
 
@@ -29,7 +33,7 @@ public class IfNode extends Node {
             var end = new DeferredIntSupplier();
 
             LabelContext.getBreak(target.env).push(loc(), label, end);
-            body.compile(target, false, BreakpointType.STEP_OVER);
+            body.compile(target, pollute, BreakpointType.STEP_OVER);
             LabelContext.getBreak(target.env).pop(label);
 
             int endI = target.size();
@@ -42,11 +46,11 @@ public class IfNode extends Node {
             var end = new DeferredIntSupplier();
 
             LabelContext.getBreak(target.env).push(loc(), label, end);
-            body.compile(target, false, BreakpointType.STEP_OVER);
+            body.compile(target, pollute, BreakpointType.STEP_OVER);
 
             int mid = target.temp();
 
-            elseBody.compile(target, false, BreakpointType.STEP_OVER);
+            elseBody.compile(target, pollute, BreakpointType.STEP_OVER);
             LabelContext.getBreak(target.env).pop(label);
 
             int endI = target.size();
@@ -80,7 +84,7 @@ public class IfNode extends Node {
         var a = JavaScript.parseExpression(src, i + n, 2);
         if (!a.isSuccess()) return a.chainError(src.loc(i + n), "Expected a value after the ternary operator.");
         n += a.n;
-        n += Parsing.skipEmpty(src, i);
+        n += Parsing.skipEmpty(src, i + n);
 
         if (!src.is(i + n, ":")) return ParseRes.failed();
         n++;

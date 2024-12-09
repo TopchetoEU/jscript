@@ -17,6 +17,8 @@ public abstract class Node {
         compile(target, pollute, BreakpointType.NONE);
     }
 
+	public abstract void compileFunctions(CompileResult target);
+
     public Location loc() { return loc; }
     public void setLoc(Location loc) { this.loc = loc; }
 

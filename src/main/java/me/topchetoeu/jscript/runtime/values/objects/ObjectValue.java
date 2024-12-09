@@ -1,7 +1,11 @@
 package me.topchetoeu.jscript.runtime.values.objects;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
 
 import me.topchetoeu.jscript.common.environment.Environment;
@@ -10,6 +14,7 @@ import me.topchetoeu.jscript.runtime.exceptions.EngineException;
 import me.topchetoeu.jscript.runtime.values.KeyCache;
 import me.topchetoeu.jscript.runtime.values.Member;
 import me.topchetoeu.jscript.runtime.values.Value;
+import me.topchetoeu.jscript.runtime.values.Member.PropertyMember;
 import me.topchetoeu.jscript.runtime.values.functions.FunctionValue;
 import me.topchetoeu.jscript.runtime.values.primitives.StringValue;
 import me.topchetoeu.jscript.runtime.values.primitives.SymbolValue;
@@ -41,13 +46,13 @@ public class ObjectValue extends Value {
             var valueOf = getMember(env, "valueOf");
 
             if (valueOf instanceof FunctionValue) {
-                var res = valueOf.invoke(env, this);
+                var res = valueOf.apply(env, this);
                 if (res.isPrimitive()) return res;
             }
 
             var toString = getMember(env, "toString");
             if (toString instanceof FunctionValue) {
-                var res = toString.invoke(env, this);
+                var res = toString.apply(env, this);
                 if (res.isPrimitive()) return res;
             }
         }
@@ -132,6 +137,81 @@ public class ObjectValue extends Value {
     }
     @Override public final boolean setPrototype(Environment env, ObjectValue val) {
         return setPrototype(_env -> val);
+    }
+
+    private final LinkedList<String> memberToReadable(Environment env, String key, Member member, HashSet<ObjectValue> passed) {
+        if (member instanceof PropertyMember prop) {
+            if (prop.getter == null && prop.setter == null) return new LinkedList<>(Arrays.asList(key + ": [No accessors]"));
+            else if (prop.getter == null) return new LinkedList<>(Arrays.asList(key + ": [Setter]"));
+            else if (prop.setter == null) return new LinkedList<>(Arrays.asList(key + ": [Getter]"));
+            else return new LinkedList<>(Arrays.asList(key + ": [Getter/Setter]"));
+        }
+        else {
+            var res = new LinkedList<String>();
+            var first = true;
+
+            for (var line : member.get(env, this).toReadableLines(env, passed)) {
+                if (first) res.add(key + ": " + line);
+                else res.add(line);
+                first = false;
+            }
+
+            return res;
+        }
+    }
+
+    public List<String> toReadableLines(Environment env, HashSet<ObjectValue> passed, HashSet<String> ignoredKeys) {
+        passed.add(this);
+
+        var stringified = new LinkedList<LinkedList<String>>();
+
+        for (var entry : getOwnSymbolMembers(env, true)) {
+            var member = getOwnMember(env, entry);
+            stringified.add(memberToReadable(env, "[" + entry.value + "]", member, passed));
+        }
+        for (var entry : getOwnMembers(env, true)) {
+            if (ignoredKeys.contains(entry)) continue;
+
+            var member = getOwnMember(env, entry);
+            stringified.add(memberToReadable(env, entry, member, passed));
+        }
+
+        passed.remove(this);
+
+        if (stringified.size() == 0) return Arrays.asList("{}");
+        var concat = new StringBuilder();
+        for (var entry : stringified) {
+            // We make a one-liner only when all members are one-liners
+            if (entry.size() != 1) {
+                concat = null;
+                break;
+            }
+
+            if (concat.length() != 0) concat.append(", ");
+            concat.append(entry.get(0));
+        }
+
+        // We don't want too long one-liners
+        if (concat != null && concat.length() < 80) return Arrays.asList("{ " + concat.toString() + " }");
+
+        var res = new LinkedList<String>();
+
+        res.add("{");
+
+        for (var entry : stringified) {
+            for (var line : entry) {
+                res.add("    " + line);
+            }
+
+            res.set(res.size() - 1, res.getLast() + ",");
+        }
+        res.set(res.size() - 1, res.getLast().substring(0, res.getLast().length() - 1));
+        res.add("}");
+
+        return res;
+    }
+    @Override public List<String> toReadableLines(Environment env, HashSet<ObjectValue> passed) {
+        return toReadableLines(env, passed, new HashSet<>());
     }
 
     public final boolean setPrototype(PrototypeProvider val) {

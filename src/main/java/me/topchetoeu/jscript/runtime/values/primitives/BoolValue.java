@@ -20,6 +20,9 @@ public final class BoolValue extends PrimitiveValue {
         return env.get(BOOL_PROTO);
     }
 
+	@Override public int hashCode() {
+		return Boolean.hashCode(value);
+	}
     @Override public boolean equals(Object other) {
         if (other == this) return true;
         else if (other instanceof BoolValue bool) return value == bool.value;

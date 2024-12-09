@@ -11,11 +11,13 @@ import me.topchetoeu.jscript.compilation.Node;
 public class RegexNode extends Node {
     public final String pattern, flags;
 
+	@Override public void compileFunctions(CompileResult target) {
+	}
+
     @Override public void compile(CompileResult target, boolean pollute) {
         target.add(Instruction.loadRegex(pattern, flags));
         if (!pollute) target.add(Instruction.discard());
     }
-
 
     public static ParseRes<RegexNode> parse(Source src, int i) {
         var n = Parsing.skipEmpty(src, i);
@@ -29,28 +31,35 @@ public class RegexNode extends Node {
 
         var inBrackets = false;
 
-        while (true) {
-            if (src.is(i + n, '[')) {
-                n++;
-                inBrackets = true;
-                source.append(src.at(i + n));
-                continue;
-            }
-            else if (src.is(i + n, ']')) {
-                n++;
-                inBrackets = false;
-                source.append(src.at(i + n));
-                continue;
-            }
-            else if (src.is(i + n, '/') && !inBrackets) {
-                n++;
-                break;
-            }
-
-            var charRes = Parsing.parseChar(src, i + n);
-            if (charRes.result == null) return ParseRes.error(src.loc(i + n), "Multiline regular expressions are not allowed");
-            source.append(charRes.result);
-            n++;
+        loop: while (true) {
+			switch (src.at(i + n)) {
+				case '[':
+					inBrackets = true;
+					source.append('[');
+					n++;
+					continue;
+				case ']':
+					inBrackets = false;
+					source.append(']');
+					n++;
+					continue;
+				case '/':
+					n++;
+					if (inBrackets) {
+						source.append('/');
+						continue;
+					}
+					else break loop;
+				case '\\':
+					source.append('\\');
+					source.append(src.at(i + n + 1));
+					n += 2;
+					break;
+				default:
+					source.append(src.at(i + n));
+					n++;
+					break;
+			}
         }
 
         while (true) {

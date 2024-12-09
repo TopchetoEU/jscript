@@ -10,6 +10,9 @@ import me.topchetoeu.jscript.compilation.JavaScript;
 import me.topchetoeu.jscript.compilation.Node;
 
 public class DebugNode extends Node {
+	@Override public void compileFunctions(CompileResult target) {
+	}
+
     @Override public void compile(CompileResult target, boolean pollute) {
         target.add(Instruction.debug());
         if (pollute) target.add(Instruction.pushUndefined());

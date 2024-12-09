@@ -7,15 +7,15 @@ import me.topchetoeu.jscript.common.parsing.ParseRes;
 import me.topchetoeu.jscript.common.parsing.Parsing;
 import me.topchetoeu.jscript.common.parsing.Source;
 import me.topchetoeu.jscript.compilation.CompileResult;
-import me.topchetoeu.jscript.compilation.CompoundNode;
-import me.topchetoeu.jscript.compilation.DeferredIntSupplier;
 import me.topchetoeu.jscript.compilation.JavaScript;
 import me.topchetoeu.jscript.compilation.LabelContext;
+import me.topchetoeu.jscript.compilation.DeferredIntSupplier;
 import me.topchetoeu.jscript.compilation.Node;
-import me.topchetoeu.jscript.compilation.patterns.Binding;
+import me.topchetoeu.jscript.compilation.values.VariableNode;
 
 public class ForInNode extends Node {
-    public final Binding binding;
+	public final boolean isDecl;
+    public final VariableNode binding;
     public final Node object, body;
     public final String label;
 
@@ -24,9 +24,11 @@ public class ForInNode extends Node {
         binding.resolve(target);
     }
 
+	@Override public void compileFunctions(CompileResult target) {
+		object.compileFunctions(target);
+		body.compileFunctions(target);
+	}
     @Override public void compile(CompileResult target, boolean pollute) {
-        binding.declareLateInit(target);
-
         object.compile(target, true, BreakpointType.STEP_OVER);
         target.add(Instruction.keys(false, true));
 
@@ -35,27 +37,32 @@ public class ForInNode extends Node {
         int mid = target.temp();
 
         target.add(Instruction.loadMember("value")).setLocation(binding.loc());
-        binding.assign(target, false);
+        target.add(VariableNode.toSet(target, loc(), binding.name, false, true)).setLocation(binding.loc());
+
         target.setLocationAndDebug(object.loc(), BreakpointType.STEP_OVER);
 
         var end = new DeferredIntSupplier();
 
         LabelContext.pushLoop(target.env, loc(), label, end, start);
-        CompoundNode.compileMultiEntry(body, target, false, BreakpointType.STEP_OVER);
-        LabelContext.popLoop(target.env, label);
+        body.compile(target, false, BreakpointType.STEP_OVER);
 
         int endI = target.size();
 
         target.add(Instruction.jmp(start - endI));
         target.add(Instruction.discard());
         target.set(mid, Instruction.jmpIfNot(endI - mid + 1));
+
+		end.set(endI);
+        LabelContext.popLoop(target.env, label);
+
         if (pollute) target.add(Instruction.pushUndefined());
     }
 
-    public ForInNode(Location loc, String label, Binding binding, Node object, Node body) {
+    public ForInNode(Location loc, String label, VariableNode binding, boolean isDecl, Node object, Node body) {
         super(loc);
         this.label = label;
         this.binding = binding;
+		this.isDecl = isDecl;
         this.object = object;
         this.body = body;
     }
@@ -76,9 +83,15 @@ public class ForInNode extends Node {
         n++;
         n += Parsing.skipEmpty(src, i + n);
 
-        var binding = Binding.parse(src, i + n);
-        if (!binding.isSuccess()) return ParseRes.error(src.loc(i + n), "Expected a binding in for-in loop");
-        n += binding.n;
+        var varKw = JavaScript.parseDeclarationType(src, i + n);
+        n += varKw.n;
+        n += Parsing.skipEmpty(src, i + n);
+
+		var bindingLoc = src.loc(i + n);
+
+		var name = Parsing.parseIdentifier(src, i + n);
+		if (!name.isSuccess()) return name.chainError(src.loc(i + n), "Expected a variable name");
+		n += name.n;
         n += Parsing.skipEmpty(src, i + n);
 
         if (!Parsing.isIdentifier(src, i + n, "in")) return ParseRes.error(src.loc(i + n), "Expected 'in' keyword after variable declaration");
@@ -96,6 +109,6 @@ public class ForInNode extends Node {
         if (!bodyRes.isSuccess()) return bodyRes.chainError(src.loc(i + n), "Expected a for-in body");
         n += bodyRes.n;
 
-        return ParseRes.res(new ForInNode(loc, label.result, binding.result, obj.result, bodyRes.result), n);
+        return ParseRes.res(new ForInNode(loc, label.result, new VariableNode(bindingLoc, name.result), varKw.isSuccess(), obj.result, bodyRes.result), n);
     }
 }

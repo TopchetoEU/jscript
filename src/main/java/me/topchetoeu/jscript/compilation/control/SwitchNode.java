@@ -36,48 +36,52 @@ public class SwitchNode extends Node {
     @Override public void resolve(CompileResult target) {
         for (var stm : body) stm.resolve(target);
     }
-
+	@Override public void compileFunctions(CompileResult target) {
+		value.compileFunctions(target);
+		for (var _case : cases) {
+			_case.value.compileFunctions(target);
+		}
+		for (var stm : body) {
+			stm.compileFunctions(target);
+		}
+	}
     @Override public void compile(CompileResult target, boolean pollute) {
         var caseToStatement = new HashMap<Integer, Integer>();
         var statementToIndex = new HashMap<Integer, Integer>();
 
         value.compile(target, true, BreakpointType.STEP_OVER);
 
-        var subtarget = target.subtarget();
-        subtarget.beginScope();
-
         // TODO: create a jump map
         for (var ccase : cases) {
-            subtarget.add(Instruction.dup());
-            ccase.value.compile(subtarget, true);
-            subtarget.add(Instruction.operation(Operation.EQUALS));
-            caseToStatement.put(subtarget.temp(), ccase.statementI);
+            target.add(Instruction.dup());
+            ccase.value.compile(target, true);
+            target.add(Instruction.operation(Operation.EQUALS));
+            caseToStatement.put(target.temp(), ccase.statementI);
         }
 
-        int start = subtarget.temp();
+        int start = target.temp();
         var end = new DeferredIntSupplier();
 
-        LabelContext.getBreak(target.env).push(loc(), label, end);
+        LabelContext.getBreak(target.env).pushLoop(loc(), label, end);
         for (var stm : body) {
-            statementToIndex.put(statementToIndex.size(), subtarget.size());
-            stm.compile(subtarget, false, BreakpointType.STEP_OVER);
+            statementToIndex.put(statementToIndex.size(), target.size());
+            stm.compile(target, false, BreakpointType.STEP_OVER);
         }
-        LabelContext.getBreak(target.env).pop(label);
 
-        subtarget.endScope();
-
-        int endI = subtarget.size();
+        int endI = target.size();
         end.set(endI);
-        subtarget.add(Instruction.discard());
-        if (pollute) subtarget.add(Instruction.pushUndefined());
+        LabelContext.getBreak(target.env).popLoop(label);
 
-        if (defaultI < 0 || defaultI >= body.length) subtarget.set(start, Instruction.jmp(endI - start));
-        else subtarget.set(start, Instruction.jmp(statementToIndex.get(defaultI) - start));
+        target.add(Instruction.discard());
+        if (pollute) target.add(Instruction.pushUndefined());
+
+        if (defaultI < 0 || defaultI >= body.length) target.set(start, Instruction.jmp(endI - start));
+        else target.set(start, Instruction.jmp(statementToIndex.get(defaultI) - start));
 
         for (var el : caseToStatement.entrySet()) {
             var i = statementToIndex.get(el.getValue());
             if (i == null) i = endI;
-            subtarget.set(el.getKey(), Instruction.jmpIf(i - el.getKey()));
+            target.set(el.getKey(), Instruction.jmpIf(i - el.getKey()));
         }
 
     }
@@ -100,6 +104,7 @@ public class SwitchNode extends Node {
         var val = JavaScript.parseExpression(src, i + n, 0);
         if (!val.isSuccess()) return val.chainError(src.loc(i + n), "Expected a value after 'case'");
         n += val.n;
+        n += Parsing.skipEmpty(src, i + n);
 
         if (!src.is(i + n, ":")) return ParseRes.error(src.loc(i + n), "Expected colons after 'case' value");
         n++;
@@ -118,7 +123,6 @@ public class SwitchNode extends Node {
 
         return ParseRes.res(null, n);
     }
-    @SuppressWarnings("unused")
     public static ParseRes<SwitchNode> parse(Source src, int i) {
         var n = Parsing.skipEmpty(src, i);
         var loc = src.loc(i + n);

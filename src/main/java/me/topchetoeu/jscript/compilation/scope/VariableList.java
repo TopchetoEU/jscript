@@ -1,48 +1,36 @@
 package me.topchetoeu.jscript.compilation.scope;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 
-public final class VariableList {
+import me.topchetoeu.jscript.compilation.scope.VariableIndex.IndexType;
+
+public final class VariableList implements Iterable<Variable> {
     private final class VariableNode implements Supplier<VariableIndex> {
         public Variable var;
         public VariableNode next;
         public VariableNode prev;
-        public boolean frozen;
         public int index;
+		public int indexIteration = -1;
 
         public VariableList list() { return VariableList.this; }
 
+		private int getIndex() {
+			if (this.indexIteration != VariableList.this.indexIteration) {
+				this.indexIteration = VariableList.this.indexIteration;
+
+				if (prev == null) this.index = 0;
+				else this.index = prev.getIndex() + 1;
+			}
+
+			return this.index;
+		}
+
         @Override public VariableIndex get() {
-            if (frozen) {
-                if (offset == null) return new VariableIndex(indexType, index);
-                else new VariableIndex(indexType, index + offset.getAsInt());
-            }
-
-            var res = 0;
-            if (offset != null) res = offset.getAsInt();
-
-            for (var it = prev; it != null; it = it.prev) {
-                res++;
-            }
-
-            return new VariableIndex(indexType, res);
-        }
-
-        public void freeze() {
-            if (frozen) return;
-            this.frozen = true;
-            this.next = null;
-            this.var.freeze();
-            if (prev == null) return;
-
-            this.index = prev.index + 1;
-            this.next = null;
-
-            return;
+			if (offset == null) return new VariableIndex(indexType, this.getIndex());
+			else return new VariableIndex(indexType, offset.getAsInt() + this.getIndex());
         }
 
         public VariableNode(Variable var, VariableNode next, VariableNode prev) {
@@ -54,32 +42,25 @@ public final class VariableList {
 
     private VariableNode first, last;
 
-    private ArrayList<VariableNode> frozenList = null;
     private HashMap<Variable, VariableNode> varMap = new HashMap<>();
 
     private final IntSupplier offset;
+	/**
+	 * Increased when indices need recalculation. VariableNode will check if
+	 * its internal indexIteration is up to date with this, and if not, will
+	 * recalculate its index
+	 */
+	private int indexIteration = 0;
 
     public final VariableIndex.IndexType indexType;
 
-    public boolean frozen() {
-        if (frozenList != null) {
-            assert frozenList != null;
-            assert varMap == null;
-            assert first == null;
-            assert last == null;
-
-            return true;
-        }
-        else {
-            assert frozenList == null;
-            assert varMap != null;
-
-            return false;
-        }
-    }
-
+	/**
+	 * Adds the given variable to this list. If it already exists, does nothing
+	 * @return val
+	 */
     public Variable add(Variable val) {
-        if (frozen()) throw new RuntimeException("The scope has been frozen");
+		if (this.varMap.containsKey(val)) return val;
+		this.indexIteration++;
 
         if (val.indexSupplier() instanceof VariableNode prevNode) {
             prevNode.list().remove(val);
@@ -105,13 +86,17 @@ public final class VariableList {
         return val;
     }
 
+	/**
+	 * If the variable is not in the list, does nothing. Otherwise, removes the variable from the list
+	 * @return null if nothing was done, else the deleted variable (should be var)
+	 */
     public Variable remove(Variable var) {
-        if (frozen()) throw new RuntimeException("The scope has been frozen");
-
         if (var == null) return null;
 
         var node = varMap.get(var);
         if (node == null) return null;
+
+		this.indexIteration++;
 
         if (node.prev != null) {
             assert node != first;
@@ -135,39 +120,31 @@ public final class VariableList {
         node.prev = null;
 
         varMap.remove(node.var);
+		node.var.setIndexSupplier(null);
 
         return node.var;
     }
 
+	/**
+	 * Checks if the list has the given variable
+	 */
+    public boolean has(Variable var) {
+        return varMap.containsKey(var);
+    }
+
+	/**
+	 * Returns an indexer for the given variable
+	 */
     public Supplier<VariableIndex> indexer(Variable var) {
         return varMap.get(var);
     }
 
     public int size() {
-        if (frozen()) return frozenList.size();
-        else return varMap.size();
+		return varMap.size();
     }
 
-    public void freeze() {
-        if (frozen()) return;
-
-        frozenList = new ArrayList<>();
-
-        for (var node = first; node != null; ) {
-            frozenList.add(node);
-
-            var tmp = node;
-            node = node.next;
-            tmp.freeze();
-        }
-
-        first = last = null;
-        varMap = null;
-    }
-
-    public Iterable<Variable> all() {
-        if (frozen()) return () -> frozenList.stream().map(v -> v.var).iterator();
-        else return () -> new Iterator<Variable>() {
+	public Iterator<Variable> iterator() {
+        return new Iterator<Variable>() {
             private VariableNode curr = first;
 
             @Override public boolean hasNext() {
@@ -183,19 +160,31 @@ public final class VariableList {
         };
     }
 
-    public VariableList(VariableIndex.IndexType type, IntSupplier offset) {
+	/**
+	 * @param offset Will offset the indices by the given amount from the supplier
+	 */
+    public VariableList(IndexType type, IntSupplier offset) {
         this.indexType = type;
         this.offset = offset;
     }
-    public VariableList(VariableIndex.IndexType type, int offset) {
+	/**
+	 * @param offset Will offset the indices by the given amount
+	 */
+    public VariableList(IndexType type, int offset) {
         this.indexType = type;
         this.offset = () -> offset;
     }
-    public VariableList(VariableIndex.IndexType type, VariableList prev) {
+	/**
+	 * @param offset Will offset the indices by the size of the given list
+	 */
+    public VariableList(IndexType type, VariableList prev) {
         this.indexType = type;
-        this.offset = prev::size;
+        this.offset = () -> {
+			if (prev.offset != null) return prev.offset.getAsInt() + prev.size();
+			else return prev.size();
+		};
     }
-    public VariableList(VariableIndex.IndexType type) {
+    public VariableList(IndexType type) {
         this.indexType = type;
         this.offset = null;
     }

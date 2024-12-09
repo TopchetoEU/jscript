@@ -7,7 +7,6 @@ import me.topchetoeu.jscript.common.parsing.ParseRes;
 import me.topchetoeu.jscript.common.parsing.Parsing;
 import me.topchetoeu.jscript.common.parsing.Source;
 import me.topchetoeu.jscript.compilation.CompileResult;
-import me.topchetoeu.jscript.compilation.CompoundNode;
 import me.topchetoeu.jscript.compilation.DeferredIntSupplier;
 import me.topchetoeu.jscript.compilation.JavaScript;
 import me.topchetoeu.jscript.compilation.LabelContext;
@@ -20,6 +19,10 @@ public class WhileNode extends Node {
     @Override public void resolve(CompileResult target) {
         body.resolve(target);
     }
+	@Override public void compileFunctions(CompileResult target) {
+		condition.compileFunctions(target);
+		body.compileFunctions(target);
+	}
     @Override public void compile(CompileResult target, boolean pollute) {
         int start = target.size();
         condition.compile(target, true);
@@ -29,11 +32,11 @@ public class WhileNode extends Node {
 
 
         LabelContext.pushLoop(target.env, loc(), label, end, start);
-        CompoundNode.compileMultiEntry(body, target, false, BreakpointType.STEP_OVER);
-        LabelContext.popLoop(target.env, label);
+        body.compile(target, false, BreakpointType.STEP_OVER);
 
         var endI = target.size();
         end.set(endI + 1);
+        LabelContext.popLoop(target.env, label);
 
         target.add(Instruction.jmp(start - end.getAsInt()));
         target.set(mid, Instruction.jmpIfNot(end.getAsInt() - mid + 1));

@@ -13,16 +13,20 @@ public class VariableAssignNode extends Node {
     public final Node value;
     public final Operation operation;
 
+	@Override public void compileFunctions(CompileResult target) {
+		value.compileFunctions(target);
+	}
+
     @Override public void compile(CompileResult target, boolean pollute) {
         if (operation != null) {
             target.add(VariableNode.toGet(target, loc(), name));
             FunctionNode.compileWithName(value, target, true, name);
             target.add(Instruction.operation(operation));
-            target.add(VariableNode.toSet(target, loc(), name, pollute));
+            target.add(VariableNode.toSet(target, loc(), name, pollute, false)).setLocation(loc());
         }
         else {
             FunctionNode.compileWithName(value, target, true, name);
-            target.add(VariableNode.toSet(target, loc(), name, pollute));
+            target.add(VariableNode.toSet(target, loc(), name, pollute, false)).setLocation(loc());
         }
     }
 

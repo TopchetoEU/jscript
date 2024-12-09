@@ -12,7 +12,6 @@ import me.topchetoeu.jscript.compilation.DeferredIntSupplier;
 import me.topchetoeu.jscript.compilation.JavaScript;
 import me.topchetoeu.jscript.compilation.LabelContext;
 import me.topchetoeu.jscript.compilation.Node;
-import me.topchetoeu.jscript.compilation.scope.Variable;
 
 public class TryNode extends Node {
     public final CompoundNode tryBody;
@@ -26,7 +25,11 @@ public class TryNode extends Node {
         if (catchBody != null) catchBody.resolve(target);
         if (finallyBody != null) finallyBody.resolve(target);
     }
-
+	@Override public void compileFunctions(CompileResult target) {
+		tryBody.compileFunctions(target);
+		if (catchBody != null) catchBody.compileFunctions(target);
+		if (finallyBody != null) finallyBody.compileFunctions(target);
+	}
     @Override public void compile(CompileResult target, boolean pollute, BreakpointType bpt) {
         int replace = target.temp();
         var endSuppl = new DeferredIntSupplier();
@@ -42,17 +45,11 @@ public class TryNode extends Node {
             catchStart = target.size() - start;
 
             if (captureName != null) {
-                var subtarget = target.subtarget();
-                subtarget.beginScope();
-                subtarget.scope.singleEntry = true;
-
-                var catchVar = subtarget.scope.defineStrict(new Variable(captureName, false), catchBody.loc());
-                subtarget.add(Instruction.loadError());
-                subtarget.add(catchVar.index().toInit());
-                catchBody.compile(subtarget, false);
-                subtarget.endScope();
-
-                subtarget.scope.end();
+                var catchVar = target.scope.defineCatch(captureName);
+                target.add(Instruction.loadError()).setLocation(catchBody.loc());
+                target.add(catchVar.index().toSet(false)).setLocation(catchBody.loc());
+                catchBody.compile(target, false);
+				target.scope.undefineCatch();
             }
             else catchBody.compile(target, false);
 

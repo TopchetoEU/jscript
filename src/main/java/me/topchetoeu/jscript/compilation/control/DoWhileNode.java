@@ -16,6 +16,10 @@ public class DoWhileNode extends Node {
     public final Node condition, body;
     public final String label;
 
+	@Override public void compileFunctions(CompileResult target) {
+		condition.compileFunctions(target);
+		body.compileFunctions(target);
+	}
     @Override public void resolve(CompileResult target) {
         body.resolve(target);
     }
@@ -27,12 +31,13 @@ public class DoWhileNode extends Node {
 
         LabelContext.pushLoop(target.env, loc(), label, end, start);
         body.compile(target, false, BreakpointType.STEP_OVER);
-        LabelContext.popLoop(target.env, label);
 
         mid.set(target.size());
         condition.compile(target, true, BreakpointType.STEP_OVER);
         int endI = target.size();
         end.set(endI + 1);
+
+        LabelContext.popLoop(target.env, label);
 
         target.add(Instruction.jmpIf(start - endI));
     }
@@ -57,6 +62,7 @@ public class DoWhileNode extends Node {
         var bodyRes = JavaScript.parseStatement(src, i + n);
         if (!bodyRes.isSuccess()) return bodyRes.chainError(src.loc(i + n), "Expected a do-while body.");
         n += bodyRes.n;
+        n += Parsing.skipEmpty(src, i + n);
 
         if (!Parsing.isIdentifier(src, i + n, "while")) return ParseRes.failed();
         n += 5;

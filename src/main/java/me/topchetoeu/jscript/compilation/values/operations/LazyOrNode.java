@@ -13,6 +13,11 @@ import me.topchetoeu.jscript.compilation.Node;
 public class LazyOrNode extends Node {
     public final Node first, second;
 
+	@Override public void compileFunctions(CompileResult target) {
+		first.compileFunctions(target);
+		second.compileFunctions(target);
+	}
+
     @Override public void compile(CompileResult target, boolean pollute) {
         first.compile(target, true);
         if (pollute) target.add(Instruction.dup());
