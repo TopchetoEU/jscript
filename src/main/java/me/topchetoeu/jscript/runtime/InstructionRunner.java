@@ -43,7 +43,7 @@ public class InstructionRunner {
         var callArgs = frame.take(instr.get(0));
         var funcObj = frame.pop();
 
-        frame.push(funcObj.construct(env, instr.get(1), callArgs));
+        frame.push(funcObj.construct(env, callArgs));
 
         frame.codePtr++;
         return null;
