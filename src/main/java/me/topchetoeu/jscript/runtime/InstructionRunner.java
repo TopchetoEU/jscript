@@ -469,7 +469,9 @@ public class InstructionRunner {
     }
 
     private static Value execLoadArg(Environment env, Instruction instr, Frame frame) {
-		frame.push(frame.args[(int)instr.get(0)]);
+		int i = instr.get(0);
+		if (i >= frame.args.length) frame.push(Value.UNDEFINED);
+		else frame.push(frame.args[i]);
         frame.codePtr++;
         return null;
     }
