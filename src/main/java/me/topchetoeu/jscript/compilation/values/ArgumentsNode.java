@@ -7,6 +7,9 @@ import me.topchetoeu.jscript.compilation.Node;
 
 
 public class ArgumentsNode extends Node {
+	@Override public void compileFunctions(CompileResult target) {
+	}
+
     @Override public void compile(CompileResult target, boolean pollute) {
         if (pollute) target.add(Instruction.loadArgs());
     }

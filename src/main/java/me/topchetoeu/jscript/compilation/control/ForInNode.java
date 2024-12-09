@@ -25,6 +25,10 @@ public class ForInNode extends Node {
         binding.resolve(target);
     }
 
+	@Override public void compileFunctions(CompileResult target) {
+		object.compileFunctions(target);
+		body.compileFunctions(target);
+	}
     @Override public void compile(CompileResult target, boolean pollute) {
         object.compile(target, true, BreakpointType.STEP_OVER);
         target.add(Instruction.keys(false, true));

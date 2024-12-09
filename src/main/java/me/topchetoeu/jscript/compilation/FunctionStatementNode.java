@@ -16,10 +16,12 @@ public class FunctionStatementNode extends FunctionNode {
     @Override public void resolve(CompileResult target) {
         target.scope.define(new Variable(name, false));
     }
+	@Override public void compileFunctions(CompileResult target) {
+		target.addChild(this, compileBody(target, name()));
+	}
 
     @Override public void compile(CompileResult target, boolean pollute, String name, BreakpointType bp) {
-        var id = target.addChild(compileBody(target, name, null));
-        target.add(Instruction.loadFunc(id, name, captures(id, target))).setLocation(loc());;
+        target.add(Instruction.loadFunc(target.childrenIndices.get(this), name(name), captures(target))).setLocation(loc());
         target.add(VariableNode.toSet(target, end, this.name, false, true));
         if (pollute) target.add(Instruction.pushUndefined());
     }

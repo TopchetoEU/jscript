@@ -13,6 +13,7 @@ import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.common.environment.Key;
 import me.topchetoeu.jscript.common.json.JSON;
 import me.topchetoeu.jscript.common.parsing.Filename;
+import me.topchetoeu.jscript.compilation.CompileResult;
 import me.topchetoeu.jscript.runtime.debug.DebugContext;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
 import me.topchetoeu.jscript.runtime.values.Member.FieldMember;
@@ -278,7 +279,7 @@ public class SimpleRepl {
         int[] i = new int[1];
 
         res.defineOwnMember(env, "setGlobalPrototypes", new NativeFunction(args -> {
-            var obj = (ObjectValue)args.get(1);
+            var obj = (ObjectValue)args.get(0);
 
 			setProto(args.env, env, Value.OBJECT_PROTO, obj, "object");
 			setProto(args.env, env, Value.FUNCTION_PROTO, obj, "function");
@@ -313,6 +314,7 @@ public class SimpleRepl {
         environment.add(EventLoop.KEY, engine);
         environment.add(DebugContext.KEY, new DebugContext());
         environment.add(Compiler.KEY, Compiler.DEFAULT);
+        // environment.add(CompileResult.DEBUG_LOG);
 
         var glob = Value.global(environment);
 

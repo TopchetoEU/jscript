@@ -16,6 +16,10 @@ public class DoWhileNode extends Node {
     public final Node condition, body;
     public final String label;
 
+	@Override public void compileFunctions(CompileResult target) {
+		condition.compileFunctions(target);
+		body.compileFunctions(target);
+	}
     @Override public void resolve(CompileResult target) {
         body.resolve(target);
     }

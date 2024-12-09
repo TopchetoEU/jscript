@@ -20,6 +20,10 @@ import me.topchetoeu.jscript.compilation.values.constants.StringNode;
 public class ObjectNode extends Node {
     public final List<Member> members;
 
+	@Override public void compileFunctions(CompileResult target) {
+		for (var member : members) member.compileFunctions(target);
+	}
+
     @Override public void compile(CompileResult target, boolean pollute) {
         target.add(Instruction.loadObj());
         for (var el : members) el.compile(target, true);

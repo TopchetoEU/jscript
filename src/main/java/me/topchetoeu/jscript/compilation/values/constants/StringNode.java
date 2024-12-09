@@ -11,6 +11,9 @@ import me.topchetoeu.jscript.compilation.Node;
 public class StringNode extends Node {
     public final String value;
 
+	@Override public void compileFunctions(CompileResult target) {
+	}
+
     @Override public void compile(CompileResult target, boolean pollute) {
         if (pollute) target.add(Instruction.pushValue(value));
     }

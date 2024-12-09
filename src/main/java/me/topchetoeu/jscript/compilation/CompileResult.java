@@ -1,7 +1,10 @@
 package me.topchetoeu.jscript.compilation;
 
 import java.util.List;
+import java.util.Map;
+
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedList;
 
 import me.topchetoeu.jscript.common.FunctionBody;
@@ -17,18 +20,10 @@ import me.topchetoeu.jscript.compilation.scope.FunctionScope;
 public final class CompileResult {
 	public static final Key<Void> DEBUG_LOG = new Key<>();
 
-    public static final class ChildData {
-        public final int id;
-        public final CompileResult result;
-
-        public ChildData(int id, CompileResult result) {
-            this.result = result;
-            this.id = id;
-        }
-    }
-
     public final List<Instruction> instructions;
     public final List<CompileResult> children;
+	public final Map<FunctionNode, CompileResult> childrenMap = new HashMap<>();
+	public final Map<FunctionNode, Integer> childrenIndices = new HashMap<>();
     public final FunctionMapBuilder map;
     public final Environment env;
     public int length;
@@ -69,9 +64,11 @@ public final class CompileResult {
         setLocationAndDebug(instructions.size() - 1, loc, type);
     }
 
-    public int addChild(CompileResult res) {
+    public CompileResult addChild(FunctionNode node, CompileResult res) {
         this.children.add(res);
-        return this.children.size() - 1;
+		this.childrenMap.put(node, res);
+		this.childrenIndices.put(node, this.children.size() - 1);
+        return res;
     }
 
     public Instruction[] instructions() {

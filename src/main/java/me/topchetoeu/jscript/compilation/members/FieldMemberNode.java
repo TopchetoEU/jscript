@@ -17,6 +17,11 @@ public class FieldMemberNode implements Member {
 
     @Override public Location loc() { return loc; }
 
+	@Override public void compileFunctions(CompileResult target) {
+		key.compileFunctions(target);
+		value.compileFunctions(target);
+	}
+
     @Override public void compile(CompileResult target, boolean pollute) {
         if (pollute) target.add(Instruction.dup());
         key.compile(target, true);

@@ -20,6 +20,10 @@ public class WhileNode extends Node {
     @Override public void resolve(CompileResult target) {
         body.resolve(target);
     }
+	@Override public void compileFunctions(CompileResult target) {
+		condition.compileFunctions(target);
+		body.compileFunctions(target);
+	}
     @Override public void compile(CompileResult target, boolean pollute) {
         int start = target.size();
         condition.compile(target, true);

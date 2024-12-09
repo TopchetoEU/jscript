@@ -12,6 +12,10 @@ import me.topchetoeu.jscript.compilation.patterns.ChangeTarget;
 import me.topchetoeu.jscript.compilation.values.constants.NumberNode;
 
 public class PostfixNode extends ChangeNode {
+	@Override public void compileFunctions(CompileResult target) {
+		((Node)changable).compileFunctions(target);
+	}
+
     @Override public void compile(CompileResult target, boolean pollute) {
         super.compile(target, pollute);
 

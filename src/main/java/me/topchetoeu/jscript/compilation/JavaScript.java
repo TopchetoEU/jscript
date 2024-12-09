@@ -32,7 +32,6 @@ import me.topchetoeu.jscript.compilation.values.ArrayNode;
 import me.topchetoeu.jscript.compilation.values.GlobalThisNode;
 import me.topchetoeu.jscript.compilation.values.ObjectNode;
 import me.topchetoeu.jscript.compilation.values.RegexNode;
-import me.topchetoeu.jscript.compilation.values.SuperNode;
 import me.topchetoeu.jscript.compilation.values.ThisNode;
 import me.topchetoeu.jscript.compilation.values.VariableNode;
 import me.topchetoeu.jscript.compilation.values.constants.BoolNode;
@@ -114,7 +113,6 @@ public final class JavaScript {
         if (id.result.equals("false")) return ParseRes.res(new BoolNode(loc, false), n);
         if (id.result.equals("null")) return ParseRes.res(new NullNode(loc), n);
         if (id.result.equals("this")) return ParseRes.res(new ThisNode(loc), n);
-        if (id.result.equals("super")) return ParseRes.res(new SuperNode(loc), n);
         if (id.result.equals("arguments")) return ParseRes.res(new ArgumentsNode(loc), n);
         if (id.result.equals("globalThis")) return ParseRes.res(new GlobalThisNode(loc), n);
 
@@ -260,7 +258,7 @@ public final class JavaScript {
         env.add(COMPILE_ROOT, env);
 
         var func = new FunctionValueNode(null, null, Arrays.asList(), new CompoundNode(null, statements), null);
-        var res = func.compileBody(env, new FunctionScope(true), true, null, null);
+        var res = func.compileBody(env, new FunctionScope(true), true, null);
         return res;
     }
 

@@ -13,6 +13,10 @@ public class VariableAssignNode extends Node {
     public final Node value;
     public final Operation operation;
 
+	@Override public void compileFunctions(CompileResult target) {
+		value.compileFunctions(target);
+	}
+
     @Override public void compile(CompileResult target, boolean pollute) {
         if (operation != null) {
             target.add(VariableNode.toGet(target, loc(), name));

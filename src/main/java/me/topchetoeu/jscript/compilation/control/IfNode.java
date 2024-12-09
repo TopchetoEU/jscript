@@ -20,7 +20,11 @@ public class IfNode extends Node {
         body.resolve(target);
         if (elseBody != null) elseBody.resolve(target);
     }
-
+	@Override public void compileFunctions(CompileResult target) {
+		condition.compileFunctions(target);
+		body.compileFunctions(target);
+		if (elseBody != null) body.compileFunctions(target);
+	}
     @Override public void compile(CompileResult target, boolean pollute, BreakpointType breakpoint) {
         condition.compile(target, true, breakpoint);
 

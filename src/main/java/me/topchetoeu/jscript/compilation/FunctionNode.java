@@ -21,18 +21,21 @@ public abstract class FunctionNode extends Node {
 	public final String name(String fallback) {
         return this.name() != null ? this.name() : fallback;
 	}
-
-    protected final int[] captures(int id, CompileResult target) {
-        return target.children.get(id).scope.getCaptureIndices();
+    protected final int[] captures(CompileResult target) {
+        return target.childrenMap.get(this).scope.getCaptureIndices();
     }
 
     protected final Environment rootEnv(Environment env) {
         return env.get(JavaScript.COMPILE_ROOT);
     }
 
-    public final CompileResult compileBody(Environment env, FunctionScope scope, boolean lastReturn, String _name, String selfName) {
+    @Override public void resolve(CompileResult target) { }
+
+    public final CompileResult compileBody(Environment env, FunctionScope scope, boolean lastReturn, String selfName) {
         var target = new CompileResult(env, scope, params.size());
 		var i = 0;
+
+		body.resolve(target);
 
 		for (var param : params) {
 			var index = scope.define(param.name);
@@ -44,17 +47,17 @@ public abstract class FunctionNode extends Node {
 		// if (selfName != null && !scope.has(selfName, false)) {
 		//     var i = scope.defineSpecial(new Variable(selfName, true), end);
 
-		//     target.add(Instruction.loadCalled());
-		//     target.add(_i -> i.index().toInit());
+		//     t.add(Instruction.loadCalled());
+		//     t.add(_i -> i.index().toInit());
 		// }
 
-		body.resolve(target);
+		body.compileFunctions(target);
 		body.compile(target, lastReturn, BreakpointType.NONE);
 
 		return target;
-    }
-    public final CompileResult compileBody(CompileResult parent, String name, String selfName) {
-        return compileBody(rootEnv(parent.env).child(), new FunctionScope(parent.scope), false, name, selfName);
+	}
+    public final CompileResult compileBody(CompileResult parent, String selfName) {
+        return compileBody(rootEnv(parent.env).child(), new FunctionScope(parent.scope), false, selfName);
     }
 
     public abstract void compile(CompileResult target, boolean pollute, String name, BreakpointType bp);

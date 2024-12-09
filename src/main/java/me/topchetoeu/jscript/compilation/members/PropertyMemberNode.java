@@ -32,12 +32,18 @@ public final class PropertyMemberNode extends FunctionNode implements Member {
     public boolean isGetter() { return argument == null; }
     public boolean isSetter() { return argument != null; }
 
+	@Override public void compileFunctions(CompileResult target) {
+		key.compileFunctions(target);
+		target.addChild(this, compileBody(target, null));
+	}
+
     @Override public void compile(CompileResult target, boolean pollute, String name, BreakpointType bp) {
         if (pollute) target.add(Instruction.dup());
         key.compile(target, true);
 
-        var id = target.addChild(compileBody(target, name, null));
-        target.add(Instruction.loadFunc(id, name(), captures(id, target)));
+        target.add(Instruction.loadFunc(target.childrenIndices.get(this), name(name), captures(target))).setLocation(loc());
+        target.add(VariableNode.toSet(target, end, name(name), false, true));
+        target.add(Instruction.defProp(isSetter()));
     }
 
 

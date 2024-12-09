@@ -17,6 +17,11 @@ public class CallNode extends Node {
     public final Node[] args;
     public final boolean isNew;
 
+	@Override public void compileFunctions(CompileResult target) {
+		func.compileFunctions(target);
+		for (var arg : args) arg.compileFunctions(target);
+	}
+
     @Override public void compile(CompileResult target, boolean pollute, BreakpointType type) {
 		if (!isNew && func instanceof IndexNode indexNode) {
             var obj = indexNode.object;

@@ -13,6 +13,9 @@ import me.topchetoeu.jscript.compilation.patterns.ChangeTarget;
 public class VariableNode extends Node implements ChangeTarget {
     public final String name;
 
+	@Override public void compileFunctions(CompileResult target) {
+	}
+
     public String assignName() { return name; }
 
     @Override public void beforeChange(CompileResult target) {

@@ -23,29 +23,33 @@ public class ForNode extends Node {
         declaration.resolve(target);
         body.resolve(target);
     }
+	@Override public void compileFunctions(CompileResult target) {
+		declaration.compileFunctions(target);
+		assignment.compileFunctions(target);
+		condition.compileFunctions(target);
+		body.compileFunctions(target);
+	}
     @Override public void compile(CompileResult target, boolean pollute) {
-        var subtarget = target.subtarget();
+        declaration.compile(target, false, BreakpointType.STEP_OVER);
 
-        declaration.compile(subtarget, false, BreakpointType.STEP_OVER);
-
-        int start = subtarget.size();
-        CompoundNode.compileMultiEntry(condition, subtarget, true, BreakpointType.STEP_OVER);
-        int mid = subtarget.temp();
+        int start = target.size();
+        CompoundNode.compileMultiEntry(condition, target, true, BreakpointType.STEP_OVER);
+        int mid = target.temp();
 
         var end = new DeferredIntSupplier();
 
-        LabelContext.pushLoop(subtarget.env, loc(), label, end, start);
-        CompoundNode.compileMultiEntry(body, subtarget, false, BreakpointType.STEP_OVER);
+        LabelContext.pushLoop(target.env, loc(), label, end, start);
+        CompoundNode.compileMultiEntry(body, target, false, BreakpointType.STEP_OVER);
 
-        CompoundNode.compileMultiEntry(assignment, subtarget, false, BreakpointType.STEP_OVER);
-        int endI = subtarget.size();
+        CompoundNode.compileMultiEntry(assignment, target, false, BreakpointType.STEP_OVER);
+        int endI = target.size();
 
         end.set(endI);
-        LabelContext.popLoop(subtarget.env, label);
+        LabelContext.popLoop(target.env, label);
 
-        subtarget.add(Instruction.jmp(start - endI));
-        subtarget.set(mid, Instruction.jmpIfNot(endI - mid + 1));
-        if (pollute) subtarget.add(Instruction.pushUndefined());
+        target.add(Instruction.jmp(start - endI));
+        target.set(mid, Instruction.jmpIfNot(endI - mid + 1));
+        if (pollute) target.add(Instruction.pushUndefined());
     }
 
     public ForNode(Location loc, String label, Node declaration, Node condition, Node assignment, Node body) {

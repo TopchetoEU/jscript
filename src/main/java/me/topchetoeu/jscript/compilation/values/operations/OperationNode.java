@@ -105,6 +105,10 @@ public class OperationNode extends Node {
     public final Node[] args;
     public final Operation operation;
 
+	@Override public void compileFunctions(CompileResult target) {
+		for (var arg : args) arg.compileFunctions(target);
+	}
+
     @Override public void compile(CompileResult target, boolean pollute) {
         for (var arg : args) {
             arg.compile(target, true);

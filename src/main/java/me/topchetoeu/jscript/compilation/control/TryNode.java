@@ -25,7 +25,11 @@ public class TryNode extends Node {
         if (catchBody != null) catchBody.resolve(target);
         if (finallyBody != null) finallyBody.resolve(target);
     }
-
+	@Override public void compileFunctions(CompileResult target) {
+		tryBody.compileFunctions(target);
+		if (catchBody != null) catchBody.compileFunctions(target);
+		if (finallyBody != null) finallyBody.compileFunctions(target);
+	}
     @Override public void compile(CompileResult target, boolean pollute, BreakpointType bpt) {
         int replace = target.temp();
         var endSuppl = new DeferredIntSupplier();

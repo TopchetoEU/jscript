@@ -23,6 +23,11 @@ public class VariableDeclareNode extends Node {
 			target.scope.define(entry.var.name);
 		}
     }
+	@Override public void compileFunctions(CompileResult target) {
+		for (var pair : values) {
+			if (pair.value != null) pair.value.compileFunctions(target);
+		}
+	}
     @Override public void compile(CompileResult target, boolean pollute) {
         for (var entry : values) {
             if (entry.value != null) {

@@ -17,6 +17,11 @@ public class ChangeNode extends Node {
     public final Node value;
     public final Operation op;
 
+	@Override public void compileFunctions(CompileResult target) {
+		((Node)changable).compileFunctions(target);
+		value.compileFunctions(target);
+	}
+
     @Override public void compile(CompileResult target, boolean pollute) {
         changable.beforeChange(target);
         value.compile(target, true);

@@ -36,7 +36,15 @@ public class SwitchNode extends Node {
     @Override public void resolve(CompileResult target) {
         for (var stm : body) stm.resolve(target);
     }
-
+	@Override public void compileFunctions(CompileResult target) {
+		value.compileFunctions(target);
+		for (var _case : cases) {
+			_case.value.compileFunctions(target);
+		}
+		for (var stm : body) {
+			stm.compileFunctions(target);
+		}
+	}
     @Override public void compile(CompileResult target, boolean pollute) {
         var caseToStatement = new HashMap<Integer, Integer>();
         var statementToIndex = new HashMap<Integer, Integer>();

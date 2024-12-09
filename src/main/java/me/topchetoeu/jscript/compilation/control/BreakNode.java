@@ -14,7 +14,10 @@ import me.topchetoeu.jscript.compilation.Node;
 public class BreakNode extends Node {
     public final String label;
 
-    @Override public void compile(CompileResult target, boolean pollute) {
+	@Override public void compileFunctions(CompileResult target) {
+	}
+
+	@Override public void compile(CompileResult target, boolean pollute) {
         if (!LabelContext.getBreak(target.env).jump(target)) {
             if (label != null) throw new SyntaxException(loc(), String.format("Undefined label '%s'", label));
             else throw new SyntaxException(loc(), "Illegal break statement");

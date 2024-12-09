@@ -11,11 +11,13 @@ import me.topchetoeu.jscript.compilation.Node;
 public class RegexNode extends Node {
     public final String pattern, flags;
 
+	@Override public void compileFunctions(CompileResult target) {
+	}
+
     @Override public void compile(CompileResult target, boolean pollute) {
         target.add(Instruction.loadRegex(pattern, flags));
         if (!pollute) target.add(Instruction.discard());
     }
-
 
     public static ParseRes<RegexNode> parse(Source src, int i) {
         var n = Parsing.skipEmpty(src, i);

@@ -17,6 +17,11 @@ public class IndexNode extends Node implements ChangeTarget {
     public final Node object;
     public final Node index;
 
+	@Override public void compileFunctions(CompileResult target) {
+		object.compileFunctions(target);
+		index.compileFunctions(target);
+	}
+
     @Override public void beforeAssign(CompileResult target) {
         object.compile(target, true);
         indexStorePushKey(target, index);

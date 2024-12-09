@@ -19,6 +19,9 @@ public class CompoundNode extends Node {
     @Override public void resolve(CompileResult target) {
         for (var stm : statements) stm.resolve(target);
     }
+	@Override public void compileFunctions(CompileResult target) {
+        for (var stm : statements) stm.compileFunctions(target);
+	}
 
     public void compile(CompileResult target, boolean pollute, boolean singleEntry, BreakpointType type) {
         List<Node> statements = new ArrayList<Node>();

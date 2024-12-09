@@ -1,20 +1,13 @@
-return;
 (function main() {
-	var __extends = (this && this.__extends) || (function () {
-		var extendStatics = function (d, b) {
-			extendStatics = Object.setPrototypeOf ||
-				({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-				function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
-			return extendStatics(d, b);
-		};
-		return function (d, b) {
-			if (typeof b !== "function" && b !== null)
-				throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
-			extendStatics(d, b);
-			function __() { this.constructor = d; }
-			d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-		};
-	})();
+	function extend(derived, base) {
+		if (base == null) {
+			object.setPrototype(derived.prototype, null);
+		}
+		else {
+			object.setPrototype(derived, base);
+			object.setPrototype(derived.prototype, base.prototype);
+		}
+	}
 	
 	var target = arguments[0];
 	var primordials = arguments[1];
@@ -68,9 +61,8 @@ return;
 		parse: function (val) { throw new Error("JSON parse not polyfillable"); },
 	}
 	
-	var setGlobalPrototypes = primordials.setGlobalPrototype;
+	var setGlobalPrototypes = primordials.setGlobalPrototypes;
 	var compile = primordials.compile;
-	var setIntrinsic = primordials.setIntrinsic;
 	var valueKey = symbol.makeSymbol("Primitive.value");
 	var undefined = void 0;
 	target.undefined = undefined;
@@ -88,26 +80,22 @@ return;
 		throw new TypeError(name + " requires that '" + arg + "' be a " + constr.name);
 	}
 	function wrapIndex(i, len) { }
-	var Symbol = /** @class */ (function () {
-		function Symbol(name) {
-			if (name === undefined) name = "";
-			return symbol.makeSymbol(name);
-		}
-		Symbol.prototype.toString = function () {
-			return "Symbol(" + unwrapThis(this, "symbol", Symbol, "Symbol.prototype.toString").description + ")";
-		};
-		Symbol.prototype.valueOf = function () {
-			return unwrapThis(this, "symbol", Symbol, "Symbol.prototype.valueOf");
-		};
-		Symbol.for = function (name) {
-			return symbol.getSymbol(name + "");
-		};
-		Symbol.keyFor = function (value) {
-			return symbol.getSymbolKey(unwrapThis(value, "symbol", Symbol, "Symbol.keyFor"));
-		};
-		return Symbol;
-	}());
-	;
+	function Symbol(name) {
+		if (name === undefined) name = "";
+		return symbol.makeSymbol(name);
+	}
+	Symbol.prototype.toString = function () {
+		return "Symbol(" + unwrapThis(this, "symbol", Symbol, "Symbol.prototype.toString").description + ")";
+	};
+	Symbol.prototype.valueOf = function () {
+		return unwrapThis(this, "symbol", Symbol, "Symbol.prototype.valueOf");
+	};
+	Symbol.for = function (name) {
+		return symbol.getSymbol(name + "");
+	};
+	Symbol.keyFor = function (value) {
+		return symbol.getSymbolKey(unwrapThis(value, "symbol", Symbol, "Symbol.keyFor"));
+	};
 	object.defineProperty(Symbol.prototype, "desc", false, true, function () {
 		return symbol.getSymbolDescriptor(unwrapThis(this, "symbol", Symbol, "Symbol.prototype.description"));
 	});
@@ -120,7 +108,8 @@ return;
 	object.defineField(Symbol, "split", false, false, false, Symbol("Symbol.split"));
 	object.defineField(Symbol, "toStringTag", false, false, false, Symbol("Symbol.toStringTag"));
 	func.setConstructable(Symbol, false);
-	
+	target.Symbol = Symbol;
+
 	function Number(value) {
 		if (func.invokeType(arguments, this) === "call") {
 			if (arguments.length === 0) return 0;
@@ -290,6 +279,7 @@ return;
 		return obj;
 	};
 	func.setCallable(Object, true);
+	extend(Object, null);
 	object.setPrototype(Object.prototype, null);
 	target.Object = Object;
 	
@@ -351,7 +341,7 @@ return;
 	}
 	func.setCallable(Array, true);
 	target.Array = Array;
-	
+
 	function Error(msg) {
 		if (msg === void 0) { msg = ""; }
 		if (func.invokeType(arguments, this) === "call")
@@ -369,8 +359,8 @@ return;
 	object.defineField(Error.prototype, "message", true, false, true, "");
 	func.setCallable(Error, true);
 	target.Error = Error;
-	
-	__extends(SyntaxError, Error);
+
+	extend(SyntaxError, Error);
 	function SyntaxError(msg) {
 		if (func.invokeType(arguments, this) === "call")
 			return new SyntaxError(msg);
@@ -379,8 +369,8 @@ return;
 	object.defineField(SyntaxError.prototype, "name", true, false, true, "SyntaxError");
 	func.setCallable(SyntaxError, true);
 	target.SyntaxError = SyntaxError;
-	
-	__extends(TypeError, Error);
+
+	extend(TypeError, Error);
 	function TypeError(msg) {
 		if (func.invokeType(arguments, this) === "call")
 			return new TypeError(msg);
@@ -389,8 +379,8 @@ return;
 	object.defineField(TypeError.prototype, "name", true, false, true, "TypeError");
 	func.setCallable(TypeError, true);
 	target.TypeError = TypeError;
-	
-	__extends(RangeError, Error);
+
+	extend(RangeError, Error);
 	function RangeError(msg) {
 		if (func.invokeType(arguments, this) === "call")
 			return new RangeError(msg);
@@ -399,9 +389,9 @@ return;
 	object.defineField(RangeError.prototype, "name", true, false, true, "RangeError");
 	func.setCallable(RangeError, true);
 	target.RangeError = RangeError;
-	
+
 	target.uint8 = primordials.uint8;
-	
+
 	setGlobalPrototypes({
 		string: String.prototype,
 		number: Number.prototype,
