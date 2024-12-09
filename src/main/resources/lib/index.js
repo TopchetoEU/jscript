@@ -1,4 +1,8 @@
 (function main() {
+	var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+		function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+	};
+
 	function extend(derived, base) {
 		if (base == null) {
 			object.setPrototype(derived.prototype, null);
@@ -59,7 +63,9 @@
 	var json = primordials.json || {
 		stringify: function (val) { throw new Error("JSON stringify not polyfillable"); },
 		parse: function (val) { throw new Error("JSON parse not polyfillable"); },
-	}
+	};
+	var map = primordials.map;
+	var regex = primordials.regex;
 	
 	var setGlobalPrototypes = primordials.setGlobalPrototypes;
 	var compile = primordials.compile;
@@ -192,6 +198,27 @@
 	String.prototype.valueOf = function () {
 		return unwrapThis(this, "string", String, "String.prototype.valueOf");
 	};
+	String.prototype[Symbol.iterator] = function () {
+		var i = 0;
+		var arr = this;
+
+		var obj = {
+			next: function () {
+				if (arr == null) return { done: true, value: undefined };
+				if (i > arr.length) {
+					arr = undefined;
+					return { done: true, value: undefined };
+				}
+				else {
+					var val = arr[i++];
+					if (i >= arr.length) arr = undefined;
+					return { done: false, value: val };
+				}
+			}
+		};
+		obj[Symbol.iterator] = function () { return this; };
+		return obj;
+	}
 	String.fromCharCode = function () {
 		var res = [];
 		res[arguments.length] = 0;
@@ -339,6 +366,30 @@
 		// TODO: Implement spreading
 		else throw new Error("Spreading not implemented");
 	}
+	Array.prototype[Symbol.iterator] = function () {
+		var i = 0;
+		var arr = this;
+
+		var obj = {
+			next: function () {
+				if (arr == null) return { done: true, value: undefined };
+				if (i > arr.length) {
+					arr = undefined;
+					return { done: true, value: undefined };
+				}
+				else {
+					var val = arr[i++];
+					if (i >= arr.length) arr = undefined;
+					return { done: false, value: val };
+				}
+			}
+		};
+		obj[Symbol.iterator] = function () { return this; };
+		return obj;
+	}
+	Array.isArray = function (val) {
+		return val instanceof Array;
+	}
 	func.setCallable(Array, true);
 	target.Array = Array;
 
@@ -392,6 +443,88 @@
 
 	target.uint8 = primordials.uint8;
 
+	var mapKey = Symbol("Map.impl");
+
+	function Map(iterable) {
+		var _map = this[mapKey] = new map();
+
+		if (iterable != null) {
+			var it = iterable[Symbol.iterator]();
+			for (var val = it.next(); !val.done; val = it.next()) {
+				_map.set(val.value[0], val.value[1]);
+			}
+		}
+	}
+
+	Map.prototype.get = function (key) {
+		return this[mapKey].get(key);
+	}
+	Map.prototype.has = function (key) {
+		return this[mapKey].has(key);
+	}
+	Map.prototype.set = function (key, val) {
+		return this[mapKey].set(key, val);
+	}
+	Map.prototype.delete = function (key, val) {
+		return this[mapKey].delete(key, val);
+	}
+	Map.prototype.keys = function (key, val) {
+		return this[mapKey].keys(key, val);
+	}
+	Map.prototype.values = function (key, val) {
+		var res = this[mapKey].keys(key, val);
+		for (var i = 0; i < res.length; i++) res[i] = this[mapKey].get(res[i]);
+		return res;
+	}
+	Map.prototype.entries = function (key, val) {
+		var res = this[mapKey].keys(key, val);
+		for (var i = 0; i < res.length; i++) res[i] = [res[i], this[mapKey].get(res[i])];
+		return res;
+	}
+
+	func.setCallable(Map, false);
+	target.Map = Map;
+
+	var regexKey = Symbol("RegExp.impl");
+
+	function RegExp(source, flags) {
+		var _regex = this[regexKey] = new regex();
+
+		source = this.source = String("source" in source ? source.source : source);
+		flags = String(flags);
+
+		var indices = false, global = false, ignoreCase = false, multiline = false, dotall = false, unicode = false, unicodeSets = false, sticky = false;
+
+		for (var i = 0; i < flags.length; i++) {
+			switch (flags[i]) {
+				case "d": indices = true; break;
+				case "g": global = true; break;
+				case "i": ignoreCase = true; break;
+				case "m": multiline = true; break;
+				case "s": dotall = true; break;
+				case "u": unicode = true; break;
+				case "v": unicodeSets = true; break;
+				case "y": sticky = true; break;
+			}
+		}
+
+		flags = "";
+		if (indices) flags += "d";
+		if (global) flags += "g";
+		if (ignoreCase) flags += "i";
+		if (multiline) flags += "m";
+		if (dotall) flags += "s";
+		if (unicode) flags += "u";
+		if (unicodeSets) flags += "v";
+		if (sticky) flags += "y";
+		this.flags = flags;
+
+
+	}
+
+	target.RegExp = RegExp;
+
+
 	setGlobalPrototypes({
 		string: String.prototype,
 		number: Number.prototype,
@@ -404,5 +537,6 @@
 		syntax: SyntaxError.prototype,
 		range: RangeError.prototype,
 		type: TypeError.prototype,
+		regex: RegExp,
 	});
 })(arguments[0], arguments[1]);

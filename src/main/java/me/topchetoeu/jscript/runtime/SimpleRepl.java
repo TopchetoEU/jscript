@@ -3,8 +3,11 @@ package me.topchetoeu.jscript.runtime;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
+import java.util.regex.Pattern;
 
 import me.topchetoeu.jscript.common.Metadata;
 import me.topchetoeu.jscript.common.Reading;
@@ -26,237 +29,328 @@ import me.topchetoeu.jscript.runtime.values.objects.ObjectValue;
 import me.topchetoeu.jscript.runtime.values.primitives.BoolValue;
 import me.topchetoeu.jscript.runtime.values.primitives.StringValue;
 import me.topchetoeu.jscript.runtime.values.primitives.SymbolValue;
+import me.topchetoeu.jscript.runtime.values.primitives.UserValue;
 import me.topchetoeu.jscript.runtime.values.primitives.VoidValue;
 import me.topchetoeu.jscript.runtime.values.primitives.numbers.NumberValue;
 
 public class SimpleRepl {
-    static Thread engineTask;
-    static Engine engine = new Engine();
-    static Environment environment = Environment.empty();
+	static Thread engineTask;
+	static Engine engine = new Engine();
+	static Environment environment = Environment.empty();
 
-    static int j = 0;
-    static String[] args;
+	static int j = 0;
+	static String[] args;
 
-    private static void reader() {
-        try {
-            try {
-                try { initGlobals(); } catch (ExecutionException e) { throw e.getCause(); }
-            }
-            catch (EngineException | SyntaxException e) { System.err.println(Value.errorToReadable(environment, e, null)); }
+	private static void reader() {
+		try {
+			try {
+				try { initGlobals(); } catch (ExecutionException e) { throw e.getCause(); }
+			}
+			catch (EngineException | SyntaxException e) { System.err.println(Value.errorToReadable(environment, e, null)); }
 
-            for (var arg : args) {
-                try {
-                    var file = new File(arg);
-                    var raw = Reading.streamToString(new FileInputStream(file));
+			System.out.println(String.format("Running %s v%s by %s", Metadata.name(), Metadata.version(), Metadata.author()));
 
-                    try {
-                        var res = engine.pushMsg(
-                            false, environment,
-                            Filename.fromFile(file), raw, null
-                        ).get();
+			for (var arg : args) {
+				try {
+					var file = new File(arg);
+					var raw = Reading.streamToString(new FileInputStream(file));
 
-                        System.err.println(res.toReadable(environment));
-                    }
-                    catch (ExecutionException e) { throw e.getCause(); }
-                }
-                catch (EngineException | SyntaxException e) { System.err.println(Value.errorToReadable(environment, e, null)); }
-            }
+					try {
+						var res = engine.pushMsg(
+							false, environment,
+							Filename.fromFile(file), raw, null
+						).get();
 
-            for (var i = 0; ; i++) {
-                try {
-                    var raw = Reading.readline();
+						System.err.println(res.toReadable(environment));
+					}
+					catch (ExecutionException e) { throw e.getCause(); }
+				}
+				catch (EngineException | SyntaxException e) { System.err.println(Value.errorToReadable(environment, e, null)); }
+			}
 
-                    if (raw == null) break;
+			for (var i = 0; ; i++) {
+				try {
+					var raw = Reading.readline();
 
-                    try {
-                        var res = engine.pushMsg(
-                            false, environment,
-                            new Filename("jscript", "repl/" + i + ".js"), raw,
-                            Value.UNDEFINED
-                        ).get();
-                        System.err.println(res.toReadable(environment));
-                    }
-                    catch (ExecutionException e) { throw e.getCause(); }
-                }
-                catch (EngineException | SyntaxException e) { System.err.println(Value.errorToReadable(environment, e, null)); }
-            }
-        }
-        catch (IOException e) {
-            System.out.println(e.toString());
-            engine.thread().interrupt();
-        }
-        catch (CancellationException | InterruptedException e) { return; }
-        catch (Throwable ex) {
-            System.out.println("Internal error ocurred:");
-            ex.printStackTrace();
-        }
-    }
+					if (raw == null) break;
 
-    private static ObjectValue symbolPrimordials(Environment env) {
-        var res = new ObjectValue();
-        res.setPrototype(null, null);
+					try {
+						var res = engine.pushMsg(
+							false, environment,
+							new Filename("jscript", "repl/" + i + ".js"), raw,
+							Value.UNDEFINED
+						).get();
+						System.err.println(res.toReadable(environment));
+					}
+					catch (ExecutionException e) { throw e.getCause(); }
+				}
+				catch (EngineException | SyntaxException e) { System.err.println(Value.errorToReadable(environment, e, null)); }
+			}
+		}
+		catch (IOException e) {
+			System.out.println(e.toString());
+			engine.thread().interrupt();
+		}
+		catch (CancellationException | InterruptedException e) { return; }
+		catch (Throwable ex) {
+			System.out.println("Internal error ocurred:");
+			ex.printStackTrace();
+		}
+	}
 
-        res.defineOwnMember(env, "makeSymbol", new NativeFunction(args -> new SymbolValue(args.get(0).toString(args.env))));
-        res.defineOwnMember(env, "getSymbol", new NativeFunction(args -> SymbolValue.get(args.get(0).toString(args.env))));
-        res.defineOwnMember(env, "getSymbolKey", new NativeFunction(args -> ((SymbolValue)args.get(0)).key()));
-        res.defineOwnMember(env, "getSymbolDescriptor", new NativeFunction(args -> StringValue.of(((SymbolValue)args.get(0)).value)));
+	@SuppressWarnings("unchecked")
+	private static ObjectValue mapPrimordials(Environment env) {
+		var res = new ObjectValue();
+		res.setPrototype(null, null);
 
-        return res;
-    }
+		var prototype = new ObjectValue[1];
+		NativeFunction mapConstr = new NativeFunction(args -> {
+			return UserValue.of(new LinkedHashMap<>(), prototype[0]);
+		});
+		mapConstr.prototype.defineOwnMember(env, "get", new NativeFunction(getArgs -> {
+			var map = getArgs.self(LinkedHashMap.class);
+			var key = getArgs.get(0);
+			var val = map.get(key);
+			return val == null ? Value.UNDEFINED : (Value)val;
+		}));
+		mapConstr.prototype.defineOwnMember(env, "set", new NativeFunction(getArgs -> {
+			var map = getArgs.self(LinkedHashMap.class);
+			var key = getArgs.get(0);
+			var val = getArgs.get(1);
+			map.put(key, val);
 
-    private static ObjectValue numberPrimordials(Environment env) {
-        var res = new ObjectValue();
-        res.setPrototype(null, null);
+			return Value.UNDEFINED;
+		}));
+		mapConstr.prototype.defineOwnMember(env, "has", new NativeFunction(getArgs -> {
+			var map = getArgs.self(LinkedHashMap.class);
+			var key = getArgs.get(0);
+			return BoolValue.of(map.containsKey(key));
+		}));
+		mapConstr.prototype.defineOwnMember(env, "delete", new NativeFunction(getArgs -> {
+			var map = getArgs.self(LinkedHashMap.class);
+			var key = getArgs.get(0);
+			map.remove(key);
+			return Value.UNDEFINED;
+		}));
+		mapConstr.prototype.defineOwnMember(env, "keys", new NativeFunction(getArgs -> {
+			var map = getArgs.self(LinkedHashMap.class);
+			return ArrayValue.of(map.keySet());
+		}));
+		prototype[0] = (ObjectValue)mapConstr.prototype;
 
-        res.defineOwnMember(env, "parseInt", new NativeFunction(args -> {
-            var nradix = args.get(1).toNumber(env);
-            var radix = nradix.isInt() ? nradix.getInt() : 10;
+		return mapConstr;
+	}
 
-            if (radix != 10 && args.get(0) instanceof NumberValue num) {
-                if (num.isInt()) return num;
-                else return NumberValue.of(num.getDouble() - num.getDouble() % 1);
-            }
-            else return NumberValue.parseInt(args.get(0).toString(), radix, false);
-        }));
-        res.defineOwnMember(env, "parseFloat", new NativeFunction(args -> {
-            if (args.get(0) instanceof NumberValue) {
-                return args.get(0);
-            }
-            else return NumberValue.parseFloat(args.get(0).toString(), false);
-        }));
-        res.defineOwnMember(env, "isNaN", new NativeFunction(args -> BoolValue.of(args.get(0).isNaN())));
-        res.defineOwnMember(env, "NaN", NumberValue.NAN);
-        res.defineOwnMember(env, "Infinity", NumberValue.of(Double.POSITIVE_INFINITY));
+	private static ObjectValue regexPrimordials(Environment env) {
+		var res = new ObjectValue();
+		res.setPrototype(null, null);
 
-        return res;
-    }
+		var prototype = new ObjectValue[1];
+		NativeFunction mapConstr = new NativeFunction(args -> {
+			var pattern = Pattern.compile(args.get(0).toString(args.env));
+			return UserValue.of(pattern, prototype[0]);
+		});
+		mapConstr.prototype.defineOwnMember(env, "exec", new NativeFunction(args -> {
+			var pattern = args.self(Pattern.class);
+			var target = args.get(0).toString(args.env);
+			var offset = args.get(1).toNumber(args.env).getInt();
+			var index = args.get(2).toBoolean();
 
-    private static ObjectValue stringPrimordials(Environment env) {
-        var res = new ObjectValue();
-        res.setPrototype(null, null);
+			var matcher = pattern.matcher(target).region(offset, target.length());
 
-        res.defineOwnMember(env, "stringBuild", new NativeFunction(args -> {
-            var parts = ((ArrayValue)args.get(0)).toArray();
-            var sb = new StringBuilder();
+			var obj = new ArrayValue();
+			for (var i = 0; i < matcher.groupCount(); i++) {
+				obj.set(args.env, i, StringValue.of(matcher.group(i)));
+			}
 
-            for (var i = 0; i < parts.length; i++) {
-                sb.append(((StringValue)parts[i]).value);
-            }
+			obj.defineOwnMember(args.env, "index", NumberValue.of(matcher.start()));
+			obj.defineOwnMember(args.env, "input", StringValue.of(target));
+			if (index) {
+				var indices = new ArrayValue();
+				indices.setPrototype(args.env, null);
+				for (var i = 0; i < matcher.groupCount(); i++) {
+					obj.set(args.env, i, ArrayValue.of(Arrays.asList(
+						NumberValue.of(matcher.start(i)),
+						NumberValue.of(matcher.end(i))
+					)));
+				}
 
-            return StringValue.of(sb.toString());
-        }));
+			}
 
-        res.defineOwnMember(env, "fromCharCode", new NativeFunction(args -> {
-            var parts = ((ArrayValue)args.get(0)).toArray();
-            var sb = new StringBuilder();
 
-            for (var i = 0; i < parts.length; i++) {
-                sb.append(((StringValue)parts[i]).value);
-            }
+			return Value.UNDEFINED;
+			// return val == null ? Value.UNDEFINED : (Value)val;
+		}));
+		prototype[0] = (ObjectValue)mapConstr.prototype;
 
-            return StringValue.of(sb.toString());
-        }));
+		return mapConstr;
+	}
 
-        return res;
-    }
+	private static ObjectValue symbolPrimordials(Environment env) {
+		var res = new ObjectValue();
+		res.setPrototype(null, null);
 
-    private static ObjectValue objectPrimordials(Environment env) {
-        var res = new ObjectValue();
-        res.setPrototype(null, null);
+		res.defineOwnMember(env, "makeSymbol", new NativeFunction(args -> new SymbolValue(args.get(0).toString(args.env))));
+		res.defineOwnMember(env, "getSymbol", new NativeFunction(args -> SymbolValue.get(args.get(0).toString(args.env))));
+		res.defineOwnMember(env, "getSymbolKey", new NativeFunction(args -> ((SymbolValue)args.get(0)).key()));
+		res.defineOwnMember(env, "getSymbolDescriptor", new NativeFunction(args -> StringValue.of(((SymbolValue)args.get(0)).value)));
 
-        res.defineOwnMember(env, "defineField", new NativeFunction(args -> {
-            var obj = (ObjectValue)args.get(0);
-            var key = args.get(1);
-            var writable = args.get(2).toBoolean();
-            var enumerable = args.get(3).toBoolean();
-            var configurable = args.get(4).toBoolean();
-            var value = args.get(5);
+		return res;
+	}
 
-            return BoolValue.of(obj.defineOwnMember(args.env, key, FieldMember.of(obj, value, configurable, enumerable, writable)));
-        }));
-        res.defineOwnMember(env, "defineProperty", new NativeFunction(args -> {
-            var obj = (ObjectValue)args.get(0);
-            var key = args.get(1);
-            var enumerable = args.get(2).toBoolean();
-            var configurable = args.get(3).toBoolean();
-            var getter = args.get(4) instanceof VoidValue ? null : (FunctionValue)args.get(4);
-            var setter = args.get(5) instanceof VoidValue ? null : (FunctionValue)args.get(5);
+	private static ObjectValue numberPrimordials(Environment env) {
+		var res = new ObjectValue();
+		res.setPrototype(null, null);
 
-            return BoolValue.of(obj.defineOwnMember(args.env, key, new PropertyMember(obj, getter, setter, configurable, enumerable)));
-        }));
-        res.defineOwnMember(env, "getPrototype", new NativeFunction(args -> {
-            return args.get(0).getPrototype(env);
-        }));
-        res.defineOwnMember(env, "setPrototype", new NativeFunction(args -> {
-            var proto = args.get(1) instanceof VoidValue ? null : (ObjectValue)args.get(1);
-            args.get(0).setPrototype(env, proto);
-            return args.get(0);
-        }));
-        res.defineOwnMember(env, "getOwnMembers", new NativeFunction(args -> {
-            var val = new ArrayValue();
+		res.defineOwnMember(env, "parseInt", new NativeFunction(args -> {
+			var nradix = args.get(1).toNumber(env);
+			var radix = nradix.isInt() ? nradix.getInt() : 10;
 
-            for (var key : args.get(0).getOwnMembers(env, args.get(1).toBoolean())) {
-                val.set(args.env, val.size(), StringValue.of(key));
-            }
+			if (radix != 10 && args.get(0) instanceof NumberValue num) {
+				if (num.isInt()) return num;
+				else return NumberValue.of(num.getDouble() - num.getDouble() % 1);
+			}
+			else return NumberValue.parseInt(args.get(0).toString(), radix, false);
+		}));
+		res.defineOwnMember(env, "parseFloat", new NativeFunction(args -> {
+			if (args.get(0) instanceof NumberValue) {
+				return args.get(0);
+			}
+			else return NumberValue.parseFloat(args.get(0).toString(), false);
+		}));
+		res.defineOwnMember(env, "isNaN", new NativeFunction(args -> BoolValue.of(args.get(0).isNaN())));
+		res.defineOwnMember(env, "NaN", NumberValue.NAN);
+		res.defineOwnMember(env, "Infinity", NumberValue.of(Double.POSITIVE_INFINITY));
 
-            return val;
-        }));
-        res.defineOwnMember(env, "getOwnSymbolMembers", new NativeFunction(args -> {
-            return ArrayValue.of(args.get(0).getOwnSymbolMembers(env, args.get(1).toBoolean()));
-        }));
+		return res;
+	}
 
-        return res;
-    }
+	private static ObjectValue stringPrimordials(Environment env) {
+		var res = new ObjectValue();
+		res.setPrototype(null, null);
 
-    private static ObjectValue functionPrimordials(Environment env) {
-        var res = new ObjectValue();
-        res.setPrototype(null, null);
+		res.defineOwnMember(env, "stringBuild", new NativeFunction(args -> {
+			var parts = ((ArrayValue)args.get(0)).toArray();
+			var sb = new StringBuilder();
 
-        res.defineOwnMember(env, "setCallable", new NativeFunction(args -> {
-            var func = (FunctionValue)args.get(0);
-            func.enableApply = args.get(1).toBoolean();
-            return Value.UNDEFINED;
-        }));
-        res.defineOwnMember(env, "setConstructable", new NativeFunction(args -> {
-            var func = (FunctionValue)args.get(0);
-            func.enableConstruct = args.get(1).toBoolean();
-            return Value.UNDEFINED;
-        }));
-        res.defineOwnMember(env, "invokeType", new NativeFunction(args -> {
-            if (((ArgumentsValue)args.get(0)).frame.isNew) return StringValue.of("new");
-            else return StringValue.of("call");
-        }));
+			for (var i = 0; i < parts.length; i++) {
+				sb.append(((StringValue)parts[i]).value);
+			}
 
-        res.defineOwnMember(env, "invoke", new NativeFunction(args -> {
-            var func = (FunctionValue)args.get(0);
-            var self = args.get(1);
-            var funcArgs = (ArrayValue)args.get(2);
+			return StringValue.of(sb.toString());
+		}));
 
-            return func.apply(env, self, funcArgs.toArray());
-        }));
-        res.defineOwnMember(env, "construct", new NativeFunction(args -> {
-            var func = (FunctionValue)args.get(0);
-            var funcArgs = (ArrayValue)args.get(1);
+		res.defineOwnMember(env, "fromCharCode", new NativeFunction(args -> {
+			var parts = ((ArrayValue)args.get(0)).toArray();
+			var sb = new StringBuilder();
 
-            return func.construct(env, funcArgs.toArray());
-        }));
+			for (var i = 0; i < parts.length; i++) {
+				sb.append(((StringValue)parts[i]).value);
+			}
 
-        return res;
-    }
+			return StringValue.of(sb.toString());
+		}));
 
-    private static ObjectValue jsonPrimordials(Environment env) {
-        var res = new ObjectValue();
-        res.setPrototype(null, null);
+		return res;
+	}
 
-        res.defineOwnMember(env, "stringify", new NativeFunction(args -> {
-            return StringValue.of(JSON.stringify(JSONConverter.fromJs(env, args.get(0))));
-        }));
-        res.defineOwnMember(env, "parse", new NativeFunction(args -> {
-            return JSONConverter.toJs(JSON.parse(null, args.get(0).toString(env)));
-        }));
+	private static ObjectValue objectPrimordials(Environment env) {
+		var res = new ObjectValue();
+		res.setPrototype(null, null);
 
-        return res;
-    }
+		res.defineOwnMember(env, "defineField", new NativeFunction(args -> {
+			var obj = (ObjectValue)args.get(0);
+			var key = args.get(1);
+			var writable = args.get(2).toBoolean();
+			var enumerable = args.get(3).toBoolean();
+			var configurable = args.get(4).toBoolean();
+			var value = args.get(5);
+
+			return BoolValue.of(obj.defineOwnMember(args.env, key, FieldMember.of(obj, value, configurable, enumerable, writable)));
+		}));
+		res.defineOwnMember(env, "defineProperty", new NativeFunction(args -> {
+			var obj = (ObjectValue)args.get(0);
+			var key = args.get(1);
+			var enumerable = args.get(2).toBoolean();
+			var configurable = args.get(3).toBoolean();
+			var getter = args.get(4) instanceof VoidValue ? null : (FunctionValue)args.get(4);
+			var setter = args.get(5) instanceof VoidValue ? null : (FunctionValue)args.get(5);
+
+			return BoolValue.of(obj.defineOwnMember(args.env, key, new PropertyMember(obj, getter, setter, configurable, enumerable)));
+		}));
+		res.defineOwnMember(env, "getPrototype", new NativeFunction(args -> {
+			return args.get(0).getPrototype(env);
+		}));
+		res.defineOwnMember(env, "setPrototype", new NativeFunction(args -> {
+			var proto = args.get(1) instanceof VoidValue ? null : (ObjectValue)args.get(1);
+			args.get(0).setPrototype(env, proto);
+			return args.get(0);
+		}));
+		res.defineOwnMember(env, "getOwnMembers", new NativeFunction(args -> {
+			var val = new ArrayValue();
+
+			for (var key : args.get(0).getOwnMembers(env, args.get(1).toBoolean())) {
+				val.set(args.env, val.size(), StringValue.of(key));
+			}
+
+			return val;
+		}));
+		res.defineOwnMember(env, "getOwnSymbolMembers", new NativeFunction(args -> {
+			return ArrayValue.of(args.get(0).getOwnSymbolMembers(env, args.get(1).toBoolean()));
+		}));
+
+		return res;
+	}
+
+	private static ObjectValue functionPrimordials(Environment env) {
+		var res = new ObjectValue();
+		res.setPrototype(null, null);
+
+		res.defineOwnMember(env, "setCallable", new NativeFunction(args -> {
+			var func = (FunctionValue)args.get(0);
+			func.enableApply = args.get(1).toBoolean();
+			return Value.UNDEFINED;
+		}));
+		res.defineOwnMember(env, "setConstructable", new NativeFunction(args -> {
+			var func = (FunctionValue)args.get(0);
+			func.enableConstruct = args.get(1).toBoolean();
+			return Value.UNDEFINED;
+		}));
+		res.defineOwnMember(env, "invokeType", new NativeFunction(args -> {
+			if (((ArgumentsValue)args.get(0)).frame.isNew) return StringValue.of("new");
+			else return StringValue.of("call");
+		}));
+
+		res.defineOwnMember(env, "invoke", new NativeFunction(args -> {
+			var func = (FunctionValue)args.get(0);
+			var self = args.get(1);
+			var funcArgs = (ArrayValue)args.get(2);
+
+			return func.apply(env, self, funcArgs.toArray());
+		}));
+		res.defineOwnMember(env, "construct", new NativeFunction(args -> {
+			var func = (FunctionValue)args.get(0);
+			var funcArgs = (ArrayValue)args.get(1);
+
+			return func.constructNoSelf(env, funcArgs.toArray());
+		}));
+
+		return res;
+	}
+
+	private static ObjectValue jsonPrimordials(Environment env) {
+		var res = new ObjectValue();
+		res.setPrototype(null, null);
+
+		res.defineOwnMember(env, "stringify", new NativeFunction(args -> {
+			return StringValue.of(JSON.stringify(JSONConverter.fromJs(env, args.get(0))));
+		}));
+		res.defineOwnMember(env, "parse", new NativeFunction(args -> {
+			return JSONConverter.toJs(JSON.parse(null, args.get(0).toString(env)));
+		}));
+
+		return res;
+	}
 
 	private static void setProto(Environment env, Environment target, Key<ObjectValue> key, ObjectValue repo, String name) {
 		var val = repo.getMember(env, name);
@@ -265,21 +359,23 @@ public class SimpleRepl {
 		}
 	}
 
-    private static ObjectValue primordials(Environment env) {
-        var res = new ObjectValue();
-        res.setPrototype(null, null);
+	private static ObjectValue primordials(Environment env) {
+		var res = new ObjectValue();
+		res.setPrototype(null, null);
 
-        res.defineOwnMember(env, "symbol", symbolPrimordials(env));
-        res.defineOwnMember(env, "number", numberPrimordials(env));
-        res.defineOwnMember(env, "string", stringPrimordials(env));
-        res.defineOwnMember(env, "object", objectPrimordials(env));
-        res.defineOwnMember(env, "function", functionPrimordials(env));
-        res.defineOwnMember(env, "json", jsonPrimordials(env));
+		res.defineOwnMember(env, "symbol", symbolPrimordials(env));
+		res.defineOwnMember(env, "number", numberPrimordials(env));
+		res.defineOwnMember(env, "string", stringPrimordials(env));
+		res.defineOwnMember(env, "object", objectPrimordials(env));
+		res.defineOwnMember(env, "function", functionPrimordials(env));
+		res.defineOwnMember(env, "json", jsonPrimordials(env));
+		res.defineOwnMember(env, "map", mapPrimordials(env));
+		res.defineOwnMember(env, "regex", regexPrimordials(env));
 
-        int[] i = new int[1];
+		int[] i = new int[1];
 
-        res.defineOwnMember(env, "setGlobalPrototypes", new NativeFunction(args -> {
-            var obj = (ObjectValue)args.get(0);
+		res.defineOwnMember(env, "setGlobalPrototypes", new NativeFunction(args -> {
+			var obj = (ObjectValue)args.get(0);
 
 			setProto(args.env, env, Value.OBJECT_PROTO, obj, "object");
 			setProto(args.env, env, Value.FUNCTION_PROTO, obj, "function");
@@ -292,86 +388,86 @@ public class SimpleRepl {
 			setProto(args.env, env, Value.SYNTAX_ERR_PROTO, obj, "syntax");
 			setProto(args.env, env, Value.TYPE_ERR_PROTO, obj, "type");
 			setProto(args.env, env, Value.RANGE_ERR_PROTO, obj, "range");
+			var val = obj.getMember(env, "regex");
+			if (val instanceof FunctionValue func) {
+				args.env.add(Value.REGEX_CONSTR, func);
+			}
+			return Value.UNDEFINED;
+		}));
+		res.defineOwnMember(env, "setIntrinsic", new NativeFunction(args -> {
+			var name = args.get(0).toString(env);
+			var val = args.get(1);
 
-            return Value.UNDEFINED;
-        }));
-        res.defineOwnMember(env, "setIntrinsic", new NativeFunction(args -> {
-            var name = args.get(0).toString(env);
-            var val = args.get(1);
+			Value.intrinsics(environment).put(name, val);
 
-            Value.intrinsics(environment).put(name, val);
+			return Value.UNDEFINED;
+		}));
+		res.defineOwnMember(env, "compile", new NativeFunction(args -> {
+			return Compiler.compileFunc(env, new Filename("jscript", "func" + i[0]++ + ".js"), args.get(0).toString(env));
+		}));
 
-            return Value.UNDEFINED;
-        }));
-        res.defineOwnMember(env, "compile", new NativeFunction(args -> {
-            return Compiler.compileFunc(env, new Filename("jscript", "func" + i[0]++ + ".js"), args.get(0).toString(env));
-        }));
+		return res;
+	}
 
-        return res;
-    }
+	private static void initEnv() {
+		environment.add(EventLoop.KEY, engine);
+		environment.add(DebugContext.KEY, new DebugContext());
+		environment.add(Compiler.KEY, Compiler.DEFAULT);
+		// environment.add(CompileResult.DEBUG_LOG);
 
-    private static void initEnv() {
-        environment.add(EventLoop.KEY, engine);
-        environment.add(DebugContext.KEY, new DebugContext());
-        environment.add(Compiler.KEY, Compiler.DEFAULT);
-        // environment.add(CompileResult.DEBUG_LOG);
+		var glob = Value.global(environment);
 
-        var glob = Value.global(environment);
+		glob.defineOwnMember(null, "exit", new NativeFunction("exit", args -> {
+			Thread.currentThread().interrupt();
+			throw new CancellationException();
+		}));
+		glob.defineOwnMember(null, "print", new NativeFunction("print", args -> {
+			for (var el : args.args) {
+				if (el instanceof StringValue) System.out.print(((StringValue)el).value);
+				else System.out.print(el.toReadable(args.env));
+			}
+			System.out.println();
 
-        glob.defineOwnMember(null, "exit", new NativeFunction("exit", args -> {
-            Thread.currentThread().interrupt();
-            throw new CancellationException();
-        }));
-        glob.defineOwnMember(null, "print", new NativeFunction("print", args -> {
-            for (var el : args.args) {
-                if (el instanceof StringValue) System.out.print(((StringValue)el).value);
-                else System.out.print(el.toReadable(args.env));
-            }
-            System.out.println();
+			return Value.UNDEFINED;
+		}));
+		glob.defineOwnMember(null, "measure", new NativeFunction("measure", args -> {
+			var start = System.nanoTime();
 
-            return Value.UNDEFINED;
-        }));
-        glob.defineOwnMember(null, "measure", new NativeFunction("measure", args -> {
-            var start = System.nanoTime();
+			((FunctionValue)args.get(0)).apply(args.env, Value.UNDEFINED);
 
-            ((FunctionValue)args.get(0)).apply(args.env, Value.UNDEFINED);
+			System.out.println(String.format("Finished in %sns", System.nanoTime() - start));
 
-            System.out.println(String.format("Finished in %sns", System.nanoTime() - start));
+			return Value.UNDEFINED;
+		}));
+	}
+	private static void initEngine() {
+		engineTask = engine.start();
+	}
+	private static void initGlobals() throws InterruptedException, ExecutionException {
+		EventLoop.get(environment).pushMsg(
+			false, environment,
+			Filename.parse("jscript://init.js"), Reading.resourceToString("lib/index.js"),
+			Value.UNDEFINED, Value.global(environment), primordials(environment)
+		).get();
+		EventLoop.get(environment).pushMsg(
+			false, environment,
+			Filename.parse("jscript://ts.js"), Reading.resourceToString("lib/ts.js"),
+			Value.UNDEFINED
+		).get();
+	}
 
-            return Value.UNDEFINED;
-        }));
-    }
-    private static void initEngine() {
-        // var ctx = new DebugContext();
-        // environment.add(DebugContext.KEY, ctx);
+	public static void main(String args[]) throws InterruptedException {
+		SimpleRepl.args = args;
+		var reader = new Thread(SimpleRepl::reader);
 
-        // debugServer.targets.put("target", (ws, req) -> new SimpleDebugger(ws).attach(ctx));
-        engineTask = engine.start();
-        // debugTask = debugServer.start(new InetSocketAddress("127.0.0.1", 9229), true);
-    }
-    private static void initGlobals() throws InterruptedException, ExecutionException {
-        EventLoop.get(environment).pushMsg(
-            false, environment,
-            Filename.parse("jscript://init.js"), Reading.resourceToString("lib/index.js"),
-            Value.UNDEFINED, Value.global(environment), primordials(environment)
-        ).get();
-    }
+		initEnv();
+		initEngine();
 
-    public static void main(String args[]) throws InterruptedException {
-        System.out.println(String.format("Running %s v%s by %s", Metadata.name(), Metadata.version(), Metadata.author()));
+		reader.setDaemon(true);
+		reader.setName("STD Reader");
+		reader.start();
 
-        SimpleRepl.args = args;
-        var reader = new Thread(SimpleRepl::reader);
-
-        initEnv();
-        initEngine();
-
-        reader.setDaemon(true);
-        reader.setName("STD Reader");
-        reader.start();
-
-        engine.thread().join();
-        // debugTask.interrupt();
-        engineTask.interrupt();
-    }
+		engine.thread().join();
+		engineTask.interrupt();
+	}
 }
