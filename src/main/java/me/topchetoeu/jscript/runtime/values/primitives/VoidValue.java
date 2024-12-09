@@ -23,7 +23,8 @@ public final class VoidValue extends PrimitiveValue {
     @Override public ObjectValue getPrototype(Environment env) { return null; }
 
     @Override public Member getOwnMember(Environment env, KeyCache key) {
-        throw EngineException.ofError(String.format("Cannot read properties of %s (reading '%s')", name, key.toString(env)));
+		if (key.isSymbol()) throw EngineException.ofError(String.format("Cannot read properties of %s (reading '%s')", name, key.toSymbol().toString()));
+		else throw EngineException.ofError(String.format("Cannot read properties of %s (reading '%s')", name, key.toString(env)));
     }
 
     @Override public List<String> toReadableLines(Environment env, HashSet<ObjectValue> passed) {

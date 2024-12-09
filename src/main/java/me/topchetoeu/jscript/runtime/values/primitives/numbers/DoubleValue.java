@@ -24,6 +24,9 @@ public final class DoubleValue extends NumberValue {
 
     @Override public String toString() { return JSON.stringify(JSONElement.number(value)); }
 
+	@Override public int hashCode() {
+		return Double.hashCode(value);
+	}
     @Override public boolean equals(Object other) {
         if (this == other) return true;
         else if (other instanceof NumberValue val) return value == val.getDouble();

@@ -26,6 +26,9 @@ public final class IntValue extends NumberValue {
         return value;
     }
 
+	@Override public int hashCode() {
+		return Long.hashCode(value);
+	}
     @Override public String toString() { return value + ""; }
     @Override public boolean equals(Object other) {
         if (this == other) return true;

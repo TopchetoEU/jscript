@@ -36,6 +36,9 @@ public final class StringValue extends PrimitiveValue {
     }
     @Override public String toString(Environment ext) { return value; }
 
+	@Override public int hashCode() {
+		return value.hashCode();
+	}
     @Override public boolean equals(Object other) {
         if (this == other) return true;
         else if (other instanceof StringValue val) return value.length() == val.value.length() && value.equals(val.value);
