@@ -253,21 +253,21 @@ public final class JavaScript {
 		return !JavaScript.reserved.contains(name);
 	}
 
-	public static CompileResult compile(Environment env, Node ...statements) {
+	public static CompileResult compile(Environment env, boolean passthrough, Node ...statements) {
 		env = env.child();
 		env.add(COMPILE_ROOT, env);
 
 		var func = new FunctionValueNode(null, null, Arrays.asList(), new CompoundNode(null, statements), null);
-		var res = func.compileBody(env, new FunctionScope(true), true, null);
+		var res = func.compileBody(env, new FunctionScope(passthrough), true, null);
 		return res;
 	}
 
-	public static CompileResult compile(Environment env, Filename filename, String raw) {
-		return JavaScript.compile(env, JavaScript.parse(env, filename, raw));
+	public static CompileResult compile(Environment env, Filename filename, String raw, boolean passthrough) {
+		return JavaScript.compile(env, passthrough, JavaScript.parse(env, filename, raw));
 	}
-	public static CompileResult compile(Filename filename, String raw) {
+	public static CompileResult compile(Filename filename, String raw, boolean passthrough) {
 		var env = new Environment();
-		return JavaScript.compile(env, JavaScript.parse(env, filename, raw));
+		return JavaScript.compile(env, passthrough, JavaScript.parse(env, filename, raw));
 	}
 
 	public static ParseRes<String> parseLabel(Source src, int i) {
