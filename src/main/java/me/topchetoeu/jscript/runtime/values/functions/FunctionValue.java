@@ -7,6 +7,7 @@ import java.util.List;
 
 import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.runtime.debug.DebugContext;
+import me.topchetoeu.jscript.runtime.exceptions.EngineException;
 import me.topchetoeu.jscript.runtime.values.KeyCache;
 import me.topchetoeu.jscript.runtime.values.Member;
 import me.topchetoeu.jscript.runtime.values.Value;
@@ -55,11 +56,11 @@ public abstract class FunctionValue extends ObjectValue {
 
     @Override public String toString() { return String.format("function %s(...)", name); }
 	@Override public Value apply(Environment env, Value self, Value... args) {
-        if (!enableApply) throw new RuntimeException("Function cannot be applied");
+        if (!enableApply) throw EngineException.ofType("Function cannot be applied");
         return onCall(env, false, self, args);
 	}
 	@Override public Value construct(Environment env, Value self, Value... args) {
-        if (!enableConstruct) throw new RuntimeException("Function cannot be constructed");
+        if (!enableConstruct) throw EngineException.ofType("Function cannot be constructed");
         return onCall(env, true, self, args);
 	}
 
