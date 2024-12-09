@@ -44,6 +44,9 @@ public final class StringValue extends PrimitiveValue {
 		else if (other instanceof StringValue val) return value.length() == val.value.length() && value.equals(val.value);
 		else return false;
 	}
+	@Override public String toString() {
+		return value;
+	}
 
 	@Override public ObjectValue getPrototype(Environment env) { return env.get(STRING_PROTO); }
 

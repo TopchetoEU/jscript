@@ -31,6 +31,10 @@ public final class VoidValue extends PrimitiveValue {
 		return Arrays.asList(name);
 	}
 
+	@Override public String toString() {
+		return name;
+	}
+
 	public VoidValue(String name, String type) {
 		this.name = name;
 		this.type = type;
