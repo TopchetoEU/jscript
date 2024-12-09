@@ -19,7 +19,7 @@ public final class FunctionScope {
 	public final boolean passthrough;
 
 	private Variable addCaptured(Variable var, boolean captured) {
-		if (captured && !this.capturables.has(var)) this.capturables.add(var);
+		if (captured && !this.capturables.has(var) && !this.captures.has(var)) this.capturables.add(var);
 		return var;
 	}
 
