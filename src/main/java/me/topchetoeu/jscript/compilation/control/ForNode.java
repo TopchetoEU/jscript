@@ -7,7 +7,6 @@ import me.topchetoeu.jscript.common.parsing.ParseRes;
 import me.topchetoeu.jscript.common.parsing.Parsing;
 import me.topchetoeu.jscript.common.parsing.Source;
 import me.topchetoeu.jscript.compilation.CompileResult;
-import me.topchetoeu.jscript.compilation.CompoundNode;
 import me.topchetoeu.jscript.compilation.DeferredIntSupplier;
 import me.topchetoeu.jscript.compilation.JavaScript;
 import me.topchetoeu.jscript.compilation.LabelContext;
@@ -24,31 +23,34 @@ public class ForNode extends Node {
         body.resolve(target);
     }
 	@Override public void compileFunctions(CompileResult target) {
-		declaration.compileFunctions(target);
-		assignment.compileFunctions(target);
-		condition.compileFunctions(target);
+		if (declaration != null) declaration.compileFunctions(target);
+		if (assignment != null) assignment.compileFunctions(target);
+		if (condition != null) condition.compileFunctions(target);
 		body.compileFunctions(target);
 	}
     @Override public void compile(CompileResult target, boolean pollute) {
-        declaration.compile(target, false, BreakpointType.STEP_OVER);
+        if (declaration != null) declaration.compile(target, false, BreakpointType.STEP_OVER);
 
         int start = target.size();
-        CompoundNode.compileMultiEntry(condition, target, true, BreakpointType.STEP_OVER);
-        int mid = target.temp();
+		int mid = -1;
+        if (condition != null) {
+			condition.compile(target, true, BreakpointType.STEP_OVER);
+			mid = target.temp();
+		}
 
         var end = new DeferredIntSupplier();
 
         LabelContext.pushLoop(target.env, loc(), label, end, start);
-        CompoundNode.compileMultiEntry(body, target, false, BreakpointType.STEP_OVER);
+        body.compile(target, false, BreakpointType.STEP_OVER);
 
-        CompoundNode.compileMultiEntry(assignment, target, false, BreakpointType.STEP_OVER);
+        if (assignment != null) assignment.compile(target, false, BreakpointType.STEP_OVER);
         int endI = target.size();
 
         end.set(endI);
         LabelContext.popLoop(target.env, label);
 
         target.add(Instruction.jmp(start - endI));
-        target.set(mid, Instruction.jmpIfNot(endI - mid + 1));
+        if (mid >= 0) target.set(mid, Instruction.jmpIfNot(endI - mid + 1));
         if (pollute) target.add(Instruction.pushUndefined());
     }
 

@@ -32,7 +32,7 @@ public class VariableDeclareNode extends Node {
         for (var entry : values) {
             if (entry.value != null) {
                 entry.value.compile(target, true);
-				target.add(VariableNode.toSet(target, loc(), entry.var.name, false, true));
+				target.add(VariableNode.toSet(target, loc(), entry.var.name, false, true)).setLocation(loc());
             }
         }
 

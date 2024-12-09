@@ -42,13 +42,6 @@ public final class PropertyMemberNode extends FunctionNode implements Member {
         key.compile(target, true);
 
         target.add(Instruction.loadFunc(target.childrenIndices.get(this), name(name), captures(target))).setLocation(loc());
-        target.add(VariableNode.toSet(target, end, name(name), false, true));
-        target.add(Instruction.defProp(isSetter()));
-    }
-
-
-    @Override public void compile(CompileResult target, boolean pollute) {
-        super.compile(target, pollute);
         target.add(Instruction.defProp(isSetter()));
     }
 

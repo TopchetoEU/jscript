@@ -62,7 +62,7 @@ public class SwitchNode extends Node {
         int start = target.temp();
         var end = new DeferredIntSupplier();
 
-        LabelContext.getBreak(target.env).push(loc(), label, end);
+        LabelContext.getBreak(target.env).pushLoop(loc(), label, end);
         for (var stm : body) {
             statementToIndex.put(statementToIndex.size(), target.size());
             stm.compile(target, false, BreakpointType.STEP_OVER);
@@ -70,7 +70,7 @@ public class SwitchNode extends Node {
 
         int endI = target.size();
         end.set(endI);
-        LabelContext.getBreak(target.env).pop(label);
+        LabelContext.getBreak(target.env).popLoop(label);
 
         target.add(Instruction.discard());
         if (pollute) target.add(Instruction.pushUndefined());
@@ -104,6 +104,7 @@ public class SwitchNode extends Node {
         var val = JavaScript.parseExpression(src, i + n, 0);
         if (!val.isSuccess()) return val.chainError(src.loc(i + n), "Expected a value after 'case'");
         n += val.n;
+        n += Parsing.skipEmpty(src, i + n);
 
         if (!src.is(i + n, ":")) return ParseRes.error(src.loc(i + n), "Expected colons after 'case' value");
         n++;

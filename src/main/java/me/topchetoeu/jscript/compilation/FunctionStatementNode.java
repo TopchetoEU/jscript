@@ -22,7 +22,7 @@ public class FunctionStatementNode extends FunctionNode {
 
     @Override public void compile(CompileResult target, boolean pollute, String name, BreakpointType bp) {
         target.add(Instruction.loadFunc(target.childrenIndices.get(this), name(name), captures(target))).setLocation(loc());
-        target.add(VariableNode.toSet(target, end, this.name, false, true));
+        target.add(VariableNode.toSet(target, end, this.name, false, true)).setLocation(loc());
         if (pollute) target.add(Instruction.pushUndefined());
     }
 

@@ -7,7 +7,6 @@ import me.topchetoeu.jscript.common.parsing.ParseRes;
 import me.topchetoeu.jscript.common.parsing.Parsing;
 import me.topchetoeu.jscript.common.parsing.Source;
 import me.topchetoeu.jscript.compilation.CompileResult;
-import me.topchetoeu.jscript.compilation.CompoundNode;
 import me.topchetoeu.jscript.compilation.DeferredIntSupplier;
 import me.topchetoeu.jscript.compilation.JavaScript;
 import me.topchetoeu.jscript.compilation.LabelContext;
@@ -33,7 +32,7 @@ public class WhileNode extends Node {
 
 
         LabelContext.pushLoop(target.env, loc(), label, end, start);
-        CompoundNode.compileMultiEntry(body, target, false, BreakpointType.STEP_OVER);
+        body.compile(target, false, BreakpointType.STEP_OVER);
 
         var endI = target.size();
         end.set(endI + 1);

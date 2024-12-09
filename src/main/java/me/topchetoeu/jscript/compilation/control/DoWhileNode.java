@@ -62,6 +62,7 @@ public class DoWhileNode extends Node {
         var bodyRes = JavaScript.parseStatement(src, i + n);
         if (!bodyRes.isSuccess()) return bodyRes.chainError(src.loc(i + n), "Expected a do-while body.");
         n += bodyRes.n;
+        n += Parsing.skipEmpty(src, i + n);
 
         if (!Parsing.isIdentifier(src, i + n, "while")) return ParseRes.failed();
         n += 5;

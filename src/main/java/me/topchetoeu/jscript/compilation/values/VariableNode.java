@@ -23,7 +23,7 @@ public class VariableNode extends Node implements ChangeTarget {
     }
 
     @Override public void afterAssign(CompileResult target, boolean pollute) {
-        target.add(VariableNode.toSet(target, loc(), name, pollute, false));
+        target.add(VariableNode.toSet(target, loc(), name, pollute, false)).setLocation(loc());
     }
 
     @Override public void compile(CompileResult target, boolean pollute) {

@@ -23,7 +23,7 @@ public class IfNode extends Node {
 	@Override public void compileFunctions(CompileResult target) {
 		condition.compileFunctions(target);
 		body.compileFunctions(target);
-		if (elseBody != null) body.compileFunctions(target);
+		if (elseBody != null) elseBody.compileFunctions(target);
 	}
     @Override public void compile(CompileResult target, boolean pollute, BreakpointType breakpoint) {
         condition.compile(target, true, breakpoint);
@@ -33,7 +33,7 @@ public class IfNode extends Node {
             var end = new DeferredIntSupplier();
 
             LabelContext.getBreak(target.env).push(loc(), label, end);
-            body.compile(target, false, BreakpointType.STEP_OVER);
+            body.compile(target, pollute, BreakpointType.STEP_OVER);
             LabelContext.getBreak(target.env).pop(label);
 
             int endI = target.size();
@@ -46,11 +46,11 @@ public class IfNode extends Node {
             var end = new DeferredIntSupplier();
 
             LabelContext.getBreak(target.env).push(loc(), label, end);
-            body.compile(target, false, BreakpointType.STEP_OVER);
+            body.compile(target, pollute, BreakpointType.STEP_OVER);
 
             int mid = target.temp();
 
-            elseBody.compile(target, false, BreakpointType.STEP_OVER);
+            elseBody.compile(target, pollute, BreakpointType.STEP_OVER);
             LabelContext.getBreak(target.env).pop(label);
 
             int endI = target.size();

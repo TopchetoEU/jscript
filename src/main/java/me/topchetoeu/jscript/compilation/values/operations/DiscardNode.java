@@ -14,7 +14,7 @@ public class DiscardNode extends Node {
     public final Node value;
 
 	@Override public void compileFunctions(CompileResult target) {
-		value.compileFunctions(target);
+		if (value != null) value.compileFunctions(target);
 	}
 
     @Override public void compile(CompileResult target, boolean pollute) {

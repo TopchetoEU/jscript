@@ -46,8 +46,8 @@ public class TryNode extends Node {
 
             if (captureName != null) {
                 var catchVar = target.scope.defineCatch(captureName);
-                target.add(Instruction.loadError());
-                target.add(catchVar.index().toSet(false));
+                target.add(Instruction.loadError()).setLocation(catchBody.loc());
+                target.add(catchVar.index().toSet(false)).setLocation(catchBody.loc());
                 catchBody.compile(target, false);
 				target.scope.undefineCatch();
             }

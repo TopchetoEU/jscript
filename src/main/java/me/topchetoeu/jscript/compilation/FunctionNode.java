@@ -37,12 +37,7 @@ public abstract class FunctionNode extends Node {
 
 		body.resolve(target);
 
-		for (var param : params) {
-			var index = scope.define(param.name);
-
-			target.add(Instruction.loadArg(i++));
-			target.add(index.index().toSet(false));
-		}
+		for (var param : params) scope.define(param.name);
 
 		// if (selfName != null && !scope.has(selfName, false)) {
 		//     var i = scope.defineSpecial(new Variable(selfName, true), end);
@@ -52,6 +47,12 @@ public abstract class FunctionNode extends Node {
 		// }
 
 		body.compileFunctions(target);
+
+		for (var param : params) {
+			target.add(Instruction.loadArg(i++)).setLocation(param.loc());
+			target.add(scope.define(param.name).index().toSet(false)).setLocation(param.loc());
+		}
+
 		body.compile(target, lastReturn, BreakpointType.NONE);
 
 		return target;

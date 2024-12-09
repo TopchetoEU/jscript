@@ -113,6 +113,7 @@ public class Parsing {
                 return ParseRes.res((char)newC, n);
             }
             else if (c == '\n') return ParseRes.res(null, n);
+			else n--;
         }
 
         return ParseRes.res(src.at(i + n), n + 1);

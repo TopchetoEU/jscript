@@ -31,28 +31,35 @@ public class RegexNode extends Node {
 
         var inBrackets = false;
 
-        while (true) {
-            if (src.is(i + n, '[')) {
-                n++;
-                inBrackets = true;
-                source.append(src.at(i + n));
-                continue;
-            }
-            else if (src.is(i + n, ']')) {
-                n++;
-                inBrackets = false;
-                source.append(src.at(i + n));
-                continue;
-            }
-            else if (src.is(i + n, '/') && !inBrackets) {
-                n++;
-                break;
-            }
-
-            var charRes = Parsing.parseChar(src, i + n);
-            if (charRes.result == null) return ParseRes.error(src.loc(i + n), "Multiline regular expressions are not allowed");
-            source.append(charRes.result);
-            n++;
+        loop: while (true) {
+			switch (src.at(i + n)) {
+				case '[':
+					inBrackets = true;
+					source.append('[');
+					n++;
+					continue;
+				case ']':
+					inBrackets = false;
+					source.append(']');
+					n++;
+					continue;
+				case '/':
+					n++;
+					if (inBrackets) {
+						source.append('/');
+						continue;
+					}
+					else break loop;
+				case '\\':
+					source.append('\\');
+					source.append(src.at(i + n + 1));
+					n += 2;
+					break;
+				default:
+					source.append(src.at(i + n));
+					n++;
+					break;
+			}
         }
 
         while (true) {

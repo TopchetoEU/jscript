@@ -23,7 +23,7 @@ public class CompoundNode extends Node {
         for (var stm : statements) stm.compileFunctions(target);
 	}
 
-    public void compile(CompileResult target, boolean pollute, boolean singleEntry, BreakpointType type) {
+    public void compile(CompileResult target, boolean pollute, BreakpointType type) {
         List<Node> statements = new ArrayList<Node>();
 
         for (var stm : this.statements) {
@@ -47,10 +47,6 @@ public class CompoundNode extends Node {
         }
     }
 
-    @Override public void compile(CompileResult target, boolean pollute, BreakpointType type) {
-        compile(target, pollute, true, type);
-    }
-
     public CompoundNode setEnd(Location loc) {
         this.end = loc;
         return this;
@@ -59,15 +55,6 @@ public class CompoundNode extends Node {
     public CompoundNode(Location loc, Node ...statements) {
         super(loc);
         this.statements = statements;
-    }
-
-    public static void compileMultiEntry(Node node, CompileResult target, boolean pollute, BreakpointType type) {
-        if (node instanceof CompoundNode comp) {
-            comp.compile(target, pollute, false, type);
-        }
-        else {
-            node.compile(target, pollute, type);
-        }
     }
 
     public static ParseRes<CompoundNode> parseComma(Source src, int i, Node prev, int precedence) {

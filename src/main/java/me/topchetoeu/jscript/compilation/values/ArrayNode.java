@@ -16,7 +16,9 @@ public class ArrayNode extends Node {
     public final Node[] statements;
 
 	@Override public void compileFunctions(CompileResult target) {
-        for (var stm : statements) stm.compileFunctions(target);
+        for (var stm : statements) {
+			if (stm != null) stm.compileFunctions(target);
+		}
 	}
 
     @Override public void compile(CompileResult target, boolean pollute) {
