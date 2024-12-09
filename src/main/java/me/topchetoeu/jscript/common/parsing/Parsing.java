@@ -289,9 +289,8 @@ public class Parsing {
 			}
 		}
 
-		if (src.is(i + n, 'e') || src.is(i + n, 'E')) {
+		if (parsedAny && src.is(i + n, 'e') || src.is(i + n, 'E')) {
 			n++;
-			parsedAny = true;
 			boolean expNegative = false;
 			boolean parsedE = false;
 
