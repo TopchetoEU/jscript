@@ -3,6 +3,7 @@ package me.topchetoeu.jscript.runtime.values.functions;
 
 import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.runtime.values.Value;
+import me.topchetoeu.jscript.runtime.values.primitives.UserValue;
 
 public class Arguments {
     public final Value self;
@@ -20,6 +21,11 @@ public class Arguments {
 
     public Value self() {
         return get(-1);
+    }
+    @SuppressWarnings("unchecked")
+	public <T> T self(Class<T> clazz) {
+		if (self instanceof UserValue user && clazz.isInstance(user.value)) return (T)user.value;
+		else return null;
     }
     public Value get(int i) {
         if (i >= args.length || i < -1) return Value.UNDEFINED;
