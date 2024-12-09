@@ -237,7 +237,10 @@ public abstract class Value {
 		}
 
 		if (defineOwnMember(env, key, val)) {
-			if (val instanceof FunctionValue) ((FunctionValue)val).setName(key.toString(env));
+			if (val instanceof FunctionValue func) {
+				if (key.isSymbol()) func.setName(key.toSymbol().toString());
+				else func.setName(key.toString(env));
+			}
 			return true;
 		}
 		else return false;
