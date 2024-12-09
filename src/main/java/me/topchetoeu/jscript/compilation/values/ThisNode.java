@@ -10,11 +10,11 @@ public class ThisNode extends Node {
 	@Override public void compileFunctions(CompileResult target) {
 	}
 
-    @Override public void compile(CompileResult target, boolean pollute) {
-        if (pollute) target.add(Instruction.loadThis());
-    }
+	@Override public void compile(CompileResult target, boolean pollute) {
+		if (pollute) target.add(Instruction.loadThis());
+	}
 
-    public ThisNode(Location loc) {
-        super(loc);
-    }
+	public ThisNode(Location loc) {
+		super(loc);
+	}
 }

@@ -13,53 +13,53 @@ import me.topchetoeu.jscript.compilation.patterns.ChangeTarget;
 import me.topchetoeu.jscript.compilation.values.constants.NumberNode;
 
 public class ChangeNode extends Node {
-    public final ChangeTarget changable;
-    public final Node value;
-    public final Operation op;
+	public final ChangeTarget changable;
+	public final Node value;
+	public final Operation op;
 
 	@Override public void compileFunctions(CompileResult target) {
 		((Node)changable).compileFunctions(target);
 		value.compileFunctions(target);
 	}
 
-    @Override public void compile(CompileResult target, boolean pollute) {
-        changable.beforeChange(target);
-        value.compile(target, true);
-        target.add(Instruction.operation(op));
-        changable.afterAssign(target, pollute);
-    }
+	@Override public void compile(CompileResult target, boolean pollute) {
+		changable.beforeChange(target);
+		value.compile(target, true);
+		target.add(Instruction.operation(op));
+		changable.afterAssign(target, pollute);
+	}
 
-    public ChangeNode(Location loc, ChangeTarget changable, Node value, Operation op) {
-        super(loc);
-        this.changable = changable;
-        this.value = value;
-        this.op = op;
-    }
+	public ChangeNode(Location loc, ChangeTarget changable, Node value, Operation op) {
+		super(loc);
+		this.changable = changable;
+		this.value = value;
+		this.op = op;
+	}
 
-    public static ParseRes<ChangeNode> parsePrefixIncrease(Source src, int i) {
-        var n = Parsing.skipEmpty(src, i);
-        var loc = src.loc(i + n);
+	public static ParseRes<ChangeNode> parsePrefixIncrease(Source src, int i) {
+		var n = Parsing.skipEmpty(src, i);
+		var loc = src.loc(i + n);
 
-        if (!src.is(i + n, "++")) return ParseRes.failed();
-        n += 2;
+		if (!src.is(i + n, "++")) return ParseRes.failed();
+		n += 2;
 
-        var res = JavaScript.parseExpression(src, i + n, 15);
-        if (!res.isSuccess()) return res.chainError(src.loc(i + n), "Expected assignable value after prefix operator.");
-        else if (!(res.result instanceof ChangeTarget)) return ParseRes.error(src.loc(i + n), "Expected assignable value after prefix operator.");
+		var res = JavaScript.parseExpression(src, i + n, 15);
+		if (!res.isSuccess()) return res.chainError(src.loc(i + n), "Expected assignable value after prefix operator.");
+		else if (!(res.result instanceof ChangeTarget)) return ParseRes.error(src.loc(i + n), "Expected assignable value after prefix operator.");
 
-        return ParseRes.res(new ChangeNode(loc, (ChangeTarget)res.result, new NumberNode(loc, -1), Operation.SUBTRACT), n + res.n);
-    }
-    public static ParseRes<ChangeNode> parsePrefixDecrease(Source src, int i) {
-        var n = Parsing.skipEmpty(src, i);
-        var loc = src.loc(i + n);
+		return ParseRes.res(new ChangeNode(loc, (ChangeTarget)res.result, new NumberNode(loc, -1), Operation.SUBTRACT), n + res.n);
+	}
+	public static ParseRes<ChangeNode> parsePrefixDecrease(Source src, int i) {
+		var n = Parsing.skipEmpty(src, i);
+		var loc = src.loc(i + n);
 
-        if (!src.is(i + n, "--")) return ParseRes.failed();
-        n += 2;
+		if (!src.is(i + n, "--")) return ParseRes.failed();
+		n += 2;
 
-        var res = JavaScript.parseExpression(src, i + n, 15);
-        if (!res.isSuccess()) return res.chainError(src.loc(i + n), "Expected assignable value after prefix operator.");
-        else if (!(res.result instanceof ChangeTarget)) return ParseRes.error(src.loc(i + n), "Expected assignable value after prefix operator.");
+		var res = JavaScript.parseExpression(src, i + n, 15);
+		if (!res.isSuccess()) return res.chainError(src.loc(i + n), "Expected assignable value after prefix operator.");
+		else if (!(res.result instanceof ChangeTarget)) return ParseRes.error(src.loc(i + n), "Expected assignable value after prefix operator.");
 
-        return ParseRes.res(new ChangeNode(loc, (ChangeTarget)res.result, new NumberNode(loc, 1), Operation.SUBTRACT), n + res.n);
-    }
+		return ParseRes.res(new ChangeNode(loc, (ChangeTarget)res.result, new NumberNode(loc, 1), Operation.SUBTRACT), n + res.n);
+	}
 }

@@ -13,42 +13,42 @@ import me.topchetoeu.jscript.runtime.values.Value;
 import me.topchetoeu.jscript.runtime.values.functions.CodeFunction;
 
 public interface Compiler {
-    public static final Compiler DEFAULT = (env, filename, raw) -> {
-        try {
-            var res = JavaScript.compile(env, filename, raw);
-            var body = res.body();
-            DebugContext.get(env).onSource(filename, raw);
-            registerFunc(env, body, res);
-            return body;
-        }
-        catch (SyntaxException e) {
-            var res = EngineException.ofSyntax(e.msg);
-            res.add(env, e.loc.filename() + "", e.loc);
-            throw res;
-        }
-    };
+	public static final Compiler DEFAULT = (env, filename, raw) -> {
+		try {
+			var res = JavaScript.compile(env, filename, raw);
+			var body = res.body();
+			DebugContext.get(env).onSource(filename, raw);
+			registerFunc(env, body, res);
+			return body;
+		}
+		catch (SyntaxException e) {
+			var res = EngineException.ofSyntax(e.msg);
+			res.add(env, e.loc.filename() + "", e.loc);
+			throw res;
+		}
+	};
 
-    public Key<Compiler> KEY = Key.of();
+	public Key<Compiler> KEY = new Key<>();
 
-    public FunctionBody compile(Environment env, Filename filename, String source);
+	public FunctionBody compile(Environment env, Filename filename, String source);
 
-    public static Compiler get(Environment ext) {
-        return ext.get(KEY, (env, filename, src) -> {
-            throw EngineException.ofError("No compiler attached to engine");
-        });
-    }
+	public static Compiler get(Environment ext) {
+		return ext.get(KEY, (env, filename, src) -> {
+			throw EngineException.ofError("No compiler attached to engine");
+		});
+	}
 
-    static void registerFunc(Environment env, FunctionBody body, CompileResult res) {
-        var map = res.map();
+	static void registerFunc(Environment env, FunctionBody body, CompileResult res) {
+		var map = res.map();
 
-        DebugContext.get(env).onFunctionLoad(body, map);
+		DebugContext.get(env).onFunctionLoad(body, map);
 
-        for (var i = 0; i < body.children.length; i++) {
-            registerFunc(env, body.children[i], res.children.get(i));
-        }
-    }
+		for (var i = 0; i < body.children.length; i++) {
+			registerFunc(env, body.children[i], res.children.get(i));
+		}
+	}
 
-    public static CodeFunction compileFunc(Environment env, Filename filename, String raw) {
-        return new CodeFunction(env, filename.toString(), get(env).compile(env, filename, raw), new Value[0][]);
-    }
+	public static CodeFunction compileFunc(Environment env, Filename filename, String raw) {
+		return new CodeFunction(env, filename.toString(), get(env).compile(env, filename, raw), new Value[0][]);
+	}
 }

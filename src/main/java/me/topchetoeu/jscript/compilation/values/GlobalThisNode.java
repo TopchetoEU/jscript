@@ -10,11 +10,11 @@ public class GlobalThisNode extends Node {
 	@Override public void compileFunctions(CompileResult target) {
 	}
 
-    @Override public void compile(CompileResult target, boolean pollute) {
-        if (pollute) target.add(Instruction.loadGlob());
-    }
+	@Override public void compile(CompileResult target, boolean pollute) {
+		if (pollute) target.add(Instruction.loadGlob());
+	}
 
-    public GlobalThisNode(Location loc) {
-        super(loc);
-    }
+	public GlobalThisNode(Location loc) {
+		super(loc);
+	}
 }

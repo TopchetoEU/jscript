@@ -12,41 +12,41 @@ import me.topchetoeu.jscript.compilation.Node;
 import me.topchetoeu.jscript.compilation.values.VariableNode;
 
 public class TypeofNode extends Node {
-    public final Node value;
+	public final Node value;
 
 	@Override public void compileFunctions(CompileResult target) {
 		value.compileFunctions(target);
 	}
 
-    @Override public void compile(CompileResult target, boolean pollute) {
-        if (value instanceof VariableNode varNode) {
-            target.add(VariableNode.toGet(target, varNode.loc(), varNode.name, true, true));
-            if (pollute) target.add(Instruction.typeof());
-            else target.add(Instruction.discard());
+	@Override public void compile(CompileResult target, boolean pollute) {
+		if (value instanceof VariableNode varNode) {
+			target.add(VariableNode.toGet(target, varNode.loc(), varNode.name, true, true));
+			if (pollute) target.add(Instruction.typeof());
+			else target.add(Instruction.discard());
 
-            return;
-        }
+			return;
+		}
 
-        value.compile(target, pollute);
-        if (pollute) target.add(Instruction.typeof());
-    }
+		value.compile(target, pollute);
+		if (pollute) target.add(Instruction.typeof());
+	}
 
-    public TypeofNode(Location loc, Node value) {
-        super(loc);
-        this.value = value;
-    }
+	public TypeofNode(Location loc, Node value) {
+		super(loc);
+		this.value = value;
+	}
 
-    public static ParseRes<TypeofNode> parse(Source src, int i) {
-        var n = Parsing.skipEmpty(src, i);
-        var loc = src.loc(i + n);
+	public static ParseRes<TypeofNode> parse(Source src, int i) {
+		var n = Parsing.skipEmpty(src, i);
+		var loc = src.loc(i + n);
 
-        if (!Parsing.isIdentifier(src, i + n, "typeof")) return ParseRes.failed();
-        n += 6;
+		if (!Parsing.isIdentifier(src, i + n, "typeof")) return ParseRes.failed();
+		n += 6;
 
-        var valRes = JavaScript.parseExpression(src, i + n, 15);
-        if (!valRes.isSuccess()) return valRes.chainError(src.loc(i + n), "Expected a value after 'typeof' keyword.");
-        n += valRes.n;
-    
-        return ParseRes.res(new TypeofNode(loc, valRes.result), n);
-    }
+		var valRes = JavaScript.parseExpression(src, i + n, 15);
+		if (!valRes.isSuccess()) return valRes.chainError(src.loc(i + n), "Expected a value after 'typeof' keyword.");
+		n += valRes.n;
+	
+		return ParseRes.res(new TypeofNode(loc, valRes.result), n);
+	}
 }

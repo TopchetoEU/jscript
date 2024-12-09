@@ -9,9 +9,9 @@ public class NullNode extends Node {
 	@Override public void compileFunctions(CompileResult target) {
 	}
 
-    @Override public void compile(CompileResult target, boolean pollute) {
-        if (pollute) target.add(Instruction.pushNull());
-    }
+	@Override public void compile(CompileResult target, boolean pollute) {
+		if (pollute) target.add(Instruction.pushNull());
+	}
 
-    public NullNode(Location loc) { super(loc); }
+	public NullNode(Location loc) { super(loc); }
 }

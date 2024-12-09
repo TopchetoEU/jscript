@@ -17,25 +17,25 @@ import me.topchetoeu.jscript.compilation.LabelContext;
 import me.topchetoeu.jscript.compilation.Node;
 
 public class SwitchNode extends Node {
-    public static class SwitchCase {
-        public final Node value;
-        public final int statementI;
+	public static class SwitchCase {
+		public final Node value;
+		public final int statementI;
 
-        public SwitchCase(Node value, int statementI) {
-            this.value = value;
-            this.statementI = statementI;
-        }
-    }
+		public SwitchCase(Node value, int statementI) {
+			this.value = value;
+			this.statementI = statementI;
+		}
+	}
 
-    public final Node value;
-    public final SwitchCase[] cases;
-    public final Node[] body;
-    public final int defaultI;
-    public final String label;
+	public final Node value;
+	public final SwitchCase[] cases;
+	public final Node[] body;
+	public final int defaultI;
+	public final String label;
 
-    @Override public void resolve(CompileResult target) {
-        for (var stm : body) stm.resolve(target);
-    }
+	@Override public void resolve(CompileResult target) {
+		for (var stm : body) stm.resolve(target);
+	}
 	@Override public void compileFunctions(CompileResult target) {
 		value.compileFunctions(target);
 		for (var _case : cases) {
@@ -45,154 +45,154 @@ public class SwitchNode extends Node {
 			stm.compileFunctions(target);
 		}
 	}
-    @Override public void compile(CompileResult target, boolean pollute) {
-        var caseToStatement = new HashMap<Integer, Integer>();
-        var statementToIndex = new HashMap<Integer, Integer>();
+	@Override public void compile(CompileResult target, boolean pollute) {
+		var caseToStatement = new HashMap<Integer, Integer>();
+		var statementToIndex = new HashMap<Integer, Integer>();
 
-        value.compile(target, true, BreakpointType.STEP_OVER);
+		value.compile(target, true, BreakpointType.STEP_OVER);
 
-        // TODO: create a jump map
-        for (var ccase : cases) {
-            target.add(Instruction.dup());
-            ccase.value.compile(target, true);
-            target.add(Instruction.operation(Operation.EQUALS));
-            caseToStatement.put(target.temp(), ccase.statementI);
-        }
+		// TODO: create a jump map
+		for (var ccase : cases) {
+			target.add(Instruction.dup());
+			ccase.value.compile(target, true);
+			target.add(Instruction.operation(Operation.EQUALS));
+			caseToStatement.put(target.temp(), ccase.statementI);
+		}
 
-        int start = target.temp();
-        var end = new DeferredIntSupplier();
+		int start = target.temp();
+		var end = new DeferredIntSupplier();
 
-        LabelContext.getBreak(target.env).pushLoop(loc(), label, end);
-        for (var stm : body) {
-            statementToIndex.put(statementToIndex.size(), target.size());
-            stm.compile(target, false, BreakpointType.STEP_OVER);
-        }
+		LabelContext.getBreak(target.env).pushLoop(loc(), label, end);
+		for (var stm : body) {
+			statementToIndex.put(statementToIndex.size(), target.size());
+			stm.compile(target, false, BreakpointType.STEP_OVER);
+		}
 
-        int endI = target.size();
-        end.set(endI);
-        LabelContext.getBreak(target.env).popLoop(label);
+		int endI = target.size();
+		end.set(endI);
+		LabelContext.getBreak(target.env).popLoop(label);
 
-        target.add(Instruction.discard());
-        if (pollute) target.add(Instruction.pushUndefined());
+		target.add(Instruction.discard());
+		if (pollute) target.add(Instruction.pushUndefined());
 
-        if (defaultI < 0 || defaultI >= body.length) target.set(start, Instruction.jmp(endI - start));
-        else target.set(start, Instruction.jmp(statementToIndex.get(defaultI) - start));
+		if (defaultI < 0 || defaultI >= body.length) target.set(start, Instruction.jmp(endI - start));
+		else target.set(start, Instruction.jmp(statementToIndex.get(defaultI) - start));
 
-        for (var el : caseToStatement.entrySet()) {
-            var i = statementToIndex.get(el.getValue());
-            if (i == null) i = endI;
-            target.set(el.getKey(), Instruction.jmpIf(i - el.getKey()));
-        }
+		for (var el : caseToStatement.entrySet()) {
+			var i = statementToIndex.get(el.getValue());
+			if (i == null) i = endI;
+			target.set(el.getKey(), Instruction.jmpIf(i - el.getKey()));
+		}
 
-    }
+	}
 
-    public SwitchNode(Location loc, String label, Node value, int defaultI, SwitchCase[] cases, Node[] body) {
-        super(loc);
-        this.label = label;
-        this.value = value;
-        this.defaultI = defaultI;
-        this.cases = cases;
-        this.body = body;
-    }
+	public SwitchNode(Location loc, String label, Node value, int defaultI, SwitchCase[] cases, Node[] body) {
+		super(loc);
+		this.label = label;
+		this.value = value;
+		this.defaultI = defaultI;
+		this.cases = cases;
+		this.body = body;
+	}
 
-    private static ParseRes<Node> parseSwitchCase(Source src, int i) {
-        var n = Parsing.skipEmpty(src, i);
+	private static ParseRes<Node> parseSwitchCase(Source src, int i) {
+		var n = Parsing.skipEmpty(src, i);
 
-        if (!Parsing.isIdentifier(src, i + n, "case")) return ParseRes.failed();
-        n += 4;
+		if (!Parsing.isIdentifier(src, i + n, "case")) return ParseRes.failed();
+		n += 4;
 
-        var val = JavaScript.parseExpression(src, i + n, 0);
-        if (!val.isSuccess()) return val.chainError(src.loc(i + n), "Expected a value after 'case'");
-        n += val.n;
-        n += Parsing.skipEmpty(src, i + n);
+		var val = JavaScript.parseExpression(src, i + n, 0);
+		if (!val.isSuccess()) return val.chainError(src.loc(i + n), "Expected a value after 'case'");
+		n += val.n;
+		n += Parsing.skipEmpty(src, i + n);
 
-        if (!src.is(i + n, ":")) return ParseRes.error(src.loc(i + n), "Expected colons after 'case' value");
-        n++;
+		if (!src.is(i + n, ":")) return ParseRes.error(src.loc(i + n), "Expected colons after 'case' value");
+		n++;
 
-        return ParseRes.res(val.result, n);
-    }
-    private static ParseRes<Void> parseDefaultCase(Source src, int i) {
-        var n = Parsing.skipEmpty(src, i);
+		return ParseRes.res(val.result, n);
+	}
+	private static ParseRes<Void> parseDefaultCase(Source src, int i) {
+		var n = Parsing.skipEmpty(src, i);
 
-        if (!Parsing.isIdentifier(src, i + n, "default")) return ParseRes.failed();
-        n += 7;
-        n += Parsing.skipEmpty(src, i + n);
+		if (!Parsing.isIdentifier(src, i + n, "default")) return ParseRes.failed();
+		n += 7;
+		n += Parsing.skipEmpty(src, i + n);
 
-        if (!src.is(i + n, ":")) return ParseRes.error(src.loc(i + n), "Expected colons after 'default'");
-        n++;
+		if (!src.is(i + n, ":")) return ParseRes.error(src.loc(i + n), "Expected colons after 'default'");
+		n++;
 
-        return ParseRes.res(null, n);
-    }
-    public static ParseRes<SwitchNode> parse(Source src, int i) {
-        var n = Parsing.skipEmpty(src, i);
-        var loc = src.loc(i + n);
+		return ParseRes.res(null, n);
+	}
+	public static ParseRes<SwitchNode> parse(Source src, int i) {
+		var n = Parsing.skipEmpty(src, i);
+		var loc = src.loc(i + n);
 
-        var label = JavaScript.parseLabel(src, i + n);
-        n += label.n;
-        n += Parsing.skipEmpty(src, i + n);
+		var label = JavaScript.parseLabel(src, i + n);
+		n += label.n;
+		n += Parsing.skipEmpty(src, i + n);
 
-        if (!Parsing.isIdentifier(src, i + n, "switch")) return ParseRes.failed();
-        n += 6;
-        n += Parsing.skipEmpty(src, i + n);
-        if (!src.is(i + n, "(")) return ParseRes.error(src.loc(i + n), "Expected a open paren after 'switch'");
-        n++;
+		if (!Parsing.isIdentifier(src, i + n, "switch")) return ParseRes.failed();
+		n += 6;
+		n += Parsing.skipEmpty(src, i + n);
+		if (!src.is(i + n, "(")) return ParseRes.error(src.loc(i + n), "Expected a open paren after 'switch'");
+		n++;
 
-        var val = JavaScript.parseExpression(src, i + n, 0);
-        if (!val.isSuccess()) return val.chainError(src.loc(i + n), "Expected a switch value");
-        n += val.n;
-        n += Parsing.skipEmpty(src, i + n);
+		var val = JavaScript.parseExpression(src, i + n, 0);
+		if (!val.isSuccess()) return val.chainError(src.loc(i + n), "Expected a switch value");
+		n += val.n;
+		n += Parsing.skipEmpty(src, i + n);
 
-        if (!src.is(i + n, ")")) return ParseRes.error(src.loc(i + n), "Expected a closing paren after switch value");
-        n++;
-        n += Parsing.skipEmpty(src, i + n);
+		if (!src.is(i + n, ")")) return ParseRes.error(src.loc(i + n), "Expected a closing paren after switch value");
+		n++;
+		n += Parsing.skipEmpty(src, i + n);
 
-        if (!src.is(i + n, "{")) return ParseRes.error(src.loc(i + n), "Expected an opening brace after switch value");
-        n++;
-        n += Parsing.skipEmpty(src, i + n);
+		if (!src.is(i + n, "{")) return ParseRes.error(src.loc(i + n), "Expected an opening brace after switch value");
+		n++;
+		n += Parsing.skipEmpty(src, i + n);
 
-        var statements = new ArrayList<Node>();
-        var cases = new ArrayList<SwitchCase>();
-        var defaultI = -1;
+		var statements = new ArrayList<Node>();
+		var cases = new ArrayList<SwitchCase>();
+		var defaultI = -1;
 
-        while (true) {
-            n += Parsing.skipEmpty(src, i + n);
+		while (true) {
+			n += Parsing.skipEmpty(src, i + n);
 
-            if (src.is(i + n, "}")) {
-                n++;
-                break;
-            }
-            if (src.is(i + n, ";")) {
-                n++;
-                continue;
-            }
+			if (src.is(i + n, "}")) {
+				n++;
+				break;
+			}
+			if (src.is(i + n, ";")) {
+				n++;
+				continue;
+			}
 
-            ParseRes<Node> caseRes = ParseRes.first(src, i + n,
-                SwitchNode::parseDefaultCase,
-                SwitchNode::parseSwitchCase
-            );
+			ParseRes<Node> caseRes = ParseRes.first(src, i + n,
+				SwitchNode::parseDefaultCase,
+				SwitchNode::parseSwitchCase
+			);
 
-            if (caseRes.isSuccess()) {
-                n += caseRes.n;
+			if (caseRes.isSuccess()) {
+				n += caseRes.n;
 
-                if (caseRes.result == null) defaultI = statements.size();
-                else cases.add(new SwitchCase(caseRes.result, statements.size()));
-                continue;
-            }
-            if (caseRes.isError()) return caseRes.chainError();
+				if (caseRes.result == null) defaultI = statements.size();
+				else cases.add(new SwitchCase(caseRes.result, statements.size()));
+				continue;
+			}
+			if (caseRes.isError()) return caseRes.chainError();
 
-            var stm = JavaScript.parseStatement(src, i + n);
-            if (stm.isSuccess()) {
-                n += stm.n;
-                statements.add(stm.result);
-                continue;
-            }
-            else stm.chainError(src.loc(i + n), "Expected a statement, 'case' or 'default'");
-        }
+			var stm = JavaScript.parseStatement(src, i + n);
+			if (stm.isSuccess()) {
+				n += stm.n;
+				statements.add(stm.result);
+				continue;
+			}
+			else stm.chainError(src.loc(i + n), "Expected a statement, 'case' or 'default'");
+		}
 
-        return ParseRes.res(new SwitchNode(
-            loc, label.result, val.result, defaultI,
-            cases.toArray(new SwitchCase[0]),
-            statements.toArray(new Node[0])
-        ), n);
-    }
+		return ParseRes.res(new SwitchNode(
+			loc, label.result, val.result, defaultI,
+			cases.toArray(new SwitchCase[0]),
+			statements.toArray(new Node[0])
+		), n);
+	}
 }

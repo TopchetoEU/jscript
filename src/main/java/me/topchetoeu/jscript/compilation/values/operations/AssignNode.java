@@ -9,43 +9,43 @@ import me.topchetoeu.jscript.compilation.Node;
 import me.topchetoeu.jscript.compilation.patterns.AssignTarget;
 
 public class AssignNode extends Node implements AssignTarget {
-    public final AssignTarget assignable;
-    public final Node value;
+	public final AssignTarget assignable;
+	public final Node value;
 
 	@Override public void compileFunctions(CompileResult target) {
 		((Node)assignable).compileFunctions(target);
 		value.compileFunctions(target);
 	}
 
-    @Override public void compile(CompileResult target, boolean pollute) {
-        if (assignable instanceof AssignNode other) throw new SyntaxException(other.loc(), "Assign deconstructor not allowed here");
+	@Override public void compile(CompileResult target, boolean pollute) {
+		if (assignable instanceof AssignNode other) throw new SyntaxException(other.loc(), "Assign deconstructor not allowed here");
 
-        assignable.beforeAssign(target);
-        value.compile(target, true);
-        assignable.afterAssign(target, pollute);
-    }
+		assignable.beforeAssign(target);
+		value.compile(target, true);
+		assignable.afterAssign(target, pollute);
+	}
 
-    @Override public void afterAssign(CompileResult target, boolean pollute) {
-        if (assignable instanceof AssignNode other) throw new SyntaxException(other.loc(), "Double assign deconstructor not allowed");
+	@Override public void afterAssign(CompileResult target, boolean pollute) {
+		if (assignable instanceof AssignNode other) throw new SyntaxException(other.loc(), "Double assign deconstructor not allowed");
 
-        if (pollute) target.add(Instruction.dup(2, 0));
-        else target.add(Instruction.dup());
-        target.add(Instruction.pushUndefined());
-        target.add(Instruction.operation(Operation.EQUALS));
-        var start = target.temp();
-        target.add(Instruction.discard());
+		if (pollute) target.add(Instruction.dup(2, 0));
+		else target.add(Instruction.dup());
+		target.add(Instruction.pushUndefined());
+		target.add(Instruction.operation(Operation.EQUALS));
+		var start = target.temp();
+		target.add(Instruction.discard());
 
-        value.compile(target, true);
+		value.compile(target, true);
 
-        target.set(start, Instruction.jmpIfNot(target.size() - start));
+		target.set(start, Instruction.jmpIfNot(target.size() - start));
 
-        assignable.assign(target, false);
-        if (!pollute) target.add(Instruction.discard());
-    }
+		assignable.assign(target, false);
+		if (!pollute) target.add(Instruction.discard());
+	}
 
-    public AssignNode(Location loc, AssignTarget assignable, Node value) {
-        super(loc);
-        this.assignable = assignable;
-        this.value = value;
-    }
+	public AssignNode(Location loc, AssignTarget assignable, Node value) {
+		super(loc);
+		this.assignable = assignable;
+		this.value = value;
+	}
 }

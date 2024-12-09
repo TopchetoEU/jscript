@@ -4,8 +4,8 @@ import me.topchetoeu.jscript.common.parsing.Location;
 import me.topchetoeu.jscript.compilation.CompileResult;
 
 public interface Member {
-    Location loc();
+	Location loc();
 
 	void compileFunctions(CompileResult target);
-    void compile(CompileResult target, boolean pollute);
+	void compile(CompileResult target, boolean pollute);
 }

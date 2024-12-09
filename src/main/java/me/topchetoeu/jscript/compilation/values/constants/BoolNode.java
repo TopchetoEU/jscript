@@ -6,17 +6,17 @@ import me.topchetoeu.jscript.compilation.CompileResult;
 import me.topchetoeu.jscript.compilation.Node;
 
 public class BoolNode extends Node {
-    public final boolean value;
+	public final boolean value;
 
 	@Override public void compileFunctions(CompileResult target) {
 	}
 
-    @Override public void compile(CompileResult target, boolean pollute) {
-        if (pollute) target.add(Instruction.pushValue(value));
-    }
+	@Override public void compile(CompileResult target, boolean pollute) {
+		if (pollute) target.add(Instruction.pushValue(value));
+	}
 
-    public BoolNode(Location loc, boolean value) {
-        super(loc);
-        this.value = value;
-    }
+	public BoolNode(Location loc, boolean value) {
+		super(loc);
+		this.value = value;
+	}
 }
