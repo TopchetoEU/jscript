@@ -43,7 +43,7 @@ public class InstructionRunner {
 		var callArgs = frame.take(instr.get(0));
 		var funcObj = frame.pop();
 
-		frame.push(funcObj.construct(env, callArgs));
+		frame.push(funcObj.constructNoSelf(env, callArgs));
 
 		frame.codePtr++;
 		return null;
@@ -222,7 +222,10 @@ public class InstructionRunner {
 	}
 	private static Value execLoadRegEx(Environment env, Instruction instr, Frame frame) {
 		if (env.hasNotNull(Value.REGEX_CONSTR)) {
-			frame.push(env.get(Value.REGEX_CONSTR).construct(env, instr.get(0), instr.get(1)));
+			frame.push(env.get(Value.REGEX_CONSTR).constructNoSelf(env,
+				StringValue.of(instr.get(0)),
+				StringValue.of(instr.get(1))
+			));
 		}
 		else {
 			throw EngineException.ofSyntax("Regex is not supported");

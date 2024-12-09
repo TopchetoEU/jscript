@@ -89,7 +89,7 @@ public abstract class Value {
 		throw EngineException.ofType("Value is not a constructor");
 	}
 
-	public final Value construct(Environment env, Value ...args) {
+	public final Value constructNoSelf(Environment env, Value ...args) {
 		var res = new ObjectValue();
 		var proto = getMember(env, StringValue.of("prototype"));
 
