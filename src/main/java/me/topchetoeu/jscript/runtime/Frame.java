@@ -16,7 +16,7 @@ import me.topchetoeu.jscript.runtime.values.objects.ObjectValue;
 import me.topchetoeu.jscript.runtime.values.primitives.numbers.IntValue;
 
 public final class Frame {
-	public static final Key<Frame> KEY = new Key<>();
+	public static final Key<Stack<Frame>> KEY = new Key<>();
 	public static final EngineException STACK_OVERFLOW;
 	static {
 		STACK_OVERFLOW = EngineException.ofRange("Stack overflow!");
@@ -110,6 +110,7 @@ public final class Frame {
 	public final Value[][] capturables;
 
 	public final Value self;
+	public final Value target;
 	public final Value[] args;
 	public final Value argsVal;
 	public final Value argsLen;
@@ -345,9 +346,11 @@ public final class Frame {
 	}
 
 	public void onPush() {
+		get(env).push(this);
 		DebugContext.get(env).onFramePush(env, this);
 	}
 	public void onPop() {
+		get(env).pop();
 		DebugContext.get(env).onFramePop(env, this);
 	}
 
@@ -366,11 +369,12 @@ public final class Frame {
 		};
 	}
 
-	public Frame(Environment env, boolean isNew, Value self, Value[] args, CodeFunction func) {
+	public Frame(Environment env, boolean isNew, Value target, Value self, Value[] args, CodeFunction func) {
 		this.env = env;
 		this.dbg = DebugContext.get(env);
 		this.function = func;
 		this.isNew = isNew;
+		this.target = target;
 
 		this.self = self;
 		this.args = args;
@@ -382,5 +386,18 @@ public final class Frame {
 		Arrays.fill(this.locals, Value.UNDEFINED);
 		this.capturables = new Value[func.body.capturablesN][1];
 		for (var i = 0; i < this.capturables.length; i++) this.capturables[i][0] = Value.UNDEFINED;
+	}
+
+	public static Stack<Frame> get(Environment env) {
+		if (env.has(KEY)) return env.get(KEY);
+		else {
+			var stack = new Stack<Frame>();
+			env.add(KEY, stack);
+			return stack;
+		}
+	}
+	public static Frame get(Environment env, int i) {
+		var stack = get(env);
+		return stack.get(stack.size() - i - 1);
 	}
 }

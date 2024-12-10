@@ -85,20 +85,12 @@ public abstract class Value {
 	public Value apply(Environment env, Value self, Value ...args) {
 		throw EngineException.ofType("Value is not a function");
 	}
-	public Value construct(Environment env, Value self, Value ...args) {
+	public Value construct(Environment env, Value target, Value ...args) {
 		throw EngineException.ofType("Value is not a constructor");
 	}
 
 	public final Value constructNoSelf(Environment env, Value ...args) {
-		var res = new ObjectValue();
-		var proto = getMember(env, StringValue.of("prototype"));
-
-		if (proto instanceof ObjectValue) res.setPrototype(env, (ObjectValue)proto);
-
-		var ret = this.construct(env, res, args);
-
-		if (ret == Value.UNDEFINED || ret.isPrimitive()) return res;
-		return ret;
+		return this.construct(env, this, args);
 	}
 
 

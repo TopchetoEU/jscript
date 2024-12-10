@@ -3,6 +3,7 @@ package me.topchetoeu.jscript.runtime.values.functions;
 
 import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.runtime.values.Value;
+import me.topchetoeu.jscript.runtime.values.objects.ObjectValue;
 import me.topchetoeu.jscript.runtime.values.primitives.UserValue;
 
 public class Arguments {
@@ -10,6 +11,15 @@ public class Arguments {
 	public final Value[] args;
 	public final Environment env;
 	public final boolean isNew;
+
+	public final <T extends Value> T setTargetProto(T obj) {
+		if (!self.isPrimitive()) {
+			var proto = self.getMember(env, "prototype");
+			if (proto instanceof ObjectValue objProto) self.setPrototype(env, objProto);
+			else if (proto == Value.NULL) self.setPrototype(env, null);
+		}
+		return obj;
+	}
 
 	public int n() {
 		return args.length;

@@ -52,16 +52,17 @@ public abstract class FunctionValue extends ObjectValue {
 		}
 	};
 
-	protected abstract Value onCall(Environment ext, boolean isNew, Value thisArg, Value ...args);
+	protected abstract Value onApply(Environment ext, Value thisArg, Value ...args);
+	protected abstract Value onConstruct(Environment ext, Value target, Value ...args);
 
 	@Override public String toString() { return String.format("function %s(...)", name); }
 	@Override public Value apply(Environment env, Value self, Value... args) {
 		if (!enableApply) throw EngineException.ofType("Function cannot be applied");
-		return onCall(env, false, self, args);
+		return onApply(env, self, args);
 	}
-	@Override public Value construct(Environment env, Value self, Value... args) {
+	@Override public Value construct(Environment env, Value target, Value... args) {
 		if (!enableConstruct) throw EngineException.ofType("Function cannot be constructed");
-		return onCall(env, true, self, args);
+		return onConstruct(env, target, args);
 	}
 
 	@Override public Member getOwnMember(Environment env, KeyCache key) {

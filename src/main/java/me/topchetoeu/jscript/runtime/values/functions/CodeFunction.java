@@ -4,6 +4,7 @@ import me.topchetoeu.jscript.common.FunctionBody;
 import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.runtime.Frame;
 import me.topchetoeu.jscript.runtime.values.Value;
+import me.topchetoeu.jscript.runtime.values.objects.ObjectValue;
 
 public final class CodeFunction extends FunctionValue {
 	public final FunctionBody body;
@@ -24,13 +25,24 @@ public final class CodeFunction extends FunctionValue {
 		}
 	}
 
-	@Override public Value onCall(Environment env, boolean isNew, Value self, Value ...args) {
-		var frame = new Frame(env, isNew, self, args, this);
-
+	@Override protected Value onApply(Environment ext, Value self, Value... args) {
+		var frame = new Frame(env, false, null, self, args, this);
 		var res = onCall(frame);
+		return res;
+	}
+	@Override protected Value onConstruct(Environment ext, Value target, Value... args) {
+		var self = new ObjectValue();
 
-		if (isNew) return frame.self;
-		else return res;
+		var proto = target.getMember(env, "prototype");
+		if (proto instanceof ObjectValue) self.setPrototype(env, (ObjectValue)proto);
+		else if (proto == Value.NULL) self.setPrototype(env, null);
+
+		var frame = new Frame(env, true, target, self, args, this);
+
+		var ret = onCall(frame);
+
+		if (ret == Value.UNDEFINED || ret.isPrimitive()) return self;
+		return ret;
 	}
 
 	public CodeFunction(Environment env, String name, FunctionBody body, Value[][] captures) {
