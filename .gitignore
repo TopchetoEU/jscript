@@ -1,26 +1,18 @@
-*
+/*
 
-!/src/
-!/src/**/*
-
+!/src
 !/doc
-!/doc/**/*
-
 !/tests
-!/tests/**/*
-
 !/.github
-!/.github/**/*
 
 !/.gitignore
 !/.gitattributes
 !/LICENSE
 !/README.md
+
 !/settings.gradle
 !/build.gradle
 !/gradle.properties
-!/gradle
-!/gradle/wrapper
-!/gradle/wrapper/gradle-wrapper.properties
 
-!/
+!/package.json
+!/rollup.config.js

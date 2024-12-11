@@ -1,0 +1,24 @@
+{
+	"scripts": {
+		"build-env": "rollup -c --environment INPUT:src/lib/libs/_entry.ts,OUTPUT:build/js/index.js,POLYFILLS:src/lib/libs/polyfills",
+		"build-ts": "rollup -c --environment INPUT:src/lib/ts/_entry.ts,OUTPUT:build/js/ts.js"
+	},
+	"dependencies": {
+		"@babel/runtime": "^7.26.0",
+		"typescript": "^5.7.2"
+	},
+	"devDependencies": {
+		"@babel/plugin-transform-class-properties": "^7.25.9",
+		"@babel/plugin-transform-runtime": "^7.25.9",
+		"@babel/plugin-transform-typescript": "^7.25.9",
+		"@babel/preset-env": "^7.26.0",
+		"@rollup/plugin-babel": "^6.0.4",
+		"@rollup/plugin-commonjs": "^28.0.1",
+		"@rollup/plugin-node-resolve": "^15.3.0",
+		"@rollup/plugin-terser": "^0.4.4",
+		"@rollup/plugin-typescript": "^12.1.1",
+		"@types/node": "^22.10.1",
+		"rollup": "^4.24.0",
+		"tslib": "^2.8.0"
+	}
+}

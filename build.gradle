@@ -2,6 +2,7 @@ import java.text.SimpleDateFormat
 
 plugins {
     id 'application'
+	id 'com.github.node-gradle.node' version '5.0.0'
     id 'net.nemerosa.versioning' version '2.15.0'
     id 'org.ajoberstar.grgit' version '5.0.0-rc.3' // required by gradle
 
@@ -13,6 +14,31 @@ base.archivesName = project.project_name
 version = project.project_version
 group = project.project_group
 description = 'ES5-compliant JavaScript interpreter'
+
+node {
+    version = '20.0.0'
+    npmVersion = '8.0.0'
+    download = true
+}
+
+task compileEnv(type: NpmTask) {
+    inputs.files('rollup.config.js')
+    inputs.dir('src/lib/libs')
+	outputs.files("build/js/env.js")
+
+	// group = 'build'
+	args = ['run', 'build-env']
+}
+task compileTypescript(type: NpmTask) {
+    inputs.files('rollup.config.js')
+    inputs.dir('src/lib/ts')
+	outputs.files("build/js/ts.js")
+    environment.put("NODE_OPTIONS", "--max-old-space-size=4096")
+
+	// group = 'build'
+	args = ['run', 'build-ts']
+}
+
 
 repositories {
     mavenCentral()
@@ -73,6 +99,13 @@ distTar {
 }
 
 processResources {
+    dependsOn compileEnv
+    dependsOn compileTypescript
+
+    from("build/js") {
+        into "lib"
+    }
+
     filesMatching "metadata.json", {
         expand(
             version: project.project_version,
