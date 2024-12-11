@@ -27,7 +27,14 @@ public class TryNode extends Node {
 	}
 	@Override public void compileFunctions(CompileResult target) {
 		tryBody.compileFunctions(target);
-		if (catchBody != null) catchBody.compileFunctions(target);
+		if (catchBody != null) {
+			if (captureName != null) {
+				var index = target.scope.defineCatch(captureName);
+				target.catchBindings.put(this, index);
+			}
+			catchBody.compileFunctions(target);
+			if (captureName != null) target.scope.undefineCatch();
+		}
 		if (finallyBody != null) finallyBody.compileFunctions(target);
 	}
 	@Override public void compile(CompileResult target, boolean pollute, BreakpointType bpt) {
@@ -45,11 +52,10 @@ public class TryNode extends Node {
 			catchStart = target.size() - start;
 
 			if (captureName != null) {
-				var catchVar = target.scope.defineCatch(captureName);
+				var catchVar = target.catchBindings.get(this);
 				target.add(Instruction.loadError()).setLocation(catchBody.loc());
 				target.add(catchVar.index().toSet(false)).setLocation(catchBody.loc());
 				catchBody.compile(target, false);
-				target.scope.undefineCatch();
 			}
 			else catchBody.compile(target, false);
 

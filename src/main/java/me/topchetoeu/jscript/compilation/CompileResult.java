@@ -15,7 +15,9 @@ import me.topchetoeu.jscript.common.environment.Key;
 import me.topchetoeu.jscript.common.mapping.FunctionMap;
 import me.topchetoeu.jscript.common.mapping.FunctionMap.FunctionMapBuilder;
 import me.topchetoeu.jscript.common.parsing.Location;
+import me.topchetoeu.jscript.compilation.control.TryNode;
 import me.topchetoeu.jscript.compilation.scope.FunctionScope;
+import me.topchetoeu.jscript.compilation.scope.Variable;
 
 public final class CompileResult {
 	public static final Key<Void> DEBUG_LOG = new Key<>();
@@ -28,6 +30,7 @@ public final class CompileResult {
 	public final Environment env;
 	public int length;
 	public final FunctionScope scope;
+	public final Map<TryNode, Variable> catchBindings = new HashMap<>();
 
 	public int temp() {
 		instructions.add(null);
