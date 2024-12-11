@@ -17,6 +17,8 @@ public class Reading {
 	}
 
 	public static byte[] streamToBytes(InputStream in) {
+		if (in == null) return null;
+
 		try {
 			List<byte[]> bufs = null;
 			byte[] result = null;
@@ -73,7 +75,9 @@ public class Reading {
 		catch (IOException e) { throw new UncheckedIOException(e); }
 	}
 	public static String streamToString(InputStream in) {
-		return new String(streamToBytes(in));
+		var bytes = streamToBytes(in);
+		if (bytes == null) return null;
+		else return new String(bytes);
 	}
 	
 	public static InputStream resourceToStream(String name) {
