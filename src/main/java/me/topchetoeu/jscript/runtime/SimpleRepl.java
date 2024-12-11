@@ -16,7 +16,6 @@ import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.common.environment.Key;
 import me.topchetoeu.jscript.common.json.JSON;
 import me.topchetoeu.jscript.common.parsing.Filename;
-import me.topchetoeu.jscript.compilation.CompileResult;
 import me.topchetoeu.jscript.runtime.debug.DebugContext;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
 import me.topchetoeu.jscript.runtime.values.Member.FieldMember;
@@ -298,6 +297,9 @@ public class SimpleRepl {
 		res.defineOwnMember(env, "getOwnSymbolMembers", new NativeFunction(args -> {
 			return ArrayValue.of(args.get(0).getOwnSymbolMembers(env, args.get(1).toBoolean()));
 		}));
+		res.defineOwnMember(env, "isArray", new NativeFunction(args -> {
+			return BoolValue.of(args.get(0) instanceof ArrayValue);
+		}));
 
 		return res;
 	}
@@ -320,6 +322,16 @@ public class SimpleRepl {
 			if (((ArgumentsValue)args.get(0)).frame.isNew) return StringValue.of("new");
 			else return StringValue.of("call");
 		}));
+		res.defineOwnMember(env, "invokeTypeInfer", new NativeFunction(args -> {
+			var frame = Frame.get(args.env, args.get(0).toNumber(args.env).getInt());
+			if (frame.isNew) return StringValue.of("new");
+			else return StringValue.of("call");
+		}));
+		res.defineOwnMember(env, "target", new NativeFunction(args -> {
+			var frame = Frame.get(args.env, args.get(0).toNumber(args.env).getInt());
+			if (frame.target == null) return Value.UNDEFINED;
+			else return frame.target;
+		}));
 
 		res.defineOwnMember(env, "invoke", new NativeFunction(args -> {
 			var func = (FunctionValue)args.get(0);
@@ -330,9 +342,11 @@ public class SimpleRepl {
 		}));
 		res.defineOwnMember(env, "construct", new NativeFunction(args -> {
 			var func = (FunctionValue)args.get(0);
-			var funcArgs = (ArrayValue)args.get(1);
+			var target = args.get(1);
+			var funcArgs = (ArrayValue)args.get(2);
 
-			return func.constructNoSelf(env, funcArgs.toArray());
+			if (target == Value.UNDEFINED) return func.constructNoSelf(env, funcArgs.toArray());
+			else return func.construct(env, target, funcArgs.toArray());
 		}));
 
 		return res;
@@ -388,9 +402,9 @@ public class SimpleRepl {
 			setProto(args.env, env, Value.SYNTAX_ERR_PROTO, obj, "syntax");
 			setProto(args.env, env, Value.TYPE_ERR_PROTO, obj, "type");
 			setProto(args.env, env, Value.RANGE_ERR_PROTO, obj, "range");
-			var val = obj.getMember(env, "regex");
+			var val = obj.getMember(args.env, "regex");
 			if (val instanceof FunctionValue func) {
-				args.env.add(Value.REGEX_CONSTR, func);
+				env.add(Value.REGEX_CONSTR, func);
 			}
 			return Value.UNDEFINED;
 		}));
@@ -409,13 +423,29 @@ public class SimpleRepl {
 		return res;
 	}
 
-	private static void initEnv() {
-		environment.add(EventLoop.KEY, engine);
-		environment.add(DebugContext.KEY, new DebugContext());
-		environment.add(Compiler.KEY, Compiler.DEFAULT);
+	private static Environment createESEnv() throws InterruptedException, ExecutionException {
+		var env = initEnv();
+		var stubEnv = initEnv();
+		Value.global(stubEnv).defineOwnMember(stubEnv, "target", Value.global(env));
+		Value.global(stubEnv).defineOwnMember(stubEnv, "primordials", primordials(env));
+
+		EventLoop.get(stubEnv).pushMsg(
+			false, stubEnv,
+			Filename.parse("jscript://init.js"), Reading.resourceToString("lib/index.js"),
+			Value.UNDEFINED
+		).get();
+
+		return env;
+	}
+
+	private static Environment initEnv() {
+		var env = new Environment();
+		env.add(EventLoop.KEY, engine);
+		env.add(DebugContext.KEY, new DebugContext());
+		env.add(Compiler.KEY, Compiler.DEFAULT);
 		// environment.add(CompileResult.DEBUG_LOG);
 
-		var glob = Value.global(environment);
+		var glob = Value.global(env);
 
 		glob.defineOwnMember(null, "exit", new NativeFunction("exit", args -> {
 			Thread.currentThread().interrupt();
@@ -439,20 +469,26 @@ public class SimpleRepl {
 
 			return Value.UNDEFINED;
 		}));
+
+		return env;
 	}
 	private static void initEngine() {
 		engineTask = engine.start();
 	}
 	private static void initGlobals() throws InterruptedException, ExecutionException {
-		EventLoop.get(environment).pushMsg(
-			false, environment,
-			Filename.parse("jscript://init.js"), Reading.resourceToString("lib/index.js"),
-			Value.UNDEFINED, Value.global(environment), primordials(environment)
-		).get();
-		EventLoop.get(environment).pushMsg(
-			false, environment,
-			Filename.parse("jscript://ts.js"), Reading.resourceToString("lib/ts.js"),
-			Value.UNDEFINED
+		environment = createESEnv();
+		var tsEnv = createESEnv();
+		var res = new FunctionValue[1];
+		var setter = new NativeFunction(args -> {
+			res[0] = (FunctionValue)args.get(0);
+			return Value.UNDEFINED;
+		});
+
+		var ts = Reading.resourceToString("lib/ts.js");
+		if (ts != null) EventLoop.get(tsEnv).pushMsg(
+			false, tsEnv,
+			Filename.parse("jscript://ts.js"), ts,
+			Value.UNDEFINED, setter
 		).get();
 	}
 
@@ -460,7 +496,7 @@ public class SimpleRepl {
 		SimpleRepl.args = args;
 		var reader = new Thread(SimpleRepl::reader);
 
-		initEnv();
+		environment = initEnv();
 		initEngine();
 
 		reader.setDaemon(true);
