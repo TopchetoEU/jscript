@@ -402,12 +402,13 @@ public class Parsing {
 		}
 
 		while (true) {
-			var digit = alphabet.indexOf(Character.toLowerCase(src.at(i + n)));
+			var digit = alphabet.indexOf(Character.toLowerCase(src.at(i + n, '\0')));
 			if (digit < 0) break;
 
 			parsedAny = true;
-			result += digit;
 			result *= alphabet.length();
+			result += digit;
+			n++;
 		}
 
 		if (!parsedAny) {
@@ -415,6 +416,6 @@ public class Parsing {
 			return ParseRes.failed();
 		}
 		else if (negative) return ParseRes.res(-result, n);
-		else return ParseRes.res(-result, n);
+		else return ParseRes.res(result, n);
 	}
 }
