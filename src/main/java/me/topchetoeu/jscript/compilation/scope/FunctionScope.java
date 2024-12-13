@@ -64,6 +64,15 @@ public final class FunctionScope {
 		return var;
 	}
 	/**
+	 * Creates a catch variable, using a specific variable instance
+	 * Used in the second pass
+	 */
+	public Variable defineCatch(String name, Variable var) {
+		this.locals.add(var);
+		this.catchesMap.add(var);
+		return var;
+	}
+	/**
 	 * Removes the last catch variable.
 	 * NOTE: the variable is still in the internal list. It just won't be findable by its name
 	 */

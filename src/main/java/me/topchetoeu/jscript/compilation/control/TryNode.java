@@ -53,9 +53,11 @@ public class TryNode extends Node {
 
 			if (captureName != null) {
 				var catchVar = target.catchBindings.get(this);
+				target.scope.defineCatch(captureName, catchVar);
 				target.add(Instruction.loadError()).setLocation(catchBody.loc());
 				target.add(catchVar.index().toSet(false)).setLocation(catchBody.loc());
 				catchBody.compile(target, false);
+				target.scope.undefineCatch();
 			}
 			else catchBody.compile(target, false);
 
@@ -65,6 +67,7 @@ public class TryNode extends Node {
 		if (finallyBody != null) {
 			finallyStart = target.size() - start;
 			finallyBody.compile(target, false);
+			target.add(Instruction.tryEnd());
 		}
 
 		LabelContext.getBreak(target.env).pop(label);
