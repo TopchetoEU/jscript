@@ -58,7 +58,7 @@ public final class StringValue extends PrimitiveValue {
 			if (i == num && i >= 0 && i < value.length()) {
 				return FieldMember.of(this, new StringValue(value.charAt(i) + ""), false, true, false);
 			}
-			else if (key.toString(env).equals("length")) {
+			else if (!key.isSymbol() && key.toString(env).equals("length")) {
 				return FieldMember.of(this, NumberValue.of(value.length()), false, false, false);
 			}
 		}
