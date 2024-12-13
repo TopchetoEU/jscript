@@ -80,23 +80,23 @@ public class OperationNode extends Node {
 		}
 	}
 	private static class LazyAndFactory implements OperatorFactory {
-		@Override public int precedence() { return 4; }
+		@Override public int precedence() { return 5; }
 		@Override public String token() { return "&&"; }
 		@Override public ParseRes<Node> construct(Source src, int i, Node prev) {
 			var loc = src.loc(i);
 
-			var other = JavaScript.parseExpression(src, i, 5);
+			var other = JavaScript.parseExpression(src, i, 6);
 			if (!other.isSuccess()) return other.chainError(src.loc(i + other.n), "Expected a value after '&&'");
 			return ParseRes.res(new LazyAndNode(loc, prev, (Node)other.result), other.n);
 		}
 	}
 	private static class LazyOrFactory implements OperatorFactory {
-		@Override public int precedence() { return 5; }
+		@Override public int precedence() { return 4; }
 		@Override public String token() { return "||"; }
 		@Override public ParseRes<Node> construct(Source src, int i, Node prev) {
 			var loc = src.loc(i);
 
-			var other = JavaScript.parseExpression(src, i, 6);
+			var other = JavaScript.parseExpression(src, i, 5);
 			if (!other.isSuccess()) return other.chainError(src.loc(i + other.n), "Expected a value after '||'");
 			return ParseRes.res(new LazyOrNode(loc, prev, (Node)other.result), other.n);
 		}
