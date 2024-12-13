@@ -22,7 +22,7 @@ public final class SymbolValue extends PrimitiveValue {
 
 	@Override public StringValue type() { return StringValue.of("symbol"); }
 
-	@Override public boolean toBoolean() { return false; }
+	@Override public boolean toBoolean() { return true; }
 	@Override public String toString(Environment env) {
 		throw EngineException.ofType("Cannot convert a Symbol value to a string");
 	}
