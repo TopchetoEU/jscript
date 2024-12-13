@@ -2,13 +2,12 @@ package me.topchetoeu.jscript.runtime;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Optional;
 
 import me.topchetoeu.jscript.common.Instruction;
 import me.topchetoeu.jscript.common.Operation;
 import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
-import me.topchetoeu.jscript.runtime.values.Member.FieldMember;
-import me.topchetoeu.jscript.runtime.values.Member.PropertyMember;
 import me.topchetoeu.jscript.runtime.values.Value;
 import me.topchetoeu.jscript.runtime.values.functions.CodeFunction;
 import me.topchetoeu.jscript.runtime.values.functions.FunctionValue;
@@ -60,8 +59,8 @@ public class InstructionRunner {
 		else if (val instanceof FunctionValue func) accessor = func;
 		else throw EngineException.ofType("Getter must be a function or undefined");
 
-		if ((boolean)instr.get(0)) obj.defineOwnMember(env, key, new PropertyMember(obj, null, accessor, true, true));
-		else obj.defineOwnMember(env, key, new PropertyMember(obj, accessor, null, true, true));
+		if ((boolean)instr.get(0)) obj.defineOwnProperty(env, key, null, Optional.of(accessor), true, true);
+		else obj.defineOwnProperty(env, key, Optional.of(accessor), null, true, true);
 
 		frame.codePtr++;
 		return null;
@@ -71,7 +70,7 @@ public class InstructionRunner {
 		var key = frame.pop();
 		var obj = frame.pop();
 
-		obj.defineOwnMember(env, key, FieldMember.of(obj, val, true, true, true));
+		obj.defineOwnField(env, key, val, true, true, true);
 
 		frame.codePtr++;
 		return null;
@@ -86,7 +85,7 @@ public class InstructionRunner {
 
 		for (var el : members) {
 			var obj = new ObjectValue();
-			obj.defineOwnMember(env, "value", StringValue.of(el));
+			obj.defineOwnField(env, "value", StringValue.of(el));
 			frame.push(obj);
 		}
 
@@ -405,13 +404,13 @@ public class InstructionRunner {
 				break;
 
 			case SHIFT_LEFT:
-				res = Value.shiftLeft(env, stack[ptr], stack[ptr]);
+				res = Value.shiftLeft(env, stack[ptr - 1], stack[ptr]);
 				break;
 			case SHIFT_RIGHT:
-				res = Value.shiftRight(env, stack[ptr], stack[ptr]);
+				res = Value.shiftRight(env, stack[ptr - 1], stack[ptr]);
 				break;
 			case USHIFT_RIGHT:
-				res = Value.unsignedShiftRight(env, stack[ptr], stack[ptr]);
+				res = Value.unsignedShiftRight(env, stack[ptr - 1], stack[ptr]);
 				break;
 
 			case IN:
@@ -433,7 +432,7 @@ public class InstructionRunner {
 		var name = (String)instr.get(0);
 
 		if (!Value.global(env).hasMember(env, name, false)) {
-			if (!Value.global(env).defineOwnMember(env, name, Value.UNDEFINED)) throw EngineException.ofError("Couldn't define variable " + name);
+			if (!Value.global(env).defineOwnField(env, name, Value.UNDEFINED)) throw EngineException.ofError("Couldn't define variable " + name);
 		}
 
 		frame.codePtr++;

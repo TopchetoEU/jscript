@@ -11,6 +11,7 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import me.topchetoeu.jscript.common.SyntaxException;
@@ -18,7 +19,6 @@ import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.common.environment.Key;
 import me.topchetoeu.jscript.runtime.EventLoop;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
-import me.topchetoeu.jscript.runtime.values.Member.FieldMember;
 import me.topchetoeu.jscript.runtime.values.Member.PropertyMember;
 import me.topchetoeu.jscript.runtime.values.functions.FunctionValue;
 import me.topchetoeu.jscript.runtime.values.functions.NativeFunction;
@@ -110,7 +110,8 @@ public abstract class Value {
 	public abstract Member getOwnMember(Environment env, KeyCache key);
 	public abstract Set<String> getOwnMembers(Environment env, boolean onlyEnumerable);
 	public abstract Set<SymbolValue> getOwnSymbolMembers(Environment env, boolean onlyEnumerable);
-	public abstract boolean defineOwnMember(Environment env, KeyCache key, Member member);
+	public abstract boolean defineOwnField(Environment env, KeyCache key, Value val, Boolean writable, Boolean enumerable, Boolean configurable);
+	public abstract boolean defineOwnProperty(Environment env, KeyCache key, Optional<FunctionValue> get, Optional<FunctionValue> set, Boolean enumerable, Boolean configurable);
 	public abstract boolean deleteOwnMember(Environment env, KeyCache key);
 
 	public abstract ObjectValue getPrototype(Environment env);
@@ -135,33 +136,46 @@ public abstract class Value {
 		return getOwnMember(env, new KeyCache(key));
 	}
 
-	public final boolean defineOwnMember(Environment env, Value key, Member member) {
-		return defineOwnMember(env, new KeyCache(key), member);
+	public final boolean defineOwnProperty(Environment env, Value key, Optional<FunctionValue> get, Optional<FunctionValue> set, Boolean enumerable, Boolean configurable) {
+		return defineOwnProperty(env, new KeyCache(key), get, set, enumerable, configurable);
 	}
-	public final boolean defineOwnMember(Environment env, String key, Member member) {
-		return defineOwnMember(env, new KeyCache(key), member);
+	public final boolean defineOwnProperty(Environment env, String key, Optional<FunctionValue> get, Optional<FunctionValue> set, Boolean enumerable, Boolean configurable) {
+		return defineOwnProperty(env, new KeyCache(key), get, set, enumerable, configurable);
 	}
-	public final boolean defineOwnMember(Environment env, int key, Member member) {
-		return defineOwnMember(env, new KeyCache(key), member);
+	public final boolean defineOwnProperty(Environment env, int key, Optional<FunctionValue> get, Optional<FunctionValue> set, Boolean enumerable, Boolean configurable) {
+		return defineOwnProperty(env, new KeyCache(key), get, set, enumerable, configurable);
 	}
-	public final boolean defineOwnMember(Environment env, double key, Member member) {
-		return defineOwnMember(env, new KeyCache(key), member);
+	public final boolean defineOwnProperty(Environment env, double key, Optional<FunctionValue> get, Optional<FunctionValue> set, Boolean enumerable, Boolean configurable) {
+		return defineOwnProperty(env, new KeyCache(key), get, set, enumerable, configurable);
 	}
 
-	public final boolean defineOwnMember(Environment env, KeyCache key, Value val) {
-		return defineOwnMember(env, key, FieldMember.of(this, val));
+	public final boolean defineOwnField(Environment env, Value key, Value val, Boolean writable, Boolean enumerable, Boolean configurable) {
+		return defineOwnField(env, new KeyCache(key), val, writable, enumerable, configurable);
 	}
-	public final boolean defineOwnMember(Environment env, Value key, Value val) {
-		return defineOwnMember(env, new KeyCache(key), val);
+	public final boolean defineOwnField(Environment env, String key, Value val, Boolean writable, Boolean enumerable, Boolean configurable) {
+		return defineOwnField(env, new KeyCache(key), val, writable, enumerable, configurable);
 	}
-	public final boolean defineOwnMember(Environment env, String key, Value val) {
-		return defineOwnMember(env, new KeyCache(key), val);
+	public final boolean defineOwnField(Environment env, int key, Value val, Boolean writable, Boolean enumerable, Boolean configurable) {
+		return defineOwnField(env, new KeyCache(key), val, writable, enumerable, configurable);
 	}
-	public final boolean defineOwnMember(Environment env, int key, Value val) {
-		return defineOwnMember(env, new KeyCache(key), val);
+	public final boolean defineOwnField(Environment env, double key, Value val, Boolean writable, Boolean enumerable, Boolean configurable) {
+		return defineOwnField(env, new KeyCache(key), val, writable, enumerable, configurable);
 	}
-	public final boolean defineOwnMember(Environment env, double key, Value val) {
-		return defineOwnMember(env, new KeyCache(key), val);
+
+	public final boolean defineOwnField(Environment env, KeyCache key, Value val) {
+		return defineOwnField(env, key, val, true, true, true);
+	}
+	public final boolean defineOwnField(Environment env, Value key, Value val) {
+		return defineOwnField(env, new KeyCache(key), val);
+	}
+	public final boolean defineOwnField(Environment env, String key, Value val) {
+		return defineOwnField(env, new KeyCache(key), val);
+	}
+	public final boolean defineOwnField(Environment env, int key, Value val) {
+		return defineOwnField(env, new KeyCache(key), val);
+	}
+	public final boolean defineOwnField(Environment env, double key, Value val) {
+		return defineOwnField(env, new KeyCache(key), val);
 	}
 
 	public final boolean deleteOwnMember(Environment env, Value key) {
@@ -221,14 +235,14 @@ public abstract class Value {
 			var member = obj.getOwnMember(env, key);
 			if (member != null && (member instanceof PropertyMember || obj == this)) {
 				if (member.set(env, val, this)) {
-					if (val instanceof FunctionValue) ((FunctionValue)val).setName(key.toString(env));
+					if (val instanceof FunctionValue && !key.isSymbol()) ((FunctionValue)val).setName(key.toString(env));
 					return true;
 				}
 				else return false;
 			}
 		}
 
-		if (defineOwnMember(env, key, val)) {
+		if (defineOwnField(env, key, val)) {
 			if (val instanceof FunctionValue func) {
 				if (key.isSymbol()) func.setName(key.toSymbol().toString());
 				else func.setName(key.toString(env));
@@ -255,7 +269,7 @@ public abstract class Value {
 			var member = obj.getOwnMember(env, key);
 			if (member != null) {
 				if (member.set(env, val, obj)) {
-					if (val instanceof FunctionValue) ((FunctionValue)val).setName(key.toString(env));
+					if (!key.isSymbol() && val instanceof FunctionValue) ((FunctionValue)val).setName(key.toString(env));
 					return true;
 				}
 				else return false;
@@ -434,8 +448,8 @@ public abstract class Value {
 		return new NativeFunction("", args -> {
 			var obj = new ObjectValue();
 
-			if (!it.hasNext()) obj.defineOwnMember(args.env, "done", BoolValue.TRUE);
-			else obj.defineOwnMember(args.env, "value", it.next());
+			if (!it.hasNext()) obj.defineOwnField(args.env, "done", BoolValue.TRUE);
+			else obj.defineOwnField(args.env, "value", it.next());
 
 			return obj;
 		});

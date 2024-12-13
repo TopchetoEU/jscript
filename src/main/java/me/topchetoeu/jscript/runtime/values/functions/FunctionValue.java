@@ -66,15 +66,16 @@ public abstract class FunctionValue extends ObjectValue {
 	}
 
 	@Override public Member getOwnMember(Environment env, KeyCache key) {
-		switch (key.toString(env)) {
+		if (!key.isSymbol()) switch (key.toString(env)) {
 			case "length": return lengthField;
 			case "name": return nameField;
 			case "prototype": return prototypeField;
-			default: return super.getOwnMember(env, key);
 		}
+
+		return super.getOwnMember(env, key);
 	}
 	@Override public boolean deleteOwnMember(Environment env, KeyCache key) {
-		switch (key.toString(env)) {
+		if (!key.isSymbol()) switch (key.toString(env)) {
 			case "length":
 				length = 0;
 				return true;
@@ -83,8 +84,8 @@ public abstract class FunctionValue extends ObjectValue {
 				return true;
 			case "prototype":
 				return false;
-			default: return super.deleteOwnMember(env, key);
 		}
+		return super.deleteOwnMember(env, key);
 	}
 
 	@Override public StringValue type() { return StringValue.of("function"); }
@@ -114,7 +115,7 @@ public abstract class FunctionValue extends ObjectValue {
 		this.length = length;
 		this.name = name;
 
-		prototype.defineOwnMember(null, "constructor", this);
+		prototype.defineOwnField(null, "constructor", this);
 	}
 }
 

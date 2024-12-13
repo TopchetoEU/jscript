@@ -1,17 +1,28 @@
 package me.topchetoeu.jscript.runtime.values.primitives;
 
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 
 import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.runtime.values.KeyCache;
 import me.topchetoeu.jscript.runtime.values.Member;
 import me.topchetoeu.jscript.runtime.values.Value;
+import me.topchetoeu.jscript.runtime.values.functions.FunctionValue;
 import me.topchetoeu.jscript.runtime.values.objects.ObjectValue;
 
 public abstract class PrimitiveValue extends Value {
-	@Override public final boolean defineOwnMember(Environment env, KeyCache key, Member member) { return false; }
-	@Override public final boolean deleteOwnMember(Environment env, KeyCache key) { return false; }
+	@Override public boolean defineOwnField(
+		Environment env, KeyCache key, Value val,
+		Boolean writable, Boolean enumerable, Boolean configurable
+	) { return false; }
+	@Override
+	public boolean defineOwnProperty(
+		Environment env, KeyCache key, Optional<FunctionValue> get, Optional<FunctionValue> set,
+		Boolean enumerable, Boolean configurable
+	) { return false; }
+	@Override public boolean deleteOwnMember(Environment env, KeyCache key) { return true; }
+
 	@Override public final boolean isPrimitive() { return true; }
 	@Override public final Value toPrimitive(Environment env) { return this; }
 

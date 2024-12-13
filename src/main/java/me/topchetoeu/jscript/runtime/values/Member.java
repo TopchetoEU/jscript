@@ -1,5 +1,7 @@
 package me.topchetoeu.jscript.runtime.values;
 
+import java.util.Optional;
+
 import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.runtime.values.functions.FunctionValue;
 import me.topchetoeu.jscript.runtime.values.objects.ObjectValue;
@@ -26,25 +28,27 @@ public interface Member {
 		@Override public boolean configurable() { return configurable && self.getState().configurable; }
 		@Override public boolean enumerable() { return enumerable; }
 
-		@Override public boolean redefine(Environment env, Member newMember, Value self) {
-			// If the given member isn't a property, we can't redefine
-			if (!(newMember instanceof PropertyMember prop)) return false;
-
-			if (configurable()) {
+		public boolean reconfigure(
+			Environment env, Value self,
+			Optional<FunctionValue> get, Optional<FunctionValue> set,
+			Boolean enumerable, Boolean configurable
+		) {
+			if (this.configurable) {
 				// We will overlay the getters and setters of the new member
-				enumerable = prop.enumerable;
-				configurable = prop.configurable;
+				if (enumerable != null) this.enumerable = enumerable;
+				if (configurable != null) this.configurable = configurable;
 
-				if (prop.getter != null) getter = prop.getter;
-				if (prop.setter != null) setter = prop.setter;
+				if (get != null) this.getter = get.orElse(null);
+				if (set != null) this.setter = set.orElse(null);
 
 				return true;
 			}
 			else {
 				// We will pretend that a redefinition has occurred if the two members match exactly
-				if (prop.configurable() != configurable()) return false;
-				if (prop.enumerable != enumerable) return false;
-				if (prop.getter != getter || prop.setter != setter) return false;
+				if (configurable != null && this.configurable != configurable) return false;
+				if (enumerable != null && this.enumerable != enumerable) return false;
+				if (get != null && get.orElse(null) != getter) return false;
+				if (set != null && set.orElse(null) != setter) return false;
 
 				return true;
 			}
@@ -55,14 +59,14 @@ public interface Member {
 
 			// Don't touch the ordering, as it's emulating V8
 
-			if (getter == null) res.defineOwnMember(env, "getter", Value.UNDEFINED);
-			else res.defineOwnMember(env, "getter", getter);
+			if (getter == null) res.defineOwnField(env, "getter", Value.UNDEFINED);
+			else res.defineOwnField(env, "getter", getter);
 
-			if (setter == null) res.defineOwnMember(env, "setter", Value.UNDEFINED);
-			else res.defineOwnMember(env, "setter", setter);
+			if (setter == null) res.defineOwnField(env, "setter", Value.UNDEFINED);
+			else res.defineOwnField(env, "setter", setter);
 
-			res.defineOwnMember(env, "enumerable", BoolValue.of(enumerable));
-			res.defineOwnMember(env, "configurable", BoolValue.of(configurable));
+			res.defineOwnField(env, "enumerable", BoolValue.of(enumerable));
+			res.defineOwnField(env, "configurable", BoolValue.of(configurable));
 			return res;
 		}
 
@@ -72,6 +76,13 @@ public interface Member {
 			this.setter = setter;
 			this.configurable = configurable;
 			this.enumerable = enumerable;
+		}
+		public PropertyMember(Value self, Optional<FunctionValue> getter, Optional<FunctionValue> setter, Boolean configurable, Boolean enumerable) {
+			this.self = self;
+			this.getter = getter == null ? null : getter.orElse(null);
+			this.setter = setter == null ? null : setter.orElse(null);
+			this.configurable = configurable == null ? false : configurable;
+			this.enumerable = enumerable == null ? false : enumerable;
 		}
 	}
 
@@ -85,8 +96,10 @@ public interface Member {
 				value = val;
 				return true;
 			}
-			public SimpleFieldMember(Value self, Value value, boolean configurable, boolean enumerable, boolean writable) {
+			public SimpleFieldMember(Value self, Value value, Boolean configurable, Boolean enumerable, Boolean writable) {
 				super(self, configurable, enumerable, writable);
+				if (value == null) value = Value.UNDEFINED;
+
 				this.value = value;
 			}
 		}
@@ -100,37 +113,39 @@ public interface Member {
 		@Override public final boolean enumerable() { return enumerable; }
 		public final boolean writable() { return writable && self.getState().writable; }
 
-		@Override public final boolean redefine(Environment env, Member newMember, Value self) {
-			// If the given member isn't a field, we can't redefine
-			if (!(newMember instanceof FieldMember field)) return false;
+		public final boolean reconfigure(
+			Environment env, Value self, Value val,
+			Boolean writable, Boolean enumerable, Boolean configurable
+		) {
+			if (this.configurable) {
+				if (writable != null) this.writable = writable;
+				if (enumerable != null) this.enumerable = enumerable;
+				if (configurable != null) this.configurable = configurable;
+				if (val != null) {
+					// We will try to set a new value. However, the underlying field might be immutably readonly
+					// In such case, we will silently fail, since this is not covered by the specification
+					if (!set(env, val, self)) writable = false;
+				}
 
-			if (configurable()) {
-				configurable = field.configurable;
-				enumerable = field.enumerable;
-				writable = field.enumerable;
-
-				// We will try to set a new value. However, the underlying field might be immutably readonly
-				// In such case, we will silently fail, since this is not covered by the specification
-				if (!set(env, field.get(env, self), self)) writable = false;
 				return true;
 			}
 			else {
 				// New field settings must be an exact match
-				if (configurable() != field.configurable()) return false;
-				if (enumerable() != field.enumerable()) return false;
+				if (configurable != null && this.configurable != configurable) return false;
+				if (enumerable != null && this.enumerable != enumerable) return false;
 
-				if (!writable()) {
+				if (this.writable) {
 					// If the field isn't writable, the redefinition should be an exact match
-					if (field.writable()) return false;
-					if (field.get(env, self).equals(this.get(env, self))) return false;
+					if (writable != null && writable) return false;
+					if (val != null && val.equals(this.get(env, self))) return false;
 
 					return true;
 				}
 				else {
 					// Writable non-configurable fields may be made readonly or their values may be changed
-					writable = field.writable;
+					if (writable != null) this.writable = writable;
 
-					if (!set(env, field.get(env, self), self)) writable = false;
+					if (!set(env, val, self)) writable = false;
 					return true;
 				}
 			}
@@ -138,14 +153,18 @@ public interface Member {
 
 		@Override public ObjectValue descriptor(Environment env, Value self) {
 			var res = new ObjectValue();
-			res.defineOwnMember(env, "value", get(env, self));
-			res.defineOwnMember(env, "writable", BoolValue.of(writable));
-			res.defineOwnMember(env, "enumerable", BoolValue.of(enumerable));
-			res.defineOwnMember(env, "configurable", BoolValue.of(configurable));
+			res.defineOwnField(env, "value", get(env, self));
+			res.defineOwnField(env, "writable", BoolValue.of(writable));
+			res.defineOwnField(env, "enumerable", BoolValue.of(enumerable));
+			res.defineOwnField(env, "configurable", BoolValue.of(configurable));
 			return res;
 		}
 
-		public FieldMember(Value self, boolean configurable, boolean enumerable, boolean writable) {
+		public FieldMember(Value self, Boolean configurable, Boolean enumerable, Boolean writable) {
+			if (writable == null) writable = false;
+			if (enumerable == null) enumerable = false;
+			if (configurable == null) configurable = false;
+
 			this.self = self;
 			this.configurable = configurable;
 			this.enumerable = enumerable;
@@ -155,17 +174,16 @@ public interface Member {
 		public static FieldMember of(Value self, Value value) {
 			return new SimpleFieldMember(self, value, true, true, true);
 		}
-		public static FieldMember of(Value self, Value value, boolean writable) {
+		public static FieldMember of(Value self, Value value, Boolean writable) {
 			return new SimpleFieldMember(self, value, true, true, writable);
 		}
-		public static FieldMember of(Value self, Value value, boolean configurable, boolean enumerable, boolean writable) {
+		public static FieldMember of(Value self, Value value, Boolean configurable, Boolean enumerable, Boolean writable) {
 			return new SimpleFieldMember(self, value, configurable, enumerable, writable);
 		}
 	}
 
 	public boolean configurable();
 	public boolean enumerable();
-	public boolean redefine(Environment env, Member newMember, Value self);
 	public ObjectValue descriptor(Environment env, Value self);
 
 	public Value get(Environment env, Value self);

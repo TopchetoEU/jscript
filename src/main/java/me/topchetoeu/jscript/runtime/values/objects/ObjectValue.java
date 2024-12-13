@@ -1,11 +1,13 @@
 package me.topchetoeu.jscript.runtime.values.objects;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import me.topchetoeu.jscript.common.environment.Environment;
@@ -14,6 +16,7 @@ import me.topchetoeu.jscript.runtime.exceptions.EngineException;
 import me.topchetoeu.jscript.runtime.values.KeyCache;
 import me.topchetoeu.jscript.runtime.values.Member;
 import me.topchetoeu.jscript.runtime.values.Value;
+import me.topchetoeu.jscript.runtime.values.Member.FieldMember;
 import me.topchetoeu.jscript.runtime.values.Member.PropertyMember;
 import me.topchetoeu.jscript.runtime.values.functions.FunctionValue;
 import me.topchetoeu.jscript.runtime.values.primitives.StringValue;
@@ -37,8 +40,13 @@ public class ObjectValue extends Value {
 
 	protected PrototypeProvider prototype;
 
-	public LinkedHashMap<String, Member> members = new LinkedHashMap<>();
-	public LinkedHashMap<SymbolValue, Member> symbolMembers = new LinkedHashMap<>();
+	private HashMap<String, FieldMember> fields = new HashMap<>();
+	private HashMap<SymbolValue, FieldMember> symbolFields = new HashMap<>();
+	private HashMap<String, PropertyMember> properties = new HashMap<>();
+	private HashMap<SymbolValue, PropertyMember> symbolProperties = new HashMap<>();
+
+	private LinkedHashMap<String, Boolean> keys = new LinkedHashMap<>();
+	private LinkedHashMap<SymbolValue, Boolean> symbols = new LinkedHashMap<>();
 
 	@Override public boolean isPrimitive() { return false; }
 	@Override public Value toPrimitive(Environment env) {
@@ -78,57 +86,154 @@ public class ObjectValue extends Value {
 
 	@Override public Member getOwnMember(Environment env, KeyCache key) {
 		if (key.isSymbol()) {
-			if (symbolMembers.size() > 0) return symbolMembers.get(key.toSymbol());
-			else return null;
+			if (!symbols.containsKey(key.toSymbol())) return null;
+			
+			if (symbols.get(key.toSymbol())) return symbolProperties.get(key.toSymbol());
+			else return symbolFields.get(key.toSymbol());
 		}
-		else if (members.size() > 0) return members.get(key.toString(env));
+		else if (keys.containsKey(key.toString(env))) {
+			if (keys.get(key.toString(env))) return properties.get(key.toString(env));
+			else return fields.get(key.toString(env));
+		}
 		else return null;
 	}
-	@Override public boolean defineOwnMember(Environment env, KeyCache key, Member member) {
-		var old = getOwnMember(env, key);
-		if (old != null && old.redefine(env, member, this)) return true;
-		if (old != null && !old.configurable()) return false;
+	@Override public boolean defineOwnField(
+		Environment env, KeyCache key, Value val,
+		Boolean writable, Boolean enumerable, Boolean configurable
+	) {
+		if (key.isSymbol()) {
 
-		if (key.isSymbol()) symbolMembers.put(key.toSymbol(), member);
-		else members.put(key.toString(env), member);
+			if (symbols.containsKey(key.toSymbol())) {
+				if (symbols.get(key.toSymbol())) {
+					var prop = symbolProperties.get(key.toSymbol());
+					if (!prop.configurable) return false;
 
+					symbolProperties.remove(key.toSymbol());
+				}
+				else return symbolFields.get(key.toSymbol()).reconfigure(env, this, val, writable, enumerable, configurable);
+			}
+
+			symbols.put(key.toSymbol(), false);
+			symbolFields.put(key.toSymbol(), FieldMember.of(this, val, writable, enumerable, configurable));
+			return true;
+		}
+		else if (keys.containsKey(key.toString(env))) {
+			if (keys.get(key.toString(env))) {
+				var prop = properties.get(key.toString(env));
+				if (!prop.configurable) return false;
+
+				properties.remove(key.toString(env));
+			}
+			else return fields.get(key.toString(env)).reconfigure(env, this, val, writable, enumerable, configurable);
+		}
+
+		keys.put(key.toString(env), false);
+		fields.put(key.toString(env), FieldMember.of(this, val, writable, enumerable, configurable));
+		return true;
+	}
+	@Override public boolean defineOwnProperty(
+		Environment env, KeyCache key,
+		Optional<FunctionValue> get, Optional<FunctionValue> set,
+		Boolean enumerable, Boolean configurable
+	) {
+		if (key.isSymbol()) {
+			if (symbols.containsKey(key.toSymbol())) {
+				if (!symbols.get(key.toSymbol())) {
+					var field = symbolFields.get(key.toSymbol());
+					if (!field.configurable) return false;
+
+					symbolFields.remove(key.toSymbol());
+				}
+				else return symbolProperties.get(key.toSymbol()).reconfigure(env, this, get, set, enumerable, configurable);
+			}
+
+			symbols.put(key.toSymbol(), true);
+			symbolProperties.put(key.toSymbol(), new PropertyMember(this, get, set, enumerable, configurable));
+			return true;
+		}
+		else if (keys.containsKey(key.toString(env))) {
+			if (!keys.get(key.toString(env))) {
+				var field = fields.get(key.toString(env));
+				if (!field.configurable) return false;
+
+				fields.remove(key.toString(env));
+			}
+			else return properties.get(key.toString(env)).reconfigure(env, this, get, set, enumerable, configurable);
+		}
+
+		keys.put(key.toString(env), true);
+		properties.put(key.toString(env), new PropertyMember(this, get, set, enumerable, configurable));
 		return true;
 	}
 	@Override public boolean deleteOwnMember(Environment env, KeyCache key) {
 		if (!getState().extendable) return false;
 
-		var member = getOwnMember(env, key);
-		if (member == null) return true;
-		if (!member.configurable()) return false;
-
-		if (key.isSymbol()) symbolMembers.remove(key.toSymbol());
-		else members.remove(key.toString(env));
-		return true;
+		if (key.isSymbol()) {
+			if (!symbols.containsKey(key.toSymbol())) return true;
+			
+			if (symbols.get(key.toSymbol())) {
+				if (!symbolProperties.get(key.toSymbol()).configurable) return false;
+				symbolProperties.remove(key.toSymbol());
+				symbols.remove(key.toSymbol());
+				return true;
+			}
+			else {
+				if (!symbolFields.get(key.toSymbol()).configurable) return false;
+				symbolFields.remove(key.toSymbol());
+				keys.remove(key.toString(env));
+				return true;
+			}
+		}
+		else if (keys.containsKey(key.toString(env))) {
+			if (keys.get(key.toString(env))) {
+				if (!properties.get(key.toString(env)).configurable) return false;
+				properties.remove(key.toString(env));
+				symbols.remove(key.toSymbol());
+				return true;
+			}
+			else {
+				if (!fields.get(key.toString(env)).configurable) return false;
+				fields.remove(key.toString(env));
+				keys.remove(key.toString(env));
+				return true;
+			}
+		}
+		else return true;
 	}
 
 	@Override public Set<String> getOwnMembers(Environment env, boolean onlyEnumerable) {
 		if (onlyEnumerable) {
 			var res = new LinkedHashSet<String>();
 
-			for (var el : members.entrySet()) {
-				if (el.getValue().enumerable()) res.add(el.getKey());
+			for (var el : keys.entrySet()) {
+				if (el.getValue()) {
+					if (properties.get(el.getKey()).enumerable) res.add(el.getKey());
+				}
+				else {
+					if (fields.get(el.getKey()).enumerable) res.add(el.getKey());
+				}
 			}
 
 			return res;
 		}
-		else  return members.keySet();
+		else return keys.keySet();
 	}
 	@Override public Set<SymbolValue> getOwnSymbolMembers(Environment env, boolean onlyEnumerable) {
 		if (onlyEnumerable) {
 			var res = new LinkedHashSet<SymbolValue>();
 
-			for (var el : symbolMembers.entrySet()) {
-				if (el.getValue().enumerable()) res.add(el.getKey());
+			for (var el : symbols.entrySet()) {
+				if (el.getValue()) {
+					if (symbolProperties.get(el.getKey()).enumerable) res.add(el.getKey());
+				}
+				else {
+					if (symbolFields.get(el.getKey()).enumerable) res.add(el.getKey());
+				}
 			}
 
 			return res;
 		}
-		else  return symbolMembers.keySet();
+		else  return symbols.keySet();
 	}
 
 	@Override public ObjectValue getPrototype(Environment env) {

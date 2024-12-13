@@ -65,11 +65,13 @@ public abstract class ArrayLikeValue extends ObjectValue {
 		var i = key.toInt(env);
 
 		if (i == num && i >= 0 && i < size() && has(i)) return new IndexField(i, this);
-		else if (key.toString(env).equals("length")) return lengthField;
+		else if (!key.isSymbol() && key.toString(env).equals("length")) return lengthField;
 		else return null;
 	}
-	@Override public boolean defineOwnMember(Environment env, KeyCache key, Member member) {
-		if (!(member instanceof FieldMember) || super.getOwnMember(env, key) != null) return super.defineOwnMember(env, key, member);
+	@Override public boolean defineOwnField(
+		Environment env, KeyCache key, Value val,
+		Boolean writable, Boolean enumerable, Boolean configurable
+	) {
 		if (!getState().writable) return false;
 
 		if (!key.isSymbol()) {
@@ -77,12 +79,18 @@ public abstract class ArrayLikeValue extends ObjectValue {
 			var i = key.toInt(env);
 
 			if (i == num) {
-				if (!getState().extendable && !has(i)) return false;
-				if (set(env, i, ((FieldMember)member).get(env, this))) return true;
+				if (writable == null) writable = true;
+				if (configurable == null) configurable = true;
+				if (enumerable == null) enumerable = true;
+
+				if (writable && configurable && enumerable) {
+					if (!getState().extendable && !has(i)) return false;
+					if (set(env, i, val)) return true;
+				}
 			}
 		}
 
-		return super.defineOwnMember(env, key, member);
+		return super.defineOwnField(env, key, val, writable, enumerable, configurable);
 	}
 	@Override public boolean deleteOwnMember(Environment env, KeyCache key) {
 		if (!super.deleteOwnMember(env, key)) return false;
