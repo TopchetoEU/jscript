@@ -61,14 +61,14 @@ export const Number = (() => {
 		public static readonly MIN_VALUE: number;
 	}
 
-	object.defineField(Number, "EPSILON", false, false, false, 2.220446049250313e-16);
-	object.defineField(Number, "MIN_SAFE_INTEGER", false, false, false, -9007199254740991);
-	object.defineField(Number, "MAX_SAFE_INTEGER", false, false, false, 9007199254740991);
-	object.defineField(Number, "POSITIVE_INFINITY", false, false, false, +number.Infinity);
-	object.defineField(Number, "NEGATIVE_INFINITY", false, false, false, -number.Infinity);
-	object.defineField(Number, "NaN", false, false, false, number.NaN);
-	object.defineField(Number, "MAX_VALUE", false, false, false, 1.7976931348623157e+308);
-	object.defineField(Number, "MIN_VALUE", false, false, false, 5e-324);
+	object.defineField(Number, "EPSILON", { c: false, e: false, w: false, v: 2.220446049250313e-16 });
+	object.defineField(Number, "MIN_SAFE_INTEGER", { c: false, e: false, w: false, v: -9007199254740991 });
+	object.defineField(Number, "MAX_SAFE_INTEGER", { c: false, e: false, w: false, v: 9007199254740991 });
+	object.defineField(Number, "POSITIVE_INFINITY", { c: false, e: false, w: false, v: +number.Infinity });
+	object.defineField(Number, "NEGATIVE_INFINITY", { c: false, e: false, w: false, v: -number.Infinity });
+	object.defineField(Number, "NaN", { c: false, e: false, w: false, v: number.NaN });
+	object.defineField(Number, "MAX_VALUE", { c: false, e: false, w: false, v: 1.7976931348623157e+308 });
+	object.defineField(Number, "MIN_VALUE", { c: false, e: false, w: false, v: 5e-324 });
 	func.setCallable(Number, true);
 	func.setConstructable(Number, true);
 

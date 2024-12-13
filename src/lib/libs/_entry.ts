@@ -1,44 +1,58 @@
-import { Boolean } from "./boolean.ts";
+import { object, setGlobalPrototypes, target } from "./primordials.ts";
 import { Error, RangeError, SyntaxError, TypeError } from "./errors.ts";
+import { Boolean } from "./boolean.ts";
 import { Function } from "./function.ts";
 import { Number } from "./number.ts";
 import { Object } from "./object.ts";
-import { object, setGlobalPrototypes, target } from "./primordials.ts";
 import { String } from "./string.ts";
 import { Symbol } from "./symbol.ts";
 import { Array } from "./array.ts";
-import { Map } from "./map.ts";
+import { Map, WeakMap } from "./map.ts";
 import { RegExp } from "./regex.ts";
+import { Date } from "./date.ts";
+import { Math as _Math } from "./math.ts";
+import { Set, WeakSet } from "./set.ts";
 
 declare global {
 	function print(...args: any[]): void;
+	function measure(func: Function): void;
 }
 
-object.defineField(target, "undefined", false, false, false, undefined);
+function fixup<T extends Function>(clazz: T) {
+	object.setPrototype(clazz, Function.prototype);
+	object.setPrototype(clazz.prototype, Object.prototype);
+	return clazz;
+}
 
-target.Symbol = Symbol;
-target.Number = Number;
-target.String = String;
-target.Boolean = Boolean;
+object.defineField(target, "undefined", { e: false, c: false, w: false, v: void 0 });
+
+target.Symbol = fixup(Symbol);
+target.Number = fixup(Number);
+target.String = fixup(String);
+target.Boolean = fixup(Boolean);
 
 target.Object = Object;
-target.Function = Function;
-target.Array = Array;
+target.Function = fixup(Function);
+target.Array = fixup(Array);
 
-target.Error = Error;
+target.Error = fixup(Error);
 target.RangeError = RangeError;
 target.SyntaxError = SyntaxError;
 target.TypeError = TypeError;
 
-target.Map = Map;
+target.Map = fixup(Map);
+target.WeakMap = fixup(WeakMap);
+target.Set = fixup(Set);
+target.WeakSet = fixup(WeakSet);
+target.RegExp = fixup(RegExp);
+target.Date = fixup(Date);
+target.Math = object.setPrototype(_Math, Object.prototype);
 
 target.parseInt = Number.parseInt;
 target.parseFloat = Number.parseFloat;
 target.NaN = Number.NaN;
 target.Infinity = Number.POSITIVE_INFINITY;
 
-
-target.RegExp = RegExp;
 
 setGlobalPrototypes({
 	string: String.prototype,

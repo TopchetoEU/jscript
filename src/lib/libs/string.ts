@@ -1,6 +1,6 @@
-import { func, string } from "./primordials.ts";
-import { Symbol } from "./symbol.ts";
-import { unwrapThis, valueKey } from "./utils.ts";
+import { func, number, string } from "./primordials.ts";
+import { RegExp } from "./regex.ts";
+import { applyReplaces, applySplits, limitI, ReplaceRange, symbols, unwrapThis, valueKey, wrapI } from "./utils.ts";
 
 export const String = (() => {
 	class String {
@@ -17,15 +17,119 @@ export const String = (() => {
 			return unwrapThis(this, "string", String, "String.prototype.valueOf");
 		}
 
-		// public split(val: string) {
-		// 	const res: string[] = [];
+		public includes(search: string, offset = 0) {
+			const self = unwrapThis(this, "string", String, "String.prototype.indexOf");
+			return string.indexOf(self, (String as any)(search), +offset, false) >= 0;
+		}
 
-		// 	while (true) {
-		// 		val.indexOf();
-		// 	}
-		// }
+		public indexOf(search: string, offset = 0) {
+			const self = unwrapThis(this, "string", String, "String.prototype.indexOf");
+			offset = +offset;
+			return string.indexOf(self, search, offset, false);
+		}
+		public lastIndexOf(search: string, offset = 0) {
+			const self = unwrapThis(this, "string", String, "String.prototype.lastIndexOf");
+			offset = +offset;
+			return string.indexOf(self, search, offset, true);
+		}
 
-		public [Symbol.iterator]() {
+		public charAt(i: number) {
+			const self = unwrapThis(this, "string", String, "String.prototype.charAt");
+			return self[i];
+		}
+		public charCodeAt(i: number) {
+			const self = unwrapThis(this, "string", String, "String.prototype.charCodeAt");
+			return self[i] ? string.toCharCode(self[i]) : number.NaN;
+		}
+		public codePointAt(i: number) {
+			const self = unwrapThis(this, "string", String, "String.prototype.charCodeAt");
+			return i > 0 && i <= self.length ? string.toCodePoint(self, i) : number.NaN;
+		}
+
+		public split(val?: any, limit?: number) {
+			const self = unwrapThis(this, "string", String, "String.prototype.split");
+			if (val === undefined) return [self];
+			if (val !== null && typeof val === "object" && symbols.split in val) {
+				return val[symbols.split](self, limit);
+			}
+
+			val = (String as any)(val);
+
+			return applySplits(self, limit, offset => {
+				const start = string.indexOf(self, val, offset, false);
+				if (start < 0) return undefined;
+				else return { start, end: start + val.length };
+			});
+		}
+		public replace(val: any, replacer: any) {
+			const self = unwrapThis(this, "string", String, "String.prototype.replace");
+			if (val !== null && typeof val === "object" && symbols.replace in val) {
+				return val[symbols.replace](self, replacer);
+			}
+			else val = (String as any)(val);
+
+			const i = string.indexOf(self, val, 0);
+			return applyReplaces(self, [{ start: i, end: i + val.length, matches: [val] }], replacer, false);
+		}
+		public replaceAll(val: any, replacer: any) {
+			const self = unwrapThis(this, "string", String, "String.prototype.replaceAll");
+			if (val !== null && typeof val === "object" && symbols.replace in val) {
+				if (val instanceof RegExp && !val.global) throw new TypeError("replaceAll must be called with a global RegExp");
+				return val[symbols.replace](self, replacer);
+			}
+			else val = (String as any)(val);
+
+			let offset = 0;
+			const matches: ReplaceRange[] = [];
+			const add = val.length === 0 ? 1 : val.length;
+
+			while (true) {
+				const i = string.indexOf(self, val, offset);
+				if (i < 0) break;
+
+				matches[matches.length] = { start: i, end: i + val.length, matches: [val] };
+				if (val.length === 0)
+				offset = i + add;
+			}
+
+			return applyReplaces(self, matches, replacer, false);
+		}
+
+		public slice(this: string, start = 0, end = this.length) {
+			const self = unwrapThis(this, "string", String, "String.prototype.slice");
+			start = limitI(wrapI(start, this.length), this.length);
+			end = limitI(wrapI(end, this.length), this.length);
+
+			if (end <= start) return "";
+			return string.substring(self, start, end);
+		}
+		public substring(this: string, start = 0, end = this.length) {
+			const self = unwrapThis(this, "string", String, "String.prototype.substring");
+			start = limitI(start, this.length);
+			end = limitI(end, this.length);
+
+			if (end <= start) return "";
+			return string.substring(self, start, end);
+		}
+		public substr(this: string, start = 0, count = this.length - start) {
+			const self = unwrapThis(this, "string", String, "String.prototype.substr");
+			start = limitI(start, this.length);
+			count = limitI(count, this.length - start);
+
+			if (count <= 0) return "";
+			return string.substring(self, start, count + start);
+		}
+
+		public toLowerCase(this: string) {
+			const self = unwrapThis(this, "string", String, "String.prototype.toLowerCase");
+			return string.lower(self);
+		}
+		public toUpperCase(this: string) {
+			const self = unwrapThis(this, "string", String, "String.prototype.toLowerCase");
+			return string.upper(self);
+		}
+
+		public [symbols.iterator]() {
 			var i = 0;
 			var arr: string | undefined = unwrapThis(this, "string", String, "String.prototype[Symbol.iterator]");
 
@@ -42,7 +146,7 @@ export const String = (() => {
 						return { done: false, value: val };
 					}
 				},
-				[Symbol.iterator]() { return this; }
+				[symbols.iterator]() { return this; }
 			};
 		}
 

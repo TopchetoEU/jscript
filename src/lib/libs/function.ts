@@ -17,8 +17,29 @@ export const Function = (() => {
 		public apply(this: (...args: any) => any, self: any, args: any[]) {
 			return func.invoke(this, self, args);
 		}
-		public call(this: (...args: any) => any, self: any, ...args: any[]) {
+		public call(this: (...args: any) => any, self: any) {
+			const args: any[] = [];
+			for (let i = arguments.length - 1; i >= 1; i--) args[i - 1] = arguments[i];
 			return func.invoke(this, self, args);
+		}
+		public bind(this: (...args: any) => any, self: any) {
+			const cb = this;
+			if (arguments.length === 0) return function (this: any) { return func.invoke(cb, this, arguments as any) };
+			if (arguments.length <= 1) return function () { return func.invoke(cb, self, arguments as any); }
+
+			const base: any[] = [];
+			const offset = arguments.length - 1;
+			base.length = offset;
+
+			for (let i = 0; i < offset; i++) base[i] = arguments[i + 1];
+
+			return function () {
+				for (let i = 0; i < arguments.length; i++) {
+					base[offset + i] = arguments[i];
+				}
+
+				return func.invoke(cb, self, base);
+			};
 		}
 
 		public constructor (...args: string[]) {

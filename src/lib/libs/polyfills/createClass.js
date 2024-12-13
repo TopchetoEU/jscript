@@ -2,24 +2,25 @@ import { object } from "../primordials.ts";
 
 function _defineProperties(target, arr) {
 	if (!arr) return;
-	for (var t = 0; t < arr.length; t++) {
-		var desc = arr[t];
-
+	for (var i = 0; i < arr.length; i++) {
+		var desc = arr[i];
+		var res;
+		
 		if ("value" in desc) {
-			object.defineField(target, desc.key, desc.writable || true, desc.enumerable || false, desc.configurable || true, desc.value);
+			res = object.defineField(target, desc.key, { w: desc.writable || true, e: desc.enumerable || true, c: desc.configurable || true, v: desc.value });
 		}
 		else {
-			object.defineProperty(target, desc.key, desc.enumerable || false, desc.configurable || true, desc.get, desc.set);
+			res = object.defineProperty(target, desc.key, { e: desc.enumerable || true, c: desc.configurable || true, g: desc.get, s: desc.set });
 		}
+
+		if (!res) throw "Couldn't set property";
 	}
 }
 
 /* __#PURE__ */
 export default function _createClass(clazz, instance, nonInstance) {
-	if (instance) {
-		_defineProperties(clazz.prototype, instance);
-		_defineProperties(clazz, nonInstance);
-	}
+	_defineProperties(clazz.prototype, instance);
+	_defineProperties(clazz, nonInstance);
 
 	return clazz;
 }

@@ -1,17 +1,26 @@
-import { createDocumentRegistry, createLanguageService, ModuleKind, ScriptSnapshot, ScriptTarget, type Diagnostic, type CompilerOptions, type IScriptSnapshot, flattenDiagnosticMessageText, CompilerHost } from "typescript";
+import { createDocumentRegistry, createLanguageService, ModuleKind, ScriptSnapshot, ScriptTarget, type Diagnostic, type CompilerOptions, type IScriptSnapshot, flattenDiagnosticMessageText, CompilerHost, LanguageService } from "typescript";
 
-declare function getResource(name: string): string;
+// declare function getResource(name: string): string | undefined;
 declare function print(...args: any[]): void;
-declare function register(factory: CompilerFactory): void;
+// declare function register(factory: CompilerFactory): void;
 
 type CompilerFactory = (next: Compiler) => Compiler;
 type Compiler = (filename: string, src: string, maps: any[]) => Function;
 
 const resources: Record<string, string | undefined> = {};
 
+function getResource(name: string): string | undefined {
+	if (name === "/lib.d.ts") return "declare var a = 10;";
+	return undefined;
+}
+
 function resource(name: string) {
 	if (name in resources) return resources[name];
 	else return resources[name] = getResource(name);
+}
+
+function register(factory: CompilerFactory): void {
+	factory((filename, src) => Function(src));
 }
 
 register(next => {
@@ -32,34 +41,39 @@ register(next => {
 		declaration: true,
 	};
 
-	const service = createLanguageService({
-		getCurrentDirectory: () => "/",
-		getDefaultLibFileName: () => "/lib.d.ts",
-		getScriptFileNames: () => {
-			const res = ["/src.ts", "/lib.d.ts"];
-			for (let i = 0; i < declI; i++) res.push("/src." + i + ".d.ts");
-			return res;
-		},
-		getCompilationSettings: () => settings,
-		log: print,
-		fileExists: filename => filename in files || resource(filename) != null,
-	
-		getScriptSnapshot: (filename) => {
-			if (filename in files) return files[filename];
-			else {
-				const src = resource(filename);
-				if (src == null) return undefined;
-				return files[filename] = ScriptSnapshot.fromString(src);
-			}
-		},
-		getScriptVersion: (filename) => String(versions[filename] || 0),
-	
-		readFile: () => { throw "no"; },
-		writeFile: () => { throw "no"; },
-	}, createDocumentRegistry());
-	
-	service.getEmitOutput("/lib.d.ts");
-	print("Loaded typescript...");
+	let service: LanguageService;
+
+	measure(() => {
+		service = createLanguageService({
+			getCurrentDirectory: () => "/",
+			getDefaultLibFileName: () => "/lib.d.ts",
+			getScriptFileNames: () => {
+				const res = ["/src.ts", "/lib.d.ts"];
+				for (let i = 0; i < declI; i++) res.push("/src." + i + ".d.ts");
+				return res;
+			},
+			getCompilationSettings: () => settings,
+			log: print,
+			fileExists: filename => filename in files || resource(filename) != null,
+
+			getScriptSnapshot: (filename) => {
+				if (filename in files) return files[filename];
+				else {
+					const src = resource(filename);
+					if (src == null) return undefined;
+					return files[filename] = ScriptSnapshot.fromString(src);
+				}
+			},
+			getScriptVersion: (filename) => String(versions[filename] || 0),
+		
+			readFile: () => { throw "no"; },
+			writeFile: () => { throw "no"; },
+		}, createDocumentRegistry());
+	});
+	measure(() => {
+		service.getEmitOutput("/lib.d.ts");
+	});
+	print("Loaded typescript!");
 	
 	return (code, filename, mapChain) => {
 		files["/src.ts"] = ScriptSnapshot.fromString(code);
