@@ -12,14 +12,13 @@ import me.topchetoeu.jscript.compilation.JavaScript;
 import me.topchetoeu.jscript.compilation.LabelContext;
 import me.topchetoeu.jscript.compilation.Node;
 import me.topchetoeu.jscript.compilation.VariableDeclareNode;
-import me.topchetoeu.jscript.compilation.values.operations.DiscardNode;
 
 public class ForNode extends Node {
 	public final Node declaration, assignment, condition, body;
 	public final String label;
 
 	@Override public void resolve(CompileResult target) {
-		declaration.resolve(target);
+		if (declaration != null) declaration.resolve(target);
 		body.resolve(target);
 	}
 	@Override public void compileFunctions(CompileResult target) {
@@ -46,11 +45,11 @@ public class ForNode extends Node {
 		if (assignment != null) assignment.compile(target, false, BreakpointType.STEP_OVER);
 		int endI = target.size();
 
-		end.set(endI);
+		end.set(endI + 1);
 		LabelContext.popLoop(target.env, label);
 
 		target.add(Instruction.jmp(start - endI));
-		if (mid >= 0) target.set(mid, Instruction.jmpIfNot(endI - mid + 1));
+		if (condition != null) target.set(mid, Instruction.jmpIfNot(endI - mid + 1));
 		if (pollute) target.add(Instruction.pushUndefined());
 	}
 
@@ -67,7 +66,7 @@ public class ForNode extends Node {
 		var n = Parsing.skipEmpty(src, i);
 
 		if (!src.is(i + n, ";")) return ParseRes.failed();
-		else return ParseRes.res(new DiscardNode(src.loc(i), null), n + 1);
+		else return ParseRes.res(null, n + 1);
 	}
 	private static ParseRes<Node> parseCondition(Source src, int i) {
 		var n = Parsing.skipEmpty(src, i);

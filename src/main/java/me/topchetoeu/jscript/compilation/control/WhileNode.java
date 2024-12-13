@@ -38,8 +38,8 @@ public class WhileNode extends Node {
 		end.set(endI + 1);
 		LabelContext.popLoop(target.env, label);
 
-		target.add(Instruction.jmp(start - end.getAsInt()));
-		target.set(mid, Instruction.jmpIfNot(end.getAsInt() - mid + 1));
+		target.add(Instruction.jmp(start - endI));
+		target.set(mid, Instruction.jmpIfNot(endI - mid + 1));
 		if (pollute) target.add(Instruction.pushUndefined());
 	}
 

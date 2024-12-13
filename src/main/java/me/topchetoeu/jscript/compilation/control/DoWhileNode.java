@@ -27,12 +27,10 @@ public class DoWhileNode extends Node {
 	@Override public void compile(CompileResult target, boolean pollute) {
 		int start = target.size();
 		var end = new DeferredIntSupplier();
-		var mid = new DeferredIntSupplier();
 
 		LabelContext.pushLoop(target.env, loc(), label, end, start);
 		body.compile(target, false, BreakpointType.STEP_OVER);
 
-		mid.set(target.size());
 		condition.compile(target, true, BreakpointType.STEP_OVER);
 		int endI = target.size();
 		end.set(endI + 1);
