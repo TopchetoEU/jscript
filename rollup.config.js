@@ -98,11 +98,6 @@ const construct = (input, output) => defineConfig({
 			sourceMap: shouldEmitSourcemaps(),
 			keep_classnames: true,
 		}),
-		{
-			load(source) {
-				console.log(source);
-			}
-		},
 	],
 	output: {
 		file: output,
