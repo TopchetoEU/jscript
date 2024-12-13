@@ -19,7 +19,8 @@ public class LabelContext {
 	private final LinkedList<IntSupplier> list = new LinkedList<>();
 	private final HashMap<String, IntSupplier> map = new HashMap<>();
 
-	private final Stack<ArrayList<Runnable>> deferredAdders = new Stack<>();
+	private final LinkedList<ArrayList<Runnable>> deferredList = new LinkedList<>();
+	private final HashMap<String, ArrayList<Runnable>> deferredMap = new HashMap<>();
 
 	public IntSupplier get() {
 		return list.peekLast();
@@ -28,28 +29,41 @@ public class LabelContext {
 		return map.get(name);
 	}
 
-	public void flushAdders() {
-		for (var adder : deferredAdders.peek()) {
+	public void flushAdders(String name) {
+		for (var adder : deferredList.peek()) {
 			adder.run();
 		}
 
-		deferredAdders.pop();
+		deferredList.pop();
+
+		if (name != null) {
+			var adders = deferredMap.remove(name);
+			if (adders != null) {
+				for (var adder : adders) adder.run();
+				
+			}
+		}
 	}
 
 	public boolean jump(CompileResult target) {
 		var res = get();
 		if (res != null) {
 			var tmp = target.temp();
-			this.deferredAdders.peek().add(() -> target.set(tmp, Instruction.jmp(res.getAsInt() - tmp)));
+			this.deferredList.peek().add(() -> target.set(tmp, Instruction.jmp(res.getAsInt() - tmp)));
 			return true;
 		}
 		else return false;
 	}
 	public boolean jump(CompileResult target, String name) {
-		var res = get(name);
+		var res = name == null ? get() : get(name);
 		if (res != null) {
 			var tmp = target.temp();
-			this.deferredAdders.peek().add(() -> target.set(tmp, Instruction.jmp(res.getAsInt() - tmp)));
+			Runnable task = () -> target.set(tmp, Instruction.jmp(res.getAsInt() - tmp));
+
+			if (name == null) this.deferredList.peekLast().add(task);
+			else if (deferredMap.containsKey(name)) this.deferredMap.get(name).add(task);
+			else return false;
+
 			return true;
 		}
 		else return false;
@@ -67,7 +81,8 @@ public class LabelContext {
 	public void pushLoop(Location loc, String name, IntSupplier jumpTarget) {
 		push(jumpTarget);
 		push(loc, name, jumpTarget);
-		deferredAdders.push(new ArrayList<>());
+		deferredList.push(new ArrayList<>());
+		if (name != null) deferredMap.put(name, new ArrayList<>());
 	}
 
 	public void pop() {
@@ -81,7 +96,7 @@ public class LabelContext {
 	public void popLoop(String name) {
 		pop();
 		pop(name);
-		flushAdders();
+		flushAdders(name);
 	}
 
 	public static LabelContext getBreak(Environment env) {
