@@ -1,123 +1,124 @@
 import java.text.SimpleDateFormat
 
 plugins {
-    id 'application'
-	id 'com.github.node-gradle.node' version '5.0.0'
-    id 'net.nemerosa.versioning' version '2.15.0'
-    id 'org.ajoberstar.grgit' version '5.0.0-rc.3' // required by gradle
+	id 'application';
+	id 'com.github.node-gradle.node' version '5.0.0';
+	id 'net.nemerosa.versioning' version '2.15.0';
+	id 'org.ajoberstar.grgit' version '5.0.0-rc.3'; // required by gradle
 
-    // TODO: figure out how to integrate proguard
-    // id "com.github.xaverkapeller.proguard-annotations"
+	// TODO: figure out how to integrate proguard
+	// id "com.github.xaverkapeller.proguard-annotations"
 }
 
-base.archivesName = project.project_name
-version = project.project_version
-group = project.project_group
-description = 'ES5-compliant JavaScript interpreter'
+base.archivesName = project.project_name;
+version = project.project_version;
+group = project.project_group;
+description = 'ES5-compliant JavaScript interpreter';
 
 node {
-    version = '20.0.0'
-    npmVersion = '8.0.0'
-    download = true
+	version = '20.0.0';
+	npmVersion = '8.0.0';
+	download = true;
 }
 
 task compileEnv(type: NpmTask) {
-    inputs.files('rollup.config.js')
-    inputs.dir('src/lib/libs')
-	outputs.files("build/js/env.js")
+	inputs.files('rollup.config.js');
+	inputs.dir('src/lib/libs');
+	outputs.files("build/js/env.js");
 
 	// group = 'build'
-	args = ['run', 'build-env']
+	args = ['run', 'build-env'];
 }
 task compileTypescript(type: NpmTask) {
-    inputs.files('rollup.config.js')
-    inputs.dir('src/lib/ts')
-	outputs.files("build/js/ts.js")
-    environment.put("NODE_OPTIONS", "--max-old-space-size=4096")
+	inputs.files('rollup.config.js');
+	inputs.dir('src/lib/ts');
+	outputs.files("build/js/ts.js");
+	// nom nom tasty ram
+	environment.put("NODE_OPTIONS", "--max-old-space-size=4096");
 
 	// group = 'build'
-	args = ['run', 'build-ts']
+	args = ['run', 'build-ts'];
 }
 
 
 repositories {
-    mavenCentral()
+	mavenCentral();
 }
 
 dependencies {
-    annotationProcessor 'com.github.bsideup.jabel:jabel-javac-plugin:0.4.2'
-    compileOnly 'com.github.bsideup.jabel:jabel-javac-plugin:0.4.2'
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.9.2'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+	annotationProcessor 'com.github.bsideup.jabel:jabel-javac-plugin:0.4.2';
+	compileOnly 'com.github.bsideup.jabel:jabel-javac-plugin:0.4.2';
+	testImplementation 'org.junit.jupiter:junit-jupiter:5.9.2';
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher';
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+	sourceCompatibility = JavaVersion.VERSION_17;
+	targetCompatibility = JavaVersion.VERSION_17;
 
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(17)
-    }
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(17);
+	}
 }
 
 configure([tasks.compileJava]) {
-    options.release = 8
+	options.release = 8;
 }
 
 jar {
-    manifest {
-        attributes(
-            'Main-Class': project.main_class,
-            'Build-Timestamp': new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").format(new Date()),
-            'Build-Branch': versioning.info.branch,
-            'Build-Revision': versioning.info.commit,
-            'Build-Jdk': "${System.properties['java.version']} (${System.properties['java.vendor']} ${System.properties['java.vm.version']})",
-            'Build-Author': 'TopchetoEU'
-        )
-    }
+	manifest {
+		attributes(
+			'Main-Class': project.main_class,
+			'Build-Timestamp': new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").format(new Date()),
+			'Build-Branch': versioning.info.branch,
+			'Build-Revision': versioning.info.commit,
+			'Build-Jdk': "${System.properties['java.version']} (${System.properties['java.vendor']} ${System.properties['java.vm.version']})",
+			'Build-Author': 'TopchetoEU',
+		);
+	}
 }
 
 application {
-    mainClass = project.main_class
-    applicationDefaultJvmArgs = ['-Xmx2G', '-Xms2G', '-server', '-Dfile.encoding=UTF-8']
+	mainClass = project.main_class;
+	applicationDefaultJvmArgs = ['-Xmx2G', '-Xms2G', '-server', '-Dfile.encoding=UTF-8'];
 }
 
 distZip {
-    eachFile { file ->
-        if (file.path.contains('bin')) {
-            file.exclude()
-        }
-    }
+	eachFile { file ->
+		if (file.path.contains('bin')) {
+			file.exclude();
+		}
+	}
 }
 
 distTar {
-    eachFile { file ->
-        if (file.path.contains('bin')) {
-            file.exclude()
-        }
-    }
+	eachFile { file ->
+		if (file.path.contains('bin')) {
+			file.exclude();
+		}
+	}
 }
 
 processResources {
-    dependsOn compileEnv
-    dependsOn compileTypescript
+	dependsOn compileEnv;
+	dependsOn compileTypescript;
 
-    from("build/js") {
-        into "lib"
-    }
+	from("build/js") {
+		into "lib";
+	}
 
-    filesMatching "metadata.json", {
-        expand(
-            version: project.project_version,
-            name: project.project_name
-        )
-    }
+	filesMatching "metadata.json", {
+		expand(
+			version: project.project_version,
+			name: project.project_name,
+		);
+	}
 }
 
 test {
-    useJUnitPlatform()
+	useJUnitPlatform();
 }
 
 wrapper {
-    gradleVersion = '8.10'
+	gradleVersion = '8.10';
 }
