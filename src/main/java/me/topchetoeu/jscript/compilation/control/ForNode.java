@@ -30,6 +30,7 @@ public class ForNode extends Node {
 	@Override public void compile(CompileResult target, boolean pollute) {
 		if (declaration != null) declaration.compile(target, false, BreakpointType.STEP_OVER);
 
+		var continueTarget = new DeferredIntSupplier();
 		int start = target.size();
 		int mid = -1;
 		if (condition != null) {
@@ -39,9 +40,10 @@ public class ForNode extends Node {
 
 		var end = new DeferredIntSupplier();
 
-		LabelContext.pushLoop(target.env, loc(), label, end, start);
+		LabelContext.pushLoop(target.env, loc(), label, end, continueTarget);
 		body.compile(target, false, BreakpointType.STEP_OVER);
 
+		continueTarget.set(target.size());
 		if (assignment != null) assignment.compile(target, false, BreakpointType.STEP_OVER);
 		int endI = target.size();
 
