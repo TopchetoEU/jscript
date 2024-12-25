@@ -12,6 +12,8 @@ import { RegExp } from "./regex.ts";
 import { Date } from "./date.ts";
 import { Math as _Math } from "./math.ts";
 import { Set, WeakSet } from "./set.ts";
+import { JSON } from "./json.ts";
+import { encodeURI, encodeURIComponent } from "./url.ts";
 
 declare global {
 	function print(...args: any[]): void;
@@ -47,12 +49,14 @@ target.WeakSet = fixup(WeakSet);
 target.RegExp = fixup(RegExp);
 target.Date = fixup(Date);
 target.Math = object.setPrototype(_Math, Object.prototype);
+target.JSON = object.setPrototype(JSON, Object.prototype);
 
 target.parseInt = Number.parseInt;
 target.parseFloat = Number.parseFloat;
 target.NaN = Number.NaN;
 target.Infinity = Number.POSITIVE_INFINITY;
-
+target.encodeURI = encodeURI;
+target.encodeURIComponent = encodeURIComponent;
 
 setGlobalPrototypes({
 	string: String.prototype,

@@ -7,6 +7,10 @@ const mapKey: unique symbol = symbol.makeSymbol("Map.impl") as any;
 export class Map<K, V> {
 	private [mapKey]: InstanceType<typeof map>;
 
+	public get size() {
+		return this[mapKey].size();
+	}
+
 	public get(key: K): V {
 		return this[mapKey].get(key);
 	}

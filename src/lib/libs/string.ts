@@ -1,6 +1,9 @@
-import { func, number, string } from "./primordials.ts";
+import { func, number, regex, string } from "./primordials.ts";
 import { RegExp } from "./regex.ts";
 import { applyReplaces, applySplits, limitI, ReplaceRange, symbols, unwrapThis, valueKey, wrapI } from "./utils.ts";
+
+const trimStartRegex = new regex("^\\s+", false, false, false, false, false);
+const trimEndRegex = new regex("\\s+$", false, false, false, false, false);
 
 export const String = (() => {
 	class String {
@@ -33,6 +36,31 @@ export const String = (() => {
 			return string.indexOf(self, search, offset, true);
 		}
 
+		public trim() {
+			const self = unwrapThis(this, "string", String, "String.prototype.trim");
+			const start = trimStartRegex.exec(self, 0, false);
+			const end = trimEndRegex.exec(self, 0, false);
+
+			const startI = start == null ? 0 : start.end;
+			const endI = end == null ? self.length : end.matches.index!;
+
+			return string.substring(self, startI, endI);
+		}
+		public trimStart() {
+			const self = unwrapThis(this, "string", String, "String.prototype.trim");
+			const start = trimStartRegex.exec(self, 0, false);
+			const startI = start == null ? 0 : start.end;
+
+			return string.substring(self, startI, self.length);
+		}
+		public trimEnd() {
+			const self = unwrapThis(this, "string", String, "String.prototype.trim");
+			const end = trimEndRegex.exec(self, 0, false);
+			const endI = end == null ? self.length : end.matches.index!;
+
+			return string.substring(self, 0, endI);
+		}
+
 		public charAt(i: number) {
 			const self = unwrapThis(this, "string", String, "String.prototype.charAt");
 			return self[i];
@@ -43,7 +71,7 @@ export const String = (() => {
 		}
 		public codePointAt(i: number) {
 			const self = unwrapThis(this, "string", String, "String.prototype.charCodeAt");
-			return i > 0 && i <= self.length ? string.toCodePoint(self, i) : number.NaN;
+			return i >= 0 && i < self.length ? string.toCodePoint(self, i) : number.NaN;
 		}
 
 		public split(val?: any, limit?: number) {
@@ -159,7 +187,7 @@ export const String = (() => {
 			this[valueKey] = (String as any)(value);
 		}
 
-		public static fromCharCode(...args: number[]) {
+		public static fromCharCode() {
 			const res: string[] = [];
 			res[arguments.length] = "";
 
@@ -169,7 +197,7 @@ export const String = (() => {
 
 			return string.stringBuild(res);
 		}
-		public static fromCodePoint(...args: number[]) {
+		public static fromCodePoint() {
 			const res: string[] = [];
 			res[arguments.length] = "";
 

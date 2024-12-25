@@ -7,6 +7,10 @@ const mapKey: unique symbol = symbol.makeSymbol("Set.impl") as any;
 export class Set<T> {
 	private [mapKey]: InstanceType<typeof map>;
 
+	public get size() {
+		return this[mapKey].size();
+	}
+
 	public has(key: T): boolean {
 		return this[mapKey].has(key);
 	}

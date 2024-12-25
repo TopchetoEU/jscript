@@ -26,6 +26,7 @@ export const Array = (() => {
 
 			return string.stringBuild(parts);
 		}
+
 		public push(this: any[]) {
 			const start = this.length;
 			for (let i = arguments.length - 1; i >= 0; i--) {
@@ -33,6 +34,38 @@ export const Array = (() => {
 			}
 			return arguments.length;
 		}
+		public pop(this: any[]) {
+			if (this.length === 0) return undefined;
+			else {
+				const res = this[this.length - 1];
+				this.length--;
+				return res;
+			}
+		}
+
+		public unshift(this: any[]) {
+			for (let i = this.length + arguments.length - 1; i >= arguments.length; i--) {
+				this[i] = this[i - arguments.length];
+			}
+			for (let i = 0; i < arguments.length; i++) {
+				this[i] = arguments[i];
+			}
+			return arguments.length;
+		}
+		public shift(this: any[]) {
+			if (this.length === 0) return undefined;
+
+			const tmp = this[0];
+
+			for (let i = 1; i < this.length; i++) {
+				this[i - 1] = this[i];
+			}
+
+			this.length--;
+
+			return tmp;
+		}
+
 		public concat(this: any[]) {
 			const res: any[] = [];
 
@@ -71,7 +104,10 @@ export const Array = (() => {
 
 			return res;
 		}
-		public splice(this: any[], start = 0, count = this.length - start, ...vals: any[]) {
+		public splice(this: any[], start = 0, count = this.length - start) {
+			const vals: any[] = []
+			for (let i = 0; i < arguments.length - 2; i++) vals[i] = arguments[i + 2];
+
 			start = limitI(wrapI(start, this.length), this.length);
 			count = limitI(wrapI(count, this.length), this.length - start);
 
@@ -105,7 +141,7 @@ export const Array = (() => {
 			const res = [];
 			res.length = this.length;
 
-			for (let i = 0; i < arguments.length; i++) {
+			for (let i = 0; i < this.length; i++) {
 				if (i in this) res[i] = func.invoke(cb, self, [this[i], i, this]);
 			}
 
@@ -114,35 +150,58 @@ export const Array = (() => {
 		public filter(this: any[], cb: Function, self?: any) {
 			const res = [];
 
-			for (let i = 0; i < arguments.length; i++) {
+			for (let i = 0; i < this.length; i++) {
 				if (i in this && func.invoke(cb, self, [this[i], i, this])) res[res.length] = this[i];
 			}
 
 			return res;
 		}
 		public some(this: any[], cb: Function, self?: any) {
-			for (let i = 0; i < arguments.length; i++) {
+			for (let i = 0; i < this.length; i++) {
 				if (i in this && func.invoke(cb, self, [this[i], i, this])) return true;
 			}
 
 			return false;
 		}
+		public find(this: any[], cb: Function, self?: any) {
+			for (let i = 0; i < this.length; i++) {
+				if (i in this && func.invoke(cb, self, [this[i], i, this])) return this[i];
+			}
+
+			return undefined;
+		}
+
+		public sort(this: any[], cb?: Function) {
+			cb ||= (a: any, b: any) => {
+				if (String(a) < String(b)) return -1;
+				if (String(a) === String(b)) return 0;
+				return 1;
+			};
+
+			return object.sort(this, cb);
+		}
 	
 		public [symbols.iterator](this: any[]) {
 			let i = 0;
-			let arr: any[] | undefined = this;
+			let arr: any[] | undefined = func.invoke(Array.prototype.slice, this, []);
 
 			return {
 				next() {
 					if (arr == null) return { done: true, value: undefined };
+
 					if (i >= arr.length) {
 						arr = undefined;
 						return { done: true, value: undefined };
 					}
-					else {
-						const val = arr[i++];
-						if (i >= arr.length) arr = undefined;
-						return { done: false, value: val };
+
+					while (true) {
+						const res = arr![i];
+
+						if (i in arr!) {
+							i++;
+							return { done: false, value: res };
+						}
+						else i++;
 					}
 				},
 				[symbols.iterator]() { return this; }
@@ -155,8 +214,14 @@ export const Array = (() => {
 				res.length = len;
 				return res as any;
 			}
-			// TODO: Implement spreading
-			else throw new Error("Spreading not implemented");
+			else {
+				const res: any[] = [];
+				res.length = arguments.length;
+				for (let i = 0; i < arguments.length; i++) {
+					res[i] = arguments[i];
+				}
+				return res as any;
+			}
 		}
 
 		public static isArray(val: any): val is any[] {

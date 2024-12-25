@@ -10,6 +10,8 @@ export interface NumberPrimordials {
 	isNaN(num: number): boolean;
 	NaN: number;
 	Infinity: number;
+
+	pow(a: number, b: number): number;
 }
 export interface StringPrimordials {
 	stringBuild(parts: string[]): string;
@@ -37,6 +39,7 @@ export interface ObjectPrimordials {
 	freeze(obj: object): void;
 
 	memcpy(src: any[], dst: any[], srcI: number, dstI: number, n: number): void;
+	sort(arr: any[], cb: Function): any[];
 }
 export interface FunctionPrimordials {
 	invokeType(args: IArguments, self: any): "new" | "call";
@@ -66,9 +69,10 @@ export interface Primordials {
 		delete(key: any): void;
 		keys(): any[];
 		clear(): void;
+		size(): number;
 	};
 
-	regex: new (source: string, multiline: boolean, noCase: boolean, dotall: boolean, unicode: boolean, unicodeClass: boolean) => {
+	regex: new (source: string, multiline?: boolean, noCase?: boolean, dotall?: boolean, unicode?: boolean, unicodeClass?: boolean) => {
 		exec(target: string, offset: number, indices: boolean): { matches: RegExpMatchArray, end: number } | null;
 		groupCount(): number;
 	};
@@ -94,3 +98,5 @@ export const {
 	compile,
 	now,
 } = primordials;
+
+export type regex = InstanceType<typeof regex>;
