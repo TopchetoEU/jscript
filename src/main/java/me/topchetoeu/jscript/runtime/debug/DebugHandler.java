@@ -1,7 +1,5 @@
 package me.topchetoeu.jscript.runtime.debug;
 
-import java.util.List;
-
 import me.topchetoeu.jscript.common.FunctionBody;
 import me.topchetoeu.jscript.common.Instruction;
 import me.topchetoeu.jscript.common.environment.Environment;
@@ -9,6 +7,7 @@ import me.topchetoeu.jscript.common.mapping.FunctionMap;
 import me.topchetoeu.jscript.common.parsing.Filename;
 import me.topchetoeu.jscript.runtime.Frame;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
+import me.topchetoeu.jscript.runtime.values.Value;
 
 public interface DebugHandler {
 	/**
@@ -38,7 +37,7 @@ public interface DebugHandler {
 	 * @param caught Whether or not the error has been caught
 	 * @return Whether or not the frame should restart (currently does nothing)
 	 */
-	boolean onInstruction(Environment env, Frame frame, Instruction instruction, Object returnVal, EngineException error, boolean caught);
+	boolean onInstruction(Environment env, Frame frame, Instruction instruction, Value returnVal, EngineException error, boolean caught);
 
 	/**
 	 * Called immediatly before a frame has been pushed on the frame stack.
@@ -54,6 +53,4 @@ public interface DebugHandler {
 	 * @param frame The code frame which was popped out
 	 */
 	void onFramePop(Environment env, Frame frame);
-
-	List<Frame> getStackFrame();
 }

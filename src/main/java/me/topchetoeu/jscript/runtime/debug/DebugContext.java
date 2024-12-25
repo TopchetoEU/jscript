@@ -1,8 +1,6 @@
 package me.topchetoeu.jscript.runtime.debug;
 
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.WeakHashMap;
 
 import me.topchetoeu.jscript.common.FunctionBody;
@@ -13,6 +11,7 @@ import me.topchetoeu.jscript.common.mapping.FunctionMap;
 import me.topchetoeu.jscript.common.parsing.Filename;
 import me.topchetoeu.jscript.runtime.Frame;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
+import me.topchetoeu.jscript.runtime.values.Value;
 import me.topchetoeu.jscript.runtime.values.functions.CodeFunction;
 import me.topchetoeu.jscript.runtime.values.functions.FunctionValue;
 
@@ -68,10 +67,6 @@ public class DebugContext {
 		if (maps == null || !(func instanceof CodeFunction)) return FunctionMap.EMPTY;
 		return getMapOrEmpty(((CodeFunction)func).body);
 	}
-	public List<Frame> getStackFrames() {
-		if (debugger == null) return Arrays.asList();
-		return this.debugger.getStackFrame();
-	}
 
 	public void onFramePop(Environment env, Frame frame) {
 		if (debugger != null) debugger.onFramePop(env, frame);
@@ -80,7 +75,7 @@ public class DebugContext {
 		if (debugger != null) debugger.onFramePush(env, frame);
 	}
 
-	public boolean onInstruction(Environment env, Frame frame, Instruction instruction, Object returnVal, EngineException error, boolean caught) {
+	public boolean onInstruction(Environment env, Frame frame, Instruction instruction, Value returnVal, EngineException error, boolean caught) {
 		if (debugger != null) return debugger.onInstruction(env, frame, instruction, returnVal, error, caught);
 		else return false;
 	}
