@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 
 import me.topchetoeu.jscript.common.SyntaxException;
 import me.topchetoeu.jscript.common.parsing.Filename;
+import me.topchetoeu.jscript.common.parsing.Location;
 import me.topchetoeu.jscript.common.parsing.ParseRes;
 import me.topchetoeu.jscript.common.parsing.Parsing;
 import me.topchetoeu.jscript.common.parsing.Source;
@@ -41,7 +42,7 @@ public class JSON {
 		);
 	}
 
-	public static ParseRes<JSONMap> parseMap(Source src, int i) {
+	public static ParseRes<JSONElement> parseMap(Source src, int i) {
 		var n = Parsing.skipEmpty(src, i);
 
 		if (!src.is(i + n, "{")) return ParseRes.failed();
@@ -49,7 +50,7 @@ public class JSON {
 
 		var values = new JSONMap();
 
-		if (src.is(i + n, "}")) return ParseRes.res(new JSONMap(new HashMap<>()), n + 1);
+		if (src.is(i + n, "}")) return ParseRes.res(JSONElement.map(new JSONMap(new HashMap<>())), n + 1);
 		while (true) {
 			var name = parseString(src, i + n);
 			if (!name.isSuccess()) return name.chainError(src.loc(i + n), "Expected an index");
@@ -72,16 +73,16 @@ public class JSON {
 			}
 		}
 
-		return ParseRes.res(values, n);
+		return ParseRes.res(JSONElement.map(values), n);
 	}
-	public static ParseRes<JSONList> parseList(Source src, int i) {
+	public static ParseRes<JSONElement> parseList(Source src, int i) {
 		var n = Parsing.skipEmpty(src, i);
 
-		if (!src.is(i + n++, "[]")) return ParseRes.failed();
+		if (!src.is(i + n++, "[")) return ParseRes.failed();
 
 		var values = new JSONList();
 
-		if (src.is(i + n, "]")) return ParseRes.res(new JSONList(), n + 1);
+		if (src.is(i + n, "]")) return ParseRes.res(JSONElement.list(new JSONList()), n + 1);
 		while (true) {
 			var res = parseValue(src, i + n);
 			if (!res.isSuccess()) return res.chainError(src.loc(i + n), "Expected a list element");
@@ -96,14 +97,14 @@ public class JSON {
 			}
 		}
 
-		return ParseRes.res(values, n);
+		return ParseRes.res(JSONElement.list(values), n);
 	}
 	public static JSONElement parse(Filename filename, String raw) {
 		if (filename == null) filename = new Filename("jscript", "json");
 
 		var res = parseValue(new Source(null, filename, raw), 0);
-		if (res.isFailed()) throw new SyntaxException(null, "Invalid JSON given");
-		else if (res.isError()) throw new SyntaxException(null, res.error);
+		if (res.isFailed()) throw new SyntaxException(Location.of(filename, 0, 0), "Invalid JSON given");
+		else if (res.isError()) throw new SyntaxException(res.errorLocation, res.error);
 		else return JSONElement.of(res.result);
 	}
 

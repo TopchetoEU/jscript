@@ -29,11 +29,12 @@ public class JSONElement {
 	}
 
 	public static JSONElement of(Object val) {
-		if (val instanceof JSONMap) return map((JSONMap)val);
-		else if (val instanceof JSONList) return list((JSONList)val);
-		else if (val instanceof String) return string((String)val);
-		else if (val instanceof Boolean) return bool((Boolean)val);
-		else if (val instanceof Number) return number(((Number)val).doubleValue());
+		if (val instanceof JSONElement el) return el;
+		else if (val instanceof JSONMap map) return map(map);
+		else if (val instanceof JSONList list) return list(list);
+		else if (val instanceof String str) return string(str);
+		else if (val instanceof Boolean bool) return bool(bool);
+		else if (val instanceof Number num) return number(num.doubleValue());
 		else if (val == null) return NULL;
 		else throw new IllegalArgumentException("val must be: String, Boolean, Number, JSONList or JSONMap");
 	}
