@@ -30,12 +30,15 @@ public abstract class Location implements Comparable<Location> {
 		};
 	}
 	public final Location nextLine() {
+		return changeLine(1);
+	}
+	public final Location changeLine(int offset) {
 		var self = this;
 
 		return new Location() {
 			@Override public Filename filename() { return self.filename(); }
 			@Override public int start() { return 0; }
-			@Override public int line() { return self.line() + 1; }
+			@Override public int line() { return self.line() + offset; }
 		};
 	}
 

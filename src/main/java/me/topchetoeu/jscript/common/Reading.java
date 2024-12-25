@@ -86,4 +86,7 @@ public class Reading {
 	public static String resourceToString(String name) {
 		return streamToString(resourceToStream(name));
 	}
+	public static byte[] resourceToBytes(String name) {
+		return streamToBytes(resourceToStream(name));
+	}
 }

@@ -2,7 +2,7 @@ package me.topchetoeu.jscript.compilation;
 
 import java.util.List;
 import java.util.Map;
-
+import java.util.function.Function;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -78,8 +78,11 @@ public final class CompileResult {
 		return instructions.toArray(new Instruction[0]);
 	}
 
+	public FunctionMap map(Function<Location, Location> mapper) {
+		return map.map(mapper).build(scope.localNames(), scope.capturableNames(), scope.captureNames());
+	}
 	public FunctionMap map() {
-		return map.build(scope.localNames(), scope.captureNames());
+		return map.build(scope.localNames(), scope.capturableNames(), scope.captureNames());
 	}
 	public FunctionBody body() {
 		var builtChildren = new FunctionBody[children.size()];
