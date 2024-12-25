@@ -21,6 +21,8 @@ public class EngineException extends RuntimeException {
 			return ext == null || !ext.get(Value.HIDE_STACK, false);
 		}
 		public String toString() {
+			if (name == null && location == null) return "(skipped)";
+
 			var res = "";
 			var loc = location;
 
@@ -49,7 +51,7 @@ public class EngineException extends RuntimeException {
 
 	public EngineException add(Environment env, String name, Location location) {
 		var el = new StackElement(env, location, name);
-		if (el.name == null && el.location == null) return this;
+		// if (el.name == null && el.location == null) return this;
 		setEnvironment(env);
 		stackTrace.add(el);
 		return this;
