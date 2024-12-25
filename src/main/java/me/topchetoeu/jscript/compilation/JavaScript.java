@@ -233,6 +233,7 @@ public final class JavaScript {
 		int i = 0;
 
 		while (true) {
+			i += Parsing.skipEmpty(src, i);
 			if (i >= src.size()) break;
 
 			var res = parseStatement(src, i);
