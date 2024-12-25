@@ -3,7 +3,6 @@ package me.topchetoeu.jscript.compilation;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.Stack;
 import java.util.function.IntSupplier;
 
 import me.topchetoeu.jscript.common.Instruction;

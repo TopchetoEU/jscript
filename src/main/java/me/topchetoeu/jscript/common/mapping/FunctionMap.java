@@ -9,6 +9,7 @@ import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -50,11 +51,31 @@ public class FunctionMap {
 			return sourceMap.lastEntry().getValue();
 		}
 
-		public FunctionMap build(String[] localNames, String[] captureNames) {
-			return new FunctionMap(sourceMap, breakpoints, localNames, captureNames);
+		public FunctionMapBuilder map(Function<Location, Location> mapper) {
+			var newSourceMaps = new HashMap<Integer, Location>();
+			var newBreakpoints = new HashMap<Location, BreakpointType>();
+
+			for (var key : sourceMap.keySet()) {
+				newSourceMaps.put(key, mapper.apply(sourceMap.get(key)));
+			}
+			for (var key : breakpoints.keySet()) {
+				newBreakpoints.put(mapper.apply(key), breakpoints.get(key));
+			}
+
+			sourceMap.clear();
+			sourceMap.putAll(newSourceMaps);
+
+			breakpoints.clear();
+			breakpoints.putAll(newBreakpoints);
+
+			return this;
 		}
-		public FunctionMap build() {
-			return new FunctionMap(sourceMap, breakpoints, new String[0], new String[0]);
+
+		public FunctionMap build(String[] localNames, String[] capturableNames, String[] captureNames) {
+			return new FunctionMap(sourceMap, breakpoints, localNames, capturableNames, captureNames);
+		}
+		public FunctionMap build(Function<Location, Location> mapper) {
+			return new FunctionMap(sourceMap, breakpoints, new String[0], new String[0], new String[0]);
 		}
 
 		private FunctionMapBuilder() { }
@@ -67,7 +88,7 @@ public class FunctionMap {
 
 	private final TreeMap<Integer, Location> pcToLoc = new TreeMap<>();
 
-	public final String[] localNames, captureNames;
+	public final String[] localNames, capturableNames, captureNames;
 
 	public Location toLocation(int pc, boolean approxiamte) {
 		if (pcToLoc.size() == 0 || pc < 0 || pc > pcToLoc.lastKey()) return null;
@@ -128,7 +149,7 @@ public class FunctionMap {
 	}
 
 	public FunctionMap clone() {
-		var res = new FunctionMap(new HashMap<>(), new HashMap<>(), localNames, captureNames);
+		var res = new FunctionMap(new HashMap<>(), new HashMap<>(), localNames, capturableNames, captureNames);
 		res.pcToLoc.putAll(this.pcToLoc);
 		res.bps.putAll(bps);
 		res.bpLocs.putAll(bpLocs);
@@ -136,7 +157,7 @@ public class FunctionMap {
 		return res;
 	}
 
-	public FunctionMap(Map<Integer, Location> map, Map<Location, BreakpointType> breakpoints, String[] localNames, String[] captureNames) {
+	public FunctionMap(Map<Integer, Location> map, Map<Location, BreakpointType> breakpoints, String[] localNames, String[] capturableNames, String[] captureNames) {
 		var locToPc = new HashMap<Location, Integer>();
 
 		for (var el : map.entrySet()) {
@@ -154,10 +175,12 @@ public class FunctionMap {
 
 		this.localNames = localNames;
 		this.captureNames = captureNames;
+		this.capturableNames = capturableNames;
 	}
 	private FunctionMap() {
 		localNames = new String[0];
 		captureNames = new String[0];
+		capturableNames = new String[0];
 	}
 
 	public static FunctionMapBuilder builder() {

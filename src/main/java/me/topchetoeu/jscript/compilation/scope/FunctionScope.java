@@ -190,12 +190,19 @@ public final class FunctionScope {
 		return res;
 	}
 	public String[] localNames() {
-		var res = new String[this.locals.size() + this.capturables.size()];
+		var res = new String[this.locals.size()];
 		var i = 0;
 
 		for (var el : this.locals) {
 			res[i++] = el.name;
 		}
+
+		return res;
+	}
+	public String[] capturableNames() {
+		var res = new String[this.capturables.size()];
+		var i = 0;
+
 		for (var el : this.capturables) {
 			res[i++] = el.name;
 		}
