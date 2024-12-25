@@ -69,7 +69,7 @@ public abstract class Value {
 	public static final Key<ObjectValue> TYPE_ERR_PROTO = new Key<>();
 	public static final Key<ObjectValue> RANGE_ERR_PROTO = new Key<>();
 
-	public static final Key<ObjectValue> GLOBAL = new Key<>();
+	public static final Key<Value> GLOBAL = new Key<>();
 	public static final Key<Map<String, Value>> INTRINSICS = new Key<>();
 
 	public static final VoidValue UNDEFINED = new VoidValue("undefined", "undefined");
@@ -364,6 +364,11 @@ public abstract class Value {
 		return res;
 	}
 
+	public final Value getMemberPath(Environment env, String ...path) {
+		var res = this;
+		for (var key : path) res = res.getMember(env, key);
+		return res;
+	}
 	public final Value getMemberPath(Environment env, Value ...path) {
 		var res = this;
 		for (var key : path) res = res.getMember(env, key);
@@ -435,7 +440,7 @@ public abstract class Value {
 		return String.join("\n", toReadableLines(ext, new HashSet<>()));
 	}
 
-	public static final ObjectValue global(Environment env) {
+	public static final Value global(Environment env) {
 		return env.initFrom(GLOBAL, () -> new ObjectValue());
 	}
 	public static final Map<String, Value> intrinsics(Environment env) {
