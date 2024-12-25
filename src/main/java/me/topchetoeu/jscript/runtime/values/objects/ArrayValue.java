@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.stream.Stream;
 
 import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.runtime.values.Value;
@@ -71,6 +72,9 @@ public class ArrayValue extends ArrayLikeValue implements Iterable<Value> {
 		var res = new Value[size];
 		copyTo(res, 0, 0, size);
 		return res;
+	}
+	public Stream<Value> stream() {
+		return Arrays.stream(toArray());
 	}
 
 	public void copyTo(Value[] arr, int sourceStart, int destStart, int count) {
