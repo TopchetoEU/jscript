@@ -1,26 +1,22 @@
 import { createDocumentRegistry, createLanguageService, ModuleKind, ScriptSnapshot, ScriptTarget, type Diagnostic, type CompilerOptions, type IScriptSnapshot, flattenDiagnosticMessageText, CompilerHost, LanguageService } from "typescript";
 
-// declare function getResource(name: string): string | undefined;
+declare function getResource(name: string): string | undefined;
 declare function print(...args: any[]): void;
-// declare function register(factory: CompilerFactory): void;
+declare function register(factory: CompilerFactory): void;
+declare function parseVLQ(compiled: string, original: string, map: string): (loc: Location) => Location;
+declare function chainMaps(...mappers: ((loc: Location) => Location)[]): (loc: Location) => Location;
+declare function registerSource(filename: string, src: string): void;
 
+type Location = readonly [filename: string, line: number, col: number];
 type CompilerFactory = (next: Compiler) => Compiler;
-type Compiler = (filename: string, src: string, maps: any[]) => Function;
+type Compiler = (filename: string, src: string, mapper: (loc: Location) => Location) => Function;
 
 const resources: Record<string, string | undefined> = {};
 
-function getResource(name: string): string | undefined {
-	if (name === "/lib.d.ts") return "declare var a = 10;";
-	return undefined;
-}
 
 function resource(name: string) {
 	if (name in resources) return resources[name];
 	else return resources[name] = getResource(name);
-}
-
-function register(factory: CompilerFactory): void {
-	factory((filename, src) => Function(src));
 }
 
 register(next => {
@@ -29,7 +25,7 @@ register(next => {
 	let declI = 0;
 
 	const settings: CompilerOptions = {
-		target: ScriptTarget.ESNext,
+		target: ScriptTarget.ES5,
 		module: ModuleKind.Preserve,
 	
 		allowImportingTsExtensions: true,
@@ -39,6 +35,7 @@ register(next => {
 		skipLibCheck: true,
 		forceConsistentCasingInFileNames: true,
 		declaration: true,
+		sourceMap: true,
 	};
 
 	let service: LanguageService;
@@ -75,7 +72,7 @@ register(next => {
 	});
 	print("Loaded typescript!");
 	
-	return (code, filename, mapChain) => {
+	return (filename, code, prevMap) => {
 		files["/src.ts"] = ScriptSnapshot.fromString(code);
 		versions["/src.ts"] ??= 0;
 		versions["/src.ts"]++;
@@ -83,10 +80,9 @@ register(next => {
 		const emit = service.getEmitOutput("/src.ts");
 
 		const diagnostics = new Array<Diagnostic>()
-			.concat(service.getCompilerOptionsDiagnostics())
 			.concat(service.getSyntacticDiagnostics("/src.ts"))
 			.concat(service.getSemanticDiagnostics("/src.ts"))
-			.map(function (diagnostic) {
+			.map(diagnostic => {
 				const message = flattenDiagnosticMessageText(diagnostic.messageText, "\n");
 
 				if (diagnostic.file != null) {
@@ -105,11 +101,19 @@ register(next => {
 			throw new SyntaxError(diagnostics.join("\n"));
 		}
 
-		var map = JSON.parse(emit.outputFiles[0].text);
-		var result = emit.outputFiles[1].text;
-		var declaration = emit.outputFiles[2].text;
+		const outputs: Record<string, string> = {};
 
-		var compiled = next(result, filename, mapChain.concat(map));
+		for (const el of emit.outputFiles) {
+			outputs[el.name] = el.text;
+		}
+
+		const rawMap = JSON.parse(outputs["/src.js.map"]);
+		const map = parseVLQ(filename, filename, rawMap.mappings);
+		const result = outputs["/src.js"];
+		const declaration = outputs["/src.d.ts"];
+
+		const compiled = next(filename, result, chainMaps(prevMap, map));
+		registerSource(filename, code);
 
 		return function (this: any) {
 			const res = compiled.apply(this, arguments);
