@@ -287,15 +287,18 @@ public final class Frame {
 		}
 
 		if (returnValue != null) {
-				dbg.onInstruction(env, this, instr, returnValue, null, false);
-				return returnValue;
+			dbg.onInstruction(env, this, instr, returnValue, null, false);
+			return returnValue;
 		}
 		if (error != null) {
 			var caught = false;
 
-			for (var frame : dbg.getStackFrames()) {
+			loop: for (var frame : Frame.get(env)) {
 				for (var tryCtx : frame.tryStack) {
-					if (tryCtx.state == TryState.TRY) caught = true;
+					if (tryCtx.state == TryState.TRY) {
+						caught = true;
+						break loop;
+					}
 				}
 			}
 
@@ -350,8 +353,8 @@ public final class Frame {
 		DebugContext.get(env).onFramePush(env, this);
 	}
 	public void onPop() {
-		get(env).pop();
 		DebugContext.get(env).onFramePop(env, this);
+		get(env).pop();
 	}
 
 	/**
@@ -398,6 +401,9 @@ public final class Frame {
 	}
 	public static Frame get(Environment env, int i) {
 		var stack = get(env);
-		return stack.get(stack.size() - i - 1);
+		i = stack.size() - i - 1;
+		if (i < 0 || i >= stack.size()) return null;
+
+		return stack.get(i);
 	}
 }
