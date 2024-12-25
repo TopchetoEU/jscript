@@ -1,8 +1,12 @@
-package me.topchetoeu.jscript.runtime;
+package me.topchetoeu.jscript.repl;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -10,6 +14,7 @@ import java.util.Optional;
 import java.util.WeakHashMap;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
@@ -20,6 +25,17 @@ import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.common.environment.Key;
 import me.topchetoeu.jscript.common.json.JSON;
 import me.topchetoeu.jscript.common.parsing.Filename;
+import me.topchetoeu.jscript.common.parsing.Location;
+import me.topchetoeu.jscript.repl.debug.DebugServer;
+import me.topchetoeu.jscript.repl.debug.Debugger;
+import me.topchetoeu.jscript.repl.debug.SimpleDebugger;
+import me.topchetoeu.jscript.repl.mapping.NativeMapper;
+import me.topchetoeu.jscript.repl.mapping.SourceMap;
+import me.topchetoeu.jscript.runtime.ArgumentsValue;
+import me.topchetoeu.jscript.runtime.Engine;
+import me.topchetoeu.jscript.runtime.EventLoop;
+import me.topchetoeu.jscript.runtime.Frame;
+import me.topchetoeu.jscript.runtime.JSONConverter;
 import me.topchetoeu.jscript.runtime.debug.DebugContext;
 import me.topchetoeu.jscript.runtime.exceptions.EngineException;
 import me.topchetoeu.jscript.runtime.values.Value;
@@ -33,11 +49,17 @@ import me.topchetoeu.jscript.runtime.values.primitives.SymbolValue;
 import me.topchetoeu.jscript.runtime.values.primitives.UserValue;
 import me.topchetoeu.jscript.runtime.values.primitives.VoidValue;
 import me.topchetoeu.jscript.runtime.values.primitives.numbers.NumberValue;
+import me.topchetoeu.jscript.runtime.Compiler;
 
 public class SimpleRepl {
-	static Thread engineTask;
+	static Thread engineTask, debugTask;
 	static Engine engine = new Engine();
-	static Environment environment = Environment.empty();
+	static Environment environment = Environment.empty(), tsEnvironment;
+	static DebugServer server;
+	static Debugger debugger;
+	static Key<OutputStream> STDOUT = new Key<>();
+	static Key<OutputStream> STDERR = new Key<>();
+	static Key<InputStream> STDIN = new Key<>();
 
 	static int j = 0;
 	static String[] args;
@@ -48,6 +70,13 @@ public class SimpleRepl {
 				try { initGlobals(); } catch (ExecutionException e) { throw e.getCause(); }
 			}
 			catch (EngineException | SyntaxException e) { System.err.println(Value.errorToReadable(environment, e, null)); }
+
+			server = new DebugServer();
+			debugTask = server.start(new InetSocketAddress("127.0.0.1", 9229), true);
+			server.targets.put("default", (socket, req) -> new SimpleDebugger(socket)
+				.attach(DebugContext.get(environment))
+				.attach(DebugContext.get(tsEnvironment))
+			);
 
 			System.out.println(String.format("Running %s v%s by %s", Metadata.name(), Metadata.version(), Metadata.author()));
 
@@ -141,6 +170,9 @@ public class SimpleRepl {
 		mapConstr.prototype.defineOwnField(env, "clear", new NativeFunction(getArgs -> {
 			getArgs.self(Map.class).clear();
 			return Value.UNDEFINED;
+		}));
+		mapConstr.prototype.defineOwnField(env, "size", new NativeFunction(getArgs -> {
+			return NumberValue.of(getArgs.self(Map.class).size());
 		}));
 		prototype[0] = (ObjectValue)mapConstr.prototype;
 
@@ -285,6 +317,10 @@ public class SimpleRepl {
 		res.defineOwnField(env, "isNaN", new NativeFunction(args -> BoolValue.of(args.get(0).isNaN())));
 		res.defineOwnField(env, "NaN", NumberValue.NAN);
 		res.defineOwnField(env, "Infinity", NumberValue.of(Double.POSITIVE_INFINITY));
+
+		res.defineOwnField(env, "pow", new NativeFunction(args -> {
+			return NumberValue.of(Math.pow(args.get(0).toNumber(args.env).getDouble(), args.get(1).toNumber(args.env).getDouble()));
+		}));
 
 		return res;
 	}
@@ -453,6 +489,16 @@ public class SimpleRepl {
 
 			return VoidValue.UNDEFINED;
 		}));
+		res.defineOwnField(env, "sort", new NativeFunction(args -> {
+			var arr = (ArrayValue)args.get(0);
+			var func = (FunctionValue)args.get(1);
+
+			arr.sort((a, b) -> {
+				return func.apply(args.env, Value.UNDEFINED, a, b).toNumber(args.env).getInt();
+			});
+
+			return arr;
+		}));
 
 		return res;
 	}
@@ -513,7 +559,12 @@ public class SimpleRepl {
 			return StringValue.of(JSON.stringify(JSONConverter.fromJs(env, args.get(0))));
 		}));
 		res.defineOwnField(env, "parse", new NativeFunction(args -> {
-			return JSONConverter.toJs(JSON.parse(null, args.get(0).toString(env)));
+			try {
+				return JSONConverter.toJs(JSON.parse(null, args.get(0).toString(env)));
+			}
+			catch (SyntaxException e) {
+				throw EngineException.ofSyntax(e.msg).add(env, e.loc.filename() + "", e.loc);
+			}
 		}));
 
 		return res;
@@ -633,19 +684,66 @@ public class SimpleRepl {
 	}
 	private static void initGlobals() throws InterruptedException, ExecutionException {
 		environment = createESEnv();
-		var tsEnv = createESEnv();
 		var res = new FunctionValue[1];
 		var setter = new NativeFunction(args -> {
 			res[0] = (FunctionValue)args.get(0);
 			return Value.UNDEFINED;
 		});
 
+		tsEnvironment = createESEnv();
+		var tsGlob = Value.global(tsEnvironment);
+		var tsCompilerFactory = new FunctionValue[1];
+
+		tsGlob.defineOwnField(tsEnvironment, "getResource", new NativeFunction(args -> {
+			var name = args.get(0).toString(args.env);
+			var src = Reading.resourceToString("lib/" + name);
+
+			if (src == null) return Value.UNDEFINED;
+			else return StringValue.of(src);
+		}));
+		tsGlob.defineOwnField(tsEnvironment, "register", new NativeFunction(args -> {
+			var func = (FunctionValue)args.get(0);
+			tsCompilerFactory[0] = func;
+			return Value.UNDEFINED;
+		}));
+		tsGlob.defineOwnField(tsEnvironment, "parseVLQ", new NativeFunction(args -> {
+			var compiled = Filename.parse(args.get(0).toString(args.env));
+			var original = Filename.parse(args.get(1).toString(args.env));
+			var map = args.get(2).toString(args.env);
+
+			var mapper = SourceMap.parse(compiled, original, map);
+			return new NativeMapper(mapper::toOriginal);
+		}));
+		tsGlob.defineOwnField(tsEnvironment, "chainMaps", new NativeFunction(args -> {
+			var list = new ArrayList<Function<Location, Location>>();
+			for (var arg : args.args) {
+				list.add(NativeMapper.unwrap(args.env, (FunctionValue)arg));
+			}
+
+			return new NativeMapper(v -> {
+				for (var el : list) {
+					v = el.apply(v);
+				}
+
+				return v;
+			});
+		}));
+		tsGlob.defineOwnField(tsEnvironment, "registerSource", new NativeFunction(args -> {
+			var filename = Filename.parse(args.get(0).toString(args.env));
+			var src = args.get(1).toString(args.env);
+			DebugContext.get(environment).onSource(filename, src);
+			return Value.UNDEFINED;
+		}));
+
 		var ts = Reading.resourceToString("lib/ts.js");
-		if (ts != null) EventLoop.get(tsEnv).pushMsg(
-			false, tsEnv,
+		if (ts != null) EventLoop.get(tsEnvironment).pushMsg(
+			false, tsEnvironment,
 			Filename.parse("jscript://ts.js"), ts,
 			Value.UNDEFINED, setter
 		).get();
+
+		var tsCompiler = Compiler.get(environment).wrap(tsEnvironment, environment, tsCompilerFactory[0]);
+		environment.add(Compiler.KEY, tsCompiler);
 	}
 
 	public static void main(String args[]) throws InterruptedException {
@@ -653,6 +751,7 @@ public class SimpleRepl {
 		var reader = new Thread(SimpleRepl::reader);
 
 		environment = initEnv();
+
 		initEngine();
 
 		reader.setDaemon(true);
@@ -661,5 +760,6 @@ public class SimpleRepl {
 
 		engine.thread().join();
 		engineTask.interrupt();
+		debugTask.interrupt();
 	}
 }
