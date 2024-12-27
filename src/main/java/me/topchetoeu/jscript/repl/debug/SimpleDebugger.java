@@ -955,6 +955,7 @@ public class SimpleDebugger implements Debugger {
 
 				obj = proto;
 				own = false;
+				break;
 			}
 		}
 
@@ -1015,7 +1016,7 @@ public class SimpleDebugger implements Debugger {
 		ws.send(msg.respond());
 	}
 
-	@Override public void onSourceLoad(Filename filename, String source) {
+	@Override public synchronized void onSourceLoad(Filename filename, String source) {
 		int id = nextId();
 		var src = new DebugSource(id, filename, source);
 
@@ -1025,7 +1026,7 @@ public class SimpleDebugger implements Debugger {
 		if (!enabled) pendingSources.add(src);
 		else sendSource(src);
 	}
-	@Override public void onFunctionLoad(FunctionBody body, FunctionMap map) {
+	@Override public synchronized void onFunctionLoad(FunctionBody body, FunctionMap map) {
 		for (var bpt : idToBreakpoint.values()) {
 			bpt.addFunc(body, map);
 		}
@@ -1120,7 +1121,7 @@ public class SimpleDebugger implements Debugger {
 
 		return false;
 	}
-	@Override public void onFramePush(Environment env, Frame frame) {
+	@Override public synchronized void onFramePush(Environment env, Frame frame) {
 		var prevFrame = currFrame;
 		updateFrames(env, 0);
 
@@ -1128,7 +1129,7 @@ public class SimpleDebugger implements Debugger {
 			stepOutFrame = currFrame;
 		}
 	}
-	@Override public void onFramePop(Environment env, Frame frame) {
+	@Override public synchronized void onFramePop(Environment env, Frame frame) {
 		updateFrames(env, 1);
 
 		try { idToFrame.remove(codeFrameToFrame.remove(frame).id); }

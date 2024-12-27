@@ -23,7 +23,7 @@ public class DebugContext {
 	private WeakHashMap<FunctionBody, FunctionMap> maps;
 	private DebugHandler debugger;
 
-	public boolean attachDebugger(DebugHandler debugger) {
+	public synchronized boolean attachDebugger(DebugHandler debugger) {
 		if (this.debugger != null) return false;
 
 		if (sources != null) {

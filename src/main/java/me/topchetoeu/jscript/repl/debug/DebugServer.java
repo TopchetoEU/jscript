@@ -63,8 +63,6 @@ public class DebugServer {
 				return;
 			}
 
-			System.out.println(msg);
-
 			switch (msg.name) {
 				case "Debugger.enable":
 					synchronized (connNotifier) {
@@ -140,10 +138,7 @@ public class DebugServer {
 		}
 
 		runAsync(() -> {
-			var handle = new Thread(() -> {
-				System.out.println("test");
-				debugger.close();
-			});
+			var handle = new Thread(debugger::close);
 
 			Runtime.getRuntime().addShutdownHook(handle);
 
