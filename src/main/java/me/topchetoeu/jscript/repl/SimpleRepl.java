@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -14,7 +13,6 @@ import java.util.Optional;
 import java.util.WeakHashMap;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
-import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
@@ -25,12 +23,9 @@ import me.topchetoeu.jscript.common.environment.Environment;
 import me.topchetoeu.jscript.common.environment.Key;
 import me.topchetoeu.jscript.common.json.JSON;
 import me.topchetoeu.jscript.common.parsing.Filename;
-import me.topchetoeu.jscript.common.parsing.Location;
 import me.topchetoeu.jscript.repl.debug.DebugServer;
 import me.topchetoeu.jscript.repl.debug.Debugger;
 import me.topchetoeu.jscript.repl.debug.SimpleDebugger;
-import me.topchetoeu.jscript.repl.mapping.NativeMapper;
-import me.topchetoeu.jscript.repl.mapping.SourceMap;
 import me.topchetoeu.jscript.runtime.ArgumentsValue;
 import me.topchetoeu.jscript.runtime.Engine;
 import me.topchetoeu.jscript.runtime.EventLoop;
@@ -66,10 +61,8 @@ public class SimpleRepl {
 
 	private static void reader() {
 		try {
-			try {
-				try { initGlobals(); } catch (ExecutionException e) { throw e.getCause(); }
-			}
-			catch (EngineException | SyntaxException e) { System.err.println(Value.errorToReadable(environment, e, null)); }
+			environment = createESEnv();
+			tsEnvironment = createESEnv();
 
 			server = new DebugServer();
 			debugTask = server.start(new InetSocketAddress("127.0.0.1", 9229), true);
@@ -77,6 +70,12 @@ public class SimpleRepl {
 				.attach(DebugContext.get(environment))
 				.attach(DebugContext.get(tsEnvironment))
 			);
+
+			try {
+				try { initGlobals(); } catch (ExecutionException e) { throw e.getCause(); }
+			}
+			catch (EngineException | SyntaxException e) { System.err.println(Value.errorToReadable(environment, e, null)); }
+
 
 			System.out.println(String.format("Running %s v%s by %s", Metadata.name(), Metadata.version(), Metadata.author()));
 
@@ -626,6 +625,13 @@ public class SimpleRepl {
 		res.defineOwnField(env, "now", new NativeFunction(args -> {
 			return NumberValue.of(System.currentTimeMillis());
 		}));
+		res.defineOwnField(env, "next", new NativeFunction(args -> {
+			var func = (FunctionValue)args.get(0);
+			EventLoop.get(env).pushMsg(() -> {
+				func.apply(env, Value.UNDEFINED);
+			}, true);
+			return Value.UNDEFINED;
+		}));
 
 		return res;
 	}
@@ -683,14 +689,12 @@ public class SimpleRepl {
 		engineTask = engine.start();
 	}
 	private static void initGlobals() throws InterruptedException, ExecutionException {
-		environment = createESEnv();
 		var res = new FunctionValue[1];
 		var setter = new NativeFunction(args -> {
 			res[0] = (FunctionValue)args.get(0);
 			return Value.UNDEFINED;
 		});
 
-		tsEnvironment = createESEnv();
 		var tsGlob = Value.global(tsEnvironment);
 		var tsCompilerFactory = new FunctionValue[1];
 
@@ -705,28 +709,6 @@ public class SimpleRepl {
 			var func = (FunctionValue)args.get(0);
 			tsCompilerFactory[0] = func;
 			return Value.UNDEFINED;
-		}));
-		tsGlob.defineOwnField(tsEnvironment, "parseVLQ", new NativeFunction(args -> {
-			var compiled = Filename.parse(args.get(0).toString(args.env));
-			var original = Filename.parse(args.get(1).toString(args.env));
-			var map = args.get(2).toString(args.env);
-
-			var mapper = SourceMap.parse(compiled, original, map);
-			return new NativeMapper(mapper::toOriginal);
-		}));
-		tsGlob.defineOwnField(tsEnvironment, "chainMaps", new NativeFunction(args -> {
-			var list = new ArrayList<Function<Location, Location>>();
-			for (var arg : args.args) {
-				list.add(NativeMapper.unwrap(args.env, (FunctionValue)arg));
-			}
-
-			return new NativeMapper(v -> {
-				for (var el : list) {
-					v = el.apply(v);
-				}
-
-				return v;
-			});
 		}));
 		tsGlob.defineOwnField(tsEnvironment, "registerSource", new NativeFunction(args -> {
 			var filename = Filename.parse(args.get(0).toString(args.env));
