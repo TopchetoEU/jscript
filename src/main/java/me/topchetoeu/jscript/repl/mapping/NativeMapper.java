@@ -25,6 +25,7 @@ public class NativeMapper extends FunctionValue {
 		);
 
 		var res = mapper.apply(loc);
+		if (res == null) return Value.UNDEFINED;
 
 		return new ArrayValue(
 			StringValue.of(res.filename().toString()),
@@ -52,12 +53,14 @@ public class NativeMapper extends FunctionValue {
 				NumberValue.of(loc.start())
 			);
 
-			var rawRes = (ArrayLikeValue)func.apply(env, Value.UNDEFINED, rawLoc);
-			return Location.of(
-				Filename.parse(rawRes.get(0).toString(env)),
-				rawRes.get(1).toNumber(env).getInt(),
-				rawRes.get(2).toNumber(env).getInt()
+			var rawRes = func.apply(env, Value.UNDEFINED, rawLoc);
+			if (rawRes instanceof ArrayLikeValue arr) return Location.of(
+				Filename.parse(arr.get(0).toString(env)),
+				arr.get(1).toNumber(env).getInt(),
+				arr.get(2).toNumber(env).getInt()
 			);
+			else if (rawRes == Value.UNDEFINED || rawRes == Value.NULL) return null;
+			else throw EngineException.ofType("Location must be an array, null or undefined");
 		};
 	}
 }

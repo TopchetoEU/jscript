@@ -56,10 +56,14 @@ public class FunctionMap {
 			var newBreakpoints = new HashMap<Location, BreakpointType>();
 
 			for (var key : sourceMap.keySet()) {
-				newSourceMaps.put(key, mapper.apply(sourceMap.get(key)));
+				var mapped = mapper.apply(sourceMap.get(key));
+				if (mapped == null) continue;
+				newSourceMaps.put(key, mapped);
 			}
 			for (var key : breakpoints.keySet()) {
-				newBreakpoints.put(mapper.apply(key), breakpoints.get(key));
+				var mapped = mapper.apply(key);
+				if (mapped == null) continue;
+				newBreakpoints.put(mapped, breakpoints.get(key));
 			}
 
 			sourceMap.clear();

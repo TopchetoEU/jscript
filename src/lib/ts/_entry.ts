@@ -1,15 +1,13 @@
 import { createDocumentRegistry, createLanguageService, ModuleKind, ScriptSnapshot, ScriptTarget, type Diagnostic, type CompilerOptions, type IScriptSnapshot, flattenDiagnosticMessageText, CompilerHost, LanguageService } from "typescript";
+import { SourceMap } from "./map.ts";
 
 declare function getResource(name: string): string | undefined;
 declare function print(...args: any[]): void;
 declare function register(factory: CompilerFactory): void;
-declare function parseVLQ(compiled: string, original: string, map: string): (loc: Location) => Location;
-declare function chainMaps(...mappers: ((loc: Location) => Location)[]): (loc: Location) => Location;
 declare function registerSource(filename: string, src: string): void;
 
-type Location = readonly [filename: string, line: number, col: number];
 type CompilerFactory = (next: Compiler) => Compiler;
-type Compiler = (filename: string, src: string, mapper: (loc: Location) => Location) => Function;
+type Compiler = (filename: string, src: string, mapper: SourceMap) => Function;
 
 const resources: Record<string, string | undefined> = {};
 
@@ -108,11 +106,15 @@ register(next => {
 		}
 
 		const rawMap = JSON.parse(outputs["/src.js.map"]);
-		const map = parseVLQ(filename, filename, rawMap.mappings);
+		const map = SourceMap.parse({
+			file: "ts-internal://" + filename,
+			mappings: rawMap.mappings,
+			sources: [filename],
+		});
 		const result = outputs["/src.js"];
 		const declaration = outputs["/src.d.ts"];
 
-		const compiled = next(filename, result, chainMaps(prevMap, map));
+		const compiled = next("ts-internal://" + filename, result, SourceMap.chain(prevMap, map));
 		registerSource(filename, code);
 
 		return function (this: any) {
