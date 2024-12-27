@@ -42,7 +42,7 @@ export const Function = (() => {
 			};
 		}
 
-		public constructor (...args: string[]) {
+		public constructor () {
 			const parts = ["(function anonymous("];
 			for (let i = 0; i < arguments.length - 1; i++) {
 				if (i > 0) parts[parts.length] = ",";

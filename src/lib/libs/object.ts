@@ -12,7 +12,7 @@ export const Object = (() => {
 			if (this === undefined) return "[object Undefined]";
 			else if (this === null) return "[object Null]";
 			else if (typeof this === "object") {
-				if (symbols.toStringTag in this) return "[object " + this[symbols.toStringTag] + "]";
+				if (symbols.toStringTag in this) return "[object " + (this as any)[symbols.toStringTag] + "]";
 				else return "[object Object]";
 			}
 			else if (typeof this === "number" || this instanceof Object) return "[object Object]";
@@ -84,8 +84,8 @@ export const Object = (() => {
 			return obj;
 		}
 		public static defineProperties(obj: object, desc: PropertyDescriptorMap) {
-			const keys = object.getOwnMembers(desc, false);
-			const symbols = object.getOwnSymbolMembers(desc, false);
+			const keys = object.getOwnMembers(desc, false) as ((keyof typeof obj) & string)[];
+			const symbols = object.getOwnSymbolMembers(desc, false) as ((keyof typeof obj) & symbol)[];
 
 			for (let i = 0; i < keys.length; i++) {
 				Object.defineProperty(obj, keys[i], desc[keys[i]]);

@@ -1,5 +1,5 @@
 import { Array } from "./array.ts";
-import { func, map, object, symbol } from "./primordials.ts";
+import { func, map, symbol } from "./primordials.ts";
 import { symbols } from "./utils.ts";
 
 const mapKey: unique symbol = symbol.makeSymbol("Map.impl") as any;

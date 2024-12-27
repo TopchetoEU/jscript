@@ -1,10 +1,11 @@
+import { Error } from "./errors.ts";
 import { func, object, string } from "./primordials.ts";
 import { String } from "./string.ts";
 import { limitI, symbols, wrapI } from "./utils.ts";
 
 export const Array = (() => {
 	class Array {
-		public forEach(this: any[], cb: (val: any, i: number, self: this[]) => void, self?: any) {
+		public forEach(this: any[], cb: (val: any, i: number, self: this) => void, self?: any) {
 			for (let i = 0; i < this.length; i++) {
 				if (i in this) func.invoke(cb, self, [this[i], i, this]);
 			}
@@ -98,7 +99,7 @@ export const Array = (() => {
 			const res: any[] = [];
 			res.length = end - start;
 
-			for (let i = start; i < end; i++) {
+			for (let i = 0; i < end - start; i++) {
 				res[i] = this[start + i];
 			}
 
@@ -163,12 +164,38 @@ export const Array = (() => {
 
 			return false;
 		}
+		public every(this: any[], cb: Function, self?: any) {
+			for (let i = 0; i < this.length; i++) {
+				if (i in this && !func.invoke(cb, self, [this[i], i, this])) return false;
+			}
+
+			return true;
+		}
 		public find(this: any[], cb: Function, self?: any) {
 			for (let i = 0; i < this.length; i++) {
 				if (i in this && func.invoke(cb, self, [this[i], i, this])) return this[i];
 			}
 
 			return undefined;
+		}
+		public indexOf(this: any[], val: any, start = 0) {
+			start |= 0;
+			if (start < 0) start = 0;
+			for (let i = start; i < this.length; i++) {
+				if (i in this && this[i] === val) return i;
+			}
+
+			return -1;
+		}
+		public lastIndexOf(this: any[], val: any, start = 0) {
+			start |= 0;
+			if (start < 0) start = 0;
+
+			for (let i = this.length - 1; i >= start; i--) {
+				if (i in this && this[i] === val) return i;
+			}
+
+			return -1;
 		}
 
 		public sort(this: any[], cb?: Function) {

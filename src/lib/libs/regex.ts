@@ -1,6 +1,6 @@
 import { func, regex, symbol } from "./primordials.ts";
 import { String } from "./string.ts";
-import { ReplaceRange } from "./utils.ts";
+import { type ReplaceRange } from "./utils.ts";
 import { applyReplaces } from "./utils.ts";
 import { applySplits } from "./utils.ts";
 import { symbols } from "./utils.ts";
@@ -8,22 +8,24 @@ import { symbols } from "./utils.ts";
 const regexKey: unique symbol = symbol.makeSymbol("RegExp.impl") as any;
 
 export class RegExp {
-	private [regexKey]: InstanceType<typeof regex>;
+	private [regexKey]!: InstanceType<typeof regex>;
 
-	public readonly source: string;
-	public readonly flags: string;
+	public readonly source!: string;
+	public readonly flags!: string;
 	public lastIndex = 0;
 
-	public readonly indices: boolean;
-	public readonly global: boolean;
-	public readonly ignoreCase: boolean;
-	public readonly multiline: boolean;
-	public readonly dotall: boolean;
-	public readonly unicode: boolean;
-	public readonly unicodeSets: boolean;
-	public readonly sticky: boolean;
+	public readonly indices!: boolean;
+	public readonly global!: boolean;
+	public readonly ignoreCase!: boolean;
+	public readonly multiline!: boolean;
+	public readonly dotall!: boolean;
+	public readonly unicode!: boolean;
+	public readonly unicodeSets!: boolean;
+	public readonly sticky!: boolean;
 
-	public constructor(source: any, flags: string) {
+	public constructor(source: any, flags = "") {
+		if (func.invokeType(arguments, this) === "call") return new RegExp(source, flags);
+
 		source = this.source = String(typeof source === "object" && "source" in source ? source.source : source);
 		flags = String(flags);
 	
@@ -134,4 +136,3 @@ export class RegExp {
 		return applyReplaces(target, matches, replacer, regex.groupCount() + 1);
 	}
 }
-func.setCallable(RegExp, false);

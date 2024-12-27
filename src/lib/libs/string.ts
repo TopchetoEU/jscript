@@ -1,6 +1,7 @@
+import { TypeError } from "./errors.ts";
 import { func, number, regex, string } from "./primordials.ts";
 import { RegExp } from "./regex.ts";
-import { applyReplaces, applySplits, limitI, ReplaceRange, symbols, unwrapThis, valueKey, wrapI } from "./utils.ts";
+import { applyReplaces, applySplits, limitI, type ReplaceRange, symbols, unwrapThis, valueKey, wrapI } from "./utils.ts";
 
 const trimStartRegex = new regex("^\\s+", false, false, false, false, false);
 const trimEndRegex = new regex("\\s+$", false, false, false, false, false);
@@ -12,7 +13,7 @@ export const String = (() => {
 		public at(index: number) {
 			throw "Not implemented :/";
 			return unwrapThis(this, "string", String, "String.prototype.at")[index];
-		};
+		}
 		public toString() {
 			return unwrapThis(this, "string", String, "String.prototype.toString");
 		}
@@ -23,6 +24,16 @@ export const String = (() => {
 		public includes(search: string, offset = 0) {
 			const self = unwrapThis(this, "string", String, "String.prototype.indexOf");
 			return string.indexOf(self, (String as any)(search), +offset, false) >= 0;
+		}
+		public startsWith(search: string) {
+			const self = unwrapThis(this, "string", String, "String.prototype.indexOf");
+			if (self.length < search.length) return false;
+			return string.substring(self, 0, search.length) === search;
+		}
+		public endsWith(search: string) {
+			const self = unwrapThis(this, "string", String, "String.prototype.indexOf");
+			if (self.length < search.length) return false;
+			return string.substring(self, self.length - search.length, self.length) === search;
 		}
 
 		public indexOf(search: string, offset = 0) {
@@ -123,10 +134,11 @@ export const String = (() => {
 			return applyReplaces(self, matches, replacer, false);
 		}
 
-		public slice(this: string, start = 0, end = this.length) {
+		public slice(start = 0, end?: number) {
 			const self = unwrapThis(this, "string", String, "String.prototype.slice");
-			start = limitI(wrapI(start, this.length), this.length);
-			end = limitI(wrapI(end, this.length), this.length);
+			if (end === undefined) end = self.length;
+			start = limitI(wrapI(start, self.length), self.length);
+			end = limitI(wrapI(end, self.length), self.length);
 
 			if (end <= start) return "";
 			return string.substring(self, start, end);

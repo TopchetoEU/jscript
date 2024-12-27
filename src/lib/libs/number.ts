@@ -23,7 +23,7 @@ export const Number = (() => {
 		public static isFinite(value: number) {
 			value = unwrapThis(value, "number", Number, "Number.isFinite", "value");
 			if (value === undefined || value !== value) return false;
-			if (value === Infinity || value === -Infinity) return false;
+			if (value === number.Infinity || value === -number.Infinity) return false;
 			return true;
 		}
 		public static isInteger(value: number) {
@@ -51,14 +51,14 @@ export const Number = (() => {
 			else return number.parseInt(value + "", radix);
 		}
 
-		public static readonly EPSILON: number;
-		public static readonly MIN_SAFE_INTEGER: number;
-		public static readonly MAX_SAFE_INTEGER: number;
-		public static readonly POSITIVE_INFINITY: number;
-		public static readonly NEGATIVE_INFINITY: number;
-		public static readonly NaN: number;
-		public static readonly MAX_VALUE: number;
-		public static readonly MIN_VALUE: number;
+		declare public static readonly EPSILON: number;
+		declare public static readonly MIN_SAFE_INTEGER: number;
+		declare public static readonly MAX_SAFE_INTEGER: number;
+		declare public static readonly POSITIVE_INFINITY: number;
+		declare public static readonly NEGATIVE_INFINITY: number;
+		declare public static readonly NaN: number;
+		declare public static readonly MAX_VALUE: number;
+		declare public static readonly MIN_VALUE: number;
 	}
 
 	object.defineField(Number, "EPSILON", { c: false, e: false, w: false, v: 2.220446049250313e-16 });

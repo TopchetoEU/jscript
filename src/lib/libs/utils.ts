@@ -195,12 +195,12 @@ export function applySplits(text: string, limit: number | undefined, next: (offs
 	const res: string[] = [];
 
 	while (true) {
-		if (limit != null && res.length >= limit) break;
+		if (limit != null && limit >= 0 && res.length >= limit) break;
 
 		const curr = next(offset);
 
 		if (curr == null) {
-			if (!lastEmpty) res[res.length] = string.substring(text, lastEnd, text.length);
+			if (!lastEmpty || !res.length) res[res.length] = string.substring(text, lastEnd, text.length);
 			break;
 		}
 

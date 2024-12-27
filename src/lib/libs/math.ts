@@ -41,6 +41,16 @@ method("floor", function floor(val: number) {
 
 	return val - rem;
 });
+method("ceil", function floor(val: number) {
+	val = val - 0;
+	if (number.isNaN(val)) return number.NaN;
+
+	let rem = val % 1;
+	if (rem === 0) return val;
+	if (rem < 0) rem += 1;
+
+	return val + (1 - rem);
+});
 
 method("pow", function pow(a: number, b: number) {
 	return number.pow(a, b);
