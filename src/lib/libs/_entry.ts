@@ -14,6 +14,7 @@ import { Math as _Math } from "./math.ts";
 import { Set, WeakSet } from "./set.ts";
 import { JSON } from "./json.ts";
 import { encodeURI, encodeURIComponent } from "./url.ts";
+import { Promise } from "./promise.ts";
 
 declare global {
 	function print(...args: any[]): void;
@@ -22,7 +23,7 @@ declare global {
 
 function fixup<T extends Function>(clazz: T) {
 	object.setPrototype(clazz, Function.prototype);
-	object.setPrototype(clazz.prototype, Object.prototype);
+	object.setPrototype(clazz.prototype as any, Object.prototype);
 	return clazz;
 }
 
@@ -48,6 +49,7 @@ target.Set = fixup(Set);
 target.WeakSet = fixup(WeakSet);
 target.RegExp = fixup(RegExp);
 target.Date = fixup(Date);
+target.Promise = fixup(Promise);
 target.Math = object.setPrototype(_Math, Object.prototype);
 target.JSON = object.setPrototype(JSON, Object.prototype);
 

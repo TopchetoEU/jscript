@@ -79,6 +79,8 @@ export interface Primordials {
 	compile(src: string): Function;
 	setGlobalPrototypes(prototype: Record<string, any>): void;
 	now(): number;
+	next(func: () => void): void;
+	schedule(func: () => void, delay: number): () => void;
 }
 
 globalThis.undefined = void 0;
@@ -97,6 +99,8 @@ export const {
 	setGlobalPrototypes,
 	compile,
 	now,
+	next,
+	schedule,
 } = primordials;
 
 export type regex = InstanceType<typeof regex>;
