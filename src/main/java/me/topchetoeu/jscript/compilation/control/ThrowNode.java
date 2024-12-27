@@ -32,17 +32,11 @@ public class ThrowNode extends Node {
 		if (!Parsing.isIdentifier(src, i + n, "throw")) return ParseRes.failed();
 		n += 5;
 
-		var end = JavaScript.parseStatementEnd(src, i + n);
-		if (end.isSuccess()) {
-			n += end.n;
-			return ParseRes.res(new ThrowNode(loc, null), n);
-		}
-
 		var val = JavaScript.parseExpression(src, i + n, 0);
-		if (val.isFailed()) return ParseRes.error(src.loc(i + n), "Expected a value");
+		if (val.isFailed()) return ParseRes.error(src.loc(i + n), "Expected a throw value");
 		n += val.n;
 
-		end = JavaScript.parseStatementEnd(src, i + n);
+		var end = JavaScript.parseStatementEnd(src, i + n);
 		if (end.isSuccess()) {
 			n += end.n;
 			return ParseRes.res(new ThrowNode(loc, val.result), n);
