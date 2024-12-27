@@ -206,6 +206,27 @@ public class Parsing {
 
 		return ParseRes.res(res, n);
 	}
+	private static ParseRes<Double> parseBin(Source src, int i) {
+		int n = 0;
+		double res = 0;
+
+		while (true) {
+			int digit = src.at(i + n, '\0') - '0';
+			if (digit < 0 || digit > 9) break;
+			if (digit > 1) return ParseRes.error(src.loc(i + n), "Digits in binary literals must be from 0 to 1, encountered " + digit);
+
+			if (digit < 0) {
+				if (n <= 0) return ParseRes.failed();
+				else return ParseRes.res(res, n);
+			}
+			n++;
+
+			res *= 2;
+			res += digit;
+		}
+
+		return ParseRes.res(res, n);
+	}
 
 	public static ParseRes<String> parseString(Source src, int i) {
 		var n = skipEmpty(src, i);
@@ -262,6 +283,16 @@ public class Parsing {
 
 			var res = parseOct(src, i + n);
 			if (!res.isSuccess()) return res.chainError(src.loc(i + n), "Incomplete octal literal");
+			n += res.n;
+
+			if (negative) return ParseRes.res(-res.result, n);
+			else return ParseRes.res(res.result, n);
+		}
+		else if (src.is(i + n, "0b") || src.is(i + n, "0B")) {
+			n += 2;
+
+			var res = parseBin(src, i + n);
+			if (!res.isSuccess()) return res.chainError(src.loc(i + n), "Incomplete binary literal");
 			n += res.n;
 
 			if (negative) return ParseRes.res(-res.result, n);
