@@ -1032,24 +1032,29 @@ public class SimpleDebugger implements Debugger {
 		}
 		mappings.put(body, map);
 	}
+	
+	private boolean instructionLock;
+	
 	@Override public boolean onInstruction(Environment env, Frame cf, Instruction instruction, Value returnVal, EngineException error, boolean caught) {
 		if (!enabled) return false;
+		if (instructionLock) return false;
+		instructionLock = true;
 
-		boolean isBreakpointable;
-		Location loc;
-		DebugFrame frame;
-		BreakpointType bptType;
-
-		synchronized (this) {
+		try {
+			boolean isBreakpointable;
+			Location loc;
+			DebugFrame frame;
+			BreakpointType bptType;
+	
 			frame = getFrame(cf);
-
+	
 			var map = DebugContext.get(env).getMap(frame.frame.function);
-
+	
 			frame.updateLoc(map.toLocation(frame.frame.codePtr));
 			loc = frame.location;
 			bptType = map.getBreakpoint(frame.frame.codePtr);
 			isBreakpointable = loc != null && (bptType.shouldStepIn());
-
+	
 			if (error != null && (execptionType == CatchType.ALL || execptionType == CatchType.UNCAUGHT && !caught)) {
 				pauseException(env, error);
 			}
@@ -1077,49 +1082,55 @@ public class SimpleDebugger implements Debugger {
 				instruction.params.length == 1 &&
 				instruction.get(0).equals("debug")
 			) pauseDebug(env, null);
-		}
-
-		while (enabled) {
+	
 			synchronized (this) {
-				switch (state) {
-					case PAUSED_EXCEPTION:
-					case PAUSED_NORMAL: break;
-
-					case STEPPING_OUT:
-					case RESUMED: return false;
-
-					case STEPPING_IN:
-					case STEPPING_OVER:
-						if (stepOutFrame.frame == frame.frame) {
-							if (returnVal != null || error != null) {
-								state = State.STEPPING_OUT;
-								continue;
-							}
-							else if (stepOutPtr != frame.frame.codePtr) {
-
-								if (state == State.STEPPING_IN && bptType.shouldStepIn()) {
-									pauseDebug(env, null);
-									break;
+			}
+	
+			while (enabled) {
+				synchronized (this) {
+					switch (state) {
+						case PAUSED_EXCEPTION:
+						case PAUSED_NORMAL: break;
+	
+						case STEPPING_OUT:
+						case RESUMED: return false;
+	
+						case STEPPING_IN:
+						case STEPPING_OVER:
+							if (stepOutFrame.frame == frame.frame) {
+								if (returnVal != null || error != null) {
+									state = State.STEPPING_OUT;
+									continue;
 								}
-								else if (state == State.STEPPING_OVER && bptType.shouldStepOver()) {
-									pauseDebug(env, null);
-									break;
+								else if (stepOutPtr != frame.frame.codePtr) {
+	
+									if (state == State.STEPPING_IN && bptType.shouldStepIn()) {
+										pauseDebug(env, null);
+										break;
+									}
+									else if (state == State.STEPPING_OVER && bptType.shouldStepOver()) {
+										pauseDebug(env, null);
+										break;
+									}
 								}
 							}
-						}
-						return false;
+							return false;
+					}
 				}
+	
+				try {
+					synchronized (updateNotifier) {
+						updateNotifier.wait();
+					}
+				}
+				catch (InterruptedException e) { Thread.currentThread().interrupt(); }
 			}
 
-			try {
-				synchronized (updateNotifier) {
-					updateNotifier.wait();
-				}
-			}
-			catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+			return false;
 		}
-
-		return false;
+		finally {
+			instructionLock = false;
+		}
 	}
 	@Override public synchronized void onFramePush(Environment env, Frame frame) {
 		var prevFrame = currFrame;

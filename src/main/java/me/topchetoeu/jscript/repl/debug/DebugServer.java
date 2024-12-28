@@ -159,7 +159,9 @@ public class DebugServer {
 	}
 
 	public void awaitConnection() throws InterruptedException {
-		connNotifier.wait();
+		synchronized (connNotifier) {
+			connNotifier.wait();
+		}
 	}
 
 	public void run(InetSocketAddress address) {
