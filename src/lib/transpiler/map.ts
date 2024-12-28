@@ -123,13 +123,16 @@ export class VLQSourceMap {
 
 	public static parseVLQ(compiled: string, filenames: string[], raw: string): VLQSourceMap {
 		const mapping = decodeVLQ(raw);
-		const res = new Map<string, [start: number, dst: Location][][]>();
+		const file: [start: number, dst: Location][][] = [];
+		const res = new Map<string, [start: number, dst: Location][][]>([[compiled, file]]);
 
 		let originalRow = 0;
 		let originalCol = 0;
 		let originalFile = 0;
+		const lastCols = new Set<number>();
 
 		for (let compiledRow = 0; compiledRow < mapping.length; compiledRow++) {
+			const line = file[compiledRow] ??= [];
 			let compiledCol = 0;
 
 			for (const rawSeg of mapping[compiledRow]) {
@@ -138,12 +141,13 @@ export class VLQSourceMap {
 				originalRow += rawSeg.length > 2 ? rawSeg[2] : 0;
 				originalCol += rawSeg.length > 3 ? rawSeg[3] : 0;
 
-				let file = res.get(compiled);
-				if (file == null) res.set(compiled, file = []);
-
-				const line = file[compiledRow] ??= [];
-				line[line.length] = [compiledCol, [filenames[originalFile], originalRow, originalCol]];
+				if (!lastCols.has(compiledCol)) {
+					line[line.length] = [compiledCol, [filenames[originalFile], originalRow, originalCol]];
+				}
+				lastCols.add(compiledCol);
 			}
+
+			line.sort((a, b) => a[0] - b[0]);
 		}
 
 		return new VLQSourceMap(res);

@@ -17,7 +17,7 @@ function resource(name: string) {
 	else return resources[name] = getResource(name);
 }
 
-register(next => {
+export default function typescript(next: Compiler): Compiler {
 	const files: Record<string, IScriptSnapshot> = {};
 	const versions: Record<string, number> = {};
 	let declI = 0;
@@ -34,6 +34,7 @@ register(next => {
 		forceConsistentCasingInFileNames: true,
 		declaration: true,
 		sourceMap: true,
+		downlevelIteration: true,
 	};
 
 	let service: LanguageService;
@@ -114,7 +115,7 @@ register(next => {
 		const result = outputs["/src.js"];
 		const declaration = outputs["/src.d.ts"];
 
-		const compiled = next("ts-internal://" + filename, result, SourceMap.chain(prevMap, map));
+		const compiled = next("ts-internal://" + filename, result, SourceMap.chain(map, prevMap));
 		registerSource(filename, code);
 
 		return function (this: any) {
@@ -123,4 +124,4 @@ register(next => {
 			return res;
 		};
 	};
-});
+}

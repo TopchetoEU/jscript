@@ -4,6 +4,7 @@ const typescript = require("@rollup/plugin-typescript");
 const babel = require("@rollup/plugin-babel");
 const commonjs = require("@rollup/plugin-commonjs");
 const nodeResolve = require("@rollup/plugin-node-resolve");
+const json = require("@rollup/plugin-json");
 const { resolve } = require("path");
 
 const shouldMinify = () => false;
@@ -21,6 +22,7 @@ const construct = (input, output) => defineConfig({
 		},
 		commonjs(),
 		nodeResolve(),
+		json(),
 		babel({
 			extensions: [],
 			exclude: ["node_modules/**"],
@@ -107,6 +109,14 @@ const construct = (input, output) => defineConfig({
 			path: "null",
 			os: "null",
 			inspector: "null",
+			tty: "null",
+			util: "null",
+			assert: "null",
+			url: "null",
+			"@babel/preset-typescript/package.json": "null",
+			module: "null",
+			process: "null",
+			v8: "null",
 		},
 		// plugins: [babel.getBabelOutputPlugin({
 		// 	allowAllFormats: true,
