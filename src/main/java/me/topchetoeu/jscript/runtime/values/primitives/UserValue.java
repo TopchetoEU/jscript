@@ -77,4 +77,10 @@ public final class UserValue<T> extends Value {
 	public static <T> UserValue<T> of(T value, ObjectValue prototype) {
 		return new UserValue<T>(value, prototype);
 	}
+
+	@SuppressWarnings("unchecked")
+	public static <T> T unwrap(Class<T> clazz, Value val) {
+		if (val instanceof UserValue user && clazz.isInstance(user.value)) return (T)user.value;
+		else return null;
+	}
 }

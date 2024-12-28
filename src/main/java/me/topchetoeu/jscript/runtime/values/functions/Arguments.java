@@ -32,15 +32,16 @@ public class Arguments {
 	public Value self() {
 		return get(-1);
 	}
-	@SuppressWarnings("unchecked")
 	public <T> T self(Class<T> clazz) {
-		if (self instanceof UserValue user && clazz.isInstance(user.value)) return (T)user.value;
-		else return null;
+		return UserValue.unwrap(clazz, self);
 	}
 	public Value get(int i) {
 		if (i >= args.length || i < -1) return Value.UNDEFINED;
 		else if (i == -1) return self;
 		else return args[i];
+	}
+	public <T> T get(Class<T> clazz, int i) {
+		return UserValue.unwrap(clazz, get(i));
 	}
 	public Value getOrDefault(int i, Value def) {
 		if (i < -1 || i >= args.length) return def;
