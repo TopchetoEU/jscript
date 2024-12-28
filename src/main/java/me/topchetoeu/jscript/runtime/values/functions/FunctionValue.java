@@ -115,7 +115,7 @@ public abstract class FunctionValue extends ObjectValue {
 		this.length = length;
 		this.name = name;
 
-		prototype.defineOwnField(null, "constructor", this);
+		prototype.defineOwnField(null, "constructor", this, true, false, true);
 	}
 }
 

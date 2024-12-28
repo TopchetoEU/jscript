@@ -30,9 +30,22 @@ public class VariableDeclareNode extends Node {
 	}
 	@Override public void compile(CompileResult target, boolean pollute) {
 		for (var entry : values) {
+			var index = target.scope.get(entry.var.name, false);
+
 			if (entry.value != null) {
 				entry.value.compile(target, true);
-				target.add(VariableNode.toSet(target, loc(), entry.var.name, false, true)).setLocation(loc());
+			}
+
+			if (index == null) {
+				if (entry.value == null) {
+					target.add(Instruction.globDef(entry.var.name));
+				}
+				else {
+					target.add(Instruction.globSet(entry.var.name, false, true));
+				}
+			}
+			else if (entry.value != null) {
+				target.add(index.index().toSet(false));
 			}
 		}
 

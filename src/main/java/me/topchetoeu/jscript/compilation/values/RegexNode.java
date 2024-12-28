@@ -32,6 +32,7 @@ public class RegexNode extends Node {
 		var inBrackets = false;
 
 		loop: while (true) {
+			if (i + n >= src.size()) break;
 			switch (src.at(i + n)) {
 				case '[':
 					inBrackets = true;
