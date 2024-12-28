@@ -5,13 +5,17 @@ export interface SymbolPrimordials {
 	getSymbolDescription(symbol: symbol): string;
 }
 export interface NumberPrimordials {
+	NaN: number;
+	Infinity: number;
+	PI: number;
+	E: number;
+
 	parseInt(raw: string | number, radix?: number): number;
 	parseFloat(raw: string | number): number;
 	isNaN(num: number): boolean;
-	NaN: number;
-	Infinity: number;
 
 	pow(a: number, b: number): number;
+	log(val: number): number;
 }
 export interface StringPrimordials {
 	stringBuild(parts: string[]): string;
@@ -32,11 +36,12 @@ export interface ObjectPrimordials {
 	getOwnSymbolMembers(obj: object, onlyEnumerable: boolean): symbol[];
 	getPrototype(obj: object): object | undefined;
 	setPrototype(obj: object, proto?: object): object;
-	isArray(obj: any[]): boolean;
-
 	preventExt(obj: object): void;
 	seal(obj: object): void;
 	freeze(obj: object): void;
+
+	isArray(obj: any): obj is any[];
+	subarray(arr: any[], start: number, end: number): any[];
 
 	memcpy(src: any[], dst: any[], srcI: number, dstI: number, n: number): void;
 	sort(arr: any[], cb: Function): any[];

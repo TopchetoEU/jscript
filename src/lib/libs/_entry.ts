@@ -13,6 +13,7 @@ import { Date } from "./date.ts";
 import { Math as _Math } from "./math.ts";
 import { Set, WeakSet } from "./set.ts";
 import { JSON } from "./json.ts";
+import { console } from "./console.ts";
 import { encodeURI, encodeURIComponent } from "./url.ts";
 import { Promise } from "./promise.ts";
 
@@ -26,6 +27,8 @@ function fixup<T extends Function>(clazz: T) {
 	object.setPrototype(clazz.prototype as any, Object.prototype);
 	return clazz;
 }
+
+object.setPrototype(target, Object.prototype);
 
 object.defineField(target, "undefined", { e: false, c: false, w: false, v: void 0 });
 
@@ -52,6 +55,8 @@ target.Date = fixup(Date);
 target.Promise = fixup(Promise);
 target.Math = object.setPrototype(_Math, Object.prototype);
 target.JSON = object.setPrototype(JSON, Object.prototype);
+target.console = object.setPrototype(console, Object.prototype);
+target.TYPED_ARRAY_SUPPORT = false;
 
 target.parseInt = Number.parseInt;
 target.parseFloat = Number.parseFloat;

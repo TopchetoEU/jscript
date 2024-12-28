@@ -157,6 +157,16 @@ export const Array = (() => {
 
 			return res;
 		}
+		public reduce(this: any[], cb: Function, initial: any) {
+			let i = 0;
+			if (arguments.length <= 1) initial = this[i++];
+
+			for (; i < this.length; i++) {
+				initial = cb(initial, this[i], i, this);
+			}
+
+			return initial;
+		}
 		public some(this: any[], cb: Function, self?: any) {
 			for (let i = 0; i < this.length; i++) {
 				if (i in this && func.invoke(cb, self, [this[i], i, this])) return true;
@@ -197,6 +207,13 @@ export const Array = (() => {
 
 			return -1;
 		}
+		public includes(this: any[], val: any) {
+			for (let i = 0; i < this.length; i++) {
+				if (i in this && this[i] === val) return i;
+			}
+
+			return false;
+		}
 
 		public sort(this: any[], cb?: Function) {
 			cb ||= (a: any, b: any) => {
@@ -206,6 +223,18 @@ export const Array = (() => {
 			};
 
 			return object.sort(this, cb);
+		}
+		public reverse(this: any[]) {
+			const mid = this.length >> 1;
+			const end = this.length - 1;
+
+			for (let i = 0; i < mid; i++) {
+				const tmp = this[i];
+				this[i] = this[end - i];
+				this[end - i] = tmp;
+			}
+
+			return this;
 		}
 	
 		public [symbols.iterator](this: any[]) {

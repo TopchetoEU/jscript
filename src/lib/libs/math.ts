@@ -55,3 +55,6 @@ method("ceil", function floor(val: number) {
 method("pow", function pow(a: number, b: number) {
 	return number.pow(a, b);
 });
+method("log", function log(val: number) {
+	return number.log(val);
+});

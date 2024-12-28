@@ -13,9 +13,10 @@ export const Object = (() => {
 			else if (this === null) return "[object Null]";
 			else if (typeof this === "object") {
 				if (symbols.toStringTag in this) return "[object " + (this as any)[symbols.toStringTag] + "]";
+				else if (object.isArray(this)) return "[object Array]";
 				else return "[object Object]";
 			}
-			else if (typeof this === "number" || this instanceof Object) return "[object Object]";
+			else if (typeof this === "number" || this instanceof Number) return "[object Number]";
 			else if (typeof this === "symbol" || this instanceof Symbol) return "[object Symbol]";
 			else if (typeof this === "string" || this instanceof String) return "[object String]";
 			else if (typeof this === "boolean" || this instanceof Boolean) return "[object Boolean]";
@@ -45,6 +46,12 @@ export const Object = (() => {
 
 		public static getOwnPropertyDescriptor(obj: object, key: any) {
 			return object.getOwnMember(obj, key);
+		}
+		public static getOwnPropertyNames(obj: object): string[] {
+			return object.getOwnMembers(obj, false);
+		}
+		public static getOwnPropertySymbols(obj: object): symbol[] {
+			return object.getOwnSymbolMembers(obj, false);
 		}
 
 		public static defineProperty(obj: object, key: string | symbol, desc: PropertyDescriptor) {
@@ -84,8 +91,8 @@ export const Object = (() => {
 			return obj;
 		}
 		public static defineProperties(obj: object, desc: PropertyDescriptorMap) {
-			const keys = object.getOwnMembers(desc, false) as ((keyof typeof obj) & string)[];
-			const symbols = object.getOwnSymbolMembers(desc, false) as ((keyof typeof obj) & symbol)[];
+			const keys = object.getOwnMembers(desc, true) as ((keyof typeof obj) & string)[];
+			const symbols = object.getOwnSymbolMembers(desc, true) as ((keyof typeof obj) & symbol)[];
 
 			for (let i = 0; i < keys.length; i++) {
 				Object.defineProperty(obj, keys[i], desc[keys[i]]);
@@ -119,7 +126,6 @@ export const Object = (() => {
 			return target;
 		}
 
-
 		public static setPrototypeOf(obj: object, proto: object | null) {
 			object.setPrototype(obj, proto!);
 		}
@@ -129,8 +135,8 @@ export const Object = (() => {
 
 		public static keys(obj: any) {
 			const res: any[] = [];
-			const keys = object.getOwnMembers(obj, false);
-			const symbols = object.getOwnSymbolMembers(obj, false);
+			const keys = object.getOwnMembers(obj, true);
+			const symbols = object.getOwnSymbolMembers(obj, true);
 
 			for (let i = 0; i < keys.length; i++) {
 				res[res.length] = keys[i];
@@ -143,8 +149,8 @@ export const Object = (() => {
 		}
 		public static values(obj: any) {
 			const res: any[] = [];
-			const keys = object.getOwnMembers(obj, false);
-			const symbols = object.getOwnSymbolMembers(obj, false);
+			const keys = object.getOwnMembers(obj, true);
+			const symbols = object.getOwnSymbolMembers(obj, true);
 
 			for (let i = 0; i < keys.length; i++) {
 				res[res.length] = obj[keys[i]];
@@ -157,8 +163,8 @@ export const Object = (() => {
 		}
 		public static entries(obj: any) {
 			const res: [any, any][] = [];
-			const keys = object.getOwnMembers(obj, false);
-			const symbols = object.getOwnSymbolMembers(obj, false);
+			const keys = object.getOwnMembers(obj, true);
+			const symbols = object.getOwnSymbolMembers(obj, true);
 
 			for (let i = 0; i < keys.length; i++) {
 				res[res.length] = [keys[i], obj[keys[i]]];
@@ -172,12 +178,15 @@ export const Object = (() => {
 
 		public static preventExtensions(obj: object) {
 			object.preventExt(obj);
+			return obj;
 		}
 		public static seal(obj: object) {
 			object.seal(obj);
+			return obj;
 		}
 		public static freeze(obj: object) {
 			object.freeze(obj);
+			return obj;
 		}
 	}
 

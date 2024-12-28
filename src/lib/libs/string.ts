@@ -72,6 +72,13 @@ export const String = (() => {
 			return string.substring(self, 0, endI);
 		}
 
+		public trimLeft() {
+			return func.invoke(String.prototype.trimStart, this, []);
+		}
+		public trimRight() {
+			return func.invoke(String.prototype.trimEnd, this, []);
+		}
+
 		public charAt(i: number) {
 			const self = unwrapThis(this, "string", String, "String.prototype.charAt");
 			return self[i];
@@ -133,6 +140,16 @@ export const String = (() => {
 
 			return applyReplaces(self, matches, replacer, false);
 		}
+		public repeat(n: number) {
+			const self = unwrapThis(this, "string", String, "String.prototype.replaceAll");
+			const res: string[] = [];
+
+			for (let i = 0; i < n; i++) {
+				res[i] = self;
+			}
+
+			return string.stringBuild(res);
+		}
 
 		public slice(start = 0, end?: number) {
 			const self = unwrapThis(this, "string", String, "String.prototype.slice");
@@ -143,30 +160,61 @@ export const String = (() => {
 			if (end <= start) return "";
 			return string.substring(self, start, end);
 		}
-		public substring(this: string, start = 0, end = this.length) {
+		public substring(start = 0, end?: number) {
 			const self = unwrapThis(this, "string", String, "String.prototype.substring");
-			start = limitI(start, this.length);
-			end = limitI(end, this.length);
+			if (end === undefined) end = self.length;
+			start = limitI(start, self.length);
+			end = limitI(end, self.length);
 
 			if (end <= start) return "";
 			return string.substring(self, start, end);
 		}
-		public substr(this: string, start = 0, count = this.length - start) {
+		public substr(start = 0, count?: number) {
 			const self = unwrapThis(this, "string", String, "String.prototype.substr");
-			start = limitI(start, this.length);
-			count = limitI(count, this.length - start);
+			count = self.length - start;
+			start = limitI(start, self.length);
+			count = limitI(count, self.length - start);
 
 			if (count <= 0) return "";
 			return string.substring(self, start, count + start);
 		}
+		public concat() {
+			const self = unwrapThis(this, "string", String, "String.prototype.concat");
+			const parts = [self];
+			for (let i = 0; i < arguments.length; i++) {
+				parts[i + 1] = (String as any)(arguments[i]);
+			}
 
-		public toLowerCase(this: string) {
+			return string.stringBuild(parts);
+		}
+
+		public toLowerCase() {
 			const self = unwrapThis(this, "string", String, "String.prototype.toLowerCase");
 			return string.lower(self);
 		}
-		public toUpperCase(this: string) {
+		public toUpperCase() {
 			const self = unwrapThis(this, "string", String, "String.prototype.toLowerCase");
 			return string.upper(self);
+		}
+
+		public match(regex: RegExp) {
+			const self = unwrapThis(this, "string", String, "String.prototype.match");
+			if (!(regex instanceof RegExp)) throw new TypeError("Regexp expected for String.prototype.match");
+
+			if (regex.global) {
+				let matches: string[] | null = null;
+
+				while (true) {
+					const match = regex.exec(self);
+					if (match == null) break;
+
+					matches ||= [];
+					matches[matches.length] = match[0];
+				}
+
+				return matches;
+			}
+			else return regex.exec(self);
 		}
 
 		public [symbols.iterator]() {
