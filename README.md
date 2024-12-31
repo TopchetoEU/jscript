@@ -1,3 +1,6 @@
+# NOTE:
+**Repository permanently moved to https://git.topcheto.eu/topchetoeu/j2s**
+
 # JScript
 
 **NOTE: This had nothing to do with Microsoft's dialect of EcmaScript**
