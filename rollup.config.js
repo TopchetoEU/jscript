@@ -7,7 +7,7 @@ const nodeResolve = require("@rollup/plugin-node-resolve");
 const json = require("@rollup/plugin-json");
 const { resolve } = require("path");
 
-const shouldMinify = () => false;
+const shouldMinify = () => true;
 const shouldEmitSourcemaps = () => true;
 const shouldPolyfill = () => !!process.env.POLYFILLS;
 
@@ -99,6 +99,7 @@ const construct = (input, output) => defineConfig({
 		shouldMinify() && terser({
 			sourceMap: shouldEmitSourcemaps(),
 			keep_classnames: true,
+			keep_fnames: true,
 		}),
 	],
 	output: {
