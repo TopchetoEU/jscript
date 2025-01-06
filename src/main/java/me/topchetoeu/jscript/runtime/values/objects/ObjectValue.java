@@ -316,6 +316,7 @@ public class ObjectValue extends Value {
 		return res;
 	}
 	@Override public List<String> toReadableLines(Environment env, HashSet<ObjectValue> passed) {
+		if (passed.contains(this)) return Arrays.asList("[circular]");
 		return toReadableLines(env, passed, new HashSet<>());
 	}
 
