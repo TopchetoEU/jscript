@@ -11,10 +11,21 @@ export type Location = readonly [file: string, line: number, start: number];
 export function decodeVLQ(val: string): number[][][] {
 	const lines: number[][][] = [];
 
-	for (const line of val.split(";", -1)) {
-		const elements: number[][] = [];
+	const fileParts = val.split(";", -1);
 
-		for (const el of line.split(",", -1)) {
+	for (let i = 0; i < fileParts.length; i++) {
+		const line = fileParts[i];
+		if (line.length === 0) {
+			lines.push([]);
+			continue;
+		}
+
+		const elements: number[][] = [];
+		const lineParts = line.split(",", -1);
+
+		for (let i = 0; i < lineParts.length; i++) {
+			const el = lineParts[i];
+
 			if (el.length === 0) elements.push([]);
 			else {
 				const list: number[] = [];
@@ -98,7 +109,7 @@ export class VLQSourceMap {
 				const mid = (a + b) >> 1;
 				const el = line[mid];
 
-				const cmp = el[0] - src[1];
+				const cmp = el[0] - src[2];
 
 				if (cmp < 0) {
 					if (done) {
@@ -132,10 +143,13 @@ export class VLQSourceMap {
 		const lastCols = new Set<number>();
 
 		for (let compiledRow = 0; compiledRow < mapping.length; compiledRow++) {
-			const line = file[compiledRow] ??= [];
+			const line: [start: number, dst: Location][] = file[compiledRow] = [];
 			let compiledCol = 0;
 
-			for (const rawSeg of mapping[compiledRow]) {
+			const rowData = mapping[compiledRow];
+			for (let i = 0; i < rowData.length; i++) {
+				const rawSeg = rowData[i];
+
 				compiledCol += rawSeg.length > 0 ? rawSeg[0] : 0;
 				originalFile += rawSeg.length > 1 ? rawSeg[1] : 0;
 				originalRow += rawSeg.length > 2 ? rawSeg[2] : 0;
