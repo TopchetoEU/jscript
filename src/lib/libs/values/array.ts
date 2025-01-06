@@ -1,7 +1,7 @@
-import { Error } from "./errors.ts";
-import { func, object, string } from "./primordials.ts";
-import { String } from "./string.ts";
-import { limitI, symbols, wrapI } from "./utils.ts";
+import { Error } from "../values/errors.ts";
+import { func, object, string } from "../primordials.ts";
+import { String } from "../values/string.ts";
+import { limitI, symbols, wrapI } from "../utils.ts";
 
 export const Array = (() => {
 	class Array {
@@ -71,7 +71,7 @@ export const Array = (() => {
 			const res: any[] = [];
 
 			function add(arr: any) {
-				if (Array.isArray(arr) || symbols.isConcatSpreadable in arr) {
+				if (Array.isArray(arr) || arr != null && typeof arr === "object" && symbols.isConcatSpreadable in arr) {
 					const start = res.length;
 					res.length += arr.length;
 
@@ -209,7 +209,7 @@ export const Array = (() => {
 		}
 		public includes(this: any[], val: any) {
 			for (let i = 0; i < this.length; i++) {
-				if (i in this && this[i] === val) return i;
+				if (i in this && this[i] === val) return true;
 			}
 
 			return false;
