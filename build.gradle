@@ -22,6 +22,8 @@ node {
 }
 
 task compileEnv(type: NpmTask) {
+	dependsOn npmInstall;
+
 	inputs.files('rollup.config.js');
 	inputs.dir('src/lib/libs');
 	outputs.files("build/js/env.js");
@@ -30,6 +32,8 @@ task compileEnv(type: NpmTask) {
 	args = ['run', 'build-env'];
 }
 task compileTypescript(type: NpmTask) {
+	dependsOn npmInstall;
+
 	inputs.files('rollup.config.js');
 	inputs.dir('src/lib/transpiler');
 	outputs.files("build/js/ts.js");
