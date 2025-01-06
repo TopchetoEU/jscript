@@ -12,12 +12,12 @@ jobs:
 
     steps:
       - name: Clone repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Setup Java
         uses: actions/setup-java@v3
         with:
           distribution: 'adopt'
-          java-version: '11'
+          java-version: '17'
       - name: Setup Gradle
         uses: gradle/gradle-build-action@v2
         with:
@@ -25,9 +25,10 @@ jobs:
           gradle-version: "8.10"
       - name: Build
         run: gradle build
-      - uses: "marvinpinto/action-automatic-releases@latest"
+      - name: Create release
+        uses: "https://gitea.com/actions/release-action@main"
         with:
-          repo_token: "${{ secrets.TOKEN }}"
+          api_key: "${{secrets.TOKEN}}"
           prerelease: false
           files: |
             java-jscript/LICENSE
