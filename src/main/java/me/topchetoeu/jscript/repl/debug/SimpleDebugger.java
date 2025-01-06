@@ -199,12 +199,15 @@ public class SimpleDebugger implements Debugger {
 			this.frame = frame;
 			this.id = id;
 
-			var map = DebugContext.get(frame.env).getMap(frame.function);
+			var map = DebugContext.get(frame.env).getMapOrEmpty(frame.function);
 			this.globals = Value.global(frame.env);
 			this.locals = ScopeObject.locals(frame, map.localNames);
 			this.capturables = ScopeObject.capturables(frame, map.capturableNames);
 			this.captures = ScopeObject.captures(frame, map.captureNames);
-			this.variables = ScopeObject.combine((ObjectValue)this.globals, locals, capturables, captures);
+			if (this.globals instanceof ObjectValue) {
+				this.variables = ScopeObject.combine((ObjectValue)this.globals, locals, capturables, captures);
+			}
+			else this.variables = ScopeObject.combine(null, locals, capturables, captures);
 			this.valstack = new StackObject(frame);
 		}
 	}
@@ -984,7 +987,7 @@ public class SimpleDebugger implements Debugger {
 		}
 
 		try {
-			Value res = null;
+			Value res = Value.UNDEFINED;
 			if (compare(src, VSCODE_EMPTY)) res = emptyObject;
 			else if (compare(src, VSCODE_SELF)) res = self;
 			else if (compare(src, CHROME_GET_PROP_FUNC)) {
@@ -997,6 +1000,7 @@ public class SimpleDebugger implements Debugger {
 			else if (compare(src, VSCODE_CALL)) {
 				var func = (FunctionValue)(args.size() < 1 ? null : args.get(0));
 				ws.send(msg.respond(new JSONMap().set("result", serializeObj(env, func.apply(env, self)))));
+				return;
 			}
 			else if (compare(src, VSCODE_AUTOCOMPLETE)) {
 				var target = args.get(0);
