@@ -29,7 +29,7 @@ public class FieldMemberNode implements Member {
 		if (value == null) target.add(Instruction.pushUndefined());
 		else value.compile(target, true);
 
-		target.add(Instruction.defField());
+		target.add(Instruction.storeMember());
 	}
 
 	public FieldMemberNode(Location loc, Node key, Node value) {
