@@ -7,8 +7,8 @@ declare interface String {
 
 	at(index: number): string | undefined;
 	charAt(i: number): string | undefined;
-	charCodeAt(i: number): string;
-	codePointAt(i: number): string;
+	charCodeAt(i: number): number;
+	codePointAt(i: number): number;
 
 	includes(search: string, offset?: number): number;
 	indexOf(search: string, offset?: number): number;

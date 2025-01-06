@@ -1,16 +1,7 @@
 import { createDocumentRegistry, createLanguageService, ModuleKind, ScriptSnapshot, ScriptTarget, type Diagnostic, type CompilerOptions, type IScriptSnapshot, flattenDiagnosticMessageText, CompilerHost, LanguageService } from "typescript";
 import { SourceMap } from "./map.ts";
 
-declare function getResource(name: string): string | undefined;
-declare function print(...args: any[]): void;
-declare function register(factory: CompilerFactory): void;
-declare function registerSource(filename: string, src: string): void;
-
-type CompilerFactory = (next: Compiler) => Compiler;
-type Compiler = (filename: string, src: string, mapper: SourceMap) => Function;
-
 const resources: Record<string, string | undefined> = {};
-
 
 function resource(name: string) {
 	if (name in resources) return resources[name];

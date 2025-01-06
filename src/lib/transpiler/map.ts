@@ -6,8 +6,6 @@ for (let i = 97; i <= 122; i++) map[i] = j++;
 map[43] = j++;
 map[47] = j++;
 
-export type Location = readonly [file: string, line: number, start: number];
-
 export function decodeVLQ(val: string): number[][][] {
 	const lines: number[][][] = [];
 
@@ -81,10 +79,6 @@ export namespace Location {
 
 		return startA - startB;
 	}
-}
-
-export interface SourceMap {
-	(loc: Location): Location | undefined;
 }
 
 export class VLQSourceMap {

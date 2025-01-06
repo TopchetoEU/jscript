@@ -1,11 +1,16 @@
 declare interface Function {
-	prototype: unknown;
+	prototype: object;
+
+	name: string;
+	length: number;
 
 	valueOf(): this;
 	toString(): string;
 
 	apply<Args extends readonly any[], Ret, Self>(this: (this: Self, ...args: Args) => Ret, self: Self, args: Args): Ret;
+	apply(this: Function, self: any, args: any[]): any;
 	call<Args extends readonly any[], Ret, Self>(this: (this: Self, ...args: Args) => Ret, self: Self, ...args: Args): Ret;
+	call(this: Function, self: any, ...args: any): any;
 	bind<T extends (...args: any[]) => any>(this: T): T;
 	bind<
 		Bound extends readonly any[],

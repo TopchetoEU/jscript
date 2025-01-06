@@ -3,7 +3,7 @@ declare interface Array<T> {
 	[i: number]: T;
 
 	forEach(this: T[], cb: (val: T, i: number, self: this) => void, self?: any): void;
-	join(this: T[], delim?: string): void;
+	join(this: T[], delim?: string): string;
 
 	push(this: T[], ...elements: T[]): number;
 	pop(this: T[]): T | undefined;
@@ -11,8 +11,8 @@ declare interface Array<T> {
 	unshift(this: T[], ...elements: T[]): number;
 	shift(this: T[]): T | undefined;
 
-	concat(this: T[], ...elements: (T | T[])[]): T | undefined;
-	slice(this: T[], start?: number, end?: number): T | undefined;
+	concat(this: T[], ...elements: (T | T[])[]): T[];
+	slice(this: T[], start?: number, end?: number): T[];
 	splice(this: T[], start?: number, count?: number): T[];
 	splice(this: T[], start: number | undefined, count: number | undefined, ...elements: T[]): T[];
 

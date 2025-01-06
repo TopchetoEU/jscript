@@ -1,5 +1,5 @@
 {
-    "include": ["resources/lib/**/*.ts", "resources/lib/values/.number.d.ts"],
+    "include": ["src/lib/**/*.ts", "src/main/resources/lib/lib.d.ts"],
     "compilerOptions": {
         "strict": true,
         "esModuleInterop": true,
@@ -7,7 +7,7 @@
         "moduleResolution": "Bundler",
         "module": "ESNext",
         "target": "ESNext",
-        "lib": [],
+        "noLib": true,
         "forceConsistentCasingInFileNames": true,
         "emitDecoratorMetadata": true,
         "experimentalDecorators": true,
