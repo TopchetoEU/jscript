@@ -1,5 +1,5 @@
-import { func } from "./primordials.ts";
-import { unwrapThis, valueKey } from "./utils.ts";
+import { func } from "../primordials.ts";
+import { unwrapThis, valueKey } from "../utils.ts";
 
 export const Boolean = (() => {
 	class Boolean {

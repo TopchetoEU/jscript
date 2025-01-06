@@ -1,2 +1,1 @@
-export default function _possibleConstructorReturn() {
-}
+export default function _possibleConstructorReturn(_, res) { return res; }

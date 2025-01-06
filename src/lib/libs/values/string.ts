@@ -1,7 +1,7 @@
 import { TypeError } from "./errors.ts";
-import { func, number, regex, string } from "./primordials.ts";
+import { func, number, regex, string } from "../primordials.ts";
 import { RegExp } from "./regex.ts";
-import { applyReplaces, applySplits, limitI, type ReplaceRange, symbols, unwrapThis, valueKey, wrapI } from "./utils.ts";
+import { applyReplaces, applySplits, limitI, type ReplaceRange, symbols, unwrapThis, valueKey, wrapI } from "../utils.ts";
 
 const trimStartRegex = new regex("^\\s+", false, false, false, false, false);
 const trimEndRegex = new regex("\\s+$", false, false, false, false, false);

@@ -1,4 +1,4 @@
-import { json, object } from "./primordials";
+import { json, object } from "../primordials.ts";
 
 export const JSON = {};
 

@@ -1,4 +1,4 @@
-import { func, object } from "./primordials.ts";
+import { func, object } from "../primordials.ts";
 import { String } from "./string.ts";
 
 export class Error {

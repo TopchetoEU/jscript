@@ -1,5 +1,5 @@
-import { func, object, symbol } from "./primordials.ts";
-import { symbols, unwrapThis, valueKey } from "./utils.ts";
+import { func, object, symbol } from "../primordials.ts";
+import { symbols, unwrapThis, valueKey } from "../utils.ts";
 
 export const Symbol = (() => {
 	class Symbol {

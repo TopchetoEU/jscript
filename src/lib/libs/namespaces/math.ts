@@ -1,4 +1,4 @@
-import { number, object } from "./primordials";
+import { number, object } from "../primordials.ts";
 
 export const Math = {};
 

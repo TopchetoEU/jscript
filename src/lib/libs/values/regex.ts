@@ -1,9 +1,9 @@
-import { func, regex, symbol } from "./primordials.ts";
+import { func, regex, symbol } from "../primordials.ts";
 import { String } from "./string.ts";
-import { type ReplaceRange } from "./utils.ts";
-import { applyReplaces } from "./utils.ts";
-import { applySplits } from "./utils.ts";
-import { symbols } from "./utils.ts";
+import { type ReplaceRange } from "../utils.ts";
+import { applyReplaces } from "../utils.ts";
+import { applySplits } from "../utils.ts";
+import { symbols } from "../utils.ts";
 
 const regexKey: unique symbol = symbol.makeSymbol("RegExp.impl") as any;
 

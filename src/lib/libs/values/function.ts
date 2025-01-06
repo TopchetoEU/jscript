@@ -1,4 +1,4 @@
-import { compile, func, string } from "./primordials.ts";
+import { compile, func, string } from "../primordials.ts";
 import { String } from "./string.ts";
 
 export const Function = (() => {

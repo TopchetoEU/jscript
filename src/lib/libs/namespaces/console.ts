@@ -1,4 +1,4 @@
-import { func, json, object } from "./primordials";
+import { func, json, object } from "../primordials.ts";
 
 export const console = {};
 

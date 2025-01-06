@@ -1,4 +1,4 @@
-import { func, next, object, symbol } from "./primordials.ts";
+import { func, next, object, symbol } from "../primordials.ts";
 
 enum PromiseState {
 	Pending = "pend",

@@ -1,5 +1,5 @@
-import { func, number, object } from "./primordials.ts";
-import { unwrapThis, valueKey } from "./utils.ts";
+import { func, number, object } from "../primordials.ts";
+import { unwrapThis, valueKey } from "../utils.ts";
 
 export const Number = (() => {
 	class Number {

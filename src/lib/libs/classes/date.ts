@@ -1,4 +1,4 @@
-import { now, symbol } from "./primordials.ts";
+import { now, symbol } from "../primordials.ts";
 
 const timeKey: unique symbol = symbol.makeSymbol("") as any;
 
