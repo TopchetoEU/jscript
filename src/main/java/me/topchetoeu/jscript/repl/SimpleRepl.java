@@ -36,8 +36,13 @@ import me.topchetoeu.jscript.runtime.exceptions.EngineException;
 import me.topchetoeu.jscript.runtime.values.Value;
 import me.topchetoeu.jscript.runtime.values.functions.FunctionValue;
 import me.topchetoeu.jscript.runtime.values.functions.NativeFunction;
+import me.topchetoeu.jscript.runtime.values.objects.ArrayLikeValue;
 import me.topchetoeu.jscript.runtime.values.objects.ArrayValue;
 import me.topchetoeu.jscript.runtime.values.objects.ObjectValue;
+import me.topchetoeu.jscript.runtime.values.objects.buffers.Int32ArrayValue;
+import me.topchetoeu.jscript.runtime.values.objects.buffers.Int8ArrayValue;
+import me.topchetoeu.jscript.runtime.values.objects.buffers.TypedArrayValue;
+import me.topchetoeu.jscript.runtime.values.objects.buffers.Uint8ArrayValue;
 import me.topchetoeu.jscript.runtime.values.primitives.BoolValue;
 import me.topchetoeu.jscript.runtime.values.primitives.StringValue;
 import me.topchetoeu.jscript.runtime.values.primitives.SymbolValue;
@@ -61,9 +66,12 @@ public class SimpleRepl {
 
 	private static void reader() {
 		try {
-			environment = createESEnv();
-			tsEnvironment = createESEnv();
-
+			try {
+				environment = createESEnv();
+				tsEnvironment = createESEnv();
+			}
+			catch (ExecutionException e) { throw e.getCause(); }
+			
 			server = new DebugServer();
 			debugTask = server.start(new InetSocketAddress("127.0.0.1", 9229), true);
 			server.targets.put("default", (socket, req) -> new SimpleDebugger(socket)
@@ -74,16 +82,19 @@ public class SimpleRepl {
 			try {
 				try { initGlobals(); } catch (ExecutionException e) { throw e.getCause(); }
 			}
-			catch (EngineException | SyntaxException e) { System.err.println(Value.errorToReadable(environment, e, null)); }
+			catch (EngineException | SyntaxException e) {
+				System.err.println("Failed to load stdlib. Falling back to barebones environment...");
+				System.err.println(Value.errorToReadable(environment, e, null));
+			}
 
 
 			System.out.println(String.format("Running %s v%s by %s", Metadata.name(), Metadata.version(), Metadata.author()));
 
 			for (var arg : args) {
-				try {
-					var file = new File(arg);
-					var raw = Reading.streamToString(new FileInputStream(file));
+				var file = new File(arg);
+				var raw = Reading.streamToString(new FileInputStream(file));
 
+				try {
 					try {
 						var res = engine.pushMsg(
 							false, environment,
@@ -95,14 +106,15 @@ public class SimpleRepl {
 					catch (ExecutionException e) { throw e.getCause(); }
 				}
 				catch (EngineException | SyntaxException e) { System.err.println(Value.errorToReadable(environment, e, null)); }
+
 			}
 
 			for (var i = 0; ; i++) {
+				var raw = Reading.readline();
+
+				if (raw == null) break;
+
 				try {
-					var raw = Reading.readline();
-
-					if (raw == null) break;
-
 					try {
 						var res = engine.pushMsg(
 							false, environment,
@@ -114,8 +126,10 @@ public class SimpleRepl {
 					catch (ExecutionException e) { throw e.getCause(); }
 				}
 				catch (EngineException | SyntaxException e) { System.err.println(Value.errorToReadable(environment, e, null)); }
+
 			}
 		}
+		catch (EngineException | SyntaxException e) { System.err.println(Value.errorToReadable(environment, e, null)); }
 		catch (IOException e) {
 			System.out.println(e.toString());
 			engine.thread().interrupt();
@@ -183,33 +197,77 @@ public class SimpleRepl {
 
 		var source = new StringBuilder();
 
-		var inBrackets = false;
+		StringBuilder bracesSource = null;
+		StringBuilder bracketsSource = null;
 
 		while (true) {
 			if (n >= src.length()) break;
 			var c = src.charAt(n++);
 
-			if (c == '\\') {
+			if (c == '\\' && n + 1 < src.length() && src.charAt(n) == 'b') {
+				c = '\b';
+				n++;
+			}
+
+			if (bracesSource != null) {
+				var failed = true;
+
+				if (Character.isDigit(c)) {
+					bracesSource.append(c);
+					failed = false;
+				}
+				else if (c == ',' && bracesSource.indexOf(",") < 0) {
+					bracesSource.append(c);
+					failed = false;
+				}
+				else if (c == '}' && bracesSource.length() > 0) {
+					bracesSource.append(c);
+					source.append(bracesSource);
+					bracesSource = null;
+					continue;
+				}
+
+				if (failed) {
+					source.append("\\");
+					source.append(bracesSource);
+					bracesSource = null;
+					n--;
+				}
+			}
+			else if (bracketsSource != null) {
+				if (c == '[') bracketsSource.append("\\[");
+				else if (c == ']') {
+					var res = bracketsSource.append(']').toString();
+					bracketsSource = null;
+					if (res.equals("[^]")) res = "[\\s\\S]";
+						else if (res.equals("[]")) res = "[^\\s\\S]";
+					source.append(res);
+				}
+				else if (c == '\\') {
+					if (n >= src.length()) break;
+					bracketsSource.append(c).append(src.charAt(n++));
+				}
+				else bracketsSource.append(c);
+			}
+			else if (c == '\\') {
 				if (n >= src.length()) throw new PatternSyntaxException("Unexpected end", src, n);
 				c = src.charAt(n++);
 				source.append('\\').append(c);
 			}
 			else if (c == '[') {
-				if (inBrackets) source.append("\\[");
-				else {
-					inBrackets = true;
-					source.append('[');
-				}
+				bracketsSource = new StringBuilder("[");
 			}
-			else if (c == ']') {
-				if (inBrackets) {
-					inBrackets = false;
-					source.append(']');
-				}
-				else throw new PatternSyntaxException("Unexpected ']'", src, n);
+			else if (c == '{' && bracketsSource == null) {
+				bracesSource = new StringBuilder("{");
 			}
 			else source.append(c);
 		}
+
+		if (bracesSource != null) {
+			source.append("\\");
+			source.append(bracesSource);
+		}
+		if (bracketsSource != null) throw new PatternSyntaxException("Unmatched '['", src, n - bracketsSource.length());
 
 		return source.toString();
 	}
@@ -314,12 +372,18 @@ public class SimpleRepl {
 			else return NumberValue.parseFloat(args.get(0).toString(), false);
 		}));
 		res.defineOwnField(env, "isNaN", new NativeFunction(args -> BoolValue.of(args.get(0).isNaN())));
-		res.defineOwnField(env, "NaN", NumberValue.NAN);
-		res.defineOwnField(env, "Infinity", NumberValue.of(Double.POSITIVE_INFINITY));
 
 		res.defineOwnField(env, "pow", new NativeFunction(args -> {
 			return NumberValue.of(Math.pow(args.get(0).toNumber(args.env).getDouble(), args.get(1).toNumber(args.env).getDouble()));
 		}));
+		res.defineOwnField(env, "log", new NativeFunction(args -> {
+			return NumberValue.of(Math.log(args.get(0).toNumber(args.env).getDouble()));
+		}));
+
+		res.defineOwnField(env, "NaN", NumberValue.NAN);
+		res.defineOwnField(env, "Infinity", NumberValue.of(Double.POSITIVE_INFINITY));
+		res.defineOwnField(env, "PI", NumberValue.of(Math.PI));
+		res.defineOwnField(env, "E", NumberValue.of(Math.E));
 
 		return res;
 	}
@@ -462,9 +526,6 @@ public class SimpleRepl {
 			if (member == null) return Value.UNDEFINED;
 			else return member.descriptor(args.env, obj);
 		}));
-		res.defineOwnField(env, "isArray", new NativeFunction(args -> {
-			return BoolValue.of(args.get(0) instanceof ArrayValue);
-		}));
 		res.defineOwnField(env, "preventExt", new NativeFunction(args -> {
 			args.get(0).preventExtensions();
 			return VoidValue.UNDEFINED;
@@ -497,6 +558,73 @@ public class SimpleRepl {
 			});
 
 			return arr;
+		}));
+
+		res.defineOwnField(env, "isArray", new NativeFunction(args -> {
+			return BoolValue.of(args.get(0) instanceof ArrayLikeValue);
+		}));
+
+		return res;
+	}
+
+	private static ObjectValue bufferPrimordials(Environment env) {
+		var buffProto = new ObjectValue();
+		buffProto.defineOwnProperty(env, "length", Optional.of(new NativeFunction(args -> {
+			return NumberValue.of(args.self(byte[].class).length);
+		})), Optional.empty(), false, true);
+
+		var res = new ObjectValue();
+		res.setPrototype(null, null);
+
+		res.defineOwnField(env, "buff", new NativeFunction(args -> {
+			var size = args.get(0).toNumber(env).getInt();
+			return TypedArrayValue.buffer(new byte[size], buffProto);
+		}));
+
+		res.defineOwnField(env, "uint8", new NativeFunction(args -> {
+			var buff = args.get(byte[].class, 0);
+			var start = args.get(1).toNumber(env).getInt();
+			var end = args.get(2).toNumber(env).getInt();
+			return new Uint8ArrayValue(buff, start, end);
+		}));
+		res.defineOwnField(env, "int8", new NativeFunction(args -> {
+			var buff = args.get(byte[].class, 0);
+			var start = args.get(1).toNumber(env).getInt();
+			var end = args.get(2).toNumber(env).getInt();
+			return new Int8ArrayValue(buff, start, end);
+		}));
+		res.defineOwnField(env, "int32", new NativeFunction(args -> {
+			var buff = args.get(byte[].class, 0);
+			var start = args.get(1).toNumber(env).getInt();
+			var end = args.get(2).toNumber(env).getInt();
+			return new Int32ArrayValue(buff, start, end);
+		}));
+
+		res.defineOwnField(env, "isUint8", new NativeFunction(args -> {
+			return BoolValue.of(args.get(0) instanceof Uint8ArrayValue);
+		}));
+		res.defineOwnField(env, "isInt8", new NativeFunction(args -> {
+			return BoolValue.of(args.get(0) instanceof Int8ArrayValue);
+		}));
+		res.defineOwnField(env, "isInt32", new NativeFunction(args -> {
+			return BoolValue.of(args.get(0) instanceof Int32ArrayValue);
+		}));
+
+		res.defineOwnField(env, "is", new NativeFunction(args -> {
+			return BoolValue.of(args.get(0) instanceof TypedArrayValue);
+		}));
+		res.defineOwnField(env, "isBuff", new NativeFunction(args -> {
+			return BoolValue.of(args.get(byte[].class, 0) != null);
+		}));
+
+		res.defineOwnField(env, "backer", new NativeFunction(args -> {
+			return TypedArrayValue.buffer(((TypedArrayValue)args.get(0)).buffer, buffProto);
+		}));
+		res.defineOwnField(env, "start", new NativeFunction(args -> {
+			return NumberValue.of(((TypedArrayValue)args.get(0)).start);
+		}));
+		res.defineOwnField(env, "end", new NativeFunction(args -> {
+			return NumberValue.of(((TypedArrayValue)args.get(0)).end);
 		}));
 
 		return res;
@@ -584,6 +712,7 @@ public class SimpleRepl {
 		res.defineOwnField(env, "number", numberPrimordials(env));
 		res.defineOwnField(env, "string", stringPrimordials(env));
 		res.defineOwnField(env, "object", objectPrimordials(env));
+		res.defineOwnField(env, "buffer", bufferPrimordials(env));
 		res.defineOwnField(env, "function", functionPrimordials(env));
 		res.defineOwnField(env, "json", jsonPrimordials(env));
 		res.defineOwnField(env, "map", mapPrimordials(env));
@@ -605,6 +734,8 @@ public class SimpleRepl {
 			setProto(args.env, env, Value.SYNTAX_ERR_PROTO, obj, "syntax");
 			setProto(args.env, env, Value.TYPE_ERR_PROTO, obj, "type");
 			setProto(args.env, env, Value.RANGE_ERR_PROTO, obj, "range");
+			setProto(args.env, env, Value.UINT8_ARR_PROTO, obj, "uint8");
+			setProto(args.env, env, Value.INT32_ARR_PROTO, obj, "int32");
 			var val = obj.getMember(args.env, "regex");
 			if (val instanceof FunctionValue func) {
 				env.add(Value.REGEX_CONSTR, func);
@@ -740,7 +871,7 @@ public class SimpleRepl {
 		reader.setName("STD Reader");
 		reader.start();
 
-		engine.thread().join();
+		reader.join();
 		engineTask.interrupt();
 		debugTask.interrupt();
 	}

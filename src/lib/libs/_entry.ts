@@ -1,21 +1,25 @@
 import { object, setGlobalPrototypes, target } from "./primordials.ts";
-import { Error, RangeError, SyntaxError, TypeError } from "./errors.ts";
-import { Boolean } from "./boolean.ts";
-import { Function } from "./function.ts";
-import { Number } from "./number.ts";
-import { Object } from "./object.ts";
-import { String } from "./string.ts";
-import { Symbol } from "./symbol.ts";
-import { Array } from "./array.ts";
-import { Map, WeakMap } from "./map.ts";
-import { RegExp } from "./regex.ts";
-import { Date } from "./date.ts";
-import { Math as _Math } from "./math.ts";
-import { Set, WeakSet } from "./set.ts";
-import { JSON } from "./json.ts";
-import { console } from "./console.ts";
+import { Error, RangeError, SyntaxError, TypeError } from "./values/errors.ts";
+import { Boolean } from "./values/boolean.ts";
+import { Function } from "./values/function.ts";
+import { Number } from "./values/number.ts";
+import { Object } from "./values/object.ts";
+import { String } from "./values/string.ts";
+import { Symbol } from "./values/symbol.ts";
+import { Array } from "./values/array.ts";
+import { Map, WeakMap } from "./classes/map.ts";
+import { RegExp } from "./values/regex.ts";
+import { Date } from "./classes/date.ts";
+import { Math as _Math } from "./namespaces/math.ts";
+import { Set, WeakSet } from "./classes/set.ts";
+import { JSON } from "./namespaces/json.ts";
+import { console } from "./namespaces/console.ts";
 import { encodeURI, encodeURIComponent } from "./url.ts";
-import { Promise } from "./promise.ts";
+import { Promise } from "./classes/promise.ts";
+import { ArrayBuffer } from "./arrays/ArrayBuffer.ts";
+import { Uint8Array } from "./arrays/Uint8Array.ts";
+import { Int32Array } from "./arrays/Int32Array.ts";
+import { TypedArray } from "./arrays/TypedArray.ts";
 
 declare global {
 	function print(...args: any[]): void;
@@ -46,6 +50,11 @@ target.RangeError = RangeError;
 target.SyntaxError = SyntaxError;
 target.TypeError = TypeError;
 
+fixup(TypedArray);
+target.ArrayBuffer = fixup(ArrayBuffer);
+target.Uint8Array = Uint8Array;
+target.Int32Array = Int32Array;
+
 target.Map = fixup(Map);
 target.WeakMap = fixup(WeakMap);
 target.Set = fixup(Set);
@@ -56,7 +65,6 @@ target.Promise = fixup(Promise);
 target.Math = object.setPrototype(_Math, Object.prototype);
 target.JSON = object.setPrototype(JSON, Object.prototype);
 target.console = object.setPrototype(console, Object.prototype);
-target.TYPED_ARRAY_SUPPORT = false;
 
 target.parseInt = Number.parseInt;
 target.parseFloat = Number.parseFloat;
@@ -77,5 +85,7 @@ setGlobalPrototypes({
 	syntax: SyntaxError.prototype,
 	range: RangeError.prototype,
 	type: TypeError.prototype,
+	uint8: Uint8Array.prototype,
+	int32: Int32Array.prototype,
 	regex: RegExp,
 });

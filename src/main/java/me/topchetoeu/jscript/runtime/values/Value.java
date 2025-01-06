@@ -62,7 +62,10 @@ public abstract class Value {
 	public static final Key<ObjectValue> FUNCTION_PROTO = new Key<>();
 
 	public static final Key<ObjectValue> ARRAY_PROTO = new Key<>();
-	public static final Key<ObjectValue> BYTE_BUFF_PROTO = new Key<>();
+
+	public static final Key<ObjectValue> INT8_ARR_PROTO = new Key<>();
+	public static final Key<ObjectValue> INT32_ARR_PROTO = new Key<>();
+	public static final Key<ObjectValue> UINT8_ARR_PROTO = new Key<>();
 
 	public static final Key<ObjectValue> ERROR_PROTO = new Key<>();
 	public static final Key<ObjectValue> SYNTAX_ERR_PROTO = new Key<>();

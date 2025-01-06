@@ -1,3 +1,10 @@
+const buffSymbol: unique symbol = undefined as any;
+
+export interface InternalBuffer {
+	length: number;
+	[buffSymbol]: "buffer";
+}
+
 export interface SymbolPrimordials {
 	makeSymbol(name: string): symbol;
 	getSymbol(name: string): symbol;
@@ -46,6 +53,22 @@ export interface ObjectPrimordials {
 	memcpy(src: any[], dst: any[], srcI: number, dstI: number, n: number): void;
 	sort(arr: any[], cb: Function): any[];
 }
+export interface BufferPrimordials {
+	buff(n: number): InternalBuffer;
+	backer(arr: number[]): InternalBuffer;
+	start(arr: number[]): number;
+	end(arr: number[]): number;
+
+	uint8(buff: InternalBuffer, start: number, end: number): number[];
+	int8(buff: InternalBuffer, start: number, end: number): number[];
+	int32(buff: InternalBuffer, start: number, end: number): number[];
+
+	isUint8(val: any): val is number[];
+	isInt8(val: any): val is number[];
+	isInt32(val: any): val is number[];
+	is(val: any): val is number[];
+	isBuff(val: any): val is InternalBuffer;
+}
 export interface FunctionPrimordials {
 	invokeType(args: IArguments, self: any): "new" | "call";
 	invokeTypeInfer(): "new" | "call";
@@ -67,6 +90,7 @@ export interface Primordials {
 	object: ObjectPrimordials;
 	function: FunctionPrimordials;
 	json: JSONPrimordials;
+	buffer: BufferPrimordials;
 	map: new (weak?: boolean) => {
 		get(key: any): any;
 		has(key: any): boolean;
@@ -97,6 +121,7 @@ export const {
 	number,
 	string,
 	object,
+	buffer,
 	function: func,
 	json,
 	map,
