@@ -26,10 +26,9 @@ jobs:
       - name: Build
         run: gradle build
       - name: Create release
-        uses: "https://gitea.com/actions/release-action@main"
+        uses: "https://gitea.com/actions/gitea-release-action@main"
         with:
-          api_key: "${{secrets.TOKEN}}"
-          prerelease: false
+          # api_key: "${{secrets.TOKEN}}"
           files: |
-            java-jscript/LICENSE
-            java-jscript/build/libs/*.jar
+            LICENSE
+            build/libs/*.jar
