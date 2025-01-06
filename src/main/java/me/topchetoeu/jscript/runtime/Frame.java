@@ -213,7 +213,9 @@ public final class Frame {
 			catch (StackOverflowError e) { throw STACK_OVERFLOW; }
 			catch (EngineException e) { error = e; }
 			catch (RuntimeException e) {
-				System.out.println(dbg.getMapOrEmpty(function).toLocation(codePtr, true));
+				if (!(e instanceof CancellationException)) {
+					System.out.println(dbg.getMapOrEmpty(function).toLocation(codePtr, true));
+				}
 				throw e;
 			}
 		}

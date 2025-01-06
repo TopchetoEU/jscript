@@ -40,7 +40,7 @@ public final class Engine implements EventLoop {
 				try {
 					((Task<Object>)task).notifier.complete(task.runnable.get());
 				}
-				catch (CancellationException e) { throw e; }
+				catch (CancellationException e) { task.notifier.cancel(false); throw e; }
 				catch (RuntimeException e) { task.notifier.completeExceptionally(e); }
 			}
 			catch (InterruptedException | CancellationException e) {
