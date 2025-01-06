@@ -17,6 +17,8 @@
 /// <reference path="./globals/weak-map.d.ts"/>
 
 declare function print(...args: any[]): void;
+declare function exit(): never;
+declare function measure(func: () => void): void;
 
 declare type IArguments = Array<any>;
 
