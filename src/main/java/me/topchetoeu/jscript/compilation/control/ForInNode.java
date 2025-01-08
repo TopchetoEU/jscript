@@ -21,7 +21,9 @@ public class ForInNode extends Node {
 
 	@Override public void resolve(CompileResult target) {
 		body.resolve(target);
-		binding.resolve(target);
+		if (isDecl) {
+			target.scope.define(binding.name);
+		}
 	}
 
 	@Override public void compileFunctions(CompileResult target) {
