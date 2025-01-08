@@ -112,7 +112,8 @@ export interface Primordials {
 	schedule(func: () => void, delay: number): () => void;
 }
 
-globalThis.undefined = void 0;
+// prevent optimization to "undefined", which doesn't exist yet
+globalThis.undefined = ({} as any).bogus;
 export const target = (globalThis as any).target;
 export const primordials: Primordials = (globalThis as any).primordials;
 
