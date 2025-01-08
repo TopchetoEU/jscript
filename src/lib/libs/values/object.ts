@@ -82,13 +82,13 @@ export const Object = (() => {
 					res.s = set;
 				}
 				if ("enumerable" in desc) res.e = !!desc.enumerable;
-				if ("configurable" in desc) res.e = !!desc.configurable;
+				if ("configurable" in desc) res.c = !!desc.configurable;
 
 				if (!object.defineProperty(obj, key, res)) throw new TypeError("Cannot redefine property: " + String(key));
 			}
 			else {
 				if ("enumerable" in desc) res.e = !!desc.enumerable;
-				if ("configurable" in desc) res.e = !!desc.configurable;
+				if ("configurable" in desc) res.c = !!desc.configurable;
 				if ("writable" in desc) res.w = !!desc.writable;
 				if ("value" in desc) res.v = desc.value;
 
