@@ -11,17 +11,14 @@ export default function babel(next: Compiler): Compiler {
 			presets: [availablePresets.env],
 		});
 
-		print(res.map!.mappings);
-
 		const map = SourceMap.parse({
 			file: "babel-internal://" + filename,
 			mappings: res.map!.mappings,
 			sources: [filename],
 		});
 
-		const compiled = next("babel-internal://" + filename, res.code!, SourceMap.chain(map, prevMap));
 		registerSource(filename, code);
-		return compiled;
+		return next("babel-internal://" + filename, res.code!, SourceMap.chain(map, prevMap));
 	};
 }
 

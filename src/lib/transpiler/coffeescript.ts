@@ -20,9 +20,8 @@ export default function coffee(next: Compiler): Compiler {
 			sources: [filename],
 		});
 
-		const compiled = next("coffee-internal://" + filename, result, SourceMap.chain(map, prevMap));
 		registerSource(filename, code);
-		return compiled;
+		return next("coffee-internal://" + filename, result, SourceMap.chain(map, prevMap));
 	};
 }
 

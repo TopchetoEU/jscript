@@ -106,8 +106,8 @@ export default function typescript(next: Compiler): Compiler {
 		const result = outputs["/src.js"];
 		const declaration = outputs["/src.d.ts"];
 
-		const compiled = next("ts-internal://" + filename, result, SourceMap.chain(map, prevMap));
 		registerSource(filename, code);
+		const compiled = next("ts-internal://" + filename, result, SourceMap.chain(map, prevMap));
 
 		return function (this: any) {
 			const res = compiled.apply(this, arguments);
