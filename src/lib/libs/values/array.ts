@@ -33,7 +33,7 @@ export const Array = (() => {
 			for (let i = arguments.length - 1; i >= 0; i--) {
 				this[start + i] = arguments[i];
 			}
-			return arguments.length;
+			return this.length;
 		}
 		public pop(this: any[]) {
 			if (this.length === 0) return undefined;
@@ -51,7 +51,7 @@ export const Array = (() => {
 			for (let i = 0; i < arguments.length; i++) {
 				this[i] = arguments[i];
 			}
-			return arguments.length;
+			return this.length;
 		}
 		public shift(this: any[]) {
 			if (this.length === 0) return undefined;
