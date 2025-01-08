@@ -409,7 +409,43 @@ public class SimpleDebugger implements Debugger {
 				res.set("description", className);
 			}
 
-			if (val instanceof ArrayValue arr) res.set("description", "Array(" + arr.size() + ")");
+			if (val instanceof ArrayValue arr) {
+				var desc = new StringBuilder("Array(" + arr.size() + ")");
+
+				if (arr.size() > 0) {
+					desc.append("[");
+
+					for (var i = 0; i < arr.size(); i++) {
+						if (i != 0) desc.append(", ");
+						if (desc.length() > 120) {
+							desc.append("...");
+							break;
+						}
+	
+						if (arr.has(i)) {
+							try {
+								var curr = arr.get(i);
+								if (curr instanceof StringValue str) {
+									desc.append(JSON.stringify(JSONElement.string(str.value)));
+								}
+								else {
+									desc.append(arr.get(i).toString(env));
+								}
+							}
+							catch (EngineException e) {
+								desc.append("<error>");
+							}
+						}
+						else {
+							desc.append("<empty>");
+						}
+					}
+	
+					desc.append("]");
+				}
+
+				res.set("description", desc.toString());
+			}
 			else if (val instanceof FunctionValue) res.set("description", val.toString());
 			else {
 				var defaultToString = false;
