@@ -1,4 +1,4 @@
-type Location = readonly [file: string, line: number, start: number];
+type Location = [file: string, line: number, start: number];
 type SourceMap = (loc: Location) => Location | undefined;
 
 type CompilerFactory = (next: Compiler) => Compiler;
