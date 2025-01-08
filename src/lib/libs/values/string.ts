@@ -41,8 +41,9 @@ export const String = (() => {
 			offset = +offset;
 			return string.indexOf(self, search, offset, false);
 		}
-		public lastIndexOf(search: string, offset = 0) {
+		public lastIndexOf(search: string, offset?: number) {
 			const self = unwrapThis(this, "string", String, "String.prototype.lastIndexOf");
+			if (offset == null) offset = self.length;
 			offset = +offset;
 			return string.indexOf(self, search, offset, true);
 		}
