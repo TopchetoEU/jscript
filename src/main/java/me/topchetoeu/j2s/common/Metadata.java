@@ -1,6 +1,7 @@
 package me.topchetoeu.j2s.common;
 
 import me.topchetoeu.j2s.common.json.JSON;
+import me.topchetoeu.j2s.common.parsing.Filename;
 
 public class Metadata {
 	private static final String VERSION;
@@ -8,7 +9,7 @@ public class Metadata {
 	private static final String NAME;
 
 	static {
-		var data = JSON.parse(null, Reading.resourceToString("metadata.json")).map();
+		var data = JSON.parse(new Filename("internal", "metadata.json"), Reading.resourceToString("metadata.json")).map();
 		VERSION = data.string("version");
 		AUTHOR = data.string("author");
 		NAME = data.string("name");
