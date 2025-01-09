@@ -1,10 +1,8 @@
-# JScript
-
-**NOTE: This had nothing to do with Microsoft's dialect of EcmaScript**
+# J2S (Java-JavaScript or Java to JavaScript)
 
 **WARNING: Currently, this code is undocumented. Proceed with caution and a psychiatrist.**
 
-JScript is an engine, capable of running EcmaScript 5, written entirely in Java. This engine has been developed with the goal of being easy to integrate with your preexisting codebase, **THE GOAL OF THIS ENGINE IS NOT PERFORMANCE**. My crude experiments show that this engine is 50x-100x slower than V8, which, although bad, is acceptable for most simple scripting purposes. Note that although the codebase has a Main class, this isn't meant to be a standalone program, but instead a library for running JavaScript code.
+J2S is an engine, capable of running EcmaScript 5, written entirely in Java. This engine has been developed with the goal of being easy to integrate with your preexisting codebase, **THE GOAL OF THIS ENGINE IS NOT PERFORMANCE**. My crude experiments show that this engine is 50x-100x slower than V8, which, although bad, is acceptable for most simple scripting purposes. Note that although the codebase has a Main class, this isn't meant to be a standalone program, but instead a library for running JavaScript code.
 
 ## Example
 
