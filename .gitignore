@@ -1,6 +1,40 @@
 /*
 
-!/src
+/buildSrc/*
+!/buildSrc
+!/buildSrc
+!/buildSrc/src
+!/buildSrc/build.gradle.kts
+
+/common/*
+!/common
+!/common/src
+!/common/build.gradle.kts
+
+/runtime/*
+!/runtime
+!/runtime/src
+!/runtime/build.gradle.kts
+
+/compilation/*
+!/compilation
+!/compilation/src
+!/compilation/build.gradle.kts
+
+/repl/*
+!/repl
+!/repl/src
+!/repl/build.gradle.kts
+
+/lib/*
+!/lib
+!/lib/src
+!/lib/build.gradle.kts
+!/lib/package.json
+!/lib/tsconfig.json
+!/lib/rollup.config.js
+
+# !/src
 !/doc
 !/tests
 !/.github
@@ -10,8 +44,8 @@
 !/LICENSE
 !/README.md
 
-!/settings.gradle
-!/build.gradle
+!/settings.gradle.kts
+!/build.gradle.kts
 !/gradle.properties
 
 !/package.json
