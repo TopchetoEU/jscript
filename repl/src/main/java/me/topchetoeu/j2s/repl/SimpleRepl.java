@@ -13,11 +13,9 @@ import java.util.Optional;
 import java.util.WeakHashMap;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
-import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
-import me.topchetoeu.j2s.common.FunctionBody;
 import me.topchetoeu.j2s.common.Metadata;
 import me.topchetoeu.j2s.common.Reading;
 import me.topchetoeu.j2s.common.SyntaxException;
@@ -25,8 +23,6 @@ import me.topchetoeu.j2s.common.environment.Environment;
 import me.topchetoeu.j2s.common.environment.Key;
 import me.topchetoeu.j2s.common.json.JSON;
 import me.topchetoeu.j2s.common.parsing.Filename;
-import me.topchetoeu.j2s.common.parsing.Location;
-import me.topchetoeu.j2s.compilation.CompileResult;
 import me.topchetoeu.j2s.compilation.JavaScript;
 import me.topchetoeu.j2s.repl.debug.DebugServer;
 import me.topchetoeu.j2s.repl.debug.Debugger;
@@ -63,8 +59,12 @@ public class SimpleRepl {
 		try {
 			var res = JavaScript.compile(env, filename, raw, true);
 			var body = res.body();
+
 			DebugContext.get(env).onSource(filename, raw);
-			registerFunc(env, body, res, mapper);
+			for (var el : res.bodies()) {
+				DebugContext.get(env).onFunctionLoad(el, res.map(mapper));
+			}
+
 			return new CodeFunction(env, filename.toString(), body, new Value[0][]);
 		}
 		catch (SyntaxException e) {
@@ -901,15 +901,7 @@ public class SimpleRepl {
 		var tsCompiler = wrap(Compiler.get(environment), tsEnvironment, environment, tsCompilerFactory[0]);
 		environment.add(Compiler.KEY, tsCompiler);
 	}
-	private static void registerFunc(Environment env, FunctionBody body, CompileResult res, Function<Location, Location> mapper) {
-		var map = res.map(mapper);
 
-		DebugContext.get(env).onFunctionLoad(body, map);
-
-		for (var i = 0; i < body.children.length; i++) {
-			registerFunc(env, body.children[i], res.children.get(i), mapper);
-		}
-	}
 
 	public static void main(String args[]) throws InterruptedException {
 		SimpleRepl.args = args;

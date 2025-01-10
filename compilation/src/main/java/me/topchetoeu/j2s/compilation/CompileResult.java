@@ -2,6 +2,7 @@ package me.topchetoeu.j2s.compilation;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Stack;
 import java.util.function.Function;
 
 import me.topchetoeu.j2s.common.FunctionBody;
@@ -18,6 +19,7 @@ import me.topchetoeu.j2s.compilation.scope.Variable;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 
 public final class CompileResult {
@@ -64,8 +66,30 @@ public final class CompileResult {
 	public void setLocation(Location type) {
 		setLocation(instructions.size() - 1, type);
 	}
+
 	public void setLocationAndDebug(Location loc, BreakpointType type) {
 		setLocationAndDebug(instructions.size() - 1, loc, type);
+	}
+	
+	public Iterable<FunctionBody> bodies() {
+		var stack = new Stack<FunctionBody>();
+		stack.push(body());
+
+		return () -> new Iterator<FunctionBody>() {
+			@Override public FunctionBody next() {
+				if (stack.empty()) return null;
+				else {
+					var res = stack.pop();
+					for (var el : res.children) {
+						stack.push(el);
+					}
+					return res;
+				}
+			}
+			@Override public boolean hasNext() {
+				return !stack.empty();
+			}
+		};
 	}
 
 	public CompileResult addChild(FunctionNode node, CompileResult res) {
