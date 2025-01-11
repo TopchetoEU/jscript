@@ -63,8 +63,11 @@ public class Environment {
 	}
 
 	public <T> T init(Key<T> key, T val) {
-		if (!has(key)) this.add(key, val);
-		return val;
+		if (!has(key)) {
+			this.add(key, val);
+			return val;
+		}
+		else return get(key);
 	}
 	public <T> T initFrom(Key<T> key, Supplier<T> val) {
 		if (!has(key)) {
