@@ -32,9 +32,9 @@ public abstract class Location implements Comparable<Location> {
 		};
 	}
 	public final Location nextLine() {
-		return changeLine(1);
+		return nextLine(1);
 	}
-	public final Location changeLine(int offset) {
+	public final Location nextLine(int offset) {
 		var self = this;
 
 		return new Location() {
@@ -60,7 +60,14 @@ public abstract class Location implements Comparable<Location> {
 	}
 
 	@Override public int compareTo(Location other) {
-		int a = filename().toString().compareTo(other.filename().toString());
+		int a;
+		var filenameA = filename();
+		var filenameB = other.filename();
+		if (filenameB == null && filenameA == null) a = 0;
+		else if (filenameA == null) a = -1;
+		else if (filenameB == null) a = 1;
+		else a = filenameA.toString().compareTo(filenameB.toString());
+
 		int b = Integer.compare(line(), other.line());
 		int c = Integer.compare(start(), other.start());
 
@@ -79,20 +86,26 @@ public abstract class Location implements Comparable<Location> {
 	}
 
 	public static Location of(String raw) {
-		var i0 = raw.lastIndexOf(':');
-		if (i0 < 0) return Location.of(Filename.parse(raw), -1, -1);
+		var i1 = raw.lastIndexOf(':');
+		if (i1 < 0) return Location.of(Filename.parse(raw), -1, -1);
 
-		var i1 = raw.lastIndexOf(':', i0);
+		var i0 = raw.substring(0, i1).lastIndexOf(':', i1);
 		if (i0 < 0) {
 			try {
-				return Location.of(Filename.parse(raw.substring(0, i0)), Integer.parseInt(raw.substring(i0 + 1)), -1);
+				return Location.of(null, Integer.parseInt(raw.substring(0, i1)) - 1, Integer.parseInt(raw.substring(i1 + 1)) - 1);
 			}
-			catch (NumberFormatException e) {
-				return Location.of(Filename.parse(raw), -1, -1);
+			catch (NumberFormatException e) {}
+
+			try {
+				return Location.of(Filename.parse(raw.substring(0, i1)), Integer.parseInt(raw.substring(i1 + 1)) - 1, -1);
 			}
+			catch (NumberFormatException e) {}
+
+			return Location.of(Filename.parse(raw), -1, -1);
 		}
 
 		int start, line;
+
 
 		try {
 			start = Integer.parseInt(raw.substring(i1 + 1));
@@ -105,9 +118,9 @@ public abstract class Location implements Comparable<Location> {
 			line = Integer.parseInt(raw.substring(i0 + 1, i1));
 		}
 		catch (NumberFormatException e) {
-			return Location.of(Filename.parse(raw.substring(i1 + 1)), start, -1);
+			return Location.of(Filename.parse(raw.substring(0, i1)), start - 1, -1);
 		}
 
-		return Location.of(Filename.parse(raw.substring(0, i0)), start, line);
+		return Location.of(Filename.parse(raw.substring(0, i0)), line - 1, start - 1);
 	}
 }
