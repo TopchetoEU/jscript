@@ -33,19 +33,20 @@ public class ParseRes<T> {
 		if (!state.isSuccess()) return this;
 		return new ParseRes<>(state, null, null, result, this.n + n);
 	}
+	@SuppressWarnings("unchecked")
 	public <T2> ParseRes<T2> chainError() {
 		if (isSuccess()) throw new RuntimeException("Can't transform a ParseRes that hasn't failed");
-		return new ParseRes<>(state, errorLocation, error, null, 0);
+		return (ParseRes<T2>)this;
 	}
 	@SuppressWarnings("unchecked")
 	public <T2> ParseRes<T2> chainError(ParseRes<?> other) {
-		if (!this.isError()) return other.chainError();
-		return (ParseRes<T2>) this;
+		if (this.isError()) return other.chainError();
+		return (ParseRes<T2>)this;
 	}
 	@SuppressWarnings("unchecked")
 	public <T2> ParseRes<T2> chainError(Location loc, String error) {
 		if (!this.isError()) return new ParseRes<>(State.ERROR, loc, error, null, 0);
-		return (ParseRes<T2>) this;
+		return (ParseRes<T2>)this;
 	}
 
 	public boolean isSuccess() { return state.isSuccess(); }
@@ -63,7 +64,6 @@ public class ParseRes<T> {
 		return new ParseRes<>(State.SUCCESS, null, null, val, i);
 	}
 
-	@SafeVarargs
 	@SuppressWarnings("all")
 	public static <T> ParseRes<T> first(Source src, int i, Parser ...parsers) {
 		int n = Parsing.skipEmpty(src, i);

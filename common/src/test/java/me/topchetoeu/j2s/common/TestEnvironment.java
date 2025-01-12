@@ -1,7 +1,7 @@
 package me.topchetoeu.j2s.common;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 import org.junit.jupiter.api.Test;
 
@@ -18,55 +18,55 @@ public class TestEnvironment {
 	}
 	@Test public void testShouldNotExist() {
 		var env = new Environment();
-		assertEquals(env.get(FOO), null);
-		assertEquals(env.has(FOO), false);
+		assertEquals(null, env.get(FOO));
+		assertEquals(false, env.has(FOO));
 	}
 
 	@Test public void testShouldAdd() {
 		var env = new Environment();
 		env.add(FOO, "test");
-		assertEquals(env.get(FOO), "test");
+		assertEquals("test", env.get(FOO));
 	}
 
 	@Test public void testShouldGetFromParent() {
 		var parent = new Environment();
 		parent.add(FOO, "test");
 		var child = parent.child();
-		assertEquals(child.get(FOO), "test");
-		assertEquals(child.has(FOO), true);
+		assertEquals("test", child.get(FOO));
+		assertEquals(true, child.has(FOO));
 	}
 	@Test public void testShouldHideParent() {
 		var parent = new Environment();
 		parent.add(FOO, "test");
 		var child = parent.child();
 		child.remove(FOO);
-		assertEquals(child.get(FOO), null);
-		assertEquals(child.has(FOO), false);
+		assertEquals(null, child.get(FOO));
+		assertEquals(false, child.has(FOO));
 	}
 
 	@Test public void testShouldAddMarker() {
 		var env = new Environment();
 		env.add(MARKER);
-		assertEquals(env.has(MARKER), true);
-		assertEquals(env.hasNotNull(MARKER), false);
+		assertEquals(true, env.has(MARKER));
+		assertEquals(false, env.hasNotNull(MARKER));
 	}
 
 	@Test public void testShouldInitOnce() {
 		var env = new Environment();
-		assertEquals(env.init(FOO, "a"), "a");
-		assertEquals(env.init(FOO, "b"), "a");
-		assertEquals(env.get(FOO), "a");
+		assertEquals("a", env.init(FOO, "a"));
+		assertEquals("a", env.init(FOO, "b"));
+		assertEquals("a", env.get(FOO));
 	}
 	@Test public void testShouldInitOnceFrom() {
 		var env = new Environment();
-		assertEquals(env.initFrom(FOO, () -> "a"), "a");
-		assertEquals(env.initFrom(FOO, () -> "b"), "a");
-		assertEquals(env.get(FOO), "a");
+		assertEquals("a", env.initFrom(FOO, () -> "a"));
+		assertEquals("a", env.initFrom(FOO, () -> "b"));
+		assertEquals("a", env.get(FOO));
 	}
 
 	@Test public void testShouldWrap() {
 		var env = new Environment();
-		assertEquals(Environment.wrap(env), env);
-		assertNotEquals(Environment.wrap(null), null);
+		assertEquals(env, Environment.wrap(env));
+		assertInstanceOf(Environment.class, Environment.wrap(null));
 	}
 }

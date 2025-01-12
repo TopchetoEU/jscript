@@ -18,145 +18,145 @@ public class TestLocation {
 	@Test public void testShouldGetNextLineLocation() {
 		var loc = Location.of("test.txt:10:5");
 		var next = loc.nextLine();
-		assertEquals(next.filename(), new Filename("file", "test.txt"));
-		assertEquals(next.line(), 10);
-		assertEquals(next.start(), 0);
-		assertEquals(loc.filename(), new Filename("file", "test.txt"));
-		assertEquals(loc.line(), 9);
-		assertEquals(loc.start(), 4);
+		assertEquals(new Filename("file", "test.txt"), next.filename());
+		assertEquals(10, next.line());
+		assertEquals(0, next.start());
+		assertEquals(new Filename("file", "test.txt"), loc.filename());
+		assertEquals(9, loc.line());
+		assertEquals(4, loc.start());
 	}
 	@Test public void testShouldGetNextNthLineLocation() {
 		var loc = Location.of(new Filename("file", "test.txt"), 10, 5);
 		var next = loc.nextLine(5);
-		assertEquals(next.line(), 15);
-		assertEquals(next.start(), 0);
-		assertEquals(loc.line(), 10);
-		assertEquals(loc.start(), 5);
+		assertEquals(15, next.line());
+		assertEquals(0, next.start());
+		assertEquals(10, loc.line());
+		assertEquals(5, loc.start());
 	}
 
 	@Test public void testShouldGetNextLocation() {
 		var loc = Location.of("test:10:5");
 		var next = loc.add(10);
-		assertEquals(next.filename(), new Filename("file", "test"));
-		assertEquals(next.line(), 9);
-		assertEquals(next.start(), 14);
-		assertEquals(loc.filename(), new Filename("file", "test"));
-		assertEquals(loc.line(), 9);
-		assertEquals(loc.start(), 4);
+		assertEquals(new Filename("file", "test"), next.filename());
+		assertEquals(9, next.line());
+		assertEquals(14, next.start());
+		assertEquals(new Filename("file", "test"), loc.filename());
+		assertEquals(9, loc.line());
+		assertEquals(4, loc.start());
 	}
 
 	@Test public void testShouldParseLocation() {
 		var loc = Location.of("test.txt:10:5");
-		assertEquals(loc.filename(), new Filename("file", "test.txt"));
-		assertEquals(loc.line(), 9);
-		assertEquals(loc.start(), 4);
+		assertEquals(new Filename("file", "test.txt"), loc.filename());
+		assertEquals(9, loc.line());
+		assertEquals(4, loc.start());
 	}
 	@Test public void testShouldParseComplexFilenameLocation() {
 		var loc = Location.of("testificate://test.txt:10:5");
-		assertEquals(loc.filename(), new Filename("testificate", "test.txt"));
-		assertEquals(loc.line(), 9);
-		assertEquals(loc.start(), 4);
+		assertEquals(new Filename("testificate", "test.txt"), loc.filename());
+		assertEquals(9, loc.line());
+		assertEquals(4, loc.start());
 	}
 	@Test public void testShouldParseNoFilenameLocation() {
 		var loc = Location.of("10:5");
-		assertEquals(loc.filename(), null);
-		assertEquals(loc.line(), 9);
-		assertEquals(loc.start(), 4);
+		assertEquals(null, loc.filename());
+		assertEquals(9, loc.line());
+		assertEquals(4, loc.start());
 	}
 	@Test public void testShouldParseNoStartLocationA() {
 		var loc = Location.of("file://10:5");
-		assertEquals(loc.filename(), new Filename("file", "10"));
-		assertEquals(loc.line(), 4);
-		assertEquals(loc.start(), -1);
+		assertEquals(new Filename("file", "10"), loc.filename());
+		assertEquals(4, loc.line());
+		assertEquals(-1, loc.start());
 	}
 	@Test public void testShouldParseNoStartLocationB() {
 		var loc = Location.of("file:5");
-		assertEquals(loc.filename(), new Filename("file", "file"));
-		assertEquals(loc.line(), 4);
-		assertEquals(loc.start(), -1);
+		assertEquals(new Filename("file", "file"), loc.filename());
+		assertEquals(4, loc.line());
+		assertEquals(-1, loc.start());
 	}
 	@Test public void testShouldParseOnlyFilenameLocationA() {
 		var loc = Location.of("http://example.org/test.txt");
-		assertEquals(loc.filename(), new Filename("http", "example.org/test.txt"));
-		assertEquals(loc.line(), -1);
-		assertEquals(loc.start(), -1);
+		assertEquals(new Filename("http", "example.org/test.txt"), loc.filename());
+		assertEquals(-1, loc.line());
+		assertEquals(-1, loc.start());
 	}
 	@Test public void testShouldParseOnlyFilenameLocationB() {
 		var loc = Location.of("test.txt");
-		assertEquals(loc.filename(), new Filename("file", "test.txt"));
-		assertEquals(loc.line(), -1);
-		assertEquals(loc.start(), -1);
+		assertEquals(new Filename("file", "test.txt"), loc.filename());
+		assertEquals(-1, loc.line());
+		assertEquals(-1, loc.start());
 	}
 	@Test public void testShouldParseOnlyFilenameWithColonLocation() {
 		var loc = Location.of("my-file:bad-file");
-		assertEquals(loc.filename(), new Filename("file", "my-file:bad-file"));
-		assertEquals(loc.line(), -1);
-		assertEquals(loc.start(), -1);
+		assertEquals(new Filename("file", "my-file:bad-file"), loc.filename());
+		assertEquals(-1, loc.line());
+		assertEquals(-1, loc.start());
 	}
 	@Test public void testShouldParseOnlyFilenameWithTripleColonLocation() {
 		var loc = Location.of("a:my-file:bad-file");
-		assertEquals(loc.filename(), new Filename("file", "a:my-file:bad-file"));
-		assertEquals(loc.line(), -1);
-		assertEquals(loc.start(), -1);
+		assertEquals(new Filename("file", "a:my-file:bad-file"), loc.filename());
+		assertEquals(-1, loc.line());
+		assertEquals(-1, loc.start());
 	}
 
 	@Test public void testCompareEqualLoc() {
 		var locA = Location.of("test:10:5");
 		var locB = Location.of("test:10:5");
 
-		assertEquals(locA.compareTo(locB), 0);
-		assertEquals(locB.compareTo(locA), 0);
+		assertEquals(0, locA.compareTo(locB));
+		assertEquals(0, locB.compareTo(locA));
 	}
 	@Test public void testCompareNoFileLoc() {
 		var locA = Location.of("10:5");
 		var locB = Location.of("11:5");
 
-		assertEquals(locA.compareTo(locB), -1);
-		assertEquals(locB.compareTo(locA), 1);
+		assertEquals(-1, locA.compareTo(locB));
+		assertEquals(1, locB.compareTo(locA));
 	}
 	@Test public void testCompareOneNoFileLoc() {
 		var locA = Location.of("10:5");
 		var locB = Location.of("test:10:5");
 
-		assertEquals(locA.compareTo(locB), -1);
-		assertEquals(locB.compareTo(locA), 1);
+		assertEquals(-1, locA.compareTo(locB));
+		assertEquals(1, locB.compareTo(locA));
 	}
 	@Test public void testCompareDiffFileLoc() {
 		var locA = Location.of("a:10:5");
 		var locB = Location.of("b:10:5");
 
-		assertEquals(locA.compareTo(locB), -1);
-		assertEquals(locB.compareTo(locA), 1);
+		assertEquals(-1, locA.compareTo(locB));
+		assertEquals(1, locB.compareTo(locA));
 	}
 	@Test public void testCompareDiffLineLoc() {
 		var locA = Location.of("test:10:5");
 		var locB = Location.of("test:11:5");
 
-		assertEquals(locA.compareTo(locB), -1);
-		assertEquals(locB.compareTo(locA), 1);
+		assertEquals(-1, locA.compareTo(locB));
+		assertEquals(1, locB.compareTo(locA));
 	}
 	@Test public void testCompareDiffStartLoc() {
 		var locA = Location.of("test:10:5");
 		var locB = Location.of("test:10:10");
 
-		assertEquals(locA.compareTo(locB), -1);
-		assertEquals(locB.compareTo(locA), 1);
+		assertEquals(-1, locA.compareTo(locB));
+		assertEquals(1, locB.compareTo(locA));
 	}
 
 	@Test public void testToStringAll() {
 		var locA = Location.of("test:10:5");
-		assertEquals(locA.toString(), "file://test:10:5");
+		assertEquals("file://test:10:5", locA.toString());
 	}
 	@Test public void testToStringNoFilename() {
 		var locA = Location.of("10:5");
-		assertEquals(locA.toString(), "10:5");
+		assertEquals("10:5", locA.toString());
 	}
 	@Test public void testToStringNoStart() {
 		var locA = Location.of("file:5");
-		assertEquals(locA.toString(), "file://file:5");
+		assertEquals("file://file:5", locA.toString());
 	}
 	@Test public void testToStringNoLoc() {
 		var locA = Location.of("file");
-		assertEquals(locA.toString(), "file://file");
+		assertEquals("file://file", locA.toString());
 	}
 }
