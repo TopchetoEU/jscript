@@ -1,9 +1,7 @@
-package me.topchetoeu.j2s.common.parsing;
+package me.topchetoeu.j2s.common;
 
 import java.util.ArrayList;
 import java.util.Objects;
-
-import me.topchetoeu.j2s.common.Metadata;
 
 public abstract class Location implements Comparable<Location> {
 	public static final Location INTERNAL = Location.of(new Filename(Metadata.name(), "native"), -1, -1);

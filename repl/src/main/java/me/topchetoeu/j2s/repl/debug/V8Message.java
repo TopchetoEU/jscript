@@ -2,9 +2,9 @@ package me.topchetoeu.j2s.repl.debug;
 
 import java.util.Map;
 
-import me.topchetoeu.j2s.common.json.JSON;
-import me.topchetoeu.j2s.common.json.JSONElement;
-import me.topchetoeu.j2s.common.json.JSONMap;
+import me.topchetoeu.j2s.compilation.json.JSON;
+import me.topchetoeu.j2s.compilation.json.JSONElement;
+import me.topchetoeu.j2s.compilation.json.JSONMap;
 
 public class V8Message {
     public final String name;

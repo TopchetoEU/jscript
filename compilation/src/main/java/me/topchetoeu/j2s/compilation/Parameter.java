@@ -1,6 +1,6 @@
 package me.topchetoeu.j2s.compilation;
 
-import me.topchetoeu.j2s.common.parsing.Location;
+import me.topchetoeu.j2s.common.Location;
 
 public final class Parameter {
 	public final Location loc;

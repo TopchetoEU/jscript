@@ -2,10 +2,10 @@ package me.topchetoeu.j2s.runtime;
 
 import java.util.function.Function;
 
+import me.topchetoeu.j2s.common.Filename;
+import me.topchetoeu.j2s.common.Location;
 import me.topchetoeu.j2s.common.environment.Environment;
 import me.topchetoeu.j2s.common.environment.Key;
-import me.topchetoeu.j2s.common.parsing.Filename;
-import me.topchetoeu.j2s.common.parsing.Location;
 import me.topchetoeu.j2s.runtime.exceptions.EngineException;
 import me.topchetoeu.j2s.runtime.values.functions.FunctionValue;
 

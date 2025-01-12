@@ -1,7 +1,7 @@
 package me.topchetoeu.j2s.repl.debug;
 
-import me.topchetoeu.j2s.common.json.JSON;
-import me.topchetoeu.j2s.common.json.JSONMap;
+import me.topchetoeu.j2s.compilation.json.JSON;
+import me.topchetoeu.j2s.compilation.json.JSONMap;
 
 public class V8Event {
     public final String name;

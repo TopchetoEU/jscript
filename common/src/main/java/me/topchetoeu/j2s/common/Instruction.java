@@ -4,8 +4,6 @@ import java.util.HashMap;
 import java.util.function.IntFunction;
 import java.util.function.IntSupplier;
 
-import me.topchetoeu.j2s.common.parsing.Location;
-
 public class Instruction {
 	public static enum Type {
 		RETURN(0x00),

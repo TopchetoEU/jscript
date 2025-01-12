@@ -6,10 +6,10 @@ import java.util.LinkedList;
 import java.util.function.IntSupplier;
 
 import me.topchetoeu.j2s.common.Instruction;
+import me.topchetoeu.j2s.common.Location;
 import me.topchetoeu.j2s.common.SyntaxException;
 import me.topchetoeu.j2s.common.environment.Environment;
 import me.topchetoeu.j2s.common.environment.Key;
-import me.topchetoeu.j2s.common.parsing.Location;
 
 public class LabelContext {
 	public static final Key<LabelContext> BREAK_CTX = new Key<>();

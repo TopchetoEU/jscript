@@ -1,6 +1,9 @@
-package me.topchetoeu.j2s.common.parsing;
+package me.topchetoeu.j2s.compilation.parsing;
 
 import java.util.Objects;
+
+import me.topchetoeu.j2s.common.Filename;
+import me.topchetoeu.j2s.common.Location;
 
 public class SourceLocation extends Location {
 	private int[] lineStarts;

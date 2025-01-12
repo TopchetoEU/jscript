@@ -1,13 +1,13 @@
 package me.topchetoeu.j2s.compilation.values.operations;
 
 import me.topchetoeu.j2s.common.Instruction;
-import me.topchetoeu.j2s.common.parsing.Location;
-import me.topchetoeu.j2s.common.parsing.ParseRes;
-import me.topchetoeu.j2s.common.parsing.Parsing;
-import me.topchetoeu.j2s.common.parsing.Source;
+import me.topchetoeu.j2s.common.Location;
 import me.topchetoeu.j2s.compilation.CompileResult;
 import me.topchetoeu.j2s.compilation.JavaScript;
 import me.topchetoeu.j2s.compilation.Node;
+import me.topchetoeu.j2s.compilation.parsing.ParseRes;
+import me.topchetoeu.j2s.compilation.parsing.Parsing;
+import me.topchetoeu.j2s.compilation.parsing.Source;
 
 public class LazyAndNode extends Node {
 	public final Node first, second;

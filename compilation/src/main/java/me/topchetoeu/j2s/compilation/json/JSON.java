@@ -1,16 +1,16 @@
-package me.topchetoeu.j2s.common.json;
+package me.topchetoeu.j2s.compilation.json;
 
-import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.stream.Collectors;
 
+import me.topchetoeu.j2s.common.Filename;
+import me.topchetoeu.j2s.common.Location;
 import me.topchetoeu.j2s.common.Metadata;
+import me.topchetoeu.j2s.common.StringifyUtils;
 import me.topchetoeu.j2s.common.SyntaxException;
-import me.topchetoeu.j2s.common.parsing.Filename;
-import me.topchetoeu.j2s.common.parsing.Location;
-import me.topchetoeu.j2s.common.parsing.ParseRes;
-import me.topchetoeu.j2s.common.parsing.Parsing;
-import me.topchetoeu.j2s.common.parsing.Source;
+import me.topchetoeu.j2s.compilation.parsing.ParseRes;
+import me.topchetoeu.j2s.compilation.parsing.Parsing;
+import me.topchetoeu.j2s.compilation.parsing.Source;
 
 public class JSON {
 	public static ParseRes<JSONElement> parseString(Source src, int i) {
@@ -110,37 +110,10 @@ public class JSON {
 	}
 
 	public static String stringify(JSONElement el) {
-		if (el.isNumber()) {
-			var d = el.number();
-			if (d == Double.NEGATIVE_INFINITY) return "-Infinity";
-			if (d == Double.POSITIVE_INFINITY) return "Infinity";
-			if (Double.isNaN(d)) return "NaN";
-			return BigDecimal.valueOf(d).stripTrailingZeros().toPlainString();
-		}
+		if (el.isNumber()) return StringifyUtils.quoteNumber(el.number());
+		if (el.isString()) return StringifyUtils.quoteString(el.string());
 		if (el.isBoolean()) return el.bool() ? "true" : "false";
 		if (el.isNull()) return "null";
-		if (el.isString()) {
-			var res = new StringBuilder("\"");
-			var alphabet = "0123456789ABCDEF".toCharArray();
-
-			for (var c : el.string().toCharArray()) {
-				if (c < 32 || c >= 127) {
-					res
-						.append("\\u")
-						.append(alphabet[(c >> 12) & 0xF])
-						.append(alphabet[(c >> 8) & 0xF])
-						.append(alphabet[(c >> 4) & 0xF])
-						.append(alphabet[(c >> 0) & 0xF]);
-				}
-				else if (c == '\\')
-					res.append("\\\\");
-				else if (c == '"')
-					res.append("\\\"");
-				else res.append(c);
-			}
-
-			return res.append('"').toString();
-		}
 		if (el.isList()) {
 			var res = new StringBuilder().append("[");
 			for (int i = 0; i < el.list().size(); i++) {
@@ -156,7 +129,7 @@ public class JSON {
 
 			for (int i = 0; i < entries.size(); i++) {
 				if (i != 0) res.append(",");
-				res.append(stringify(JSONElement.string(entries.get(i).getKey())));
+				res.append(StringifyUtils.quoteString(entries.get(i).getKey()));
 				res.append(":");
 				res.append(stringify(entries.get(i).getValue()));
 			}

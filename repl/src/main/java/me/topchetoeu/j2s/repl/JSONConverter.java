@@ -1,12 +1,12 @@
-package me.topchetoeu.j2s.runtime;
+package me.topchetoeu.j2s.repl;
 
 import java.util.HashSet;
 import java.util.stream.Collectors;
 
 import me.topchetoeu.j2s.common.environment.Environment;
-import me.topchetoeu.j2s.common.json.JSONElement;
-import me.topchetoeu.j2s.common.json.JSONList;
-import me.topchetoeu.j2s.common.json.JSONMap;
+import me.topchetoeu.j2s.compilation.json.JSONElement;
+import me.topchetoeu.j2s.compilation.json.JSONList;
+import me.topchetoeu.j2s.compilation.json.JSONMap;
 import me.topchetoeu.j2s.runtime.exceptions.EngineException;
 import me.topchetoeu.j2s.runtime.values.Value;
 import me.topchetoeu.j2s.runtime.values.objects.ArrayValue;

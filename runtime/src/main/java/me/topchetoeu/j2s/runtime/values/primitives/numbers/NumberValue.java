@@ -1,8 +1,6 @@
 package me.topchetoeu.j2s.runtime.values.primitives.numbers;
 
 import me.topchetoeu.j2s.common.environment.Environment;
-import me.topchetoeu.j2s.common.parsing.Parsing;
-import me.topchetoeu.j2s.common.parsing.Source;
 import me.topchetoeu.j2s.runtime.values.objects.ObjectValue;
 import me.topchetoeu.j2s.runtime.values.primitives.PrimitiveValue;
 import me.topchetoeu.j2s.runtime.values.primitives.StringValue;
@@ -29,25 +27,6 @@ public abstract class NumberValue extends PrimitiveValue {
 
 	@Override public final ObjectValue getPrototype(Environment env) {
 		return env.get(NUMBER_PROTO);
-	}
-
-	public static NumberValue parseInt(String str, int radix, boolean relaxed) {
-		if (radix < 2 || radix > 36) return NumberValue.NAN;
-
-		str = str.trim();
-		var res = Parsing.parseInt(new Source(str), 0, "0123456789abcdefghijklmnopqrstuvwxyz".substring(0, radix), true);
-		if (res.isSuccess()) {
-			if (relaxed || res.n == str.length()) return of(res.result);
-		}
-		return NumberValue.NAN;
-	}
-	public static NumberValue parseFloat(String str, boolean relaxed) {
-		str = str.trim();
-		var res = Parsing.parseFloat(new Source(str), 0, true);
-		if (res.isSuccess()) {
-			if (relaxed || res.n == str.length()) return of(res.result);
-		}
-		return NumberValue.NAN;
 	}
 
 	public static NumberValue of(double value) {

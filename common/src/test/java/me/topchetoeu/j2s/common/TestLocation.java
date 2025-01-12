@@ -2,9 +2,6 @@ package me.topchetoeu.j2s.common;
 
 import org.junit.jupiter.api.Test;
 
-import me.topchetoeu.j2s.common.parsing.Filename;
-import me.topchetoeu.j2s.common.parsing.Location;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestLocation {

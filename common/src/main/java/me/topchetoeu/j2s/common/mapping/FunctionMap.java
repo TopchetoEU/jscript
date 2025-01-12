@@ -13,9 +13,9 @@ import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import me.topchetoeu.j2s.common.Filename;
+import me.topchetoeu.j2s.common.Location;
 import me.topchetoeu.j2s.common.Instruction.BreakpointType;
-import me.topchetoeu.j2s.common.parsing.Filename;
-import me.topchetoeu.j2s.common.parsing.Location;
 
 public class FunctionMap {
 	public static class FunctionMapBuilder {

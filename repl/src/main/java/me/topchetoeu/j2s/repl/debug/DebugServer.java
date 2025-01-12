@@ -12,9 +12,9 @@ import java.util.HashMap;
 import me.topchetoeu.j2s.common.Metadata;
 import me.topchetoeu.j2s.common.Reading;
 import me.topchetoeu.j2s.common.SyntaxException;
-import me.topchetoeu.j2s.common.json.JSON;
-import me.topchetoeu.j2s.common.json.JSONList;
-import me.topchetoeu.j2s.common.json.JSONMap;
+import me.topchetoeu.j2s.compilation.json.JSON;
+import me.topchetoeu.j2s.compilation.json.JSONList;
+import me.topchetoeu.j2s.compilation.json.JSONMap;
 import me.topchetoeu.j2s.repl.debug.WebSocketMessage.Type;
 
 public class DebugServer {

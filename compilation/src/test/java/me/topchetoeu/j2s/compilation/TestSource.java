@@ -1,14 +1,14 @@
-package me.topchetoeu.j2s.common;
+package me.topchetoeu.j2s.compilation;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.Test;
 
+import me.topchetoeu.j2s.common.Filename;
+import me.topchetoeu.j2s.common.Location;
 import me.topchetoeu.j2s.common.environment.Environment;
-import me.topchetoeu.j2s.common.parsing.Filename;
-import me.topchetoeu.j2s.common.parsing.Location;
-import me.topchetoeu.j2s.common.parsing.Source;
+import me.topchetoeu.j2s.compilation.parsing.Source;
 
 public class TestSource {
 	private Source mkSource(String src) {

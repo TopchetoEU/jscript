@@ -1,4 +1,4 @@
-package me.topchetoeu.j2s.common.json;
+package me.topchetoeu.j2s.compilation.json;
 
 public class JSONElement {
 	public static enum Type {

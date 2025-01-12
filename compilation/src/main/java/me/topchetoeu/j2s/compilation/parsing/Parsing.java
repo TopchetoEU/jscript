@@ -1,6 +1,4 @@
-package me.topchetoeu.j2s.common.parsing;
-
-import me.topchetoeu.j2s.common.SyntaxException;
+package me.topchetoeu.j2s.compilation.parsing;
 
 public class Parsing {
 	public static boolean isDigit(Character c) {
@@ -18,14 +16,13 @@ public class Parsing {
 	}
 
 	public static int skipEmpty(Source src, int i) {
-		return skipEmpty(src, i, true);
-	}
-
-	public static int skipEmpty(Source src, int i, boolean noComments) {
 		int n = 0;
 
 		if (i == 0 && src.is(0, "#!")) {
-			while (!src.is(n, '\n')) n++;
+			while (!src.is(n, '\n')) {
+				if (n >= src.size()) return src.size();
+				n++;
+			}
 			n++;
 		}
 
@@ -88,7 +85,7 @@ public class Parsing {
 					if (i + n >= src.size()) return ParseRes.error(src.loc(i), "Invalid hexadecimal escape sequence");
 
 					int val = fromHex(src.at(i + n));
-					if (val == -1) throw new SyntaxException(src.loc(i + n), "Invalid hexadecimal escape sequence");
+					if (val == -1) return ParseRes.error(src.loc(i + n), "Invalid hexadecimal escape sequence");
 					n++;
 
 					newC = (newC << 4) | val;
@@ -103,7 +100,7 @@ public class Parsing {
 					if (i + n >= src.size()) return ParseRes.error(src.loc(i), "Invalid Unicode escape sequence");
 
 					int val = fromHex(src.at(i + n));
-					if (val == -1) throw new SyntaxException(src.loc(i + n), "Invalid Unicode escape sequence");
+					if (val == -1) return ParseRes.error(src.loc(i + n), "Invalid Unicode escape sequence");
 					n++;
 
 					newC = (newC << 4) | val;

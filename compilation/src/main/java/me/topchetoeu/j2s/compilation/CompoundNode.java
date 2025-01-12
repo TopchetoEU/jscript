@@ -5,11 +5,11 @@ import java.util.Arrays;
 import java.util.List;
 
 import me.topchetoeu.j2s.common.Instruction;
+import me.topchetoeu.j2s.common.Location;
 import me.topchetoeu.j2s.common.Instruction.BreakpointType;
-import me.topchetoeu.j2s.common.parsing.Location;
-import me.topchetoeu.j2s.common.parsing.ParseRes;
-import me.topchetoeu.j2s.common.parsing.Parsing;
-import me.topchetoeu.j2s.common.parsing.Source;
+import me.topchetoeu.j2s.compilation.parsing.ParseRes;
+import me.topchetoeu.j2s.compilation.parsing.Parsing;
+import me.topchetoeu.j2s.compilation.parsing.Source;
 
 
 public class CompoundNode extends Node {

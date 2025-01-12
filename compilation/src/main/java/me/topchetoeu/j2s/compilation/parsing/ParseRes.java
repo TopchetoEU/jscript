@@ -1,4 +1,6 @@
-package me.topchetoeu.j2s.common.parsing;
+package me.topchetoeu.j2s.compilation.parsing;
+
+import me.topchetoeu.j2s.common.Location;
 
 public class ParseRes<T> {
 	public static enum State {

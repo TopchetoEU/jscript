@@ -16,14 +16,16 @@ import java.util.concurrent.ExecutionException;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
+import me.topchetoeu.j2s.common.Filename;
 import me.topchetoeu.j2s.common.Metadata;
 import me.topchetoeu.j2s.common.Reading;
 import me.topchetoeu.j2s.common.SyntaxException;
 import me.topchetoeu.j2s.common.environment.Environment;
 import me.topchetoeu.j2s.common.environment.Key;
-import me.topchetoeu.j2s.common.json.JSON;
-import me.topchetoeu.j2s.common.parsing.Filename;
 import me.topchetoeu.j2s.compilation.JavaScript;
+import me.topchetoeu.j2s.compilation.json.JSON;
+import me.topchetoeu.j2s.compilation.parsing.Parsing;
+import me.topchetoeu.j2s.compilation.parsing.Source;
 import me.topchetoeu.j2s.repl.debug.DebugServer;
 import me.topchetoeu.j2s.repl.debug.Debugger;
 import me.topchetoeu.j2s.repl.debug.SimpleDebugger;
@@ -33,7 +35,6 @@ import me.topchetoeu.j2s.runtime.Compiler;
 import me.topchetoeu.j2s.runtime.Engine;
 import me.topchetoeu.j2s.runtime.EventLoop;
 import me.topchetoeu.j2s.runtime.Frame;
-import me.topchetoeu.j2s.runtime.JSONConverter;
 import me.topchetoeu.j2s.runtime.debug.DebugContext;
 import me.topchetoeu.j2s.runtime.exceptions.EngineException;
 import me.topchetoeu.j2s.runtime.values.Value;
@@ -385,13 +386,29 @@ public class SimpleRepl {
 				if (num.isInt()) return num;
 				else return NumberValue.of(num.getDouble() - num.getDouble() % 1);
 			}
-			else return NumberValue.parseInt(args.get(0).toString(), radix, false);
+			else {
+				if (radix < 2 || radix > 36) return NumberValue.NAN;
+		
+				var str = args.get(0).toString().trim();
+				var numRes = Parsing.parseInt(new Source(str), 0, "0123456789abcdefghijklmnopqrstuvwxyz".substring(0, radix), true);
+				if (numRes.isSuccess()) {
+					if (numRes.n == str.length()) return NumberValue.of(numRes.result);
+				}
+				return NumberValue.NAN;
+			}
 		}));
 		res.defineOwnField(env, "parseFloat", new NativeFunction(args -> {
 			if (args.get(0) instanceof NumberValue) {
 				return args.get(0);
 			}
-			else return NumberValue.parseFloat(args.get(0).toString(), false);
+			else {
+				var str = args.get(0).toString().trim();
+				var numRes = Parsing.parseFloat(new Source(str), 0, true);
+				if (numRes.isSuccess()) {
+					if (numRes.n == str.length()) return NumberValue.of(numRes.result);
+				}
+				return NumberValue.NAN;
+			}
 		}));
 		res.defineOwnField(env, "isNaN", new NativeFunction(args -> BoolValue.of(args.get(0).isNaN())));
 

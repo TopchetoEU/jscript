@@ -1,4 +1,4 @@
-package me.topchetoeu.j2s.common.parsing;
+package me.topchetoeu.j2s.common;
 
 import java.io.File;
 
