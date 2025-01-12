@@ -1,4 +1,4 @@
-package me.topchetoeu.j2s.common.environment;
+package me.topchetoeu.j2s.common;
 
 import java.util.HashMap;
 import java.util.HashSet;

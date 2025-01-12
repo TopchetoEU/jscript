@@ -5,14 +5,14 @@ import java.util.Map;
 import java.util.Stack;
 import java.util.function.Function;
 
+import me.topchetoeu.j2s.common.Environment;
 import me.topchetoeu.j2s.common.FunctionBody;
+import me.topchetoeu.j2s.common.FunctionMap;
 import me.topchetoeu.j2s.common.Instruction;
+import me.topchetoeu.j2s.common.Key;
 import me.topchetoeu.j2s.common.Location;
+import me.topchetoeu.j2s.common.FunctionMap.FunctionMapBuilder;
 import me.topchetoeu.j2s.common.Instruction.BreakpointType;
-import me.topchetoeu.j2s.common.environment.Environment;
-import me.topchetoeu.j2s.common.environment.Key;
-import me.topchetoeu.j2s.common.mapping.FunctionMap;
-import me.topchetoeu.j2s.common.mapping.FunctionMap.FunctionMapBuilder;
 import me.topchetoeu.j2s.compilation.control.TryNode;
 import me.topchetoeu.j2s.compilation.scope.FunctionScope;
 import me.topchetoeu.j2s.compilation.scope.Variable;

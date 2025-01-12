@@ -1,10 +1,10 @@
 package me.topchetoeu.j2s.runtime.debug;
 
+import me.topchetoeu.j2s.common.Environment;
 import me.topchetoeu.j2s.common.Filename;
 import me.topchetoeu.j2s.common.FunctionBody;
+import me.topchetoeu.j2s.common.FunctionMap;
 import me.topchetoeu.j2s.common.Instruction;
-import me.topchetoeu.j2s.common.environment.Environment;
-import me.topchetoeu.j2s.common.mapping.FunctionMap;
 import me.topchetoeu.j2s.runtime.Frame;
 import me.topchetoeu.j2s.runtime.exceptions.EngineException;
 import me.topchetoeu.j2s.runtime.values.Value;

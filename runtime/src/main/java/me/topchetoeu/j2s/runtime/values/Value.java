@@ -14,9 +14,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import me.topchetoeu.j2s.common.Environment;
+import me.topchetoeu.j2s.common.Key;
 import me.topchetoeu.j2s.common.SyntaxException;
-import me.topchetoeu.j2s.common.environment.Environment;
-import me.topchetoeu.j2s.common.environment.Key;
 import me.topchetoeu.j2s.runtime.EventLoop;
 import me.topchetoeu.j2s.runtime.exceptions.EngineException;
 import me.topchetoeu.j2s.runtime.values.Member.PropertyMember;

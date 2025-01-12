@@ -2,10 +2,10 @@ package me.topchetoeu.j2s.compilation;
 
 import java.util.List;
 
+import me.topchetoeu.j2s.common.Environment;
 import me.topchetoeu.j2s.common.Instruction;
 import me.topchetoeu.j2s.common.Location;
 import me.topchetoeu.j2s.common.Instruction.BreakpointType;
-import me.topchetoeu.j2s.common.environment.Environment;
 import me.topchetoeu.j2s.compilation.parsing.ParseRes;
 import me.topchetoeu.j2s.compilation.parsing.Parsing;
 import me.topchetoeu.j2s.compilation.parsing.Source;

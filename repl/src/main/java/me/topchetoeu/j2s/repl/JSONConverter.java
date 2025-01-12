@@ -3,7 +3,7 @@ package me.topchetoeu.j2s.repl;
 import java.util.HashSet;
 import java.util.stream.Collectors;
 
-import me.topchetoeu.j2s.common.environment.Environment;
+import me.topchetoeu.j2s.common.Environment;
 import me.topchetoeu.j2s.compilation.json.JSONElement;
 import me.topchetoeu.j2s.compilation.json.JSONList;
 import me.topchetoeu.j2s.compilation.json.JSONMap;

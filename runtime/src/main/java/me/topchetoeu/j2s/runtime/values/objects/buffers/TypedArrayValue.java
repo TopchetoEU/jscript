@@ -2,7 +2,7 @@ package me.topchetoeu.j2s.runtime.values.objects.buffers;
 
 import java.util.WeakHashMap;
 
-import me.topchetoeu.j2s.common.environment.Environment;
+import me.topchetoeu.j2s.common.Environment;
 import me.topchetoeu.j2s.runtime.values.Value;
 import me.topchetoeu.j2s.runtime.values.objects.ArrayLikeValue;
 import me.topchetoeu.j2s.runtime.values.objects.ObjectValue;

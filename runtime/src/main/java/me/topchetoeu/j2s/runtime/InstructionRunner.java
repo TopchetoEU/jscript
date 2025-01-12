@@ -4,9 +4,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Optional;
 
+import me.topchetoeu.j2s.common.Environment;
 import me.topchetoeu.j2s.common.Instruction;
 import me.topchetoeu.j2s.common.Operation;
-import me.topchetoeu.j2s.common.environment.Environment;
 import me.topchetoeu.j2s.runtime.exceptions.EngineException;
 import me.topchetoeu.j2s.runtime.values.Value;
 import me.topchetoeu.j2s.runtime.values.functions.CodeFunction;

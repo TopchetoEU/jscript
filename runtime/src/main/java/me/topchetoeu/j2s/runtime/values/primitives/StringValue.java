@@ -7,8 +7,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.WeakHashMap;
 
+import me.topchetoeu.j2s.common.Environment;
 import me.topchetoeu.j2s.common.StringifyUtils;
-import me.topchetoeu.j2s.common.environment.Environment;
 import me.topchetoeu.j2s.runtime.values.KeyCache;
 import me.topchetoeu.j2s.runtime.values.Member;
 import me.topchetoeu.j2s.runtime.values.Member.FieldMember;

@@ -1,4 +1,4 @@
-package me.topchetoeu.j2s.common.mapping;
+package me.topchetoeu.j2s.common;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -13,8 +13,6 @@ import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import me.topchetoeu.j2s.common.Filename;
-import me.topchetoeu.j2s.common.Location;
 import me.topchetoeu.j2s.common.Instruction.BreakpointType;
 
 public class FunctionMap {

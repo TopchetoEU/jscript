@@ -6,10 +6,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import me.topchetoeu.j2s.common.Environment;
 import me.topchetoeu.j2s.common.Filename;
+import me.topchetoeu.j2s.common.Key;
 import me.topchetoeu.j2s.common.SyntaxException;
-import me.topchetoeu.j2s.common.environment.Environment;
-import me.topchetoeu.j2s.common.environment.Key;
 import me.topchetoeu.j2s.compilation.control.BreakNode;
 import me.topchetoeu.j2s.compilation.control.ContinueNode;
 import me.topchetoeu.j2s.compilation.control.DebugNode;

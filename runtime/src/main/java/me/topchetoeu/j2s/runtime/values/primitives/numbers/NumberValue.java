@@ -1,6 +1,6 @@
 package me.topchetoeu.j2s.runtime.values.primitives.numbers;
 
-import me.topchetoeu.j2s.common.environment.Environment;
+import me.topchetoeu.j2s.common.Environment;
 import me.topchetoeu.j2s.runtime.values.objects.ObjectValue;
 import me.topchetoeu.j2s.runtime.values.primitives.PrimitiveValue;
 import me.topchetoeu.j2s.runtime.values.primitives.StringValue;

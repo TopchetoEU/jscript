@@ -2,9 +2,9 @@ package me.topchetoeu.j2s.compilation.parsing;
 
 import java.util.function.Predicate;
 
+import me.topchetoeu.j2s.common.Environment;
 import me.topchetoeu.j2s.common.Filename;
 import me.topchetoeu.j2s.common.Location;
-import me.topchetoeu.j2s.common.environment.Environment;
 
 public class Source {
 	public final Environment env;

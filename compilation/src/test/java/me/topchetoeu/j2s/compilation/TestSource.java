@@ -5,9 +5,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.Test;
 
+import me.topchetoeu.j2s.common.Environment;
 import me.topchetoeu.j2s.common.Filename;
 import me.topchetoeu.j2s.common.Location;
-import me.topchetoeu.j2s.common.environment.Environment;
 import me.topchetoeu.j2s.compilation.parsing.Source;
 
 public class TestSource {

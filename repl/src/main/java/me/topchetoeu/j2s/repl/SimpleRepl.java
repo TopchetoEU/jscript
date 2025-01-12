@@ -16,12 +16,12 @@ import java.util.concurrent.ExecutionException;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
+import me.topchetoeu.j2s.common.Environment;
 import me.topchetoeu.j2s.common.Filename;
+import me.topchetoeu.j2s.common.Key;
 import me.topchetoeu.j2s.common.Metadata;
 import me.topchetoeu.j2s.common.Reading;
 import me.topchetoeu.j2s.common.SyntaxException;
-import me.topchetoeu.j2s.common.environment.Environment;
-import me.topchetoeu.j2s.common.environment.Key;
 import me.topchetoeu.j2s.compilation.JavaScript;
 import me.topchetoeu.j2s.compilation.json.JSON;
 import me.topchetoeu.j2s.compilation.parsing.Parsing;

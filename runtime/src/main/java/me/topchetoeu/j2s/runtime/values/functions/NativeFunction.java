@@ -1,6 +1,6 @@
 package me.topchetoeu.j2s.runtime.values.functions;
 
-import me.topchetoeu.j2s.common.environment.Environment;
+import me.topchetoeu.j2s.common.Environment;
 import me.topchetoeu.j2s.runtime.values.Value;
 
 public final class NativeFunction extends FunctionValue {
