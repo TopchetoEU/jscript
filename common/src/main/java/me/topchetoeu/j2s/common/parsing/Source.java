@@ -12,6 +12,8 @@ public class Source {
 	private int[] lineStarts;
 
 	public Location loc(int offset) {
+		if (offset < 0) offset = 0;
+		if (offset > src.length()) offset = src.length();
 		return new SourceLocation(filename, lineStarts, offset);
 	}
 	public boolean is(int i, char c) {
