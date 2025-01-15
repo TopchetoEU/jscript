@@ -56,6 +56,17 @@ public abstract class ArrayLikeValue extends ObjectValue {
 	public abstract boolean has(int i);
 	public abstract boolean remove(int i);
 
+	public Value[] toArray() {
+		var n = size();
+		var res = new Value[n];
+
+		for (var i = 0; i < n; i++) {
+			if (has(i)) res[i] = get(i);
+		}
+
+		return res;
+	}
+
 	@Override public Member getOwnMember(Environment env, KeyCache key) {
 		var res = super.getOwnMember(env, key);
 		if (res != null) return res;

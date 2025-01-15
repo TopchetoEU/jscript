@@ -68,7 +68,7 @@ public class ArrayValue extends ArrayLikeValue implements Iterable<Value> {
 		}
 	}
 
-	public Value[] toArray() {
+	@Override public Value[] toArray() {
 		var res = new Value[size];
 		copyTo(res, 0, 0, size);
 		return res;

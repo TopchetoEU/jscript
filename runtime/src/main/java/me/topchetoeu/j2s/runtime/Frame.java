@@ -383,7 +383,7 @@ public final class Frame {
 
 		this.self = self;
 		this.args = args;
-		this.argsVal = new ArgumentsValue(this, args);
+		this.argsVal = new ArgumentsValue(this);
 		this.argsLen = new IntValue(args.length);
 		this.captures = func.captures;
 
