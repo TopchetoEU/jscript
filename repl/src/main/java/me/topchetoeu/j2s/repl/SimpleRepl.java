@@ -26,6 +26,10 @@ import me.topchetoeu.j2s.compilation.JavaScript;
 import me.topchetoeu.j2s.compilation.json.JSON;
 import me.topchetoeu.j2s.compilation.parsing.Parsing;
 import me.topchetoeu.j2s.compilation.parsing.Source;
+import me.topchetoeu.j2s.repl.buffers.Int32ArrayValue;
+import me.topchetoeu.j2s.repl.buffers.Int8ArrayValue;
+import me.topchetoeu.j2s.repl.buffers.TypedArrayValue;
+import me.topchetoeu.j2s.repl.buffers.Uint8ArrayValue;
 import me.topchetoeu.j2s.repl.debug.DebugServer;
 import me.topchetoeu.j2s.repl.debug.Debugger;
 import me.topchetoeu.j2s.repl.debug.SimpleDebugger;
@@ -44,10 +48,6 @@ import me.topchetoeu.j2s.runtime.values.functions.NativeFunction;
 import me.topchetoeu.j2s.runtime.values.objects.ArrayLikeValue;
 import me.topchetoeu.j2s.runtime.values.objects.ArrayValue;
 import me.topchetoeu.j2s.runtime.values.objects.ObjectValue;
-import me.topchetoeu.j2s.runtime.values.objects.buffers.Int32ArrayValue;
-import me.topchetoeu.j2s.runtime.values.objects.buffers.Int8ArrayValue;
-import me.topchetoeu.j2s.runtime.values.objects.buffers.TypedArrayValue;
-import me.topchetoeu.j2s.runtime.values.objects.buffers.Uint8ArrayValue;
 import me.topchetoeu.j2s.runtime.values.primitives.BoolValue;
 import me.topchetoeu.j2s.runtime.values.primitives.StringValue;
 import me.topchetoeu.j2s.runtime.values.primitives.SymbolValue;
@@ -701,7 +701,7 @@ public class SimpleRepl {
 		res.defineOwnField(env, "invoke", new NativeFunction(args -> {
 			var func = (FunctionValue)args.get(0);
 			var self = args.get(1);
-			var funcArgs = (ArrayValue)args.get(2);
+			var funcArgs = (ArrayLikeValue)args.get(2);
 
 			return func.apply(env, self, funcArgs.toArray());
 		}));

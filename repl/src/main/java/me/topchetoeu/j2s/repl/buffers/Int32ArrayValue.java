@@ -1,4 +1,4 @@
-package me.topchetoeu.j2s.runtime.values.objects.buffers;
+package me.topchetoeu.j2s.repl.buffers;
 
 public final class Int32ArrayValue extends TypedArrayValue {
 	@Override protected int onGet(int i) {
