@@ -25,6 +25,7 @@ import java.util.LinkedList;
 public final class CompileResult {
 	public static final Key<Void> DEBUG_LOG = new Key<>();
 
+	private FunctionBody body;
 	public final List<Instruction> instructions;
 	public final List<CompileResult> children;
 	public final Map<FunctionNode, CompileResult> childrenMap = new HashMap<>();
@@ -71,17 +72,17 @@ public final class CompileResult {
 		setLocationAndDebug(instructions.size() - 1, loc, type);
 	}
 	
-	public Iterable<FunctionBody> bodies() {
-		var stack = new Stack<FunctionBody>();
-		stack.push(body());
+	public Iterable<CompileResult> all() {
+		var stack = new Stack<CompileResult>();
+		stack.push(this);
 
-		return () -> new Iterator<FunctionBody>() {
-			@Override public FunctionBody next() {
+		return () -> new Iterator<CompileResult>() {
+			@Override public CompileResult next() {
 				if (stack.empty()) return null;
 				else {
 					var res = stack.pop();
-					for (var el : res.children) {
-						stack.push(el);
+					for (var child : res.children) {
+						stack.push(child);
 					}
 					return res;
 				}
@@ -110,6 +111,8 @@ public final class CompileResult {
 		return map.build(scope.localNames(), scope.capturableNames(), scope.captureNames());
 	}
 	public FunctionBody body() {
+		if (body != null) return body;
+
 		var builtChildren = new FunctionBody[children.size()];
 		for (var i = 0; i < children.size(); i++) builtChildren[i] = children.get(i).body();
 
@@ -124,7 +127,7 @@ public final class CompileResult {
 			for (var instr : instrRes) System.out.println(instr);
 		}
 
-		return new FunctionBody(
+		return body = new FunctionBody(
 			scope.localsCount(), scope.capturablesCount(), scope.capturesCount(),
 			length, instrRes, builtChildren
 		);

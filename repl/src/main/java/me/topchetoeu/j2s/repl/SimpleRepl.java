@@ -62,8 +62,8 @@ public class SimpleRepl {
 			var body = res.body();
 
 			DebugContext.get(env).onSource(filename, raw);
-			for (var el : res.bodies()) {
-				DebugContext.get(env).onFunctionLoad(el, res.map(mapper));
+			for (var el : res.all()) {
+				DebugContext.get(env).onFunctionLoad(el.body(), el.map(mapper));
 			}
 
 			return new CodeFunction(env, filename.toString(), body, new Value[0][]);
@@ -708,7 +708,7 @@ public class SimpleRepl {
 		res.defineOwnField(env, "construct", new NativeFunction(args -> {
 			var func = (FunctionValue)args.get(0);
 			var target = args.get(1);
-			var funcArgs = (ArrayValue)args.get(2);
+			var funcArgs = (ArrayLikeValue)args.get(2);
 
 			if (target == Value.UNDEFINED) return func.constructNoSelf(env, funcArgs.toArray());
 			else return func.construct(env, target, funcArgs.toArray());

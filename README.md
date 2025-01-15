@@ -45,8 +45,8 @@ env.add(Compiler.KEY, (_env, filename, raw, mapper) -> {
 
 		// We'll register the source and function source mappings for debugging
 		DebugContext.get(env).onSource(filename, raw);
-		for (var el : res.bodies()) {
-			DebugContext.get(env).onFunctionLoad(el, res.map(mapper));
+		for (var el : res.all()) {
+			DebugContext.get(env).onFunctionLoad(el.body(), el.map(mapper));
 		}
 
 		// Finally, we will construct the function
