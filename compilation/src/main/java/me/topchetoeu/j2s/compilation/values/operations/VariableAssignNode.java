@@ -1,8 +1,8 @@
 package me.topchetoeu.j2s.compilation.values.operations;
 
 import me.topchetoeu.j2s.common.Instruction;
+import me.topchetoeu.j2s.common.Location;
 import me.topchetoeu.j2s.common.Operation;
-import me.topchetoeu.j2s.common.parsing.Location;
 import me.topchetoeu.j2s.compilation.CompileResult;
 import me.topchetoeu.j2s.compilation.FunctionNode;
 import me.topchetoeu.j2s.compilation.Node;

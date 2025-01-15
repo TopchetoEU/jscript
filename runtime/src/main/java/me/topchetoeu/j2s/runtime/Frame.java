@@ -4,9 +4,9 @@ import java.util.Arrays;
 import java.util.Stack;
 import java.util.concurrent.CancellationException;
 
+import me.topchetoeu.j2s.common.Environment;
 import me.topchetoeu.j2s.common.Instruction;
-import me.topchetoeu.j2s.common.environment.Environment;
-import me.topchetoeu.j2s.common.environment.Key;
+import me.topchetoeu.j2s.common.Key;
 import me.topchetoeu.j2s.runtime.debug.DebugContext;
 import me.topchetoeu.j2s.runtime.exceptions.EngineException;
 import me.topchetoeu.j2s.runtime.values.Value;
@@ -383,7 +383,7 @@ public final class Frame {
 
 		this.self = self;
 		this.args = args;
-		this.argsVal = new ArgumentsValue(this, args);
+		this.argsVal = new ArgumentsValue(this);
 		this.argsLen = new IntValue(args.length);
 		this.captures = func.captures;
 

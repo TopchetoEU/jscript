@@ -6,14 +6,14 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import me.topchetoeu.j2s.common.Instruction;
+import me.topchetoeu.j2s.common.Location;
 import me.topchetoeu.j2s.common.Operation;
-import me.topchetoeu.j2s.common.parsing.Location;
-import me.topchetoeu.j2s.common.parsing.ParseRes;
-import me.topchetoeu.j2s.common.parsing.Parsing;
-import me.topchetoeu.j2s.common.parsing.Source;
 import me.topchetoeu.j2s.compilation.CompileResult;
 import me.topchetoeu.j2s.compilation.JavaScript;
 import me.topchetoeu.j2s.compilation.Node;
+import me.topchetoeu.j2s.compilation.parsing.ParseRes;
+import me.topchetoeu.j2s.compilation.parsing.Parsing;
+import me.topchetoeu.j2s.compilation.parsing.Source;
 import me.topchetoeu.j2s.compilation.patterns.AssignTargetLike;
 import me.topchetoeu.j2s.compilation.patterns.ChangeTarget;
 

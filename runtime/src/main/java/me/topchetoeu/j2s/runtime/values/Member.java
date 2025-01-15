@@ -2,7 +2,7 @@ package me.topchetoeu.j2s.runtime.values;
 
 import java.util.Optional;
 
-import me.topchetoeu.j2s.common.environment.Environment;
+import me.topchetoeu.j2s.common.Environment;
 import me.topchetoeu.j2s.runtime.values.functions.FunctionValue;
 import me.topchetoeu.j2s.runtime.values.objects.ObjectValue;
 import me.topchetoeu.j2s.runtime.values.primitives.BoolValue;

@@ -1,6 +1,6 @@
 package me.topchetoeu.j2s.repl.debug;
 
-import me.topchetoeu.j2s.common.environment.Environment;
+import me.topchetoeu.j2s.common.Environment;
 import me.topchetoeu.j2s.runtime.Frame;
 import me.topchetoeu.j2s.runtime.values.Value;
 import me.topchetoeu.j2s.runtime.values.objects.ArrayLikeValue;

@@ -16,14 +16,20 @@ import java.util.concurrent.ExecutionException;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
+import me.topchetoeu.j2s.common.Environment;
+import me.topchetoeu.j2s.common.Filename;
+import me.topchetoeu.j2s.common.Key;
 import me.topchetoeu.j2s.common.Metadata;
 import me.topchetoeu.j2s.common.Reading;
 import me.topchetoeu.j2s.common.SyntaxException;
-import me.topchetoeu.j2s.common.environment.Environment;
-import me.topchetoeu.j2s.common.environment.Key;
-import me.topchetoeu.j2s.common.json.JSON;
-import me.topchetoeu.j2s.common.parsing.Filename;
 import me.topchetoeu.j2s.compilation.JavaScript;
+import me.topchetoeu.j2s.compilation.json.JSON;
+import me.topchetoeu.j2s.compilation.parsing.Parsing;
+import me.topchetoeu.j2s.compilation.parsing.Source;
+import me.topchetoeu.j2s.repl.buffers.Int32ArrayValue;
+import me.topchetoeu.j2s.repl.buffers.Int8ArrayValue;
+import me.topchetoeu.j2s.repl.buffers.TypedArrayValue;
+import me.topchetoeu.j2s.repl.buffers.Uint8ArrayValue;
 import me.topchetoeu.j2s.repl.debug.DebugServer;
 import me.topchetoeu.j2s.repl.debug.Debugger;
 import me.topchetoeu.j2s.repl.debug.SimpleDebugger;
@@ -33,7 +39,6 @@ import me.topchetoeu.j2s.runtime.Compiler;
 import me.topchetoeu.j2s.runtime.Engine;
 import me.topchetoeu.j2s.runtime.EventLoop;
 import me.topchetoeu.j2s.runtime.Frame;
-import me.topchetoeu.j2s.runtime.JSONConverter;
 import me.topchetoeu.j2s.runtime.debug.DebugContext;
 import me.topchetoeu.j2s.runtime.exceptions.EngineException;
 import me.topchetoeu.j2s.runtime.values.Value;
@@ -43,10 +48,6 @@ import me.topchetoeu.j2s.runtime.values.functions.NativeFunction;
 import me.topchetoeu.j2s.runtime.values.objects.ArrayLikeValue;
 import me.topchetoeu.j2s.runtime.values.objects.ArrayValue;
 import me.topchetoeu.j2s.runtime.values.objects.ObjectValue;
-import me.topchetoeu.j2s.runtime.values.objects.buffers.Int32ArrayValue;
-import me.topchetoeu.j2s.runtime.values.objects.buffers.Int8ArrayValue;
-import me.topchetoeu.j2s.runtime.values.objects.buffers.TypedArrayValue;
-import me.topchetoeu.j2s.runtime.values.objects.buffers.Uint8ArrayValue;
 import me.topchetoeu.j2s.runtime.values.primitives.BoolValue;
 import me.topchetoeu.j2s.runtime.values.primitives.StringValue;
 import me.topchetoeu.j2s.runtime.values.primitives.SymbolValue;
@@ -61,8 +62,8 @@ public class SimpleRepl {
 			var body = res.body();
 
 			DebugContext.get(env).onSource(filename, raw);
-			for (var el : res.bodies()) {
-				DebugContext.get(env).onFunctionLoad(el, res.map(mapper));
+			for (var el : res.all()) {
+				DebugContext.get(env).onFunctionLoad(el.body(), el.map(mapper));
 			}
 
 			return new CodeFunction(env, filename.toString(), body, new Value[0][]);
@@ -385,13 +386,29 @@ public class SimpleRepl {
 				if (num.isInt()) return num;
 				else return NumberValue.of(num.getDouble() - num.getDouble() % 1);
 			}
-			else return NumberValue.parseInt(args.get(0).toString(), radix, false);
+			else {
+				if (radix < 2 || radix > 36) return NumberValue.NAN;
+		
+				var str = args.get(0).toString().trim();
+				var numRes = Parsing.parseInt(new Source(str), 0, "0123456789abcdefghijklmnopqrstuvwxyz".substring(0, radix), true);
+				if (numRes.isSuccess()) {
+					if (numRes.n == str.length()) return NumberValue.of(numRes.result);
+				}
+				return NumberValue.NAN;
+			}
 		}));
 		res.defineOwnField(env, "parseFloat", new NativeFunction(args -> {
 			if (args.get(0) instanceof NumberValue) {
 				return args.get(0);
 			}
-			else return NumberValue.parseFloat(args.get(0).toString(), false);
+			else {
+				var str = args.get(0).toString().trim();
+				var numRes = Parsing.parseFloat(new Source(str), 0, true);
+				if (numRes.isSuccess()) {
+					if (numRes.n == str.length()) return NumberValue.of(numRes.result);
+				}
+				return NumberValue.NAN;
+			}
 		}));
 		res.defineOwnField(env, "isNaN", new NativeFunction(args -> BoolValue.of(args.get(0).isNaN())));
 
@@ -684,14 +701,14 @@ public class SimpleRepl {
 		res.defineOwnField(env, "invoke", new NativeFunction(args -> {
 			var func = (FunctionValue)args.get(0);
 			var self = args.get(1);
-			var funcArgs = (ArrayValue)args.get(2);
+			var funcArgs = (ArrayLikeValue)args.get(2);
 
 			return func.apply(env, self, funcArgs.toArray());
 		}));
 		res.defineOwnField(env, "construct", new NativeFunction(args -> {
 			var func = (FunctionValue)args.get(0);
 			var target = args.get(1);
-			var funcArgs = (ArrayValue)args.get(2);
+			var funcArgs = (ArrayLikeValue)args.get(2);
 
 			if (target == Value.UNDEFINED) return func.constructNoSelf(env, funcArgs.toArray());
 			else return func.construct(env, target, funcArgs.toArray());

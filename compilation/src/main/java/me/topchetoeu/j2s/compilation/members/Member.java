@@ -1,6 +1,6 @@
 package me.topchetoeu.j2s.compilation.members;
 
-import me.topchetoeu.j2s.common.parsing.Location;
+import me.topchetoeu.j2s.common.Location;
 import me.topchetoeu.j2s.compilation.CompileResult;
 
 public interface Member {

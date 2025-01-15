@@ -7,11 +7,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.WeakHashMap;
 
-import me.topchetoeu.j2s.common.environment.Environment;
-import me.topchetoeu.j2s.common.json.JSON;
-import me.topchetoeu.j2s.common.json.JSONElement;
-import me.topchetoeu.j2s.common.parsing.Parsing;
-import me.topchetoeu.j2s.common.parsing.Source;
+import me.topchetoeu.j2s.common.Environment;
+import me.topchetoeu.j2s.common.StringifyUtils;
 import me.topchetoeu.j2s.runtime.values.KeyCache;
 import me.topchetoeu.j2s.runtime.values.Member;
 import me.topchetoeu.j2s.runtime.values.Member.FieldMember;
@@ -29,10 +26,7 @@ public final class StringValue extends PrimitiveValue {
 	@Override public NumberValue toNumber(Environment ext) {
 		var val = value.trim();
 		if (val.equals("")) return NumberValue.of(0);
-		var res = Parsing.parseNumber(new Source(val), 0, true);
-
-		if (res.isSuccess() && res.n == val.length()) return NumberValue.of(res.result);
-		else return NumberValue.NAN;
+		return NumberValue.of(StringifyUtils.unqoteNumber(val));
 	}
 	@Override public String toString(Environment ext) { return value; }
 
@@ -79,7 +73,7 @@ public final class StringValue extends PrimitiveValue {
 	}
 
 	@Override public List<String> toReadableLines(Environment env, HashSet<ObjectValue> passed) {
-		return Arrays.asList(JSON.stringify(JSONElement.string(value)));
+		return Arrays.asList(StringifyUtils.quoteString(value));
 	}
 
 	private StringValue(String value) {

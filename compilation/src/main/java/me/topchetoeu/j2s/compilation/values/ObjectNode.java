@@ -4,16 +4,16 @@ import java.util.LinkedList;
 import java.util.List;
 
 import me.topchetoeu.j2s.common.Instruction;
-import me.topchetoeu.j2s.common.parsing.Location;
-import me.topchetoeu.j2s.common.parsing.ParseRes;
-import me.topchetoeu.j2s.common.parsing.Parsing;
-import me.topchetoeu.j2s.common.parsing.Source;
+import me.topchetoeu.j2s.common.Location;
 import me.topchetoeu.j2s.compilation.CompileResult;
 import me.topchetoeu.j2s.compilation.JavaScript;
 import me.topchetoeu.j2s.compilation.Node;
 import me.topchetoeu.j2s.compilation.members.FieldMemberNode;
 import me.topchetoeu.j2s.compilation.members.Member;
 import me.topchetoeu.j2s.compilation.members.PropertyMemberNode;
+import me.topchetoeu.j2s.compilation.parsing.ParseRes;
+import me.topchetoeu.j2s.compilation.parsing.Parsing;
+import me.topchetoeu.j2s.compilation.parsing.Source;
 import me.topchetoeu.j2s.compilation.values.constants.NumberNode;
 import me.topchetoeu.j2s.compilation.values.constants.StringNode;
 

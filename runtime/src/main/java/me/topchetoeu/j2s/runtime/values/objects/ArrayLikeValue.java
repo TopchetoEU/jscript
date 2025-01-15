@@ -7,7 +7,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
-import me.topchetoeu.j2s.common.environment.Environment;
+import me.topchetoeu.j2s.common.Environment;
 import me.topchetoeu.j2s.runtime.exceptions.EngineException;
 import me.topchetoeu.j2s.runtime.values.KeyCache;
 import me.topchetoeu.j2s.runtime.values.Member;
@@ -55,6 +55,17 @@ public abstract class ArrayLikeValue extends ObjectValue {
 	public abstract boolean set(Environment env, int i, Value val);
 	public abstract boolean has(int i);
 	public abstract boolean remove(int i);
+
+	public Value[] toArray() {
+		var n = size();
+		var res = new Value[n];
+
+		for (var i = 0; i < n; i++) {
+			if (has(i)) res[i] = get(i);
+		}
+
+		return res;
+	}
 
 	@Override public Member getOwnMember(Environment env, KeyCache key) {
 		var res = super.getOwnMember(env, key);

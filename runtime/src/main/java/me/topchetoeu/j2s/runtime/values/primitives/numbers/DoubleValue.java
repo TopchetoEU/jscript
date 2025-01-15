@@ -1,7 +1,6 @@
 package me.topchetoeu.j2s.runtime.values.primitives.numbers;
 
-import me.topchetoeu.j2s.common.json.JSON;
-import me.topchetoeu.j2s.common.json.JSONElement;
+import me.topchetoeu.j2s.common.StringifyUtils;
 
 public final class DoubleValue extends NumberValue {
 	public final double value;
@@ -22,7 +21,7 @@ public final class DoubleValue extends NumberValue {
 		return value;
 	}
 
-	@Override public String toString() { return JSON.stringify(JSONElement.number(value)); }
+	@Override public String toString() { return StringifyUtils.quoteNumber(value); }
 
 	@Override public int hashCode() {
 		return Double.hashCode(value);

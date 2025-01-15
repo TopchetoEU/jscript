@@ -3,9 +3,9 @@ package me.topchetoeu.j2s.runtime;
 import java.util.concurrent.Future;
 import java.util.function.Supplier;
 
-import me.topchetoeu.j2s.common.environment.Environment;
-import me.topchetoeu.j2s.common.environment.Key;
-import me.topchetoeu.j2s.common.parsing.Filename;
+import me.topchetoeu.j2s.common.Environment;
+import me.topchetoeu.j2s.common.Filename;
+import me.topchetoeu.j2s.common.Key;
 import me.topchetoeu.j2s.runtime.exceptions.EngineException;
 import me.topchetoeu.j2s.runtime.values.Value;
 import me.topchetoeu.j2s.runtime.values.functions.FunctionValue;

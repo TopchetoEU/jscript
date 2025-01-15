@@ -6,7 +6,7 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.stream.Stream;
 
-import me.topchetoeu.j2s.common.environment.Environment;
+import me.topchetoeu.j2s.common.Environment;
 import me.topchetoeu.j2s.runtime.values.Value;
 import me.topchetoeu.j2s.runtime.values.primitives.VoidValue;
 
@@ -68,7 +68,7 @@ public class ArrayValue extends ArrayLikeValue implements Iterable<Value> {
 		}
 	}
 
-	public Value[] toArray() {
+	@Override public Value[] toArray() {
 		var res = new Value[size];
 		copyTo(res, 0, 0, size);
 		return res;

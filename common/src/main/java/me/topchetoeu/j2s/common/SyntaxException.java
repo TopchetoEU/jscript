@@ -1,7 +1,5 @@
 package me.topchetoeu.j2s.common;
 
-import me.topchetoeu.j2s.common.parsing.Location;
-
 public class SyntaxException extends RuntimeException {
 	public final Location loc;
 	public final String msg;

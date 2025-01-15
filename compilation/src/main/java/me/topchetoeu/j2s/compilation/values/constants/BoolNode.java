@@ -1,7 +1,7 @@
 package me.topchetoeu.j2s.compilation.values.constants;
 
 import me.topchetoeu.j2s.common.Instruction;
-import me.topchetoeu.j2s.common.parsing.Location;
+import me.topchetoeu.j2s.common.Location;
 import me.topchetoeu.j2s.compilation.CompileResult;
 import me.topchetoeu.j2s.compilation.Node;
 

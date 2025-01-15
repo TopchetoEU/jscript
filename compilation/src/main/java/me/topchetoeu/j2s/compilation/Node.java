@@ -1,7 +1,7 @@
 package me.topchetoeu.j2s.compilation;
 
+import me.topchetoeu.j2s.common.Location;
 import me.topchetoeu.j2s.common.Instruction.BreakpointType;
-import me.topchetoeu.j2s.common.parsing.Location;
 
 public abstract class Node {
 	private Location loc;
