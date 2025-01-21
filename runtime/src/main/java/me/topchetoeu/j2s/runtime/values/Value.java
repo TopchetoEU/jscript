@@ -48,8 +48,6 @@ public abstract class Value {
 		}
 	}
 
-	public static final Key<FunctionValue> REGEX_CONSTR = new Key<>();
-
 	public static final Key<Integer> MAX_STACK_COUNT = new Key<>();
 	public static final Key<Boolean> HIDE_STACK = new Key<>();
 

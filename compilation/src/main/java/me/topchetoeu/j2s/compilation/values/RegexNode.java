@@ -15,7 +15,10 @@ public class RegexNode extends Node {
 	}
 
 	@Override public void compile(CompileResult target, boolean pollute) {
-		target.add(Instruction.loadRegex(pattern, flags));
+		target.add(Instruction.loadIntrinsics("regex"));
+		target.add(Instruction.pushValue(pattern));
+		target.add(Instruction.pushValue(flags));
+		target.add(Instruction.call(2, false));
 		if (!pollute) target.add(Instruction.discard());
 	}
 

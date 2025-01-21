@@ -775,17 +775,13 @@ public class SimpleRepl {
 			setProto(args.env, env, Value.RANGE_ERR_PROTO, obj, "range");
 			setProto(args.env, env, Value.UINT8_ARR_PROTO, obj, "uint8");
 			setProto(args.env, env, Value.INT32_ARR_PROTO, obj, "int32");
-			var val = obj.getMember(args.env, "regex");
-			if (val instanceof FunctionValue func) {
-				env.add(Value.REGEX_CONSTR, func);
-			}
 			return Value.UNDEFINED;
 		}));
 		res.defineOwnField(env, "setIntrinsic", new NativeFunction(args -> {
 			var name = args.get(0).toString(env);
 			var val = args.get(1);
 
-			Value.intrinsics(environment).put(name, val);
+			Value.intrinsics(env).put(name, val);
 
 			return Value.UNDEFINED;
 		}));

@@ -219,20 +219,6 @@ public class InstructionRunner {
 		frame.codePtr++;
 		return null;
 	}
-	private static Value execLoadRegEx(Environment env, Instruction instr, Frame frame) {
-		if (env.hasNotNull(Value.REGEX_CONSTR)) {
-			frame.push(env.get(Value.REGEX_CONSTR).constructNoSelf(env,
-				StringValue.of(instr.get(0)),
-				StringValue.of(instr.get(1))
-			));
-		}
-		else {
-			throw EngineException.ofSyntax("Regex is not supported");
-		}
-
-		frame.codePtr++;
-		return null;
-	}
 
 	private static Value execDiscard(Environment env, Instruction instr, Frame frame) {
 		frame.pop();
@@ -529,7 +515,6 @@ public class InstructionRunner {
 			case LOAD_MEMBER: return execLoadMember(env, instr, frame);
 			case LOAD_MEMBER_INT: return execLoadMemberInt(env, instr, frame);
 			case LOAD_MEMBER_STR: return execLoadMemberStr(env, instr, frame);
-			case LOAD_REGEX: return execLoadRegEx(env, instr, frame);
 			case LOAD_GLOB: return execLoadGlob(env, instr, frame);
 			case LOAD_INTRINSICS: return execLoadIntrinsics(env, instr, frame);
 			case LOAD_ERROR: return execLoadError(env, instr, frame);

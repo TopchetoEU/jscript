@@ -31,7 +31,6 @@ public class Instruction {
 		LOAD_FUNC(0x30),
 		LOAD_ARR(0x31),
 		LOAD_OBJ(0x32),
-		LOAD_REGEX(0x33),
 
 		LOAD_GLOB(0x38),
 		LOAD_INTRINSICS(0x39),
@@ -287,9 +286,6 @@ public class Instruction {
 		return new Instruction(Type.LOAD_MEMBER_STR, member);
 	}
 
-	public static Instruction loadRegex(String pattern, String flags) {
-		return new Instruction(Type.LOAD_REGEX, pattern, flags);
-	}
 	// TODO: make this capturing a concern of the compiler
 	public static Instruction loadFunc(int id, String name, int[] captures) {
 		var args = new Object[2 + captures.length];

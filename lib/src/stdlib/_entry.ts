@@ -1,4 +1,4 @@
-import { object, setGlobalPrototypes, target } from "./primordials.ts";
+import { object, setGlobalPrototypes, setIntrinsic, target } from "./primordials.ts";
 import { Error, RangeError, SyntaxError, TypeError } from "./values/errors.ts";
 import { Boolean } from "./values/boolean.ts";
 import { Function } from "./values/function.ts";
@@ -87,5 +87,5 @@ setGlobalPrototypes({
 	type: TypeError.prototype,
 	uint8: Uint8Array.prototype,
 	int32: Int32Array.prototype,
-	regex: RegExp,
 });
+setIntrinsic("regex", RegExp);
