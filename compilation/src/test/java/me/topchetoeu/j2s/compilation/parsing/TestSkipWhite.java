@@ -4,9 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
 
-import me.topchetoeu.j2s.compilation.parsing.Parsing;
-import me.topchetoeu.j2s.compilation.parsing.Source;
-
 public class TestSkipWhite {
 	@Test public void shBang() {
 		var res1 = Parsing.skipEmpty(new Source("#!my-shbang\n10"), 0);

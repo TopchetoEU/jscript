@@ -4,9 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
 
-import me.topchetoeu.j2s.compilation.parsing.Parsing;
-import me.topchetoeu.j2s.compilation.parsing.Source;
-
 public class TestParseString {
 	@Test public void notAString() {
 		var res = Parsing.parseString(new Source("var a = 10"), 0);
