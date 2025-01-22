@@ -21,7 +21,9 @@ export default function coffee(next: Compiler): Compiler {
 		});
 
 		registerSource(filename, code);
-		return next("coffee-internal://" + filename, result, SourceMap.chain(map, prevMap));
+		const func = next("coffee-internal://" + filename, result, SourceMap.chain(map, prevMap));
+		func.name = filename;
+		return func;
 	};
 }
 
