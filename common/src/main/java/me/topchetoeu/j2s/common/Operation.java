@@ -3,36 +3,37 @@ package me.topchetoeu.j2s.common;
 import java.util.HashMap;
 
 public enum Operation {
-	INSTANCEOF(1, 2),
-	IN(2, 2),
+	TYPEOF(0x10, 1),
+	INSTANCEOF(0x11, 2),
+	IN(0x12, 2),
 
-	MULTIPLY(3, 2),
-	DIVIDE(4, 2),
-	MODULO(5, 2),
-	ADD(6, 2),
-	SUBTRACT(7, 2),
+	MULTIPLY(0x20, 2),
+	DIVIDE(0x21, 2),
+	MODULO(0x22, 2),
+	ADD(0x23, 2),
+	SUBTRACT(0x24, 2),
 
-	USHIFT_RIGHT(8, 2),
-	SHIFT_RIGHT(9, 2),
-	SHIFT_LEFT(10, 2),
+	USHIFT_RIGHT(0x30, 2),
+	SHIFT_RIGHT(0x31, 2),
+	SHIFT_LEFT(0x32, 2),
 
-	GREATER(11, 2),
-	LESS(12, 2),
-	GREATER_EQUALS(13, 2),
-	LESS_EQUALS(14, 2),
-	LOOSE_EQUALS(15, 2),
-	LOOSE_NOT_EQUALS(16, 2),
-	EQUALS(17, 2),
-	NOT_EQUALS(18, 2),
+	GREATER(0x40, 2),
+	LESS(0x41, 2),
+	GREATER_EQUALS(0x42, 2),
+	LESS_EQUALS(0x43, 2),
+	LOOSE_EQUALS(0x44, 2),
+	LOOSE_NOT_EQUALS(0x45, 2),
+	EQUALS(0x46, 2),
+	NOT_EQUALS(0x47, 2),
 
-	AND(19, 2),
-	OR(20, 2),
-	XOR(21, 2),
+	AND(0x50, 2),
+	OR(0x51, 2),
+	XOR(0x52, 2),
 
-	NEG(23, 1),
-	POS(24, 1),
-	NOT(25, 1),
-	INVERSE(26, 1);
+	NEG(0x60, 1),
+	POS(0x61, 1),
+	NOT(0x62, 1),
+	INVERSE(0x63, 1);
 
 	private static final HashMap<Integer, Operation> operations = new HashMap<>();
 

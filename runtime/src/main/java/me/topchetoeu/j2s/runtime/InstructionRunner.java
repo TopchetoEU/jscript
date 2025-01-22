@@ -235,18 +235,6 @@ public class InstructionRunner {
 		return null;
 	}
 
-	private static Value execTypeof(Environment env, Instruction instr, Frame frame) {
-		String name = instr.get(0);
-		Value obj;
-
-		if (name != null) obj = Value.global(env).getMember(env, name);
-		else obj = frame.pop();
-
-		frame.push(obj.type());
-
-		frame.codePtr++;
-		return null;
-	}
 	private static Value execNop(Environment env, Instruction instr, Frame frame) {
 		frame.codePtr++;
 		return null;
@@ -354,6 +342,10 @@ public class InstructionRunner {
 				break;
 			case INSTANCEOF:
 				res = BoolValue.of(stack[ptr - 1].isInstanceOf(env, stack[ptr].getMember(env, StringValue.of("prototype"))));
+				break;
+			case TYPEOF:
+				res = stack[ptr++].type();
+				frame.stackPtr++;
 				break;
 
 			default: return null;
@@ -481,7 +473,6 @@ public class InstructionRunner {
 			case STORE_MEMBER_INT: return execStoreMemberInt(env, instr, frame);
 			case STORE_VAR: return execStoreVar(env, instr, frame);
 
-			case TYPEOF: return execTypeof(env, instr, frame);
 			case DELETE: return execDelete(env, instr, frame);
 
 			case JMP: return execJmp(env, instr, frame);

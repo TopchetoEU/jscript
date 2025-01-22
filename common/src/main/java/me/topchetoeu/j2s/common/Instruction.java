@@ -51,8 +51,7 @@ public class Instruction {
 		STORE_MEMBER_INT(0x4A),
 		STORE_MEMBER_STR(0x4B),
 
-		TYPEOF(0x53),
-		OPERATION(0x54),
+		OPERATION(0x50),
 
 		GLOB_GET(0x60),
 		GLOB_SET(0x61),
@@ -331,13 +330,6 @@ public class Instruction {
 
 	public static Instruction discard() {
 		return new Instruction(Type.DISCARD);
-	}
-
-	public static Instruction typeof() {
-		return new Instruction(Type.TYPEOF);
-	}
-	public static Instruction typeof(String varName) {
-		return new Instruction(Type.TYPEOF, varName);
 	}
 
 	public static Instruction operation(Operation op) {

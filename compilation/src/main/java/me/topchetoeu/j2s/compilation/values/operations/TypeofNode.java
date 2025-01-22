@@ -2,6 +2,7 @@ package me.topchetoeu.j2s.compilation.values.operations;
 
 import me.topchetoeu.j2s.common.Instruction;
 import me.topchetoeu.j2s.common.Location;
+import me.topchetoeu.j2s.common.Operation;
 import me.topchetoeu.j2s.compilation.CompileResult;
 import me.topchetoeu.j2s.compilation.JavaScript;
 import me.topchetoeu.j2s.compilation.Node;
@@ -20,14 +21,14 @@ public class TypeofNode extends Node {
 	@Override public void compile(CompileResult target, boolean pollute) {
 		if (value instanceof VariableNode varNode) {
 			target.add(VariableNode.toGet(target, varNode.loc(), varNode.name, true, true));
-			if (pollute) target.add(Instruction.typeof());
+			if (pollute) target.add(Instruction.operation(Operation.TYPEOF));
 			else target.add(Instruction.discard());
 
 			return;
 		}
 
 		value.compile(target, pollute);
-		if (pollute) target.add(Instruction.typeof());
+		if (pollute) target.add(Instruction.operation(Operation.TYPEOF));
 	}
 
 	public TypeofNode(Location loc, Node value) {
