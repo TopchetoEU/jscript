@@ -55,23 +55,8 @@ export const Function = (() => {
 			return res;
 		}
 
-		public static compile(src = "", { globals = [], wrap = false }: { globals?: string[], wrap?: boolean } = {}) {
-			const parts = [];
-
-			if (wrap) parts[parts.length] = "return (function() {\n";
-			if (globals.length > 0) {
-				parts[parts.length] = "let {";
-				for (let i = 0; i < globals.length; i++) {
-					if (i > 0) parts[parts.length] = ",";
-					parts[parts.length] = globals[i];
-				}
-				parts[parts.length] = "} = arguments[0];";
-			}
-			parts[parts.length] = src;
-			if (wrap) parts[parts.length] = "\n})(arguments[0])";
-
-			const res = compile(string.stringBuild(parts));
-			return res;
+		public static compile(src: string, filename?: string) {
+			return compile(String(src), filename);
 		}
 	}
 

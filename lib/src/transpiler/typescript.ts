@@ -109,10 +109,12 @@ export default function typescript(next: Compiler): Compiler {
 		registerSource(filename, code);
 		const compiled = next("ts-internal://" + filename, result, SourceMap.chain(map, prevMap));
 
-		return function (this: any) {
+		const func = function (this: any) {
 			const res = compiled.apply(this, arguments);
 			if (declaration !== '') files["/src." + declI++ + ".d.ts"] = ScriptSnapshot.fromString(declaration);
 			return res;
 		};
+		func.name = filename;
+		return func;
 	};
 }

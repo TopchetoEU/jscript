@@ -10,6 +10,8 @@ declare interface String {
 	charCodeAt(i: number): number;
 	codePointAt(i: number): number;
 
+	startsWith(search: string): boolean;
+	endsWith(search: string): boolean;
 	includes(search: string, offset?: number): number;
 	indexOf(search: string, offset?: number): number;
 	lastIndexOf(search: string, offset?: number): number;

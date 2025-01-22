@@ -105,7 +105,7 @@ export interface Primordials {
 		exec(target: string, offset: number, indices: boolean): { matches: RegExpMatchArray, end: number } | null;
 		groupCount(): number;
 	};
-	compile(src: string): Function;
+	compile(src: string, filename?: string): Function;
 	setGlobalPrototypes(prototype: Record<string, any>): void;
 	now(): number;
 	next(func: () => void): void;

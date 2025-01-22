@@ -1,17 +1,17 @@
 {
-    "include": ["**/*.ts"],
-    "compilerOptions": {
-        "strict": true,
-        "esModuleInterop": true,
-        "skipLibCheck": true,
-        "moduleResolution": "Bundler",
-        "module": "ESNext",
-        "target": "ESNext",
-        "noLib": true,
-        "forceConsistentCasingInFileNames": true,
-        "emitDecoratorMetadata": true,
-        "experimentalDecorators": true,
-        "allowImportingTsExtensions": true,
-        "noEmit": true
-    }
+	"include": ["**/*.ts"],
+	"compilerOptions": {
+		"strict": true,
+		"esModuleInterop": true,
+		"skipLibCheck": true,
+		"moduleResolution": "Bundler",
+		"module": "ESNext",
+		"target": "ESNext",
+		"noLib": true,
+		"forceConsistentCasingInFileNames": true,
+		"emitDecoratorMetadata": true,
+		"experimentalDecorators": true,
+		"allowImportingTsExtensions": true,
+		"noEmit": true
+	}
 }

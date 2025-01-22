@@ -786,7 +786,12 @@ public class SimpleRepl {
 			return Value.UNDEFINED;
 		}));
 		res.defineOwnField(env, "compile", new NativeFunction(args -> {
-			return Compiler.compileFunc(env, new Filename(Metadata.name(), "func" + i[0]++ + ".js"), args.get(0).toString(env));
+			var nameVal = args.get(1);
+			var name = nameVal instanceof VoidValue ?
+				new Filename(Metadata.name(), "func" + i[0]++ + ".js") :
+				Filename.parse(nameVal.toString(args.env));
+
+			return Compiler.compileFunc(env, name, args.get(0).toString(env));
 		}));
 		res.defineOwnField(env, "now", new NativeFunction(args -> {
 			return NumberValue.of(System.currentTimeMillis());
