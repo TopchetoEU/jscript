@@ -11,7 +11,7 @@ tasks.wrapper {
 }
 
 tasks.build {
-	subprojects.forEach { proj ->
+	for (proj in subprojects) {
 		dependsOn(proj.tasks.named("build"));
 		doLast {
 			copy {
