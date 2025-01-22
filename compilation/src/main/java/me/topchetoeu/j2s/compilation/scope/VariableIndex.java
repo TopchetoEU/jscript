@@ -39,9 +39,9 @@ public final class VariableIndex {
 	}
 	public final Instruction toSet(boolean keep) {
 		switch (type) {
-			case CAPTURES: return Instruction.storeVar(~index, keep, false);
-			case CAPTURABLES: return Instruction.storeVar(index, keep, false);
-			case LOCALS: return Instruction.storeVar(index, keep, false);
+			case CAPTURES: return Instruction.storeVar(~index, keep);
+			case CAPTURABLES: return Instruction.storeVar(index, keep);
+			case LOCALS: return Instruction.storeVar(index, keep);
 			default: throw new UnsupportedOperationException("Unknown index type " + type);
 		}
 	}

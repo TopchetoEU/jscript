@@ -89,3 +89,18 @@ setGlobalPrototypes({
 	int32: Int32Array.prototype,
 });
 setIntrinsic("regex", RegExp);
+setIntrinsic("keys", (obj: object, own: boolean, onlyEnumerable: boolean) => {
+	const members = object.getMembers(obj, own, onlyEnumerable);
+
+	let i = 0;
+	return () => {
+		if (i >= members.length) return { done: true };
+		else return { value: members[i++] };
+	};
+});
+setIntrinsic("defGetter", (obj: object, key: any, func: Function) => {
+	object.defineProperty(obj, key, { g: func, e: true, c: true });
+});
+setIntrinsic("defSetter", (obj: object, key: any, func: Function) => {
+	object.defineProperty(obj, key, { s: func, e: true, c: true });
+});

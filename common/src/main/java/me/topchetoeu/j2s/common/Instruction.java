@@ -51,9 +51,6 @@ public class Instruction {
 		STORE_MEMBER_INT(0x4A),
 		STORE_MEMBER_STR(0x4B),
 
-		DEF_PROP(0x50),
-		DEF_FIELD(0x51),
-		KEYS(0x52),
 		TYPEOF(0x53),
 		OPERATION(0x54),
 
@@ -307,8 +304,8 @@ public class Instruction {
 		return new Instruction(Type.DUP, count, offset);
 	}
 
-	public static Instruction storeVar(int i, boolean keep, boolean initialize) {
-		return new Instruction(Type.STORE_VAR, i, keep, initialize);
+	public static Instruction storeVar(int i, boolean keep) {
+		return new Instruction(Type.STORE_VAR, i, keep);
 	}
 
 	public static Instruction storeMember() {
@@ -341,17 +338,6 @@ public class Instruction {
 	}
 	public static Instruction typeof(String varName) {
 		return new Instruction(Type.TYPEOF, varName);
-	}
-
-	public static Instruction keys(boolean own, boolean onlyEnumerable) {
-		return new Instruction(Type.KEYS, own, onlyEnumerable);
-	}
-
-	public static Instruction defProp(boolean setter) {
-		return new Instruction(Type.DEF_PROP, setter);
-	}
-	public static Instruction defField() {
-		return new Instruction(Type.DEF_FIELD);
 	}
 
 	public static Instruction operation(Operation op) {

@@ -1,16 +1,11 @@
 package me.topchetoeu.j2s.runtime;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Optional;
-
 import me.topchetoeu.j2s.common.Environment;
 import me.topchetoeu.j2s.common.Instruction;
 import me.topchetoeu.j2s.common.Operation;
 import me.topchetoeu.j2s.runtime.exceptions.EngineException;
 import me.topchetoeu.j2s.runtime.values.Value;
 import me.topchetoeu.j2s.runtime.values.functions.CodeFunction;
-import me.topchetoeu.j2s.runtime.values.functions.FunctionValue;
 import me.topchetoeu.j2s.runtime.values.objects.ArrayValue;
 import me.topchetoeu.j2s.runtime.values.objects.ObjectValue;
 import me.topchetoeu.j2s.runtime.values.primitives.BoolValue;
@@ -43,51 +38,6 @@ public class InstructionRunner {
 		var funcObj = frame.pop();
 
 		frame.push(funcObj.constructNoSelf(env, callArgs));
-
-		frame.codePtr++;
-		return null;
-	}
-
-	private static Value execDefProp(Environment env, Instruction instr, Frame frame) {
-		var val = frame.pop();
-		var key = frame.pop();
-		var obj = frame.pop();
-
-		FunctionValue accessor;
-
-		if (val == Value.UNDEFINED) accessor = null;
-		else if (val instanceof FunctionValue func) accessor = func;
-		else throw EngineException.ofType("Getter must be a function or undefined");
-
-		if ((boolean)instr.get(0)) obj.defineOwnProperty(env, key, null, Optional.of(accessor), true, true);
-		else obj.defineOwnProperty(env, key, Optional.of(accessor), null, true, true);
-
-		frame.codePtr++;
-		return null;
-	}
-	private static Value execDefField(Environment env, Instruction instr, Frame frame) {
-		var val = frame.pop();
-		var key = frame.pop();
-		var obj = frame.pop();
-
-		obj.defineOwnField(env, key, val, true, true, true);
-
-		frame.codePtr++;
-		return null;
-	}
-	private static Value execKeys(Environment env, Instruction instr, Frame frame) {
-		var val = frame.pop();
-
-		var members = new ArrayList<>(val.getMembers(env, instr.get(0), instr.get(1)));
-		Collections.reverse(members);
-
-		frame.push(Value.UNDEFINED);
-
-		for (var el : members) {
-			var obj = new ObjectValue();
-			obj.defineOwnField(env, "value", StringValue.of(el));
-			frame.push(obj);
-		}
 
 		frame.codePtr++;
 		return null;
@@ -531,9 +481,6 @@ public class InstructionRunner {
 			case STORE_MEMBER_INT: return execStoreMemberInt(env, instr, frame);
 			case STORE_VAR: return execStoreVar(env, instr, frame);
 
-			case KEYS: return execKeys(env, instr, frame);
-			case DEF_PROP: return execDefProp(env, instr, frame);
-			case DEF_FIELD: return execDefField(env, instr, frame);
 			case TYPEOF: return execTypeof(env, instr, frame);
 			case DELETE: return execDelete(env, instr, frame);
 

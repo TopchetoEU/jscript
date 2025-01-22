@@ -545,17 +545,17 @@ public class SimpleRepl {
 			args.get(0).setPrototype(env, proto);
 			return args.get(0);
 		}));
-		res.defineOwnField(env, "getOwnMembers", new NativeFunction(args -> {
+		res.defineOwnField(env, "getMembers", new NativeFunction(args -> {
 			var val = new ArrayValue();
 
-			for (var key : args.get(0).getOwnMembers(env, args.get(1).toBoolean())) {
+			for (var key : args.get(0).getMembers(env, args.get(1).toBoolean(), args.get(2).toBoolean())) {
 				val.set(args.env, val.size(), StringValue.of(key));
 			}
 
 			return val;
 		}));
-		res.defineOwnField(env, "getOwnSymbolMembers", new NativeFunction(args -> {
-			return ArrayValue.of(args.get(0).getOwnSymbolMembers(env, args.get(1).toBoolean()));
+		res.defineOwnField(env, "getSymbolMembers", new NativeFunction(args -> {
+			return ArrayValue.of(args.get(0).getSymbolMembers(env, args.get(1).toBoolean(), args.get(2).toBoolean()));
 		}));
 		res.defineOwnField(env, "getOwnMember", new NativeFunction(args -> {
 			var obj = args.get(0);

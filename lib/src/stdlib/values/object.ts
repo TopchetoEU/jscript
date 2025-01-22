@@ -55,10 +55,10 @@ export const Object = (() => {
 			return object.getOwnMember(obj, key);
 		}
 		public static getOwnPropertyNames(obj: object): string[] {
-			return object.getOwnMembers(obj, false);
+			return object.getMembers(obj, true, false);
 		}
 		public static getOwnPropertySymbols(obj: object): symbol[] {
-			return object.getOwnSymbolMembers(obj, false);
+			return object.getSymbolMembers(obj, true, false);
 		}
 
 		public static defineProperty(obj: object, key: string | symbol, desc: PropertyDescriptor) {
@@ -98,8 +98,8 @@ export const Object = (() => {
 			return obj;
 		}
 		public static defineProperties(obj: object, desc: PropertyDescriptorMap) {
-			const keys = object.getOwnMembers(desc, true) as ((keyof typeof obj) & string)[];
-			const symbols = object.getOwnSymbolMembers(desc, true) as ((keyof typeof obj) & symbol)[];
+			const keys = object.getMembers(desc, true, true) as ((keyof typeof obj) & string)[];
+			const symbols = object.getSymbolMembers(desc, true, true) as ((keyof typeof obj) & symbol)[];
 
 			for (let i = 0; i < keys.length; i++) {
 				Object.defineProperty(obj, keys[i], desc[keys[i]]);
@@ -119,8 +119,8 @@ export const Object = (() => {
 		public static assign(target: any) {
 			for (let i = 1; i < arguments.length; i++) {
 				const obj = arguments[i];
-				const keys = object.getOwnMembers(obj, false);
-				const symbols = object.getOwnSymbolMembers(obj, false);
+				const keys = object.getMembers(obj, true, false);
+				const symbols = object.getSymbolMembers(obj, true, false);
 	
 				for (let j = 0; j < keys.length; j++) {
 					target[keys[j]] = obj[keys[j]];
@@ -142,8 +142,8 @@ export const Object = (() => {
 
 		public static keys(obj: any) {
 			const res: any[] = [];
-			const keys = object.getOwnMembers(obj, true);
-			const symbols = object.getOwnSymbolMembers(obj, true);
+			const keys = object.getMembers(obj, true, true);
+			const symbols = object.getSymbolMembers(obj, true, true);
 
 			for (let i = 0; i < keys.length; i++) {
 				res[res.length] = keys[i];
@@ -156,8 +156,8 @@ export const Object = (() => {
 		}
 		public static values(obj: any) {
 			const res: any[] = [];
-			const keys = object.getOwnMembers(obj, true);
-			const symbols = object.getOwnSymbolMembers(obj, true);
+			const keys = object.getMembers(obj, true, true);
+			const symbols = object.getSymbolMembers(obj, true, true);
 
 			for (let i = 0; i < keys.length; i++) {
 				res[res.length] = obj[keys[i]];
@@ -170,8 +170,8 @@ export const Object = (() => {
 		}
 		public static entries(obj: any) {
 			const res: [any, any][] = [];
-			const keys = object.getOwnMembers(obj, true);
-			const symbols = object.getOwnSymbolMembers(obj, true);
+			const keys = object.getMembers(obj, true, true);
+			const symbols = object.getSymbolMembers(obj, true, true);
 
 			for (let i = 0; i < keys.length; i++) {
 				res[res.length] = [keys[i], obj[keys[i]]];

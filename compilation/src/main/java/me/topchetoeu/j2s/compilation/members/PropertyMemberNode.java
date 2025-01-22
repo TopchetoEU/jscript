@@ -38,11 +38,20 @@ public final class PropertyMemberNode extends FunctionNode implements Member {
 	}
 
 	@Override public void compile(CompileResult target, boolean pollute, String name, BreakpointType bp) {
-		if (pollute) target.add(Instruction.dup());
-		key.compile(target, true);
+		if (isGetter()) {
+			target.add(Instruction.loadIntrinsics("defGetter"));
+		}
+		else {
+			target.add(Instruction.loadIntrinsics("defSetter"));
+		}
 
+		target.add(Instruction.dup(1, 1));
+		key.compile(target, true);
 		target.add(Instruction.loadFunc(target.childrenIndices.get(this), name(name), captures(target))).setLocation(loc());
-		target.add(Instruction.defProp(isSetter()));
+		target.add(Instruction.call(3, false));
+		target.add(Instruction.discard());
+
+		if (!pollute) target.add(Instruction.discard());
 	}
 
 	public PropertyMemberNode(Location loc, Location end, Node key, VariableNode argument, CompoundNode body) {

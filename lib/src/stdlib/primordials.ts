@@ -39,8 +39,8 @@ export interface ObjectPrimordials {
 	defineProperty(obj: object, key: string | number | symbol, conf: { g?: Function, s?: Function, e?: boolean, c?: boolean }): boolean;
 	defineField(obj: object, key: string | number | symbol, conf: { v?: any, e?: boolean, c?: boolean, w?: boolean }): boolean;
 	getOwnMember(obj: object, key: any): PropertyDescriptor | undefined;
-	getOwnMembers(obj: object, onlyEnumerable: boolean): string[];
-	getOwnSymbolMembers(obj: object, onlyEnumerable: boolean): symbol[];
+	getMembers(obj: object, own: boolean, onlyEnumerable: boolean): string[];
+	getSymbolMembers(obj: object, own: boolean, onlyEnumerable: boolean): symbol[];
 	getPrototype(obj: object): object | undefined;
 	setPrototype(obj: object, proto?: object): object;
 	preventExt(obj: object): void;

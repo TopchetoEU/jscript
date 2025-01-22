@@ -31,13 +31,18 @@ public class ForInNode extends Node {
 		body.compileFunctions(target);
 	}
 	@Override public void compile(CompileResult target, boolean pollute) {
+		target.add(Instruction.loadIntrinsics("keys"));
 		object.compile(target, true, BreakpointType.STEP_OVER);
-		target.add(Instruction.keys(false, true));
+		target.add(Instruction.pushValue(false));
+		target.add(Instruction.pushValue(true));
+		target.add(Instruction.call(3, false));
 
 		int start = target.size();
 		target.add(Instruction.dup());
+		target.add(Instruction.call(0, false));
+		target.add(Instruction.dup());
+		target.add(Instruction.loadMember("done"));
 		int mid = target.temp();
-
 		target.add(Instruction.loadMember("value")).setLocation(binding.loc());
 		target.add(VariableNode.toSet(target, loc(), binding.name, false, true)).setLocation(binding.loc());
 
@@ -52,7 +57,7 @@ public class ForInNode extends Node {
 
 		target.add(Instruction.jmp(start - endI));
 		target.add(Instruction.discard());
-		target.set(mid, Instruction.jmpIfNot(endI - mid + 1));
+		target.set(mid, Instruction.jmpIf(endI - mid + 1));
 
 		end.set(endI + 1);
 		LabelContext.popLoop(target.env, label);
