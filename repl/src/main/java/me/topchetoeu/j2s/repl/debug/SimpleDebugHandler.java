@@ -1,24 +1,19 @@
-package me.topchetoeu.j2s.runtime.debug;
+package me.topchetoeu.j2s.repl.debug;
 
 import java.util.HashMap;
 import java.util.WeakHashMap;
 
 import me.topchetoeu.j2s.common.Environment;
 import me.topchetoeu.j2s.common.Filename;
+import me.topchetoeu.j2s.common.Instruction;
 import me.topchetoeu.j2s.common.FunctionBody;
 import me.topchetoeu.j2s.common.FunctionMap;
-import me.topchetoeu.j2s.common.Instruction;
-import me.topchetoeu.j2s.common.Key;
 import me.topchetoeu.j2s.runtime.Frame;
+import me.topchetoeu.j2s.runtime.debug.DebugHandler;
 import me.topchetoeu.j2s.runtime.exceptions.EngineException;
 import me.topchetoeu.j2s.runtime.values.Value;
-import me.topchetoeu.j2s.runtime.values.functions.CodeFunction;
-import me.topchetoeu.j2s.runtime.values.functions.FunctionValue;
 
-public class DebugContext {
-	public static final Key<DebugContext> KEY = new Key<>();
-	public static final Key<Void> IGNORE = new Key<>();
-
+public class SimpleDebugHandler implements DebugHandler {
 	private HashMap<Filename, String> sources;
 	private WeakHashMap<FunctionBody, FunctionMap> maps;
 	private DebugHandler debugger;
@@ -49,23 +44,9 @@ public class DebugContext {
 		return debugger;
 	}
 
-	public FunctionMap getMap(FunctionBody func) {
+	public FunctionMap getMap(Environment env, FunctionBody func) {
 		if (maps == null) return null;
 		return maps.get(func);
-	}
-	public FunctionMap getMap(FunctionValue func) {
-		if (maps == null || !(func instanceof CodeFunction)) return null;
-		return getMap(((CodeFunction)func).body);
-	}
-	public FunctionMap getMapOrEmpty(FunctionBody func) {
-		if (maps == null) return FunctionMap.EMPTY;
-		var res = maps.get(func);
-		if (res == null) return FunctionMap.EMPTY;
-		else return res;
-	}
-	public FunctionMap getMapOrEmpty(FunctionValue func) {
-		if (maps == null || !(func instanceof CodeFunction)) return FunctionMap.EMPTY;
-		return getMapOrEmpty(((CodeFunction)func).body);
 	}
 
 	public void onFramePop(Environment env, Frame frame) {
@@ -75,39 +56,27 @@ public class DebugContext {
 		if (debugger != null) debugger.onFramePush(env, frame);
 	}
 
-	public boolean onInstruction(Environment env, Frame frame, Instruction instruction, Value returnVal, EngineException error, boolean caught) {
+	@Override public boolean onInstruction(Environment env, Frame frame, Instruction instruction, Value returnVal, EngineException error, boolean caught) {
 		if (debugger != null) return debugger.onInstruction(env, frame, instruction, returnVal, error, caught);
 		else return false;
 	}
-	public boolean onInstruction(Environment env, Frame frame, Instruction instruction) {
-		if (debugger != null) return debugger.onInstruction(env, frame, instruction, null, null, false);
-		else return false;
-	}
-	public void onSource(Filename filename, String source) {
+	@Override public void onSourceLoad(Filename filename, String source) {
 		if (debugger != null) debugger.onSourceLoad(filename, source);
 		if (sources != null) sources.put(filename, source);
 	}
-	public void onFunctionLoad(FunctionBody func, FunctionMap map) {
+	@Override public void onFunctionLoad(FunctionBody func, FunctionMap map) {
 		if (maps != null) maps.put(func, map);
 		if (debugger != null) debugger.onFunctionLoad(func, map);
 	}
 
-	private DebugContext(boolean enabled) {
+	private SimpleDebugHandler(boolean enabled) {
 		if (enabled) {
 			sources = new HashMap<>();
 			maps = new WeakHashMap<>();
 		}
 	}
 
-	public DebugContext() {
+	public SimpleDebugHandler() {
 		this(true);
-	}
-
-	public static boolean enabled(Environment exts) {
-		return exts != null && exts.hasNotNull(KEY) && !exts.has(IGNORE);
-	}
-	public static DebugContext get(Environment exts) {
-		if (enabled(exts)) return exts.get(KEY);
-		else return new DebugContext(false);
 	}
 }

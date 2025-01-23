@@ -25,12 +25,12 @@ public final class CodeFunction extends FunctionValue {
 		}
 	}
 
-	@Override protected Value onApply(Environment ext, Value self, Value... args) {
+	@Override protected Value onApply(Environment env, Value self, Value... args) {
 		var frame = new Frame(env, false, null, self, args, this);
 		var res = onCall(frame);
 		return res;
 	}
-	@Override protected Value onConstruct(Environment ext, Value target, Value... args) {
+	@Override protected Value onConstruct(Environment env, Value target, Value... args) {
 		var self = new ObjectValue();
 
 		var proto = target.getMember(env, "prototype");

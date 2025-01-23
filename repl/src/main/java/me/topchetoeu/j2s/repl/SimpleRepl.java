@@ -30,6 +30,7 @@ import me.topchetoeu.j2s.repl.buffers.Int32ArrayValue;
 import me.topchetoeu.j2s.repl.buffers.Int8ArrayValue;
 import me.topchetoeu.j2s.repl.buffers.TypedArrayValue;
 import me.topchetoeu.j2s.repl.buffers.Uint8ArrayValue;
+import me.topchetoeu.j2s.repl.debug.SimpleDebugHandler;
 import me.topchetoeu.j2s.repl.debug.DebugServer;
 import me.topchetoeu.j2s.repl.debug.Debugger;
 import me.topchetoeu.j2s.repl.debug.SimpleDebugger;
@@ -39,7 +40,7 @@ import me.topchetoeu.j2s.runtime.Compiler;
 import me.topchetoeu.j2s.runtime.Engine;
 import me.topchetoeu.j2s.runtime.EventLoop;
 import me.topchetoeu.j2s.runtime.Frame;
-import me.topchetoeu.j2s.runtime.debug.DebugContext;
+import me.topchetoeu.j2s.runtime.debug.DebugHandler;
 import me.topchetoeu.j2s.runtime.exceptions.EngineException;
 import me.topchetoeu.j2s.runtime.values.Value;
 import me.topchetoeu.j2s.runtime.values.functions.CodeFunction;
@@ -61,9 +62,9 @@ public class SimpleRepl {
 			var res = JavaScript.compile(env, filename, raw, true);
 			var body = res.body();
 
-			DebugContext.get(env).onSource(filename, raw);
+			DebugHandler.get(env).onSourceLoad(filename, raw);
 			for (var el : res.all()) {
-				DebugContext.get(env).onFunctionLoad(el.body(), el.map(mapper));
+				DebugHandler.get(env).onFunctionLoad(el.body(), el.map(mapper));
 			}
 
 			return new CodeFunction(env, filename.toString(), body, new Value[0][]);
@@ -98,8 +99,8 @@ public class SimpleRepl {
 			server = new DebugServer();
 			debugTask = server.start(new InetSocketAddress("127.0.0.1", 9229), true);
 			server.targets.put("default", (socket, req) -> new SimpleDebugger(socket)
-				.attach(DebugContext.get(environment))
-				.attach(DebugContext.get(tsEnvironment))
+				.attach((SimpleDebugHandler)DebugHandler.get(environment))
+				.attach((SimpleDebugHandler)DebugHandler.get(tsEnvironment))
 			);
 
 			try {
@@ -846,7 +847,7 @@ public class SimpleRepl {
 	private static Environment initEnv() {
 		var env = new Environment();
 		env.add(EventLoop.KEY, engine);
-		env.add(DebugContext.KEY, new DebugContext());
+		env.add(DebugHandler.KEY, new SimpleDebugHandler());
 		env.add(Compiler.KEY, DEFAULT_COMPILER);
 		// env.add(CompileResult.DEBUG_LOG);
 
@@ -905,7 +906,7 @@ public class SimpleRepl {
 		tsGlob.defineOwnField(tsEnvironment, "registerSource", new NativeFunction(args -> {
 			var filename = Filename.parse(args.get(0).toString(args.env));
 			var src = args.get(1).toString(args.env);
-			DebugContext.get(environment).onSource(filename, src);
+			DebugHandler.get(environment).onSourceLoad(filename, src);
 			return Value.UNDEFINED;
 		}));
 

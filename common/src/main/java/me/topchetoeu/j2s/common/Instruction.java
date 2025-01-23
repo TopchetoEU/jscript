@@ -51,11 +51,11 @@ public class Instruction {
 		STORE_MEMBER_INT(0x4A),
 		STORE_MEMBER_STR(0x4B),
 
-		OPERATION(0x50),
+		GLOB_GET(0x50),
+		GLOB_SET(0x51),
+		GLOB_DEF(0x52),
 
-		GLOB_GET(0x60),
-		GLOB_SET(0x61),
-		GLOB_DEF(0x62);
+		OPERATION(0x56);
 
 		private static final HashMap<Integer, Type> types = new HashMap<>();
 		public final int numeric;

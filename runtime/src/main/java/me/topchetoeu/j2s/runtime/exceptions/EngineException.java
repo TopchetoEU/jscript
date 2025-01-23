@@ -5,6 +5,7 @@ import java.util.List;
 
 import me.topchetoeu.j2s.common.Environment;
 import me.topchetoeu.j2s.common.Location;
+import me.topchetoeu.j2s.runtime.Frame;
 import me.topchetoeu.j2s.runtime.values.Value;
 import me.topchetoeu.j2s.runtime.values.objects.ObjectValue;
 import me.topchetoeu.j2s.runtime.values.objects.ObjectValue.PrototypeProvider;
@@ -18,7 +19,7 @@ public class EngineException extends RuntimeException {
 		public final Environment ext;
 
 		public boolean visible() {
-			return ext == null || !ext.get(Value.HIDE_STACK, false);
+			return ext == null || !ext.get(Frame.HIDE_STACK, false);
 		}
 		public String toString() {
 			if (name == null && location == null) return "(skipped)";

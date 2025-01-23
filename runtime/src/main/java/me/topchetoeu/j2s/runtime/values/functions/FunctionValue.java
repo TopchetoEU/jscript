@@ -6,7 +6,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import me.topchetoeu.j2s.common.Environment;
-import me.topchetoeu.j2s.runtime.debug.DebugContext;
+import me.topchetoeu.j2s.runtime.debug.DebugHandler;
 import me.topchetoeu.j2s.runtime.exceptions.EngineException;
 import me.topchetoeu.j2s.runtime.values.KeyCache;
 import me.topchetoeu.j2s.runtime.values.Member;
@@ -91,9 +91,9 @@ public abstract class FunctionValue extends ObjectValue {
 	@Override public StringValue type() { return StringValue.of("function"); }
 
 	@Override public List<String> toReadableLines(Environment env, HashSet<ObjectValue> passed) {
-		var dbg = DebugContext.get(env);
+		var dbg = DebugHandler.get(env);
 		var res = new StringBuilder(this.toString());
-		var loc = dbg.getMapOrEmpty(this).start();
+		var loc = dbg.getMapOrEmpty(env, this).first();
 
 		if (loc != null) res.append(" @ " + loc);
 

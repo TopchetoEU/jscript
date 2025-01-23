@@ -30,7 +30,7 @@ import me.topchetoeu.j2s.runtime.Compiler;
 import me.topchetoeu.j2s.runtime.Engine;
 import me.topchetoeu.j2s.runtime.EventLoop;
 import me.topchetoeu.j2s.runtime.Frame;
-import me.topchetoeu.j2s.runtime.debug.DebugContext;
+import me.topchetoeu.j2s.runtime.debug.DebugHandler;
 import me.topchetoeu.j2s.runtime.exceptions.EngineException;
 import me.topchetoeu.j2s.runtime.values.Value;
 import me.topchetoeu.j2s.runtime.values.Member.FieldMember;
@@ -201,11 +201,11 @@ public class SimpleDebugger implements Debugger {
 			this.frame = frame;
 			this.id = id;
 
-			var map = DebugContext.get(frame.env).getMapOrEmpty(frame.function);
+			var map = DebugHandler.get(frame.env).getMapOrEmpty(frame.env, frame.function);
 			this.globals = Value.global(frame.env);
-			this.locals = ScopeObject.locals(frame, map.localNames);
-			this.capturables = ScopeObject.capturables(frame, map.capturableNames);
-			this.captures = ScopeObject.captures(frame, map.captureNames);
+			this.locals = ScopeObject.locals(frame, map.localNames());
+			this.capturables = ScopeObject.capturables(frame, map.capturableNames());
+			this.captures = ScopeObject.captures(frame, map.captureNames());
 			if (this.globals instanceof ObjectValue) {
 				this.variables = ScopeObject.combine((ObjectValue)this.globals, locals, capturables, captures);
 			}
@@ -249,7 +249,7 @@ public class SimpleDebugger implements Debugger {
 
 	private ObjectValue emptyObject = new ObjectValue();
 
-	private WeakHashMap<DebugContext, DebugContext> contexts = new WeakHashMap<>();
+	private WeakHashMap<SimpleDebugHandler, SimpleDebugHandler> contexts = new WeakHashMap<>();
 	private WeakHashMap<FunctionBody, FunctionMap> mappings = new WeakHashMap<>();
 	private HashMap<Location, HashSet<Breakpoint>> bpLocs = new HashMap<>();
 
@@ -617,22 +617,12 @@ public class SimpleDebugger implements Debugger {
 		}
 	}
 
-	// private Environment sanitizeEnvironment(Environment env) {
-	// 	var res = env.child();
-
-	// 	res.remove(EventLoop.KEY);
-	// 	res.remove(DebugContext.KEY);
-	// 	res.add(DebugContext.IGNORE);
-
-	// 	return res;
-	// }
-
 	private RunResult run(DebugFrame codeFrame, String code) {
 		if (codeFrame == null) return new RunResult(null, null, EngineException.ofError("Invalid code frame!"));
 		var engine = new Engine();
 		var env = codeFrame.frame.env.child();
 
-		env.remove(DebugContext.KEY);
+		env.remove(DebugHandler.KEY);
 		env.remove(EventLoop.KEY);
 		env.remove(Value.GLOBAL);
 		env.add(Compiler.KEY, SimpleRepl.DEFAULT_COMPILER);
@@ -1076,7 +1066,7 @@ public class SimpleDebugger implements Debugger {
 	}
 	
 	private boolean instructionLock;
-	
+
 	@Override public boolean onInstruction(Environment env, Frame cf, Instruction instruction, Value returnVal, EngineException error, boolean caught) {
 		if (!enabled) return false;
 		if (instructionLock) return false;
@@ -1090,7 +1080,7 @@ public class SimpleDebugger implements Debugger {
 	
 			frame = getFrame(cf);
 	
-			var map = DebugContext.get(env).getMap(frame.frame.function);
+			var map = DebugHandler.get(env).getMap(env, frame.frame.function);
 	
 			frame.updateLoc(map.toLocation(frame.frame.codePtr));
 			loc = frame.location;
@@ -1197,7 +1187,11 @@ public class SimpleDebugger implements Debugger {
 		}
 	}
 
-	public SimpleDebugger attach(DebugContext ctx) {
+	@Override public FunctionMap getMap(Environment env, FunctionBody func) {
+		return mappings.get(func);
+	}
+
+	public SimpleDebugger attach(SimpleDebugHandler ctx) {
 		ctx.attachDebugger(this);
 		contexts.put(ctx, ctx);
 		return this;

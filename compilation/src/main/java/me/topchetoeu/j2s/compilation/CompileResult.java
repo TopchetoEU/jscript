@@ -7,12 +7,11 @@ import java.util.function.Function;
 
 import me.topchetoeu.j2s.common.Environment;
 import me.topchetoeu.j2s.common.FunctionBody;
-import me.topchetoeu.j2s.common.FunctionMap;
 import me.topchetoeu.j2s.common.Instruction;
 import me.topchetoeu.j2s.common.Key;
 import me.topchetoeu.j2s.common.Location;
-import me.topchetoeu.j2s.common.FunctionMap.FunctionMapBuilder;
 import me.topchetoeu.j2s.common.Instruction.BreakpointType;
+import me.topchetoeu.j2s.compilation.CompilationFunctionMap.FunctionMapBuilder;
 import me.topchetoeu.j2s.compilation.control.TryNode;
 import me.topchetoeu.j2s.compilation.scope.FunctionScope;
 import me.topchetoeu.j2s.compilation.scope.Variable;
@@ -104,10 +103,10 @@ public final class CompileResult {
 		return instructions.toArray(new Instruction[0]);
 	}
 
-	public FunctionMap map(Function<Location, Location> mapper) {
+	public CompilationFunctionMap map(Function<Location, Location> mapper) {
 		return map.map(mapper).build(scope.localNames(), scope.capturableNames(), scope.captureNames());
 	}
-	public FunctionMap map() {
+	public CompilationFunctionMap map() {
 		return map.build(scope.localNames(), scope.capturableNames(), scope.captureNames());
 	}
 	public FunctionBody body() {
@@ -155,7 +154,7 @@ public final class CompileResult {
 		this.scope = scope;
 		this.instructions = new ArrayList<>();
 		this.children = new LinkedList<>();
-		this.map = FunctionMap.builder();
+		this.map = CompilationFunctionMap.builder();
 		this.env = env;
 		this.length = length;
 	}
