@@ -58,6 +58,10 @@ export const Function = (() => {
 		public static compile(src: string, filename?: string) {
 			return compile(String(src), filename);
 		}
+
+		public static newTarget() {
+			return func.target(1);
+		}
 	}
 
 	func.setCallable(Function, true);

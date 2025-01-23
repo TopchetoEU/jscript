@@ -7,7 +7,7 @@ import java.util.concurrent.CancellationException;
 import me.topchetoeu.j2s.common.Environment;
 import me.topchetoeu.j2s.common.Instruction;
 import me.topchetoeu.j2s.common.Key;
-import me.topchetoeu.j2s.runtime.debug.DebugContext;
+import me.topchetoeu.j2s.runtime.debug.DebugHandler;
 import me.topchetoeu.j2s.runtime.exceptions.EngineException;
 import me.topchetoeu.j2s.runtime.values.Value;
 import me.topchetoeu.j2s.runtime.values.functions.CodeFunction;
@@ -17,6 +17,9 @@ import me.topchetoeu.j2s.runtime.values.primitives.numbers.IntValue;
 
 public final class Frame {
 	public static final Key<Stack<Frame>> KEY = new Key<>();
+	public static final Key<Integer> MAX_STACK_COUNT = new Key<>();
+	public static final Key<Boolean> HIDE_STACK = new Key<>();
+
 	public static final EngineException STACK_OVERFLOW;
 	static {
 		STACK_OVERFLOW = EngineException.ofRange("Stack overflow!");
@@ -120,7 +123,7 @@ public final class Frame {
 	public final Stack<TryCtx> tryStack = new Stack<>();
 	public final CodeFunction function;
 	public final Environment env;
-	private final DebugContext dbg;
+	private final DebugHandler dbg;
 
 	public Value getVar(int i) {
 		if (i < 0) return captures[~i][0];
@@ -206,7 +209,7 @@ public final class Frame {
 						returnValue = InstructionRunner.exec(env, instr, this);
 					}
 					catch (EngineException e) {
-						error = e.add(env, function.name, dbg.getMapOrEmpty(function).toLocation(codePtr, true));
+						error = e.add(env, function.name, dbg.getMapOrEmpty(env, function).toLocation(codePtr));
 					}
 				}
 			}
@@ -214,7 +217,7 @@ public final class Frame {
 			catch (EngineException e) { error = e; }
 			catch (RuntimeException e) {
 				if (!(e instanceof CancellationException)) {
-					System.out.println(dbg.getMapOrEmpty(function).toLocation(codePtr, true));
+					System.out.println(dbg.getMapOrEmpty(env, function).toLocation(codePtr));
 				}
 				throw e;
 			}
@@ -352,10 +355,10 @@ public final class Frame {
 
 	public void onPush() {
 		get(env).push(this);
-		DebugContext.get(env).onFramePush(env, this);
+		DebugHandler.get(env).onFramePush(env, this);
 	}
 	public void onPop() {
-		DebugContext.get(env).onFramePop(env, this);
+		DebugHandler.get(env).onFramePop(env, this);
 		get(env).pop();
 	}
 
@@ -376,7 +379,7 @@ public final class Frame {
 
 	public Frame(Environment env, boolean isNew, Value target, Value self, Value[] args, CodeFunction func) {
 		this.env = env;
-		this.dbg = DebugContext.get(env);
+		this.dbg = DebugHandler.get(env);
 		this.function = func;
 		this.isNew = isNew;
 		this.target = target;

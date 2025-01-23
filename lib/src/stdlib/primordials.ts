@@ -72,7 +72,7 @@ export interface BufferPrimordials {
 export interface FunctionPrimordials {
 	invokeType(args: IArguments, self: any): "new" | "call";
 	invokeTypeInfer(): "new" | "call";
-	target(): Function | null | undefined;
+	target(level?: number): Function | null | undefined;
 	setConstructable(func: Function, flag: boolean): void;
 	setCallable(func: Function, flag: boolean): void;
 	invoke(func: Function, self: any, args: any[]): any;

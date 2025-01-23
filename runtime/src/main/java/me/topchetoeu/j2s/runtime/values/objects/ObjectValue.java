@@ -44,6 +44,7 @@ public class ObjectValue extends Value {
 	private HashMap<SymbolValue, FieldMember> symbolFields = new HashMap<>();
 	private HashMap<String, PropertyMember> properties = new HashMap<>();
 	private HashMap<SymbolValue, PropertyMember> symbolProperties = new HashMap<>();
+	private State state = State.NORMAL;
 
 	private LinkedHashMap<String, Boolean> keys = new LinkedHashMap<>();
 	private LinkedHashMap<SymbolValue, Boolean> symbols = new LinkedHashMap<>();
@@ -71,8 +72,6 @@ public class ObjectValue extends Value {
 	@Override public boolean toBoolean() { return true; }
 	@Override public NumberValue toNumber(Environment env) { return toPrimitive(env).toNumber(env);  }
 	@Override public StringValue type() { return StringValue.of("object"); }
-
-	private State state = State.NORMAL;
 
 	@Override public State getState() { return state; }
 

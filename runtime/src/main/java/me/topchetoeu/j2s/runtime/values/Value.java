@@ -48,9 +48,6 @@ public abstract class Value {
 		}
 	}
 
-	public static final Key<Integer> MAX_STACK_COUNT = new Key<>();
-	public static final Key<Boolean> HIDE_STACK = new Key<>();
-
 	public static final Key<ObjectValue> BOOL_PROTO = new Key<>();
 	public static final Key<ObjectValue> NUMBER_PROTO = new Key<>();
 	public static final Key<ObjectValue> STRING_PROTO = new Key<>();

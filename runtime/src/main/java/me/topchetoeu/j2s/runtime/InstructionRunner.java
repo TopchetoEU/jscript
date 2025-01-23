@@ -14,6 +14,7 @@ import me.topchetoeu.j2s.runtime.values.primitives.numbers.NumberValue;
 
 public class InstructionRunner {
 	private static Value execReturn(Environment env, Instruction instr, Frame frame) {
+		frame.codePtr++;
 		return frame.pop();
 	}
 	private static Value execThrow(Environment env, Instruction instr, Frame frame) {
