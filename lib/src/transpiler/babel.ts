@@ -47,6 +47,7 @@ export default function babel(next: Compiler): Compiler {
 				availablePlugins["transform-exponentiation-operator"],
 			
 				// ES2015
+				availablePlugins["transform-arrow-functions"],
 				availablePlugins["transform-block-scoping"],
 				availablePlugins["transform-classes"],
 				availablePlugins["transform-computed-properties"],
