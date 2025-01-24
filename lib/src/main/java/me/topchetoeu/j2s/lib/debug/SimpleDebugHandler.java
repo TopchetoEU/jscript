@@ -1,4 +1,4 @@
-package me.topchetoeu.j2s.repl.debug;
+package me.topchetoeu.j2s.lib.debug;
 
 import java.util.HashMap;
 import java.util.WeakHashMap;
@@ -69,14 +69,8 @@ public class SimpleDebugHandler implements DebugHandler {
 		if (debugger != null) debugger.onFunctionLoad(func, map);
 	}
 
-	private SimpleDebugHandler(boolean enabled) {
-		if (enabled) {
-			sources = new HashMap<>();
-			maps = new WeakHashMap<>();
-		}
-	}
-
 	public SimpleDebugHandler() {
-		this(true);
+		sources = new HashMap<>();
+		maps = new WeakHashMap<>();
 	}
 }

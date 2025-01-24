@@ -1,4 +1,4 @@
-package me.topchetoeu.j2s.repl.debug;
+package me.topchetoeu.j2s.lib.debug;
 
 import me.topchetoeu.j2s.common.Environment;
 import me.topchetoeu.j2s.runtime.Frame;

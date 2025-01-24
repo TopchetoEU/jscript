@@ -1,4 +1,4 @@
-package me.topchetoeu.j2s.repl.debug;
+package me.topchetoeu.j2s.lib.debug;
 
 import java.util.HashMap;
 import java.util.HashSet;

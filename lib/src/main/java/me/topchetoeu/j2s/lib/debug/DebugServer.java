@@ -1,4 +1,4 @@
-package me.topchetoeu.j2s.repl.debug;
+package me.topchetoeu.j2s.lib.debug;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -15,7 +15,7 @@ import me.topchetoeu.j2s.common.SyntaxException;
 import me.topchetoeu.j2s.compilation.json.JSON;
 import me.topchetoeu.j2s.compilation.json.JSONList;
 import me.topchetoeu.j2s.compilation.json.JSONMap;
-import me.topchetoeu.j2s.repl.debug.WebSocketMessage.Type;
+import me.topchetoeu.j2s.lib.debug.WebSocketMessage.Type;
 
 public class DebugServer {
 	public static String browserDisplayName = Metadata.name() + "/" + Metadata.version();
