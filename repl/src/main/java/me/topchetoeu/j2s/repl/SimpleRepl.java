@@ -2,6 +2,7 @@ package me.topchetoeu.j2s.repl;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -17,10 +18,10 @@ import me.topchetoeu.j2s.common.Reading;
 import me.topchetoeu.j2s.common.SyntaxException;
 import me.topchetoeu.j2s.lib.Compilers;
 import me.topchetoeu.j2s.lib.StdLib;
-import me.topchetoeu.j2s.repl.debug.SimpleDebugHandler;
-import me.topchetoeu.j2s.repl.debug.DebugServer;
-import me.topchetoeu.j2s.repl.debug.Debugger;
-import me.topchetoeu.j2s.repl.debug.SimpleDebugger;
+import me.topchetoeu.j2s.lib.debug.DebugServer;
+import me.topchetoeu.j2s.lib.debug.Debugger;
+import me.topchetoeu.j2s.lib.debug.SimpleDebugHandler;
+import me.topchetoeu.j2s.lib.debug.SimpleDebugger;
 import me.topchetoeu.j2s.runtime.Compiler;
 import me.topchetoeu.j2s.runtime.Engine;
 import me.topchetoeu.j2s.runtime.EventLoop;
@@ -104,17 +105,28 @@ public class SimpleRepl {
 	}
 
 	private static Environment createESEnv() {
-		var env = new Environment();
+		var env = StdLib.apply(null);
 		env.add(EventLoop.KEY, engine);
 		env.add(DebugHandler.KEY, new SimpleDebugHandler());
-		env.add(Compiler.KEY, Compilers.chainTranspilers(environment, Compilers.jsCompiler(), Compilers::babelCompiler, Compilers::coffeescriptCompiler));
-		StdLib.apply(env);
+		env.add(Compiler.KEY, Compilers.chainTranspilers(Compilers.jsCompiler(), env, Compilers::babelCompiler));
 
 		var glob = Value.global(env);
 
 		glob.defineOwnField(null, "exit", new NativeFunction("exit", args -> {
 			Thread.currentThread().interrupt();
 			throw new CancellationException();
+		}));
+		glob.defineOwnField(null, "dofile", new NativeFunction("dofile", args -> {
+			var file = args.get(0).toString(args.env);
+			var filename = new Filename("file", new File(file).getAbsolutePath());
+
+			try {
+				var src = Reading.streamToString(new FileInputStream(file));
+				return Compiler.get(args.env).compile(args.env, filename, src, v -> v).apply(args.env, Value.UNDEFINED);
+			}
+			catch (FileNotFoundException e) {
+				throw EngineException.ofError("IOException", e.getMessage());
+			}
 		}));
 
 		return env;

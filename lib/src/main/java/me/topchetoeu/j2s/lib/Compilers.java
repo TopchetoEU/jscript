@@ -59,6 +59,8 @@ public class Compilers {
 
 	public static Compiler transpilerFromSource(Compiler prev, Environment target, Filename compilerName, String compilerSrc) {
 		var env = StdLib.apply(null);
+		// var handler = new SimpleDebugHandler();
+		// env.add(DebugHandler.KEY, handler);
 
 		var glob = Value.global(env);
 		var compilerFactory = new FunctionValue[1];
@@ -83,9 +85,19 @@ public class Compilers {
 		}));
 
 		var compiled = JavaScript.compile(compilerName, compilerSrc, false);
-		new CodeFunction(env, "intializer", compiled.body(), new Value[0][]).apply(env, Value.UNDEFINED);
 
-		return wrap(prev, env, target, compilerFactory[0]);
+		// for (var el : compiled.all()) {
+		// 	handler.onFunctionLoad(el.body(), el.map());
+		// }
+
+		try {
+			new CodeFunction(env, "intializer", compiled.body(), new Value[0][]).apply(env, Value.UNDEFINED);
+			return wrap(prev, env, target, compilerFactory[0]);
+		}
+		catch (EngineException e) {
+			System.out.println(Value.errorToReadable(env, e, "in transpiler initializer"));
+			return prev;
+		}
 	}
 
 	public static Compiler babelCompiler(Compiler prev, Environment target) {
@@ -111,7 +123,7 @@ public class Compilers {
 		Compiler create(Compiler prev, Environment target);
 	}
 
-	public static Compiler chainTranspilers(Environment target, Compiler base, TranspilerFactory ...factories) {
+	public static Compiler chainTranspilers(Compiler base, Environment target, TranspilerFactory ...factories) {
 		var res = base;
 
 		for (var el : factories) {

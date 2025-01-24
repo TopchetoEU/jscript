@@ -209,7 +209,7 @@ public final class Frame {
 						returnValue = InstructionRunner.exec(env, instr, this);
 					}
 					catch (EngineException e) {
-						error = e.add(env, function.name, dbg.getMapOrEmpty(env, function).toLocation(codePtr));
+						error = e.add(env, function.name, dbg.getMapOrEmpty(env, function).toLocation(codePtr, true));
 					}
 				}
 			}

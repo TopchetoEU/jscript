@@ -26,7 +26,7 @@ public final class CodeFunction extends FunctionValue {
 	}
 
 	@Override protected Value onApply(Environment env, Value self, Value... args) {
-		var frame = new Frame(env, false, null, self, args, this);
+		var frame = new Frame(this.env, false, null, self, args, this);
 		var res = onCall(frame);
 		return res;
 	}
@@ -37,7 +37,7 @@ public final class CodeFunction extends FunctionValue {
 		if (proto instanceof ObjectValue) self.setPrototype(env, (ObjectValue)proto);
 		else if (proto == Value.NULL) self.setPrototype(env, null);
 
-		var frame = new Frame(env, true, target, self, args, this);
+		var frame = new Frame(this.env, true, target, self, args, this);
 
 		var ret = onCall(frame);
 
