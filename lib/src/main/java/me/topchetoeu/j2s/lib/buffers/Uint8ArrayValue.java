@@ -1,4 +1,4 @@
-package me.topchetoeu.j2s.repl.buffers;
+package me.topchetoeu.j2s.lib.buffers;
 
 public final class Uint8ArrayValue extends TypedArrayValue {
 	@Override protected int onGet(int i) {

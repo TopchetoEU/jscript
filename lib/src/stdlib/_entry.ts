@@ -1,4 +1,4 @@
-import { object, setGlobalPrototypes, setIntrinsic, target } from "./primordials.ts";
+import { now, object, print, setGlobalPrototypes, setIntrinsic, target } from "./primordials.ts";
 import { Error, RangeError, SyntaxError, TypeError } from "./values/errors.ts";
 import { Boolean } from "./values/boolean.ts";
 import { Function } from "./values/function.ts";
@@ -20,11 +20,6 @@ import { ArrayBuffer } from "./arrays/ArrayBuffer.ts";
 import { Uint8Array } from "./arrays/Uint8Array.ts";
 import { Int32Array } from "./arrays/Int32Array.ts";
 import { TypedArray } from "./arrays/TypedArray.ts";
-
-declare global {
-	function print(...args: any[]): void;
-	function measure(func: Function): void;
-}
 
 function fixup<T extends Function>(clazz: T) {
 	object.setPrototype(clazz, Function.prototype);
@@ -72,6 +67,16 @@ target.NaN = Number.NaN;
 target.Infinity = Number.POSITIVE_INFINITY;
 target.encodeURI = encodeURI;
 target.encodeURIComponent = encodeURIComponent;
+target.print = print;
+target.measure = (func: () => void) => {
+	const start = now();
+	try {
+		return func();
+	}
+	finally {
+		print(`Took ${now() - start}ms`);
+	}
+};
 
 setGlobalPrototypes({
 	string: String.prototype,

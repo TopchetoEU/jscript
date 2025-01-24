@@ -1,4 +1,4 @@
-package me.topchetoeu.j2s.repl;
+package me.topchetoeu.j2s.lib;
 
 import java.util.HashSet;
 import java.util.stream.Collectors;

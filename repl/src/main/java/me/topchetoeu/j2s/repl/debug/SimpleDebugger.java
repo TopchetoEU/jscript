@@ -24,8 +24,8 @@ import me.topchetoeu.j2s.compilation.json.JSON;
 import me.topchetoeu.j2s.compilation.json.JSONElement;
 import me.topchetoeu.j2s.compilation.json.JSONList;
 import me.topchetoeu.j2s.compilation.json.JSONMap;
-import me.topchetoeu.j2s.repl.JSONConverter;
-import me.topchetoeu.j2s.repl.SimpleRepl;
+import me.topchetoeu.j2s.lib.Compilers;
+import me.topchetoeu.j2s.lib.JSONConverter;
 import me.topchetoeu.j2s.runtime.Compiler;
 import me.topchetoeu.j2s.runtime.Engine;
 import me.topchetoeu.j2s.runtime.EventLoop;
@@ -625,7 +625,7 @@ public class SimpleDebugger implements Debugger {
 		env.remove(DebugHandler.KEY);
 		env.remove(EventLoop.KEY);
 		env.remove(Value.GLOBAL);
-		env.add(Compiler.KEY, SimpleRepl.DEFAULT_COMPILER);
+		env.add(Compiler.KEY, Compilers.jsCompiler());
 		env.add(EventLoop.KEY, engine);
 		env.add(Value.GLOBAL, codeFrame.variables);
 
@@ -1080,7 +1080,7 @@ public class SimpleDebugger implements Debugger {
 	
 			frame = getFrame(cf);
 	
-			var map = DebugHandler.get(env).getMap(env, frame.frame.function);
+			var map = DebugHandler.get(env).getMapOrEmpty(env, frame.frame.function);
 	
 			frame.updateLoc(map.toLocation(frame.frame.codePtr));
 			loc = frame.location;

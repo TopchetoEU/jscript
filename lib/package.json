@@ -1,7 +1,9 @@
 {
 	"scripts": {
 		"build-env": "rollup -c --environment INPUT:src/stdlib/_entry.ts,OUTPUT:build/js/stdlib.js,POLYFILLS:src/polyfills",
-		"build-ts": "rollup -c --environment INPUT:src/transpiler/_entry.ts,OUTPUT:build/js/transpiler.js"
+		"build-babel": "rollup -c --environment INPUT:src/transpiler/_entry-babel.ts,OUTPUT:build/js/babel.js",
+		"build-coffee": "rollup -c --environment INPUT:src/transpiler/_entry-coffee.ts,OUTPUT:build/js/coffee.js",
+		"build-typescript": "rollup -c --environment INPUT:src/transpiler/_entry-typescript.ts,OUTPUT:build/js/typescript.js"
 	},
 	"dependencies": {
 		"@babel/core": "^7.26.0",

@@ -111,6 +111,7 @@ export interface Primordials {
 	next(func: () => void): void;
 	schedule(func: () => void, delay: number): () => void;
 	setIntrinsic(key: string, val: any): void;
+	print(...args: any[]): void;
 }
 
 // prevent optimization to "undefined", which doesn't exist yet
@@ -134,6 +135,7 @@ export const {
 	next,
 	schedule,
 	setIntrinsic,
+	print,
 } = primordials;
 
 export type regex = InstanceType<typeof regex>;

@@ -1,4 +1,4 @@
-package me.topchetoeu.j2s.repl.buffers;
+package me.topchetoeu.j2s.lib.buffers;
 
 import java.util.WeakHashMap;
 

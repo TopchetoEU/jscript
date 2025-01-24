@@ -5,15 +5,6 @@ plugins {
 
 description = "A simple REPL for the interpreter, can be used for simple prototyping";
 
-tasks.processResources {
-	filesMatching("metadata.json", {
-		expand(
-			"version" to properties["project_version"],
-			"name" to properties["project_name"],
-		);
-	});
-}
-
 tasks.test {
 	useJUnitPlatform();
 }

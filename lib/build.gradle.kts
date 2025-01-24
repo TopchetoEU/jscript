@@ -1,15 +1,14 @@
 import com.github.gradle.node.npm.task.NpmTask;
 
 plugins {
-	id("common");
+	id("common-java");
 	id("com.github.node-gradle.node") version "5.0.0";
 }
 
-tasks.compileJava {
-	enabled = false;
-}
-tasks.classes {
-	enabled = false;
+dependencies {
+	implementation(project(":common"));
+	implementation(project(":compilation"));
+	implementation(project(":runtime"));
 }
 
 node {
@@ -27,16 +26,38 @@ tasks.register<NpmTask>("compileStdlib") {
 
 	args.set(listOf("run", "build-env"));
 }
-tasks.register<NpmTask>("compileTranspiler") {
+tasks.register<NpmTask>("compileBabel") {
 	dependsOn("npmInstall");
 
 	inputs.files("rollup.config.js");
 	inputs.dir("src/transpiler");
-	outputs.files("build/js/transpiler.js");
+	outputs.files("build/js/babel.js");
 	// nom nom tasty ram
 	environment.put("NODE_OPTIONS", "--max-old-space-size=4096");
 
-	args.set(listOf("run", "build-ts"));
+	args.set(listOf("run", "build-babel"));
+}
+tasks.register<NpmTask>("compileTypescript") {
+	dependsOn("npmInstall");
+
+	inputs.files("rollup.config.js");
+	inputs.dir("src/transpiler");
+	outputs.files("build/js/typescript.js");
+	// nom nom tasty ram
+	environment.put("NODE_OPTIONS", "--max-old-space-size=4096");
+
+	args.set(listOf("run", "build-typescript"));
+}
+tasks.register<NpmTask>("compileCoffee") {
+	dependsOn("npmInstall");
+
+	inputs.files("rollup.config.js");
+	inputs.dir("src/transpiler");
+	outputs.files("build/js/coffee.js");
+	// nom nom tasty ram
+	environment.put("NODE_OPTIONS", "--max-old-space-size=4096");
+
+	args.set(listOf("run", "build-coffee"));
 }
 
 tasks.jar {
@@ -50,7 +71,9 @@ tasks.jar {
 
 tasks.processResources {
 	dependsOn("compileStdlib");
-	dependsOn("compileTranspiler");
+	dependsOn("compileTypescript");
+	dependsOn("compileBabel");
+	dependsOn("compileCoffee");
 
 	from("build/js") {
 		into("lib");
@@ -58,11 +81,4 @@ tasks.processResources {
 	from("src/lib") {
 		into("lib");
 	}
-
-	filesMatching("metadata.json", {
-		expand(
-			"version" to properties["project_version"].toString(),
-			"name" to properties["project_name"].toString(),
-		);
-	})
 }

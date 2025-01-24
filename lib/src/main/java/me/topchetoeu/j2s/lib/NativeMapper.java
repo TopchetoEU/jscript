@@ -1,4 +1,4 @@
-package me.topchetoeu.j2s.repl.mapping;
+package me.topchetoeu.j2s.lib;
 
 import java.util.function.Function;
 
