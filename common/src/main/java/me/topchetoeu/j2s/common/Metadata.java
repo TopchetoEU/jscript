@@ -31,7 +31,7 @@ public class Metadata {
 					AUTHOR = value;
 					break;
 				case "name":
-					NAME = name;
+					NAME = value;
 					break;
 				default:
 					throw new RuntimeException(String.format("%s:%s: Unexpected metadata key '%s'", file, line, name));
@@ -44,15 +44,15 @@ public class Metadata {
 	}
 
 	public static String version() {
-		if (VERSION.equals("$" + "{VERSION}")) return "1337-devel";
+		if (VERSION.equals("${VERSION}")) return "1337-devel";
 		else return VERSION;
 	}
 	public static String author() {
-		if (AUTHOR.equals("$" + "{AUTHOR}")) return "anonymous";
+		if (AUTHOR.equals("${AUTHOR}")) return "anonymous";
 		else return AUTHOR;
 	}
 	public static String name() {
-		if (NAME.equals("$" + "{NAME}")) return "some-product";
+		if (NAME.equals("${NAME}")) return "some-product";
 		else return NAME;
 	}
 }
