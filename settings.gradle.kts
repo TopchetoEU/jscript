@@ -9,7 +9,7 @@ plugins {
 	id("org.gradle.toolchains.foojay-resolver-convention") version "0.7.0";
 }
 
-// rootProject.name = properties.project_name;
+rootProject.name = extra.properties["project_name"].toString();
 
 include(":lib");
 include(":common");

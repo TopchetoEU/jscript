@@ -175,7 +175,7 @@ public final class VariableList implements Iterable<Variable> {
 		this.offset = () -> offset;
 	}
 	/**
-	 * @param offset Will offset the indices by the size of the given list
+	 * @param prev Will offset the indices by the size of the given list
 	 */
 	public VariableList(IndexType type, VariableList prev) {
 		this.indexType = type;

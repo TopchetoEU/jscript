@@ -25,10 +25,14 @@ jobs:
           gradle-version: "8.10"
       - name: Build
         run: gradle build
+      - name: Publish
+        run: gradle publish
+        env:
+          ACCESS_TOKEN: "${{github.token}}"
+          REPO_URL: "${{github.api_url}}/packages/${{github.repository_owner}}/maven"
       - name: Create release
         uses: "https://gitea.com/actions/gitea-release-action@main"
         with:
-          # api_key: "${{secrets.TOKEN}}"
           files: |
             LICENSE
             build/libs/*.jar

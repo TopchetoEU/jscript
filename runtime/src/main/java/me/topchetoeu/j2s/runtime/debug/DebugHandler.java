@@ -31,8 +31,6 @@ public interface DebugHandler {
 	 * Called when a script has been loaded
 	 * @param filename The name of the source
 	 * @param source The name of the source
-	 * @param breakpoints A set of all the breakpointable locations in this source
-	 * @param map The source map associated with this file. null if this source map isn't mapped
 	 */
 	public void onSourceLoad(Filename filename, String source);
 

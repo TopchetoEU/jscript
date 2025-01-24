@@ -32,7 +32,7 @@ public final class FunctionScope {
 	}
 
 	/**
-	 * @returns If a variable with the same name exists, the old variable. Otherwise, the given variable
+	 * @return If a variable with the same name exists, the old variable. Otherwise, the given variable
 	 */
 	public Variable define(Variable var) {
 		if (passthrough) return null;
@@ -48,7 +48,7 @@ public final class FunctionScope {
 	}
 
 	/**
-	 * @returns A variable with the given name, or null if a global variable
+	 * @return A variable with the given name, or null if a global variable
 	 */
 	public Variable define(String name) {
 		return define(new Variable(name, false));

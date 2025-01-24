@@ -429,7 +429,6 @@ public abstract class Value {
 		}
 	}
 
-	/** @internal */
 	public List<String> toReadableLines(Environment env, HashSet<ObjectValue> passed) {
 		return Arrays.asList(toString(env));
 	}
