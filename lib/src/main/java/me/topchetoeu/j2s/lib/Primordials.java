@@ -690,5 +690,4 @@ public class Primordials {
 
 		return res;
 	}
-
 }

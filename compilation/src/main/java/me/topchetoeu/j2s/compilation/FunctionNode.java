@@ -53,8 +53,8 @@ public abstract class FunctionNode extends Node {
 			target.add(scope.define(param.name).index().toSet(false)).setLocation(param.loc());
 		}
 		if (hasSelf) {
-		    target.add(Instruction.loadCalled());
-		    target.add(scope.define(selfName).index().toSet(false));
+			target.add(Instruction.loadCalled());
+			target.add(scope.define(selfName).index().toSet(false));
 		}
 
 		body.compile(target, lastReturn, BreakpointType.NONE);

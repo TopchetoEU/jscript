@@ -286,40 +286,40 @@ public final class JavaScript {
 	}
 
 	public static ParseRes<List<VariableNode>> parseParameters(Source src, int i) {
-	    var n = Parsing.skipEmpty(src, i);
+		var n = Parsing.skipEmpty(src, i);
 	
-	    var openParen = Parsing.parseOperator(src, i + n, "(");
-	    if (!openParen.isSuccess()) return openParen.chainError(src.loc(i + n), "Expected a parameter list");
-	    n += openParen.n;
+		var openParen = Parsing.parseOperator(src, i + n, "(");
+		if (!openParen.isSuccess()) return openParen.chainError(src.loc(i + n), "Expected a parameter list");
+		n += openParen.n;
 	
-	    var params = new ArrayList<VariableNode>();
+		var params = new ArrayList<VariableNode>();
 	
-	    var closeParen = Parsing.parseOperator(src, i + n, ")");
-	    n += closeParen.n;
+		var closeParen = Parsing.parseOperator(src, i + n, ")");
+		n += closeParen.n;
 	
-	    if (!closeParen.isSuccess()) {
-	        while (true) {
-	            n += Parsing.skipEmpty(src, i + n);
+		if (!closeParen.isSuccess()) {
+			while (true) {
+				n += Parsing.skipEmpty(src, i + n);
 	
-	            var param = VariableNode.parse(src, i + n);
-	            if (!param.isSuccess()) return ParseRes.error(src.loc(i + n), "Expected a parameter or a closing brace");
-	            n += param.n;
-	            n += Parsing.skipEmpty(src, i + n);
+				var param = VariableNode.parse(src, i + n);
+				if (!param.isSuccess()) return ParseRes.error(src.loc(i + n), "Expected a parameter or a closing brace");
+				n += param.n;
+				n += Parsing.skipEmpty(src, i + n);
 	
-	            params.add(param.result);
+				params.add(param.result);
 	
-	            if (src.is(i + n, ",")) {
-	                n++;
-	                n += Parsing.skipEmpty(src, i + n);
-	            }
+				if (src.is(i + n, ",")) {
+					n++;
+					n += Parsing.skipEmpty(src, i + n);
+				}
 	
-	            if (src.is(i + n, ")")) {
-	                n++;
-	                break;
-	            }
-	        }
-	    }
+				if (src.is(i + n, ")")) {
+					n++;
+					break;
+				}
+			}
+		}
 	
-	    return ParseRes.res(params, n);
+		return ParseRes.res(params, n);
 	}
 }
