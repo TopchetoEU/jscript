@@ -62,6 +62,7 @@ public class ForInNode extends Node {
 		end.set(endI + 1);
 		LabelContext.popLoop(target.env, label);
 
+		target.add(Instruction.discard());
 		if (pollute) target.add(Instruction.pushUndefined());
 	}
 
