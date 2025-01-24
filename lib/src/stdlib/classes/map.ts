@@ -1,51 +1,49 @@
 import { Array } from "../values/array.ts";
-import { func, map, symbol } from "../primordials.ts";
+import { func, map } from "../primordials.ts";
 import { symbols } from "../utils.ts";
 
-const mapKey: unique symbol = symbol.makeSymbol("Map.impl") as any;
-
 export class Map<K, V> {
-	private [mapKey]: InstanceType<typeof map>;
+	#map: InstanceType<typeof map>;
 
 	public get size() {
-		return this[mapKey].size();
+		return this.#map.size();
 	}
 
 	public get(key: K): V {
-		return this[mapKey].get(key);
+		return this.#map.get(key);
 	}
 	public has(key: K): boolean {
-		return this[mapKey].has(key);
+		return this.#map.has(key);
 	}
 	public set(key: K, val: V) {
-		this[mapKey].set(key, val);
+		this.#map.set(key, val);
 		return this;
 	}
 	public delete(key: K): boolean {
-		if (!this[mapKey].has(key)) return false;
+		if (!this.#map.has(key)) return false;
 		else {
-			this[mapKey].delete(key);
+			this.#map.delete(key);
 			return true;
 		}
 	}
 	public clear() {
-		this[mapKey].clear();
+		this.#map.clear();
 	}
 
 	public keys(): K[] {
-		return this[mapKey].keys();
+		return this.#map.keys();
 	}
 	public values(): V[] {
-		const res = this[mapKey].keys();
+		const res = this.#map.keys();
 		for (let i = 0; i < res.length; i++) {
-			res[i] = this[mapKey].get(res[i]);
+			res[i] = this.#map.get(res[i]);
 		}
 		return res;
 	}
 	public entries(): [K, V][] {
-		const res = this[mapKey].keys();
+		const res = this.#map.keys();
 		for (let i = 0; i < res.length; i++) {
-			res[i] = [res[i], this[mapKey].get(res[i])];
+			res[i] = [res[i], this.#map.get(res[i])];
 		}
 		return res;
 	}
@@ -62,7 +60,7 @@ export class Map<K, V> {
 	}
 
 	public constructor(iterable?: Iterable<[K, V]>) {
-		const _map = this[mapKey] = new map();
+		const _map = this.#map = new map();
 
 		if (iterable != null) {
 			if (Array.isArray(iterable)) {
@@ -81,31 +79,31 @@ export class Map<K, V> {
 	}
 }
 export class WeakMap<K, V> {
-	private [mapKey]: InstanceType<typeof map>;
+	#map: InstanceType<typeof map>;
 
 	public get(key: K): V {
-		return this[mapKey].get(key);
+		return this.#map.get(key);
 	}
 	public has(key: K): boolean {
-		return this[mapKey].has(key);
+		return this.#map.has(key);
 	}
 	public set(key: K, val: V) {
-		this[mapKey].set(key, val);
+		this.#map.set(key, val);
 		return this;
 	}
 	public delete(key: K): boolean {
-		if (!this[mapKey].has(key)) return false;
+		if (!this.#map.has(key)) return false;
 		else {
-			this[mapKey].delete(key);
+			this.#map.delete(key);
 			return true;
 		}
 	}
 	public clear() {
-		this[mapKey].clear();
+		this.#map.clear();
 	}
 
 	public constructor(iterable?: Iterable<[K, V]>) {
-		const _map = this[mapKey] = new map(true);
+		const _map = this.#map = new map(true);
 
 		if (iterable != null) {
 			if (Array.isArray(iterable)) {
@@ -123,6 +121,3 @@ export class WeakMap<K, V> {
 		}
 	}
 }
-
-func.setCallable(Map, false);
-func.setCallable(WeakMap, false);

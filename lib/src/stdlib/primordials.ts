@@ -4,6 +4,14 @@ export interface InternalBuffer {
 	length: number;
 	[buffSymbol]: "buffer";
 }
+export interface InternalSocket {
+	read(onRes: (data: Uint8Array) => void, onErr: (err: unknown) => void, onDone: () => void): void;
+	write(data: Uint8Array, onRes: () => void, onErr: (err: unknown) => void): void;
+}
+export interface InternalServer {
+	bind(address: string, onRes: () => void, onErr: (err: unknown) => void): void;
+	next(onRes: (socket: InternalSocket) => void, onErr: (err: unknown) => void, onDone: () => void): void;
+}
 
 export interface SymbolPrimordials {
 	makeSymbol(name: string): symbol;
@@ -82,6 +90,9 @@ export interface JSONPrimordials {
 	parse(data: string): any;
 	stringify(data: any): string;
 }
+export interface NetPrimordials {
+	server(): InternalServer;
+}
 
 export interface Primordials {
 	symbol: SymbolPrimordials;
@@ -91,6 +102,7 @@ export interface Primordials {
 	function: FunctionPrimordials;
 	json: JSONPrimordials;
 	buffer: BufferPrimordials;
+	net: NetPrimordials;
 	map: new (weak?: boolean) => {
 		get(key: any): any;
 		has(key: any): boolean;
@@ -127,6 +139,7 @@ export const {
 	buffer,
 	function: func,
 	json,
+	net: socket,
 	map,
 	regex,
 	setGlobalPrototypes,
@@ -139,3 +152,4 @@ export const {
 } = primordials;
 
 export type regex = InstanceType<typeof regex>;
+export const self = (globalThis as any);

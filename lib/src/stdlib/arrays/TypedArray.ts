@@ -1,9 +1,9 @@
 import { buffer, func, type InternalBuffer, object, string, symbol } from "../primordials.ts";
 import { symbols, wrapI } from "../utils.ts";
 import { Error, TypeError } from "../values/errors.ts";
-import { abKey, ArrayBuffer, getAB } from "./ArrayBuffer.ts";
+import { ArrayBuffer, unwrapAB, wrapAB } from "./ArrayBuffer.ts";
 
-export const abstractIgnore = symbol.getSymbol("TypedArray.abstractIgnore");
+export const token = symbol.getSymbol("TypedArray.abstractIgnore");
 
 export function typedArrayFuncs(perEl: number, constructor: (buff: InternalBuffer, start: number, end: number) => number[]) {
 	return {
@@ -56,7 +56,7 @@ export function typedArrayFuncs(perEl: number, constructor: (buff: InternalBuffe
 				return constructor(buffer.buff(self * perEl), 0, self);
 			}
 			if (self instanceof ArrayBuffer) {
-				const internal = self[abKey];
+				const internal = unwrapAB(self);
 				if (start === undefined) start = 0;
 				if (end === undefined) end = (internal.length / perEl) | 0;
 				return constructor(internal, start, end);
@@ -90,7 +90,7 @@ export function typedArrayFuncs(perEl: number, constructor: (buff: InternalBuffe
 
 export class TypedArray {
 	public get buffer() {
-		return getAB(buffer.backer(this as any));
+		return wrapAB(buffer.backer(this as any));
 	}
 	public get byteOffset(): number {
 		throw new Error("abstract");
@@ -212,8 +212,8 @@ export class TypedArray {
 		return this;
 	}
 
-	public constructor(token?: typeof abstractIgnore) {
-		if (token !== abstractIgnore) {
+	public constructor(_token?: typeof token) {
+		if (_token !== token) {
 			throw new TypeError("TypedArray constructor can't be called");
 		}
 	}

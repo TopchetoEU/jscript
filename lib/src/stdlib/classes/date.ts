@@ -1,13 +1,11 @@
-import { now, symbol } from "../primordials.ts";
-
-const timeKey: unique symbol = symbol.makeSymbol("") as any;
+import { now, number, symbol } from "../primordials.ts";
 
 export const Date = (() => {
 	class Date {
-		[timeKey]!: number;
+		#time: number;
 
 		public constructor() {
-
+			this.#time = number.NaN;
 		}
 
 		public static now() {

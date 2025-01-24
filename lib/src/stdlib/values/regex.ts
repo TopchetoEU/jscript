@@ -1,14 +1,12 @@
-import { func, regex, symbol } from "../primordials.ts";
+import { func, regex } from "../primordials.ts";
 import { String } from "./string.ts";
 import { type ReplaceRange } from "../utils.ts";
 import { applyReplaces } from "../utils.ts";
 import { applySplits } from "../utils.ts";
 import { symbols } from "../utils.ts";
 
-const regexKey: unique symbol = symbol.makeSymbol("RegExp.impl") as any;
-
 export class RegExp {
-	private [regexKey]!: InstanceType<typeof regex>;
+	#regex!: InstanceType<typeof regex>;
 
 	public readonly source!: string;
 	public readonly flags!: string;
@@ -70,14 +68,14 @@ export class RegExp {
 		this.unicodeSets = unicodeSets;
 		this.sticky = sticky;
 
-		this[regexKey] = new regex(source, multiline, ignoreCase, dotall, unicode, unicodeSets);
+		this.#regex = new regex(source, multiline, ignoreCase, dotall, unicode, unicodeSets);
 	}
 
 	public exec(target: string) {
 		const useLast = this.global || this.sticky;
 		const start = useLast ? this.lastIndex : 0;
 
-		const match = this[regexKey].exec(target, start, this.indices);
+		const match = this.#regex.exec(target, start, this.indices);
 		if (match != null && !(this.sticky && match.matches.index !== start)) {
 			if (useLast) this.lastIndex = match.end;
 			return match.matches;
@@ -92,7 +90,7 @@ export class RegExp {
 
 	public [symbols.split](target: string, limit?: number) {
 		return applySplits(target, limit, offset => {
-			const val = this[regexKey].exec(target, offset, false);
+			const val = this.#regex.exec(target, offset, false);
 			if (val == null) return undefined;
 
 			return { start: val.matches.index!, end: val.end };
@@ -100,7 +98,7 @@ export class RegExp {
 	}
 	public [symbols.replace](target: string, replacer: any) {
 		const matches: ReplaceRange[] = [];
-		const regex = this[regexKey];
+		const regex = this.#regex;
 
 		if (this.global) {
 			let offset = 0;
@@ -136,3 +134,6 @@ export class RegExp {
 		return applyReplaces(target, matches, replacer, regex.groupCount() + 1);
 	}
 }
+
+func.setCallable(RegExp, true);
+func.setConstructable(RegExp, true);

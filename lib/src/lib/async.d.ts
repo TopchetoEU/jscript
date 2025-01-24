@@ -22,3 +22,16 @@ declare interface PromiseConstructor {
 	resolve<T>(val: T): Promise<Awaited<T>>;
 	reject<T>(err: unknown): Promise<T>;
 }
+
+declare interface AsyncIterator<T, Return = unknown, Next = unknown> {
+	next(): Promise<IterationData<T, Return>>;
+	next(val: Next): Promise<IterationData<T, Return>>;
+	error?(err: unknown): Promise<IterationData<T, Return>>;
+	return?(val: Return): Promise<IterationData<T, Return>>;
+}
+declare interface AsyncIterableIterator<T, Return = unknown, Next = unknown> extends AsyncIterator<T, Return, Next> {
+	[Symbol.iterator](): this;
+}
+declare interface AsyncIterable<T> {
+	[Symbol.iterator](): AsyncIterator<T>;
+}

@@ -1,25 +1,28 @@
 import { buffer, type InternalBuffer, map, symbol } from "../primordials.ts";
 
 export const abs = new map(true);
-export const abKey: unique symbol = symbol.getSymbol("ArrayBuffer.impl") as any;
 
 export class ArrayBuffer {
-	public [abKey]!: InternalBuffer;
+	#internal!: InternalBuffer;
 
 	public get byteLength() {
-		return this[abKey].length;
+		return this.#internal.length;
 	}
 	public get byteOffset() {
 		return 0;
 	}
 
 	public constructor(val: unknown) {
-		if (buffer.isBuff(val)) this[abKey] = val;
-		else this[abKey] = buffer.buff(Number(val));
+		if (buffer.isBuff(val)) this.#internal = val;
+		else this.#internal = buffer.buff(Number(val));
+	}
+
+	public static unwrap(instance: ArrayBuffer) {
+		return instance.#internal;
 	}
 }
 
-export function getAB(buff: InternalBuffer): ArrayBuffer {
+function wrapAB(buff: InternalBuffer): ArrayBuffer {
 	let res = abs.get(buff);
 	if (res == null) {
 		res = new ArrayBuffer(buff);
@@ -28,3 +31,11 @@ export function getAB(buff: InternalBuffer): ArrayBuffer {
 
 	return res;
 }
+const unwrapAB = ArrayBuffer.unwrap;
+
+delete (ArrayBuffer as any).unwrap;
+
+
+
+export { wrapAB, unwrapAB };
+

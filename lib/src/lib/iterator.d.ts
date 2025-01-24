@@ -1,12 +1,12 @@
 declare interface NormalIterationData<T> {
 	value: T;
-	done: true;
+	done: false;
 }
 declare interface DoneIterationData<T> {
 	value: T;
-	done?: false;
+	done?: true;
 }
-declare type IterationData<T, Return> = NormalIterationData<T> | DoneIterationData<Return>;
+declare type IterationData<T, Return = void> = NormalIterationData<T> | DoneIterationData<Return>;
 
 declare interface Iterator<T, Return = unknown, Next = unknown> {
 	next(): IterationData<T, Return>;

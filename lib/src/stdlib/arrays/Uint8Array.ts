@@ -1,5 +1,5 @@
 import { buffer } from "../primordials.ts";
-import { abstractIgnore, TypedArray, typedArrayFuncs } from "./TypedArray.ts";
+import { token, TypedArray, typedArrayFuncs } from "./TypedArray.ts";
 
 const factory = buffer.uint8;
 const funcs = typedArrayFuncs(1, factory);
@@ -26,7 +26,7 @@ export class Uint8Array extends TypedArray {
 	}
 
 	public constructor(obj: any, start?: number, end?: number) {
-		super(abstractIgnore);
+		super(token);
 		return funcs.construct(obj, start, end) as any;
 	}
 }

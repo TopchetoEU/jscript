@@ -1,42 +1,40 @@
 import { Array } from "../values/array.ts";
-import { func, map, symbol } from "../primordials.ts";
+import { func, map } from "../primordials.ts";
 import { symbols } from "../utils.ts";
 
-const mapKey: unique symbol = symbol.makeSymbol("Set.impl") as any;
-
 export class Set<T> {
-	private [mapKey]: InstanceType<typeof map>;
+	#map: InstanceType<typeof map>;
 
 	public get size() {
-		return this[mapKey].size();
+		return this.#map.size();
 	}
 
 	public has(key: T): boolean {
-		return this[mapKey].has(key);
+		return this.#map.has(key);
 	}
 	public add(val: T) {
-		this[mapKey].set(val, true);
+		this.#map.set(val, true);
 		return this;
 	}
 	public delete(val: T): boolean {
-		if (!this[mapKey].has(val)) return false;
+		if (!this.#map.has(val)) return false;
 		else {
-			this[mapKey].delete(val);
+			this.#map.delete(val);
 			return true;
 		}
 	}
 	public clear() {
-		this[mapKey].clear();
+		this.#map.clear();
 	}
 
 	public keys(): T[] {
-		return this[mapKey].keys();
+		return this.#map.keys();
 	}
 	public values(): T[] {
-		return this[mapKey].keys();
+		return this.#map.keys();
 	}
 	public entries(): [T, T][] {
-		const res = this[mapKey].keys();
+		const res = this.#map.keys();
 
 		for (let i = 0; i < res.length; i++) {
 			res[i] = [res[i], res[i]];
@@ -57,7 +55,7 @@ export class Set<T> {
 	}
 
 	public constructor(iterable?: Iterable<T>) {
-		const _map = this[mapKey] = new map();
+		const _map = this.#map = new map();
 
 		if (iterable != null) {
 			if (Array.isArray(iterable)) {
@@ -77,28 +75,28 @@ export class Set<T> {
 }
 
 export class WeakSet<T> {
-	private [mapKey]: InstanceType<typeof map>;
+	#map: InstanceType<typeof map>;
 
 	public has(key: T): boolean {
-		return this[mapKey].has(key);
+		return this.#map.has(key);
 	}
 	public add(val: T) {
-		this[mapKey].set(val, true);
+		this.#map.set(val, true);
 		return this;
 	}
 	public delete(val: T): boolean {
-		if (!this[mapKey].has(val)) return false;
+		if (!this.#map.has(val)) return false;
 		else {
-			this[mapKey].delete(val);
+			this.#map.delete(val);
 			return true;
 		}
 	}
 	public clear() {
-		this[mapKey].clear();
+		this.#map.clear();
 	}
 
 	public constructor(iterable?: Iterable<T>) {
-		const _map = this[mapKey] = new map(true);
+		const _map = this.#map = new map(true);
 
 		if (iterable != null) {
 			if (Array.isArray(iterable)) {
@@ -116,6 +114,3 @@ export class WeakSet<T> {
 		}
 	}
 }
-
-func.setCallable(Set, false);
-func.setCallable(WeakSet, false);
