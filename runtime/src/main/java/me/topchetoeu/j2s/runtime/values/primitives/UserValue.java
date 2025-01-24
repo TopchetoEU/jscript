@@ -15,7 +15,7 @@ import me.topchetoeu.j2s.runtime.values.functions.FunctionValue;
 import me.topchetoeu.j2s.runtime.values.objects.ObjectValue;
 import me.topchetoeu.j2s.runtime.values.primitives.numbers.NumberValue;
 
-public final class UserValue<T> extends Value {
+public final class UserValue<T> implements Value {
 	public final T value;
 	public final ObjectValue prototype;
 

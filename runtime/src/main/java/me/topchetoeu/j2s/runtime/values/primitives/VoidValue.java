@@ -11,7 +11,7 @@ import me.topchetoeu.j2s.runtime.values.Member;
 import me.topchetoeu.j2s.runtime.values.objects.ObjectValue;
 import me.topchetoeu.j2s.runtime.values.primitives.numbers.NumberValue;
 
-public final class VoidValue extends PrimitiveValue {
+public final class VoidValue implements PrimitiveValue {
 	public final String name;
 	public final String type;
 

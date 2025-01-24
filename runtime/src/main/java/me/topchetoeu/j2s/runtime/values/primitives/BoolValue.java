@@ -4,7 +4,7 @@ import me.topchetoeu.j2s.common.Environment;
 import me.topchetoeu.j2s.runtime.values.objects.ObjectValue;
 import me.topchetoeu.j2s.runtime.values.primitives.numbers.NumberValue;
 
-public final class BoolValue extends PrimitiveValue {
+public final class BoolValue implements PrimitiveValue {
 	public static final BoolValue TRUE = new BoolValue(true);
 	public static final BoolValue FALSE = new BoolValue(false);
 

@@ -7,7 +7,7 @@ import java.util.List;
 import me.topchetoeu.j2s.common.Environment;
 import me.topchetoeu.j2s.runtime.values.objects.ObjectValue;
 
-public final class IntValue extends NumberValue {
+public final class IntValue implements NumberValue {
 	public final long value;
 
 	@Override public boolean isInt() {

@@ -23,7 +23,7 @@ import me.topchetoeu.j2s.runtime.values.primitives.StringValue;
 import me.topchetoeu.j2s.runtime.values.primitives.SymbolValue;
 import me.topchetoeu.j2s.runtime.values.primitives.numbers.NumberValue;
 
-public class ObjectValue extends Value {
+public class ObjectValue implements Value {
 	public static interface PrototypeProvider {
 		public ObjectValue get(Environment env);
 	}

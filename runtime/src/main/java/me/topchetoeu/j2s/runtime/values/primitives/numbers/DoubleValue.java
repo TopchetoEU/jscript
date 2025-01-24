@@ -2,7 +2,7 @@ package me.topchetoeu.j2s.runtime.values.primitives.numbers;
 
 import me.topchetoeu.j2s.common.StringifyUtils;
 
-public final class DoubleValue extends NumberValue {
+public final class DoubleValue implements NumberValue {
 	public final double value;
 
 	@Override public boolean isInt() {

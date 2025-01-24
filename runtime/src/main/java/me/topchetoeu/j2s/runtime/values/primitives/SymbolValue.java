@@ -11,7 +11,7 @@ import me.topchetoeu.j2s.runtime.values.Value;
 import me.topchetoeu.j2s.runtime.values.objects.ObjectValue;
 import me.topchetoeu.j2s.runtime.values.primitives.numbers.NumberValue;
 
-public final class SymbolValue extends PrimitiveValue {
+public final class SymbolValue implements PrimitiveValue {
 	private static final HashMap<String, SymbolValue> registry = new HashMap<>();
 
 	public final String value;

@@ -15,7 +15,7 @@ import me.topchetoeu.j2s.runtime.values.Member.FieldMember;
 import me.topchetoeu.j2s.runtime.values.objects.ObjectValue;
 import me.topchetoeu.j2s.runtime.values.primitives.numbers.NumberValue;
 
-public final class StringValue extends PrimitiveValue {
+public final class StringValue implements PrimitiveValue {
 	private static final WeakHashMap<String, StringValue> cache = new WeakHashMap<>();
 
 	public final String value;
@@ -57,13 +57,13 @@ public final class StringValue extends PrimitiveValue {
 			}
 		}
 
-		return super.getOwnMember(env, key);
+		return StringValue.this.getOwnMember(env, key);
 	}
 
 	@Override public Set<String> getOwnMembers(Environment env, boolean onlyEnumerable) {
 		var res = new LinkedHashSet<String>();
 
-		res.addAll(super.getOwnMembers(env, onlyEnumerable));
+		res.addAll(StringValue.this.getOwnMembers(env, onlyEnumerable));
 
 		for (var i = 0; i < value.length(); i++) res.add(i + "");
 

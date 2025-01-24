@@ -20,7 +20,7 @@ import me.topchetoeu.j2s.runtime.values.primitives.StringValue;
 import me.topchetoeu.j2s.runtime.values.primitives.SymbolValue;
 import me.topchetoeu.j2s.runtime.values.primitives.numbers.NumberValue;
 
-public class ScopeObject extends Value {
+public class ScopeObject implements Value {
 	public static final class ScopeMember extends FieldMember {
 		public final Frame frame;
 		public final int i;
