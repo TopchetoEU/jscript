@@ -28,8 +28,8 @@ jobs:
       - name: Publish
         run: gradle publish
         env:
-          ACCESS_TOKEN: "${{github.token}}"
-          REPO_URL: "${{github.api_url}}/packages/${{github.repository_owner}}/maven"
+          ACCESS_TOKEN: "${{secrets.PACKAGE_TOKEN}}"
+          REPO_URL: "${{github.server_url}}/api/packages/${{github.repository_owner}}/maven"
       - name: Create release
         uses: "https://gitea.com/actions/gitea-release-action@main"
         with:
