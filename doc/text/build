@@ -1,0 +1,45 @@
+#!/bin/luajit -lsrc.build
+
+local config = require "config";
+
+function profession(val)
+	if val == "sys" then
+		return {
+			profession = "481020 „Системен програмист“",
+			specialty = "4810201 „Системно програмиране“",
+		};
+	elseif val == "net" then
+		return combine {
+			profession = "523050 „Техник на компютърни системи“",
+			specialty = "5230502 „Компютърни мрежи“",
+		};
+	end
+end
+
+emit {
+	target = "res.html",
+	template {
+		template = "template.html",
+
+		build {
+			"requirements.md",
+			content = "requirements",
+		},
+		build {
+			"document.md",
+			content = "content",
+			toc = "toc",
+			ctx = {
+				chapter_format = "Глава %s<br/>",
+				chapter_format_plain = "Глава %s: ",
+			},
+		},
+
+		profession(config.profession),
+
+		year = os.date "%Y",
+		prev_year = os.date "%Y" - 1,
+
+		config,
+	},
+}

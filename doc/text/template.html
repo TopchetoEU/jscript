@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Дипломна работа {{author}}</title>
+	<style>
+		@page {
+			size: A4;
+		}
+		h1 {
+			break-before: page;
+		}
+		.pg-break {
+			break-after: page;
+		}
+		figure {
+			break-inside: avoid-page;
+		}
+		.page h1, .page h2 {
+			break-before: unset !important;
+		}
+
+		body {
+			font-family: Georgia, 'Times New Roman', Times, serif;
+			font-size: 14pt;
+			line-height: 1.75;
+		}
+
+		p::before {
+			width: 3em;
+			display: inline-block;
+			content: ' ';
+		}
+
+		.page {
+			line-height: 1.25;
+			h1, h2, h3, h4, h5, h6 {
+				margin: 0;
+			}
+		}
+
+		ul {
+			padding: 0;
+		}
+		li > ul {
+			padding-left: 2em;
+		}
+
+		nav {
+			display: contents;
+			width: 100%;
+			overflow-x: hidden;
+		}
+		nav ul {
+			list-style-type: none;
+		}
+		nav span {
+			background-color: white;
+		}
+		nav a {
+			line-height: 1.25;
+			position: relative;
+			overflow: hidden;
+			width: 100%;
+			display: flex;
+			align-items: baseline;
+			justify-content: space-between;
+			text-decoration: none;
+		}
+		nav a::after {
+			z-index: -1;
+			position: absolute;
+			right: 0;
+			float: right;
+			overflow: hidden;
+			width: max-content;
+			content:
+				'. . . . . . . . . . . . . . . . . . '
+				'. . . . . . . . . . . . . . . . . . '
+				'. . . . . . . . . . . . . . . . . . '
+				'. . . . . . . . . . . . . . . . . . '
+				'. . . . . . . . . . . . . . . . . . '
+				'. . . . . . . . . . . . . . . . . . '
+				'. . . . . . . . . . . . . . . . . . '
+				'. . . . . . . . . . . . . . . . . . '
+				'. . . . . . . . . . . . . . . . . . '
+				'. . . . . . . . . . . . . . . . . . ';
+		}
+		nav a span {
+			z-index: 10000;
+		}
+		a {
+			color: rgb(207, 37, 37);
+		}
+
+		figure {
+			display: flex;
+			width: 100%;
+			flex-direction: column;
+			align-items: center;
+			gap: .5em;
+			box-sizing: border-box;
+			margin: 0;
+			padding: 1em 0;
+		}
+		figure .fig-content {
+			display: flex;
+			flex-direction: row;
+			gap: 1em;
+			justify-content: center;
+			flex-wrap: wrap;
+		}
+
+		figcaption {
+			font-style: italic;
+			text-align: center;
+		}
+
+		img.small {
+			max-width: 50%;
+			max-height: 25%;
+		}
+		img {
+			width: 100%;
+		}
+
+		pre {
+			font-size: .65em;
+			margin: .5em 0;
+		}
+		pre > code {
+			font-size: inherit;
+			line-height: 1.25;
+			padding: 0 !important;
+		}
+
+		.hljs-ln-code {
+			padding-left: .5em !important;
+			white-space: pre-wrap;
+		}
+
+		.title-content {
+			display: flex;
+			flex-direction: column;
+			gap: .5em;
+		}
+
+		.hljs-ln-numbers {
+			-webkit-touch-callout: none;
+			-webkit-user-select: none;
+			-khtml-user-select: none;
+			-moz-user-select: none;
+			-ms-user-select: none;
+			user-select: none;
+			text-align: center;
+			color: #ccc;
+			border-right: 1px solid #CCC;
+			vertical-align: top;
+			padding-right: .5em !important;
+		}
+
+		p {
+			margin: 0;
+			text-align: justify;
+		}
+
+		.page {
+			height: 100%;
+			font-size: 12pt;
+		}
+
+		.school-header {
+			display: flex;
+			flex-direction: row;
+			width: 100%;
+			gap: 2em;
+		}
+		.school-img {
+			height: 5em;
+			width: unset;
+		}
+
+		.pg-break {
+			break-after: page;
+		}
+
+		.title-page {
+			display: flex;
+			flex-direction: column;
+			justify-content: space-between;
+			text-align: center;
+		}
+		.title-authors {
+			display: flex;
+			flex-direction: row;
+			justify-content: space-between;
+			padding: 0 3em;
+			width: 100%;
+		}
+		.title-author {
+			display: flex;
+			flex-direction: column;
+		}
+		.asm-header {
+			display: flex;
+			justify-content: space-between;
+		}
+		.asm-signature {
+			display: block;
+			text-align: right;
+			/* flex-direction: column;
+			text-align: right; */
+		}
+		.asm-title {
+			text-align: center;
+		}
+		.asm-content {
+			display: grid;
+			padding-top: 5em;
+			grid-template-rows: auto auto min-content;
+			/* flex-direction: column;
+			gap: .5em;
+			justify-content: space-between; */
+			width: 100%;
+			height: 100%;
+		}
+		.asm-page {
+			height: 100%;
+			max-height: 100%;
+			display: flex;
+			flex-direction: column;
+		}
+		ul {
+			margin: 0;
+		}
+
+		.graphic-table {
+			font-size: .9em;
+			line-height: 1.25;
+			border-collapse: collapse;
+			width: 100%;
+		}
+		.graphic-table tr:nth-child() {
+			line-height: 1.25;
+			border-collapse: collapse;
+		}
+		.graphic-table .left {
+			text-align: left;
+		}
+		.graphic-table .right {
+			text-align: right;
+		}
+		.graphic-table .center {
+			text-align: center;
+		}
+		.graphic-table td, .graphic-table th {
+			border: 1px solid black;
+			padding: .25em;
+			margin: 0;
+			/* border */
+		}
+		.graphic-table thead tr {
+			background-color: #dadada;
+		}
+		.graphic-table tbody tr {
+			background-color: #ffffff;
+		}
+		.graphic-table tbody tr:nth-child(even) {
+			background-color: #ececec;
+		}
+	</style>
+	<style keep>
+		@media print {
+			nav a {
+				color: black;
+			}
+		}
+	</style>
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/default.min.css">
+	<link rel="stylesheet" href="https://unpkg.com/highlightjs/styles/vs.css">
+	<script src="https://unpkg.com/@highlightjs/cdn-assets/highlight.min.js"></script>
+	<script src="https://unpkg.com/pagedjs/dist/paged.js"></script>
+	<script src="https://unpkg.com/highlightjs-line-numbers.js/src/highlightjs-line-numbers.js"></script>
+	<script>
+		// This godless solution works, so it is fine
+		class RepeatingTableHeadersHandler extends Paged.Handler {
+			constructor(chunker, polisher, caller) {
+				super(chunker, polisher, caller);
+				this.splitTablesRefs = [];
+			}
+
+			afterPageLayout(pageElement, page, breakToken, chunker) {
+				this.chunker = chunker;
+				this.splitTablesRefs = [];
+
+				if (breakToken) {
+					const node = breakToken.node;
+					const tables = this.findAllAncestors(node, "table");
+					if (node.tagName === "TABLE") {
+						tables.push(node);
+					}
+
+					if (tables.length > 0) {
+						this.splitTablesRefs = tables.map(t => t.dataset.ref);
+
+						//checks if split inside thead and if so, set breakToken to next sibling element
+						let thead = node.tagName === "THEAD" ? node : this.findFirstAncestor(node, "thead");
+						if (thead) {
+							let lastTheadNode = thead.hasChildNodes() ? thead.lastChild : thead;
+							breakToken.node = this.nodeAfter(lastTheadNode, chunker.source);
+						}
+
+						this.hideEmptyTables(pageElement, node);
+					}
+				}
+			}
+
+			hideEmptyTables(pageElement, breakTokenNode) {
+				this.splitTablesRefs.forEach(ref => {
+					let table = pageElement.querySelector("[data-ref='" + ref + "']");
+					if (table) {
+						let sourceBody = table.querySelector("tbody > tr");
+						if (!sourceBody || this.refEquals(sourceBody.firstElementChild, breakTokenNode)) {
+							table.style.visibility = "hidden";
+							table.style.position = "absolute";
+							let lineSpacer = table.nextSibling;
+							if (lineSpacer) {
+								lineSpacer.style.visibility = "hidden";
+								lineSpacer.style.position = "absolute";
+							}
+						}
+					}
+				});
+			}
+
+			refEquals(a, b) {
+				return a && a.dataset && b && b.dataset && a.dataset.ref === b.dataset.ref;
+			}
+
+			findFirstAncestor(element, selector) {
+				while (element.parentNode && element.parentNode.nodeType === 1) {
+					if (element.parentNode.matches(selector)) {
+						return element.parentNode;
+					}
+					element = element.parentNode;
+				}
+				return null;
+			}
+
+			findAllAncestors(element, selector) {
+				const ancestors = [];
+				while (element.parentNode && element.parentNode.nodeType === 1) {
+					if (element.parentNode.matches(selector)) {
+						ancestors.unshift(element.parentNode);
+					}
+					element = element.parentNode;
+				}
+				return ancestors;
+			}
+
+			// The addition of repeating Table Headers is done here because this hook is triggered before overflow handling
+			layout(rendered, layout) {
+				this.splitTablesRefs.forEach(ref => {
+					const renderedTable = rendered.querySelector("[data-ref='" + ref + "']");
+					if (renderedTable) {
+						// this event can be triggered multiple times
+						// added a flag repeated-headers to control when table headers already repeated in current page.
+						if (!renderedTable.getAttribute("repeated-headers")) {
+							const sourceTable = this.chunker.source.querySelector("[data-ref='" + ref + "']");
+							this.repeatColgroup(sourceTable, renderedTable);
+							this.repeatTHead(sourceTable, renderedTable);
+							renderedTable.setAttribute("repeated-headers", true);
+						}
+					}
+				});
+			}
+
+			repeatColgroup(sourceTable, renderedTable) {
+				let colgroup = sourceTable.querySelectorAll("colgroup");
+				let firstChild = renderedTable.firstChild;
+				colgroup.forEach((colgroup) => {
+					let clonedColgroup = colgroup.cloneNode(true);
+					renderedTable.insertBefore(clonedColgroup, firstChild);
+				});
+			}
+
+			repeatTHead(sourceTable, renderedTable) {
+				let thead = sourceTable.querySelector("thead");
+				if (thead) {
+					let clonedThead = thead.cloneNode(true);
+					renderedTable.insertBefore(clonedThead, renderedTable.firstChild);
+				}
+			}
+
+			// the functions below are from pagedjs utils/dom.js
+			nodeAfter(node, limiter) {
+				if (limiter && node === limiter) {
+					return;
+				}
+				let significantNode = this.nextSignificantNode(node);
+				if (significantNode) {
+					return significantNode;
+				}
+				if (node.parentNode) {
+					while ((node = node.parentNode)) {
+						if (limiter && node === limiter) {
+							return;
+						}
+						significantNode = this.nextSignificantNode(node);
+						if (significantNode) {
+							return significantNode;
+						}
+					}
+				}
+			}
+
+			nextSignificantNode(sib) {
+				while ((sib = sib.nextSibling)) {
+					if (!this.isIgnorable(sib)) return sib;
+				}
+				return null;
+			}
+
+			isIgnorable(node) {
+				return (node.nodeType === 8) || // A comment node
+					((node.nodeType === 3) && this.isAllWhitespace(node)); // a text node, all whitespace
+			}
+
+			isAllWhitespace(node) {
+				return !(/[^\t\n\r ]/.test(node.textContent));
+			}
+		}
+	</script>
+	<script>
+		Paged.registerHandlers(RepeatingTableHeadersHandler);
+
+		window.onload = async evn => {
+			hljs.highlightAll();
+			hljs.initLineNumbersOnLoad();
+
+			await new Promise(res => setTimeout(res, 50));
+			const { Previewer, DOMContent } = Paged;
+
+			evn.preventDefault();
+			const p = new Previewer();
+			const styles = [...document.head.getElementsByTagName("style")]
+				.filter(v => !v.hasAttribute("keep"))
+				.map(v => {
+					v.remove();
+					return { [window.location.href]: v.textContent };
+				});
+
+			const flow = await p.preview(DOMContent, styles, document.body);
+			const pages = flow.pages.map(v => v.element);
+
+			for (const nav of document.getElementsByTagName("nav")) {
+
+				for (let el of nav.getElementsByTagName("li")) {
+					el = el.children[0];
+					if (!(el instanceof HTMLAnchorElement)) continue;
+					const name = [...el.children].find(v => v.classList.contains("name"));
+					const page = [...el.children].find(v => v.classList.contains("page"));
+
+					const href = decodeURIComponent(/#(.+)$/.exec(el.href)?.[1]);
+					const target = document.getElementById(href);
+					const i = pages.findIndex(v => v.contains(target));
+
+					page.innerText = i + 1;
+					page.href = "#" + href;
+					// console.log(target, name, i);
+				}
+			}
+		};
+	</script>
+</head>
+<body>
+
+<div class="page title-page">
+	<div class="school-header">
+		<img class="school-img" src="{{school_img}}"/>
+		<h4>{{school_name}}</h4>
+	</div>
+
+	<div class="title-content">
+		<h2>ДИПЛОМНА РАБОТА</h2>
+		<h4>по професия код {{profession}}</h4>
+		<h4>специалност код {{specialty}}</h4>
+		<div>Тема: {{topic}}</div>
+	</div>
+	<div class="title-authors">
+		<div class="title-author">
+			<div class="author-type">Дипломант:</div>
+			<div class="author-name">{{author}}</div>
+		</div>
+		<div class="title-author">
+			<div class="author-type">Научен ръководител:</div>
+			<div class="author-name">{{supervisor}}</div>
+		</div>
+	</div>
+	<div class="title-end">СОФИЯ - {{year}}</div>
+</div>
+
+<div class="page asm-page">
+	<div class="school-header">
+		<img class="school-img" src="{{school_img}}"/>
+		<h4>{{school_name}}</h4>
+	</div>
+	<div class="asm-header">
+		<div class="asm-header-dates">
+			<div>Дата на заданието:  28.10.{{prev_year}} г.</div>
+			<div>Дата на предаване:  28.01.{{year}} г.</div>
+		</div>
+		<div class="asm-signature">
+			<div class="asm-signature-place">Утвърждавам: ..............................</div>
+			<div class="asm-signature-person">/{{ensurer_name}}/ </div>
+		</div>
+	</div>
+	<div class="asm-content">
+		<div class="asm-title">
+			<h2>ЗАДАНИЕ</h2>
+			<h2>за дипломна работа</h2>
+			<h4>ДЪРЖАВЕН ИЗПИТ ЗА ПРИДОБИВАНЕ НА ТРЕТА СТЕПЕН НА ПРОФЕСИОНАЛНА КВАЛИФИКАЦИЯ</h4>
+			<h4>по професия код {{profession}}</h4>
+			<h4>специалност код {{specialty}}</h4>
+		</div>
+		<div class="asm-requirements">
+			на ученика {{author}} от {{class}} клас<br/>
+			{{requirements}}
+		</div>
+		<div class="asm-authors">
+			<div class="asm-signature">
+				<div class="author-type">Дипломант: ...........................................</div>
+				<div class="author-name">/{{author}}/</div>
+			</div>
+			<div class="asm-signature">
+				<div class="author-type">Ръководител: ...........................................</div>
+				<div class="author-name">/{{supervisor}}/</div>
+			</div>
+			<div class="asm-signature">
+				<div class="author-type">{{head_teacher_title}}: ...........................................</div>
+				<div class="author-name">/{{head_teacher_name}}/</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+{{content}}
+
+<nav>
+{{toc}}
+</nav>
+
+</body>
+</html>
