@@ -8,6 +8,12 @@
 		@page {
 			size: A4;
 		}
+		@page {
+			@bottom-right-corner {
+				text-align: center;
+				content: counter(page);
+			}
+		}
 		h1 {
 			break-before: page;
 		}
@@ -34,6 +40,7 @@
 		}
 
 		.page {
+			height: 100%;
 			line-height: 1.25;
 			h1, h2, h3, h4, h5, h6 {
 				margin: 0;
@@ -167,6 +174,7 @@
 
 		.page {
 			height: 100%;
+			max-height: 100%;
 			font-size: 12pt;
 		}
 
@@ -226,8 +234,6 @@
 			height: 100%;
 		}
 		.asm-page {
-			height: 100%;
-			max-height: 100%;
 			display: flex;
 			flex-direction: column;
 		}
@@ -543,6 +549,10 @@
 			</div>
 		</div>
 	</div>
+</div>
+
+<div class="page">
+<div>prazna str</div>
 </div>
 
 {{content}}
