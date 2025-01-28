@@ -57,7 +57,7 @@ public final class StringValue implements PrimitiveValue {
 			}
 		}
 
-		return StringValue.this.getOwnMember(env, key);
+		return PrimitiveValue.super.getOwnMember(env, key);
 	}
 
 	@Override public Set<String> getOwnMembers(Environment env, boolean onlyEnumerable) {

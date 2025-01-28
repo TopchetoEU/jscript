@@ -323,7 +323,7 @@ public final class Frame {
 	/**
 	 * Induces a value on the stack (as if it were returned by the last function call)
 	 * and executes the next instruction in the frame.
-	 * 
+	 *
 	 * @param value The value to induce
 	 */
 	public final Value next(Value value) {
@@ -334,7 +334,7 @@ public final class Frame {
 	 * Note that this is different than just throwing the error outside the
 	 * function, as the function executed could have a try-catch which
 	 * would otherwise handle the error
-	 * 
+	 *
 	 * @param error The error to induce
 	 */
 	public final Value induceError(EngineException error) {
@@ -346,7 +346,7 @@ public final class Frame {
 	 * Note that this is different than just returning the value outside the
 	 * function, as the function executed could have a try-catch which
 	 * would otherwise handle the error
-	 * 
+	 *
 	 * @param value The retunr value to induce
 	 */
 	public final Value induceReturn(Value value) {
