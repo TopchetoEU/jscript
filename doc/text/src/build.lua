@@ -315,7 +315,7 @@ function converters.Image(data, ctx)
 	return text, title and { title } or alt_plain or url or "[picture]";
 end
 function converters.Figure(data, ctx)
-	local chapter_i = #(ctx.headers or {});
+	local chapter_i = count_headers(ctx.headers or {});
 	ctx.figures_indices = ctx.figures_indices or {};
 	ctx.figures_indices[chapter_i] = (ctx.figures_indices[chapter_i] or 0) + 1;
 	local figure_i = ctx.figures_indices[chapter_i];

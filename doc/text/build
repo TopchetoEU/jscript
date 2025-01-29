@@ -20,6 +20,10 @@ emit {
 	target = "res.html",
 	template {
 		template = "template.html",
+		year = os.date "%Y",
+		prev_year = os.date "%Y" - 1,
+		config,
+		profession(config.profession),
 
 		build {
 			"requirements.md",
@@ -34,12 +38,5 @@ emit {
 				chapter_format_plain = "Глава %s: ",
 			},
 		},
-
-		profession(config.profession),
-
-		year = os.date "%Y",
-		prev_year = os.date "%Y" - 1,
-
-		config,
 	},
 }

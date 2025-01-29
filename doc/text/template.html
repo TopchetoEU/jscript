@@ -183,9 +183,12 @@
 			flex-direction: row;
 			width: 100%;
 			gap: 2em;
+			font-size: 1.25em;
+			text-align: right;
+			margin-bottom: 1em;
 		}
 		.school-img {
-			height: 5em;
+			height: 6em;
 			width: unset;
 		}
 
@@ -221,6 +224,9 @@
 			text-align: right; */
 		}
 		.asm-title {
+			display: flex;
+			flex-direction: column;
+			gap: 1em;
 			text-align: center;
 		}
 		.asm-content {
@@ -477,6 +483,11 @@
 					// console.log(target, name, i);
 				}
 			}
+
+			for (let i = 0; i < 3; i++) {
+				pages[i].getElementsByClassName("pagedjs_margin-bottom-right-corner-holder")[0].innerText = "";
+				console.log(pages[i].getElementsByClassName("pagedjs_margin-bottom-right-corner-holder")[0]);
+			}
 		};
 	</script>
 </head>
@@ -490,10 +501,10 @@
 
 	<div class="title-content">
 		<h2>ДИПЛОМНА РАБОТА</h2>
-		<h4>по професия код {{profession}}</h4>
-		<h4>специалност код {{specialty}}</h4>
-		<div>Тема: {{topic}}</div>
+		<div>по професия код {{profession}}</div>
+		<div>специалност код {{specialty}}</div>
 	</div>
+	<div class="title-content">Тема: {{topic}}</div>
 	<div class="title-authors">
 		<div class="title-author">
 			<div class="author-type">Дипломант:</div>
@@ -524,11 +535,12 @@
 	</div>
 	<div class="asm-content">
 		<div class="asm-title">
-			<h2>ЗАДАНИЕ</h2>
-			<h2>за дипломна работа</h2>
+			<h2>ЗАДАНИЕ<br/>за дипломна работа</h2>
 			<h4>ДЪРЖАВЕН ИЗПИТ ЗА ПРИДОБИВАНЕ НА ТРЕТА СТЕПЕН НА ПРОФЕСИОНАЛНА КВАЛИФИКАЦИЯ</h4>
-			<h4>по професия код {{profession}}</h4>
-			<h4>специалност код {{specialty}}</h4>
+			<div>
+				<div>по професия код {{profession}}</div>
+				<div>специалност код {{specialty}}</div>
+			</div>
 		</div>
 		<div class="asm-requirements">
 			на ученика {{author}} от {{class}} клас<br/>
