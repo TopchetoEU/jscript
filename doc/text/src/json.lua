@@ -102,16 +102,17 @@ local function parse_impl(str, pos, end_delim)
 	local delim_found;
 
 	if c == "{" then
-		pos = pos + 1;
+		pos = str:find("%S", pos + 1) or pos;
 
 		local key;
 		local obj = {};
 
 		c = string.sub(str, pos, pos);
 		if c == "}" then
-			return obj, pos
+			return obj, pos;
 		else
 			while true do
+				pos = skip_delim(str, pos);
 				key, pos = parse_str_val(str, pos, true);
 				if key == nil then error("Expected a string key") end
 

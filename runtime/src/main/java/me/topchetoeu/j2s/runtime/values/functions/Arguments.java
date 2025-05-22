@@ -15,8 +15,9 @@ public class Arguments {
 	public final <T extends Value> T setTargetProto(T obj) {
 		if (!self.isPrimitive()) {
 			var proto = self.getMember(env, "prototype");
-			if (proto instanceof ObjectValue objProto) self.setPrototype(env, objProto);
-			else if (proto == Value.NULL) self.setPrototype(env, null);
+
+			if (proto instanceof ObjectValue objProto) obj.setPrototype(env, objProto);
+			else if (proto == Value.NULL) obj.setPrototype(env, null);
 		}
 		return obj;
 	}

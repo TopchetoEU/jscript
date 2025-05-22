@@ -21,12 +21,12 @@ public class Compilers {
 			try {
 				var res = JavaScript.compile(env, filename, raw, true);
 				var body = res.body();
-	
+
 				DebugHandler.get(env).onSourceLoad(filename, raw);
 				for (var el : res.all()) {
 					DebugHandler.get(env).onFunctionLoad(el.body(), el.map(mapper));
 				}
-	
+
 				return new CodeFunction(env, filename.toString(), body, new Value[0][]);
 			}
 			catch (SyntaxException e) {
@@ -59,9 +59,6 @@ public class Compilers {
 
 	public static Compiler transpilerFromSource(Compiler prev, Environment target, Filename compilerName, String compilerSrc) {
 		var env = StdLib.apply(null);
-		// var handler = new SimpleDebugHandler();
-		// env.add(DebugHandler.KEY, handler);
-
 		var glob = Value.global(env);
 		var compilerFactory = new FunctionValue[1];
 
@@ -85,10 +82,6 @@ public class Compilers {
 		}));
 
 		var compiled = JavaScript.compile(compilerName, compilerSrc, false);
-
-		// for (var el : compiled.all()) {
-		// 	handler.onFunctionLoad(el.body(), el.map());
-		// }
 
 		try {
 			new CodeFunction(env, "intializer", compiled.body(), new Value[0][]).apply(env, Value.UNDEFINED);

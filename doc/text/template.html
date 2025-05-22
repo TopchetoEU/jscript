@@ -14,6 +14,9 @@
 				content: counter(page);
 			}
 		}
+		@page scan-page {
+			margin: 0;
+		}
 		h1 {
 			break-before: page;
 		}
@@ -196,6 +199,13 @@
 			break-after: page;
 		}
 
+		.scan-page {
+			display: flex;
+			flex-direction: column;
+			justify-content: stretch;
+			align-items: stretch;
+			page: scan-page;
+		}
 		.title-page {
 			display: flex;
 			flex-direction: column;
@@ -518,7 +528,15 @@
 	<div class="title-end">СОФИЯ - {{year}}</div>
 </div>
 
-<div class="page asm-page">
+<div class="page scan-page">
+	<img src="./img-secret/scan0001.jpg"/>
+</div>
+
+<div class="page scan-page">
+	<img src="./img-secret/scan0003.jpg"/>
+</div>
+
+<!-- <div class="page asm-page">
 	<div class="school-header">
 		<img class="school-img" src="{{school_img}}"/>
 		<h4>{{school_name}}</h4>
@@ -561,11 +579,7 @@
 			</div>
 		</div>
 	</div>
-</div>
-
-<div class="page">
-<div>prazna str</div>
-</div>
+</div> -->
 
 {{content}}
 
