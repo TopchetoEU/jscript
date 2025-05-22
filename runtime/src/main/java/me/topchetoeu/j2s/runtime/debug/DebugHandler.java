@@ -93,7 +93,7 @@ public interface DebugHandler {
 	}
 	public default FunctionMap getMapOrEmpty(Environment env, FunctionValue func) {
 		if (func instanceof CodeFunction codeFunc) return getMapOrEmpty(env, codeFunc.body);
-		else return null;
+		else return FunctionMap.EMPTY;
 	}
 
 	public static DebugHandler get(Environment exts) {

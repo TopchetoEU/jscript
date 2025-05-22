@@ -423,7 +423,7 @@ public class SimpleDebugger implements Debugger {
 							desc.append("...");
 							break;
 						}
-	
+
 						if (arr.has(i)) {
 							try {
 								var curr = arr.get(i);
@@ -442,7 +442,7 @@ public class SimpleDebugger implements Debugger {
 							desc.append("<empty>");
 						}
 					}
-	
+
 					desc.append("]");
 				}
 
@@ -814,7 +814,6 @@ public class SimpleDebugger implements Debugger {
 		var cond = msg.params.string("condition", "").trim();
 
 		if (cond.equals("")) cond = null;
-		if (cond != null) cond  = "(" + cond + ")";
 
 		Pattern regex;
 
@@ -1064,7 +1063,7 @@ public class SimpleDebugger implements Debugger {
 		}
 		mappings.put(body, map);
 	}
-	
+
 	private boolean instructionLock;
 
 	@Override public boolean onInstruction(Environment env, Frame cf, Instruction instruction, Value returnVal, EngineException error, boolean caught) {
@@ -1077,16 +1076,16 @@ public class SimpleDebugger implements Debugger {
 			Location loc;
 			DebugFrame frame;
 			BreakpointType bptType;
-	
+
 			frame = getFrame(cf);
-	
+
 			var map = DebugHandler.get(env).getMapOrEmpty(env, frame.frame.function);
-	
+
 			frame.updateLoc(map.toLocation(frame.frame.codePtr));
 			loc = frame.location;
 			bptType = map.getBreakpoint(frame.frame.codePtr);
 			isBreakpointable = loc != null && (bptType.shouldStepIn());
-	
+
 			if (error != null && (execptionType == CatchType.ALL || execptionType == CatchType.UNCAUGHT && !caught)) {
 				pauseException(env, error);
 			}
@@ -1114,19 +1113,19 @@ public class SimpleDebugger implements Debugger {
 				instruction.params.length == 1 &&
 				instruction.get(0).equals("debug")
 			) pauseDebug(env, null);
-	
+
 			synchronized (this) {
 			}
-	
+
 			while (enabled) {
 				synchronized (this) {
 					switch (state) {
 						case PAUSED_EXCEPTION:
 						case PAUSED_NORMAL: break;
-	
+
 						case STEPPING_OUT:
 						case RESUMED: return false;
-	
+
 						case STEPPING_IN:
 						case STEPPING_OVER:
 							if (stepOutFrame.frame == frame.frame) {
@@ -1135,7 +1134,7 @@ public class SimpleDebugger implements Debugger {
 									continue;
 								}
 								else if (stepOutPtr != frame.frame.codePtr) {
-	
+
 									if (state == State.STEPPING_IN && bptType.shouldStepIn()) {
 										pauseDebug(env, null);
 										break;
@@ -1149,7 +1148,7 @@ public class SimpleDebugger implements Debugger {
 							return false;
 					}
 				}
-	
+
 				try {
 					synchronized (updateNotifier) {
 						updateNotifier.wait();

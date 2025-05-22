@@ -195,7 +195,6 @@ public abstract class ArrayLikeValue extends ObjectValue {
 				res.add("    " + line);
 			}
 		}
-		res.set(res.size() - 1, res.getLast().substring(0, res.getLast().length() - 1));
 		res.add("]");
 
 		return res;

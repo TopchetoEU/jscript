@@ -70,7 +70,7 @@ public final class CompileResult {
 	public void setLocationAndDebug(Location loc, BreakpointType type) {
 		setLocationAndDebug(instructions.size() - 1, loc, type);
 	}
-	
+
 	public Iterable<CompileResult> all() {
 		var stack = new Stack<CompileResult>();
 		stack.push(this);

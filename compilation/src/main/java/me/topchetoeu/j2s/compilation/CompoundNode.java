@@ -38,8 +38,10 @@ public class CompoundNode extends Node {
 		for (var i = 0; i < statements.size(); i++) {
 			var stm = statements.get(i);
 
-			if (i != statements.size() - 1) stm.compile(target, false, BreakpointType.STEP_OVER);
-			else stm.compile(target, polluted = pollute, BreakpointType.STEP_OVER);
+			if (i != statements.size() - 1) stm.compileStatement(target, false, BreakpointType.STEP_OVER);
+			else stm.compileStatement(target, polluted = pollute, BreakpointType.STEP_OVER);
+
+			target.setDebug(type);
 		}
 
 		if (!polluted && pollute) {

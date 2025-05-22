@@ -9,9 +9,14 @@ public abstract class Node {
 	public void resolve(CompileResult target) {}
 
 	public void compile(CompileResult target, boolean pollute, BreakpointType type) {
+		compileStatement(target, pollute, type);
+	}
+	public void compileStatement(CompileResult target, boolean pollute, BreakpointType type) {
 		int start = target.size();
 		compile(target, pollute);
-		if (target.size() != start) target.setLocationAndDebug(start, loc(), type);
+		if (target.size() != start) {
+			target.setLocationAndDebug(start, loc(), type);
+		}
 	}
 	public void compile(CompileResult target, boolean pollute) {
 		compile(target, pollute, BreakpointType.NONE);
