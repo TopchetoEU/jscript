@@ -1,5 +1,5 @@
 plugins {
-	id("common-java");
+	id("j2s-common-java");
 }
 
 description = "A collection of utils and structures for the rest of the project";

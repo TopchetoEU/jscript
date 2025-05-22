@@ -1,5 +1,5 @@
 plugins {
-	id("common-java");
+	id("j2s-common-java");
 }
 
 description = "A compiler of EcmaScript 5 code to J2S bytecode";

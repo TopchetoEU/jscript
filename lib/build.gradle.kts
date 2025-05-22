@@ -1,7 +1,7 @@
 import com.github.gradle.node.npm.task.NpmTask;
 
 plugins {
-	id("common-java");
+	id("j2s-common-java");
 	id("com.github.node-gradle.node") version "5.0.0";
 }
 

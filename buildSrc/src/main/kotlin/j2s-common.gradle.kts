@@ -22,26 +22,28 @@ dependencies {
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher");
 }
 
+if (System.getenv("REPO_URL") != null) {
+	publishing {
+		repositories {
+			maven {
+				name = "Gitea";
+				url = uri(System.getenv("REPO_URL") ?: "");
 
-publishing {
-	repositories {
-		maven {
-			name = "Gitea";
-			url = uri(System.getenv("REPO_URL") ?: "");
+				credentials(HttpHeaderCredentials::class) {
+					name = "Authorization";
+					value = "token ${System.getenv("ACCESS_TOKEN")}";
+				}
 
-			credentials(HttpHeaderCredentials::class) {
-				name = "Authorization";
-				value = "token ${System.getenv("ACCESS_TOKEN")}";
-			}
-
-			authentication {
-				create<HttpHeaderAuthentication>("header");
+				authentication {
+					create<HttpHeaderAuthentication>("header");
+				}
 			}
 		}
-	}
-	publications {
-		create<MavenPublication>("maven") {
-			from(components["java"]);
+		publications {
+			create<MavenPublication>("maven") {
+				from(components["java"]);
+			}
 		}
 	}
 }
+

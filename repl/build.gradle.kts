@@ -1,5 +1,5 @@
 plugins {
-	id("common-java");
+	id("j2s-common-java");
 	id("com.gradleup.shadow") version "9.0.0-beta4";
 }
 

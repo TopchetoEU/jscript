@@ -1,5 +1,5 @@
 plugins {
-	id("common");
+	id("j2s-common");
 }
 
 java {
