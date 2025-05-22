@@ -79,9 +79,9 @@ public class Reading {
 		if (bytes == null) return null;
 		else return new String(bytes);
 	}
-	
+
 	public static InputStream resourceToStream(String name) {
-		return Reading.class.getResourceAsStream("/" + name);
+		return Reading.class.getResourceAsStream("/" + name.replaceAll("//", "/"));
 	}
 	public static String resourceToString(String name) {
 		return streamToString(resourceToStream(name));

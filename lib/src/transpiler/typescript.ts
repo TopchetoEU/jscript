@@ -16,10 +16,10 @@ export default function typescript(next: Compiler): Compiler {
 	const settings: CompilerOptions = {
 		target: ScriptTarget.ES5,
 		module: ModuleKind.Preserve,
-	
+
 		allowImportingTsExtensions: true,
-		verbatimModuleSyntax: true,
-		
+		verbatimModuleSyntax: false,
+
 		strict: false,
 		skipLibCheck: true,
 		forceConsistentCasingInFileNames: true,
@@ -52,7 +52,7 @@ export default function typescript(next: Compiler): Compiler {
 				}
 			},
 			getScriptVersion: (filename) => String(versions[filename] || 0),
-		
+
 			readFile: () => { throw "no"; },
 			writeFile: () => { throw "no"; },
 		}, createDocumentRegistry());
@@ -61,7 +61,7 @@ export default function typescript(next: Compiler): Compiler {
 		service.getEmitOutput("/lib.d.ts");
 	});
 	print("Loaded typescript!");
-	
+
 	return (filename, code, prevMap) => {
 		files["/src.ts"] = ScriptSnapshot.fromString(code);
 		versions["/src.ts"] ??= 0;
