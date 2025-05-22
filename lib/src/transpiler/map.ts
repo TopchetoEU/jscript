@@ -1,10 +1,11 @@
-const map: number[] = [];
-let j = 0;
-
-for (let i = 65; i <= 90; i++) map[i] = j++;
-for (let i = 97; i <= 122; i++) map[i] = j++;
-map[43] = j++;
-map[47] = j++;
+function decodeBase64(val: number) {
+	if (val >= 65 && val <= 90) return val - 65;
+	else if (val >= 97 && val <= 122) return val - 97 + 26;
+	else if (val >= 48 && val <= 57) return val - 48 + 52;
+	else if (val == 43) return 62;
+	else if (val == 47) return 63;
+	else throw "Invalid Base64 char";
+}
 
 export function decodeVLQ(val: string): number[][][] {
 	const lines: number[][][] = [];
@@ -30,14 +31,14 @@ export function decodeVLQ(val: string): number[][][] {
 
 				for (let i = 0; i < el.length;) {
 					let sign = 1;
-					let curr = map[el.charCodeAt(i++)];
+					let curr = decodeBase64(el.charCodeAt(i++));
 					let cont = (curr & 0x20) === 0x20;
 					if ((curr & 1) === 1) sign = -1;
 					let res = (curr & 0b11110) >> 1;
 					let n = 4;
-		
+
 					for (; i < el.length && cont;) {
-						curr = map[el.charCodeAt(i++)];
+						curr = decodeBase64(el.charCodeAt(i++));
 						cont = (curr & 0x20) == 0x20;
 						res |= (curr & 0b11111) << n;
 						n += 5;
@@ -99,7 +100,7 @@ export class VLQSourceMap {
 
 			while (true) {
 				const done = b - a <= 1;
-	
+
 				const mid = (a + b) >> 1;
 				const el = line[mid];
 
@@ -134,7 +135,6 @@ export class VLQSourceMap {
 		let originalRow = 0;
 		let originalCol = 0;
 		let originalFile = 0;
-		const lastCols = new Set<number>();
 
 		for (let compiledRow = 0; compiledRow < mapping.length; compiledRow++) {
 			const line: [start: number, dst: Location][] = file[compiledRow] = [];
@@ -149,10 +149,7 @@ export class VLQSourceMap {
 				originalRow += rawSeg.length > 2 ? rawSeg[2] : 0;
 				originalCol += rawSeg.length > 3 ? rawSeg[3] : 0;
 
-				if (!lastCols.has(compiledCol)) {
-					line[line.length] = [compiledCol, [filenames[originalFile], originalRow, originalCol]];
-				}
-				lastCols.add(compiledCol);
+				line[line.length] = [compiledCol, [filenames[originalFile], originalRow, originalCol]];
 			}
 
 			line.sort((a, b) => a[0] - b[0]);
