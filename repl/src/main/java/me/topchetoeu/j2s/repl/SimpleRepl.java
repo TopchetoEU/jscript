@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 
@@ -41,55 +42,61 @@ public class SimpleRepl {
 	static Key<InputStream> STDIN = new Key<>();
 
 	static int j = 0;
-	static String[] args;
+	static String[] files;
+	static boolean inspect = false;
+	static int inspectPort = 9229;
 
 	private static void reader() {
 		try {
-			server = new DebugServer();
-			debugTask = server.start(new InetSocketAddress("127.0.0.1", 9229), true);
-			server.targets.put("default", (socket, req) -> new SimpleDebugger(socket)
-				.attach((SimpleDebugHandler)DebugHandler.get(environment))
-			);
+			if (inspect) {
+				server = new DebugServer();
+				debugTask = server.start(new InetSocketAddress("127.0.0.1", inspectPort), true);
+				server.targets.put("default", (socket, req) -> new SimpleDebugger(socket)
+					.attach((SimpleDebugHandler)DebugHandler.get(environment))
+				);
+				System.out.println("Debug server started at localhost:" + inspectPort);
+			}
 
 			System.out.println(String.format("Running %s v%s by %s", Metadata.name(), Metadata.version(), Metadata.author()));
 
-			for (var arg : args) {
-				var file = new File(arg);
-				var raw = Reading.streamToString(new FileInputStream(file));
+			if (files.length > 0) {
+				for (var arg : files) {
+					var file = new File(arg);
+					var raw = Reading.streamToString(new FileInputStream(file));
 
-				try {
 					try {
-						var res = engine.pushMsg(
-							false, environment,
-							Filename.fromFile(file), raw, null
-						).get();
+						try {
+							var res = engine.pushMsg(
+								false, environment,
+								Filename.fromFile(file), raw, null
+							).get();
 
-						System.err.println(res.toReadable(environment));
+							System.err.println(res.toReadable(environment));
+						}
+						catch (ExecutionException e) { throw e.getCause(); }
 					}
-					catch (ExecutionException e) { throw e.getCause(); }
+					catch (EngineException | SyntaxException e) { System.err.println(Value.errorToReadable(environment, e, null)); }
 				}
-				catch (EngineException | SyntaxException e) { System.err.println(Value.errorToReadable(environment, e, null)); }
-
 			}
+			else {
+				for (var i = 0; ; i++) {
+					var raw = Reading.readline();
 
-			for (var i = 0; ; i++) {
-				var raw = Reading.readline();
+					if (raw == null) break;
 
-				if (raw == null) break;
-
-				try {
 					try {
-						var res = engine.pushMsg(
-							false, environment,
-							new Filename(Metadata.name(), "repl/" + i + ".js"), raw,
-							Value.UNDEFINED
-						).get();
-						System.err.println(res.toReadable(environment));
+						try {
+							var res = engine.pushMsg(
+								false, environment,
+								new Filename(Metadata.name(), "repl/" + i + ".js"), raw,
+								Value.UNDEFINED
+							).get();
+							System.err.println(res.toReadable(environment));
+						}
+						catch (ExecutionException e) { throw e.getCause(); }
 					}
-					catch (ExecutionException e) { throw e.getCause(); }
+					catch (EngineException | SyntaxException e) { System.err.println(Value.errorToReadable(environment, e, null)); }
 				}
-				catch (EngineException | SyntaxException e) { System.err.println(Value.errorToReadable(environment, e, null)); }
-
 			}
 		}
 		catch (EngineException | SyntaxException e) { System.err.println(Value.errorToReadable(environment, e, null)); }
@@ -104,11 +111,30 @@ public class SimpleRepl {
 		}
 	}
 
-	private static Environment createESEnv() {
+	private static Environment createESEnv(String compiler) {
 		var env = StdLib.apply(null);
 		env.add(EventLoop.KEY, engine);
 		env.add(DebugHandler.KEY, new SimpleDebugHandler());
-		env.add(Compiler.KEY, Compilers.chainTranspilers(Compilers.jsCompiler(), env, Compilers::babelCompiler));
+
+		switch (compiler) {
+			case "typescript":
+			case "ts":
+				env.add(Compiler.KEY, Compilers.chainTranspilers(Compilers.jsCompiler(), env, Compilers::typescriptCompiler));
+				break;
+			case "coffeescript":
+			case "cs":
+				env.add(Compiler.KEY, Compilers.chainTranspilers(Compilers.jsCompiler(), env, Compilers::babelCompiler, Compilers::coffeescriptCompiler));
+				break;
+			case "babel":
+			case "es6":
+			case "esnext":
+				env.add(Compiler.KEY, Compilers.chainTranspilers(Compilers.jsCompiler(), env, Compilers::babelCompiler));
+				break;
+			default:
+			case "js":
+				env.add(Compiler.KEY, Compilers.jsCompiler());
+				break;
+		}
 
 		var glob = Value.global(env);
 
@@ -137,10 +163,29 @@ public class SimpleRepl {
 	}
 
 	public static void main(String args[]) throws InterruptedException {
-		SimpleRepl.args = args;
+		var compiler = "js";
+		var files = new ArrayList<String>();
+
+		for (String arg : args) {
+			if (arg.startsWith("--lang=")) {
+				compiler = arg.substring(7);
+			}
+			else if (arg.equals("--inspect")) {
+				inspect = true;
+			}
+			else if (arg.startsWith("--inspect=")) {
+				inspect = true;
+				inspectPort = Integer.parseInt(arg.substring(10));
+			}
+			else {
+				files.add(arg);
+			}
+		}
+
+		SimpleRepl.files = files.toArray(new String[0]);
 		var reader = new Thread(SimpleRepl::reader);
 
-		environment = createESEnv();
+		environment = createESEnv(compiler);
 
 		initEngine();
 
@@ -150,6 +195,6 @@ public class SimpleRepl {
 
 		reader.join();
 		engineTask.interrupt();
-		debugTask.interrupt();
+		if (debugTask != null) debugTask.interrupt();
 	}
 }
