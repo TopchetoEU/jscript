@@ -1,12 +1,14 @@
 # J2S (Java-JavaScript or Java to JavaScript)
 
+**NOTE: This project is no longer maintained, and I do not intend on maintaining it. Go use GraalJS**
+
 **WARNING: Currently, this code is undocumented. Proceed with caution and a psychiatrist.**
 
 J2S is an engine, capable of running EcmaScript 5, written entirely in Java. This engine has been developed with the goal of being easy to integrate with your preexisting codebase, **THE GOAL OF THIS ENGINE IS NOT PERFORMANCE**. My crude experiments show that this engine is 50x-100x slower than V8, which, although bad, is acceptable for most simple scripting purposes. A small REPL (`me.topchetoeu.j2s.repl.SimpleRepl`) library with an included simple debugger (`me.topchetoeu.j2s.repl.debug.SimpleDebugger`). These are more or less reference implementations. In the future, most of the primordials logic of `SimpleRepl` will be moved in the "lib" project, but for now, it will stay there.
 
 ## How to use?
 
-Since this is mostly targeted for integration into other applications, here, examples for invoking JS code from Java will be shown. In the future, a more comprehensive wiki will be made.
+Since this is mostly targeted for integration into other applications, here, examples for invoking JS code from Java will be shown.
 
 ### Setting up an event loop
 
@@ -33,36 +35,16 @@ As you can see, the environment is nothing more than a simple map of objects tha
 
 ### Registering the compiler
 
-Since the compiler is a part of the runtime, you need to register it in the environment. You can use the following boilerplate, although a nicer API will be exposed later on:
+The compiler is completely separate from the interpreter, and you could even roll your own. There is, however, an ES5 compiler included:
 
 ```java
-env.add(Compiler.KEY, (_env, filename, raw, mapper) -> {
-	try {
-		// Invokes the compiler. Will return a CompilerResult, which, along other things,
-		// gives us all the compiled function bodies (aka function scaffoldings, that can be used to construct a function value)
-		var res = JavaScript.compile(env, filename, raw, true);
-		var body = res.body();
+env.add(Compiler.KEY, Compilers.jsCompiler());
+```
 
-		// We'll register the source and function source mappings for debugging
-		DebugContext.get(env).onSource(filename, raw);
-		for (var el : res.all()) {
-			DebugContext.get(env).onFunctionLoad(el.body(), el.map(mapper));
-		}
+You can even use popular transpilers, like typescript or babel (or even chain them). Here is how you use the built-in babel transpiler, for ESNext support:
 
-		// Finally, we will construct the function
-		// Few things to note: we need to pass the environment, the name of the function (the filename),
-		// and the last thing: the captures. Since we are compiling the main function, we don't have
-		// any captures, so we pass an empty array
-		return new CodeFunction(env, filename.toString(), body, new Value[0][]);
-	}
-	catch (SyntaxException e) {
-		// Convert the exception to an engine exception
-		var res = EngineException.ofSyntax(e.msg);
-		// Add the location of the error to its stack trace
-		res.add(env, e.loc.filename() + "", e.loc);
-		throw res;
-	}
-});
+```java
+env.add(Compiler.KEY, Compilers.babelCompiler());
 ```
 
 ### Evaluating a piece of code on the event loop
