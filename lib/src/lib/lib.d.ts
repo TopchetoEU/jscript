@@ -16,6 +16,7 @@
 /// <reference path="./globals/map.d.ts"/>
 /// <reference path="./globals/weak-map.d.ts"/>
 
+declare function dofile(name: string): any;
 declare function print(...args: any[]): void;
 declare function exit(): never;
 declare function measure(func: () => void): void;
