@@ -19,7 +19,7 @@ var engine = new Engine();
 var thread = engine.start();
 ```
 
-Hooray! Now you have an event loop. The thread that was automatically created is a daemon thread, so it will harakiri when the rest of the application ends. If you don't want to use the built-in thread, you can instead run it with `engine.run(untilEmpty)`. If you pass true (which you most likely need), the event loop will be run blocking-ly until it is empty. Otherwise, it will be run forever.
+Now you have an event loop. The thread that was automatically created is a daemon thread, so it will end when the rest of the application ends. If you don't want to use the built-in thread, you can instead run it with `engine.run(untilEmpty)`. If you pass true (which you most likely need), the event loop will be run blocking-ly until it is empty. Otherwise, it will be run forever.
 
 ### Creating the execution environment
 
@@ -27,7 +27,7 @@ This is one of the other crucial parts of J2S's architecture - the environment. 
 
 ```java
 var env = Environment.empty();
-env.add(EventLoop.KEY, engine); // Gives 
+env.add(EventLoop.KEY, engine); // Gives
 env.add(DebugContext.KEY, new DebugContext()); // For source mappings
 ```
 

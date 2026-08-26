@@ -5,6 +5,9 @@ import me.topchetoeu.j2s.runtime.values.primitives.StringValue;
 import me.topchetoeu.j2s.runtime.values.primitives.SymbolValue;
 import me.topchetoeu.j2s.runtime.values.primitives.numbers.NumberValue;
 
+// Not really a cache, more of a semantic correction patchwork
+// If we have a proto-chain of objects, all of which need to convert the given key to a given type, this will do it exactly once
+// This in turn will prevent calling .toString() on an object more than once, thus keeping consistent semantics
 public final class KeyCache {
 	public final Value value;
 	private boolean isInt;
