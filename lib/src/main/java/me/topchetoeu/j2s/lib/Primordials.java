@@ -9,6 +9,7 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 import me.topchetoeu.j2s.runtime.Compiler;
+import me.topchetoeu.j2s.runtime.EngineException;
 import me.topchetoeu.j2s.runtime.EventLoop;
 import me.topchetoeu.j2s.common.Environment;
 import me.topchetoeu.j2s.common.Filename;
@@ -24,7 +25,6 @@ import me.topchetoeu.j2s.lib.buffers.TypedArrayValue;
 import me.topchetoeu.j2s.lib.buffers.Uint8ArrayValue;
 import me.topchetoeu.j2s.runtime.ArgumentsValue;
 import me.topchetoeu.j2s.runtime.Frame;
-import me.topchetoeu.j2s.runtime.exceptions.EngineException;
 import me.topchetoeu.j2s.runtime.values.Value;
 import me.topchetoeu.j2s.runtime.values.functions.FunctionValue;
 import me.topchetoeu.j2s.runtime.values.functions.NativeFunction;
@@ -263,7 +263,7 @@ public class Primordials {
 			}
 			else {
 				if (radix < 2 || radix > 36) return NumberValue.NAN;
-		
+
 				var str = args.get(0).toString().trim();
 				var numRes = Parsing.parseInt(new Source(str), 0, "0123456789abcdefghijklmnopqrstuvwxyz".substring(0, radix), true);
 				if (numRes.isSuccess()) {

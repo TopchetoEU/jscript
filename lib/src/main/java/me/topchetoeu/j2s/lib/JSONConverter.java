@@ -7,7 +7,7 @@ import me.topchetoeu.j2s.common.Environment;
 import me.topchetoeu.j2s.compilation.json.JSONElement;
 import me.topchetoeu.j2s.compilation.json.JSONList;
 import me.topchetoeu.j2s.compilation.json.JSONMap;
-import me.topchetoeu.j2s.runtime.exceptions.EngineException;
+import me.topchetoeu.j2s.runtime.EngineException;
 import me.topchetoeu.j2s.runtime.values.Value;
 import me.topchetoeu.j2s.runtime.values.objects.ArrayValue;
 import me.topchetoeu.j2s.runtime.values.objects.ObjectValue;
@@ -24,11 +24,11 @@ public class JSONConverter {
 		if (val.isList()) return ArrayValue.of(val.list().stream().map(JSONConverter::toJs).collect(Collectors.toList()));
 		if (val.isMap()) {
 			var res = new ObjectValue();
-	
+
 			for (var el : val.map().entrySet()) {
 				res.defineOwnField(null, el.getKey(), toJs(el.getValue()));
 			}
-	
+
 			return res;
 		}
 		if (val.isNull()) return Value.NULL;
@@ -47,40 +47,40 @@ public class JSONConverter {
 		if (val instanceof StringValue) return JSONElement.string(((StringValue)val).value);
 		if (val == Value.NULL) return JSONElement.NULL;
 		if (val instanceof VoidValue) return null;
-	
+
 		if (val instanceof ArrayValue) {
 			if (prev.contains(val)) throw EngineException.ofError("Circular dependency in JSON.");
 			prev.add(val);
-	
+
 			var res = new JSONList();
-	
+
 			for (var el : ((ArrayValue)val).toArray()) {
 				var jsonEl = fromJs(env, el, prev);
 				if (jsonEl == null) continue;
 				res.add(jsonEl);
 			}
-	
+
 			prev.remove(val);
 			return JSONElement.of(res);
 		}
 		if (val instanceof ObjectValue) {
 			if (prev.contains(val)) throw EngineException.ofError("Circular dependency in JSON.");
 			prev.add(val);
-	
+
 			var res = new JSONMap();
-	
+
 			for (var key : val.getOwnMembers(env, true)) {
 				var el = fromJs(env, val.getMember(env, key), prev);
 				if (el == null) continue;
 
 				res.put(key, el);
 			}
-	
+
 			prev.remove(val);
 			return JSONElement.of(res);
 		}
 		if (val == null) return null;
 		return null;
 	}
-	
+
 }

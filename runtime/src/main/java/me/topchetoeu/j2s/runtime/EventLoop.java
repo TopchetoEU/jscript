@@ -6,7 +6,6 @@ import java.util.function.Supplier;
 import me.topchetoeu.j2s.common.Environment;
 import me.topchetoeu.j2s.common.Filename;
 import me.topchetoeu.j2s.common.Key;
-import me.topchetoeu.j2s.runtime.exceptions.EngineException;
 import me.topchetoeu.j2s.runtime.values.Value;
 import me.topchetoeu.j2s.runtime.values.functions.FunctionValue;
 

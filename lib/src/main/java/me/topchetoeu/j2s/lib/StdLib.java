@@ -6,7 +6,7 @@ import me.topchetoeu.j2s.common.Metadata;
 import me.topchetoeu.j2s.common.Reading;
 import me.topchetoeu.j2s.compilation.CompileResult;
 import me.topchetoeu.j2s.compilation.JavaScript;
-import me.topchetoeu.j2s.runtime.exceptions.EngineException;
+import me.topchetoeu.j2s.runtime.EngineException;
 import me.topchetoeu.j2s.runtime.values.Value;
 import me.topchetoeu.j2s.runtime.values.functions.CodeFunction;
 
@@ -30,7 +30,7 @@ public class StdLib {
 		catch (EngineException e) {
 			System.out.println(Value.errorToReadable(env, e, "in environment initializer"));
 		}
-	
+
 		return env;
 	}
 

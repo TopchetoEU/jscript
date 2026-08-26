@@ -6,7 +6,7 @@ import java.util.HashSet;
 import java.util.List;
 
 import me.topchetoeu.j2s.common.Environment;
-import me.topchetoeu.j2s.runtime.exceptions.EngineException;
+import me.topchetoeu.j2s.runtime.EngineException;
 import me.topchetoeu.j2s.runtime.values.Value;
 import me.topchetoeu.j2s.runtime.values.objects.ObjectValue;
 import me.topchetoeu.j2s.runtime.values.primitives.numbers.NumberValue;

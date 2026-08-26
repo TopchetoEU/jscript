@@ -8,8 +8,8 @@ import java.util.Set;
 import java.util.function.IntUnaryOperator;
 
 import me.topchetoeu.j2s.common.Environment;
+import me.topchetoeu.j2s.runtime.EngineException;
 import me.topchetoeu.j2s.runtime.Frame;
-import me.topchetoeu.j2s.runtime.exceptions.EngineException;
 import me.topchetoeu.j2s.runtime.values.KeyCache;
 import me.topchetoeu.j2s.runtime.values.Member;
 import me.topchetoeu.j2s.runtime.values.Value;

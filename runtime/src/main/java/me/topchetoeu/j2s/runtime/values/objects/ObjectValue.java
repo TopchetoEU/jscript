@@ -12,7 +12,7 @@ import java.util.Set;
 
 import me.topchetoeu.j2s.common.Environment;
 import me.topchetoeu.j2s.common.Key;
-import me.topchetoeu.j2s.runtime.exceptions.EngineException;
+import me.topchetoeu.j2s.runtime.EngineException;
 import me.topchetoeu.j2s.runtime.values.KeyCache;
 import me.topchetoeu.j2s.runtime.values.Member;
 import me.topchetoeu.j2s.runtime.values.Value;
@@ -28,7 +28,7 @@ public class ObjectValue implements Value {
 		public ObjectValue get(Environment env);
 	}
 
-	public static class Property { 
+	public static class Property {
 		public final FunctionValue getter;
 		public final FunctionValue setter;
 
@@ -86,7 +86,7 @@ public class ObjectValue implements Value {
 	@Override public Member getOwnMember(Environment env, KeyCache key) {
 		if (key.isSymbol()) {
 			if (!symbols.containsKey(key.toSymbol())) return null;
-			
+
 			if (symbols.get(key.toSymbol())) return symbolProperties.get(key.toSymbol());
 			else return symbolFields.get(key.toSymbol());
 		}
@@ -169,7 +169,7 @@ public class ObjectValue implements Value {
 
 		if (key.isSymbol()) {
 			if (!symbols.containsKey(key.toSymbol())) return true;
-			
+
 			if (symbols.get(key.toSymbol())) {
 				if (!symbolProperties.get(key.toSymbol()).configurable) return false;
 				symbolProperties.remove(key.toSymbol());

@@ -1,11 +1,10 @@
-package me.topchetoeu.j2s.runtime.exceptions;
+package me.topchetoeu.j2s.runtime;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import me.topchetoeu.j2s.common.Environment;
 import me.topchetoeu.j2s.common.Location;
-import me.topchetoeu.j2s.runtime.Frame;
 import me.topchetoeu.j2s.runtime.values.Value;
 import me.topchetoeu.j2s.runtime.values.objects.ObjectValue;
 import me.topchetoeu.j2s.runtime.values.objects.ObjectValue.PrototypeProvider;

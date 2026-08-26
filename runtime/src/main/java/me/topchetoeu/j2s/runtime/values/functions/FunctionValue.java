@@ -6,8 +6,8 @@ import java.util.LinkedList;
 import java.util.List;
 
 import me.topchetoeu.j2s.common.Environment;
+import me.topchetoeu.j2s.runtime.EngineException;
 import me.topchetoeu.j2s.runtime.debug.DebugHandler;
-import me.topchetoeu.j2s.runtime.exceptions.EngineException;
 import me.topchetoeu.j2s.runtime.values.KeyCache;
 import me.topchetoeu.j2s.runtime.values.Member;
 import me.topchetoeu.j2s.runtime.values.Value;

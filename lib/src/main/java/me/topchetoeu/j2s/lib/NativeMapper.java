@@ -5,7 +5,7 @@ import java.util.function.Function;
 import me.topchetoeu.j2s.common.Environment;
 import me.topchetoeu.j2s.common.Filename;
 import me.topchetoeu.j2s.common.Location;
-import me.topchetoeu.j2s.runtime.exceptions.EngineException;
+import me.topchetoeu.j2s.runtime.EngineException;
 import me.topchetoeu.j2s.runtime.values.Value;
 import me.topchetoeu.j2s.runtime.values.functions.FunctionValue;
 import me.topchetoeu.j2s.runtime.values.objects.ArrayLikeValue;

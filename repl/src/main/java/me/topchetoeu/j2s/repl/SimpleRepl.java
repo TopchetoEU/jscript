@@ -25,9 +25,9 @@ import me.topchetoeu.j2s.lib.debug.SimpleDebugHandler;
 import me.topchetoeu.j2s.lib.debug.SimpleDebugger;
 import me.topchetoeu.j2s.runtime.Compiler;
 import me.topchetoeu.j2s.runtime.Engine;
+import me.topchetoeu.j2s.runtime.EngineException;
 import me.topchetoeu.j2s.runtime.EventLoop;
 import me.topchetoeu.j2s.runtime.debug.DebugHandler;
-import me.topchetoeu.j2s.runtime.exceptions.EngineException;
 import me.topchetoeu.j2s.runtime.values.Value;
 import me.topchetoeu.j2s.runtime.values.functions.NativeFunction;
 
